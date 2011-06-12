@@ -415,22 +415,26 @@ main(int argc, char** argv)
 	lilv_instance_activate(host.instance);
 	jack_activate(host.jack_client);
 
-	SuilHost* ui_host = suil_host_new(lv2_ui_write, NULL, NULL, NULL);
+	SuilHost*     ui_host     = NULL;
+	SuilInstance* ui_instance = NULL;
+	if (ui) {
+		/* Instantiate UI */
+		ui_host = suil_host_new(lv2_ui_write, NULL, NULL, NULL);
 
-	/* Instantiate the UI */
-	SuilInstance* instance = suil_instance_new(
-		ui_host,
-		&host,
-		lilv_node_as_uri(native_ui_type),
-		lilv_node_as_uri(lilv_plugin_get_uri(host.plugin)),
-		lilv_node_as_uri(lilv_ui_get_uri(ui)),
-		lilv_node_as_uri(ui_type),
-		lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(ui))),
-		lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(ui))),
-		NULL);
+		ui_instance = suil_instance_new(
+			ui_host,
+			&host,
+			lilv_node_as_uri(native_ui_type),
+			lilv_node_as_uri(lilv_plugin_get_uri(host.plugin)),
+			lilv_node_as_uri(lilv_ui_get_uri(ui)),
+			lilv_node_as_uri(ui_type),
+			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(ui))),
+			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(ui))),
+			NULL);
+	}
 
-	/* Run UI */
-	jalv_open_ui(&host, instance);
+	/* Run UI (or prompt at console) */
+	jalv_open_ui(&host, ui_instance);
 
 	/* Wait for finish signal from UI or signal handler */
 	sem_wait(&exit_sem);
@@ -460,6 +464,7 @@ main(int argc, char** argv)
 	lilv_node_free(host.event_class);
 	lilv_node_free(host.midi_class);
 	lilv_node_free(host.optional);
+	suil_instance_free(ui_instance);
 	suil_host_free(ui_host);
 	lilv_world_free(world);
 
