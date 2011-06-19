@@ -32,10 +32,6 @@ def configure(conf):
     conf.load('compiler_cc')
 
     autowaf.check_pkg(conf, 'lv2core', uselib_store='LV2CORE', mandatory=True)
-    autowaf.check_pkg(conf, 'glib-2.0', uselib_store='GLIB',
-                      atleast_version='2.0.0', mandatory=True)
-    autowaf.check_pkg(conf, 'gthread-2.0', uselib_store='GTHREAD',
-                      atleast_version='2.0.0', mandatory=False)
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.4.0', mandatory=True)
     autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
