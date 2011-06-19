@@ -19,6 +19,7 @@
 #include <QApplication>
 #include <QPushButton>
 #include <QMainWindow>
+#include <QTimer>
 
 static QApplication* app = NULL;
 
@@ -37,6 +38,18 @@ jalv_native_ui_type(Jalv* jalv)
 	                    "http://lv2plug.in/ns/extensions/ui#Qt4UI");
 }
 
+class Timer : public QTimer {
+public:
+	Timer(Jalv* j) : jalv(j) {}
+
+	void timerEvent(QTimerEvent* e) {
+		jalv_emit_ui_events(jalv);
+	}
+
+private:
+	Jalv* jalv;
+};
+
 int
 jalv_open_ui(Jalv*         jalv,
              SuilInstance* instance)
@@ -50,6 +63,9 @@ jalv_open_ui(Jalv*         jalv,
 		QObject::connect(button, SIGNAL(clicked()), app, SLOT(quit()));
 	}
 	app->connect(app, SIGNAL(lastWindowClosed()), app, SLOT(quit()));
+
+	Timer* timer = new Timer(jalv);
+	timer->start(1000 / JALV_UI_UPDATE_HZ);
 
 	int ret = app->exec();
 	sem_post(jalv->done);

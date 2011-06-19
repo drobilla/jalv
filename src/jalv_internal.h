@@ -32,16 +32,23 @@
 extern "C" {
 #endif
 
+#define JALV_UI_UPDATE_HZ 15
+
 typedef struct {
 	LilvWorld*         world;         /**< Lilv World */
 	Symap*             symap;         /**< Symbol (URI) map */
 	jack_client_t*     jack_client;   /**< Jack client */
-	jack_ringbuffer_t* events;        /**< Control change events */
+	jack_ringbuffer_t* ui_events;     /**< Port events from UI */
+	jack_ringbuffer_t* plugin_events; /**< Port events from plugin */
 	sem_t*             done;          /**< Exit semaphore */
 	const LilvPlugin*  plugin;        /**< Plugin class (RDF data) */
+	const LilvUI*      ui;            /**< Plugin UI (RDF data) */
 	LilvInstance*      instance;      /**< Plugin instance (shared library) */
-	uint32_t           num_ports;     /**< Size of the two following arrays: */
+	SuilInstance*      ui_instance;   /**< Plugin UI instance (shared library) */
 	struct Port*       ports;         /**< Port array of size num_ports */
+	uint32_t           num_ports;     /**< Size of the two following arrays: */
+	jack_nframes_t     sample_rate;   /**< Sample rate */
+	jack_nframes_t     event_delta_t; /**< Frames since last update sent to UI */
 	LilvNode*          input_class;   /**< Input port class (URI) */
 	LilvNode*          output_class;  /**< Output port class (URI) */
 	LilvNode*          control_class; /**< Control port class (URI) */
@@ -61,6 +68,9 @@ jalv_native_ui_type(Jalv* jalv);
 int
 jalv_open_ui(Jalv*         jalv,
              SuilInstance* instance);
+
+bool
+jalv_emit_ui_events(Jalv* jalv);
 
 
 #ifdef __cplusplus

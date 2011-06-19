@@ -46,10 +46,10 @@ jalv_open_ui(Jalv*         jalv,
              SuilInstance* instance)
 {
 	GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    
+
 	g_signal_connect(window, "destroy",
 	                 G_CALLBACK(destroy), NULL);
-    
+
 	gtk_container_set_border_width(GTK_CONTAINER(window), 8);
 
 	if (instance) {
@@ -57,11 +57,11 @@ jalv_open_ui(Jalv*         jalv,
 		gtk_container_add(GTK_CONTAINER(window), widget);
 	} else {
 		GtkWidget* button = gtk_button_new_with_label("Close");
-    
+
 		g_signal_connect_swapped(button, "clicked",
 		                         G_CALLBACK(gtk_widget_destroy),
 		                         window);
-    
+
 		gtk_container_add(GTK_CONTAINER(window), button);
 	}
 
@@ -69,7 +69,10 @@ jalv_open_ui(Jalv*         jalv,
 	gtk_window_set_resizable(GTK_WINDOW(window), false);
 
 	gtk_widget_show_all(window);
-    
+
+	g_timeout_add(1000 / JALV_UI_UPDATE_HZ,
+	              (GSourceFunc)jalv_emit_ui_events, jalv);
+
 	gtk_main();
 	sem_post(jalv->done);
 	return 0;

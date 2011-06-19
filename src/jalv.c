@@ -216,17 +216,27 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	}
 
 	/* Read and apply control change events from UI */
-	ControlChange ev;
-	size_t        ev_read_size = jack_ringbuffer_read_space(host->events);
-	for (size_t i = 0; i < ev_read_size; i += sizeof(ev)) {
-		jack_ringbuffer_read(host->events, (char*)&ev, sizeof(ev));
-		host->ports[ev.index].control = ev.value;
+	if (host->ui) {
+		ControlChange ev;
+		size_t        ev_read_size = jack_ringbuffer_read_space(host->ui_events);
+		for (size_t i = 0; i < ev_read_size; i += sizeof(ev)) {
+			jack_ringbuffer_read(host->ui_events, (char*)&ev, sizeof(ev));
+			host->ports[ev.index].control = ev.value;
+		}
 	}
 
 	/* Run plugin for this cycle */
 	lilv_instance_run(host->instance, nframes);
 
-	/* Deliver MIDI output */
+	/* Check if it's time to send updates to the UI */
+	host->event_delta_t += nframes;
+	bool send_ui_updates = false;
+	if (host->ui && (host->event_delta_t > host->sample_rate / JALV_UI_UPDATE_HZ)) {
+		send_ui_updates = true;
+		host->event_delta_t = 0;
+	}
+
+	/* Deliver MIDI output and UI events */
 	for (uint32_t p = 0; p < host->num_ports; ++p) {
 		if (host->ports[p].jack_port
 		    && !host->ports[p].is_input
@@ -246,6 +256,11 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				jack_midi_event_write(buf, ev->frames, data, ev->size);
 				lv2_event_increment(&iter);
 			}
+		} else if (send_ui_updates
+		           && !host->ports[p].is_input
+		           && host->ports[p].type == CONTROL) {
+			const ControlChange ev = { p, host->ports[p].control };
+			jack_ringbuffer_write(host->plugin_events, (const char*)&ev, sizeof(ev));
 		}
 	}
 
@@ -287,12 +302,28 @@ lv2_ui_write(SuilController controller,
              uint32_t       format,
              const void*    buffer)
 {
+	if (format != 0) {
+		return;
+	}
 
 	Jalv* host = (Jalv*)controller;
 
-	// FIXME: not guaranteed to be a float change...
 	const ControlChange ev = { port_index, *(float*)buffer };
-	jack_ringbuffer_write(host->events, (const char*)&ev, sizeof(ev));
+	jack_ringbuffer_write(host->ui_events, (const char*)&ev, sizeof(ev));
+}
+
+bool
+jalv_emit_ui_events(Jalv* host)
+{
+	ControlChange ev;
+	size_t        ev_read_size = jack_ringbuffer_read_space(host->plugin_events);
+	for (size_t i = 0; i < ev_read_size; i += sizeof(ev)) {
+		jack_ringbuffer_read(host->plugin_events, (char*)&ev, sizeof(ev));
+		suil_instance_port_event(host->ui_instance, ev.index,
+		                         sizeof(float), 0, &ev.value);
+	}
+
+	return true;
 }
 
 static void
@@ -307,18 +338,18 @@ main(int argc, char** argv)
 	jalv_init(&argc, &argv);
 
 	Jalv host;
-	host.jack_client = NULL;
-	host.num_ports   = 0;
-	host.ports       = NULL;
+	host.jack_client   = NULL;
+	host.num_ports     = 0;
+	host.ports         = NULL;
+	host.ui_events     = NULL;
+	host.plugin_events = NULL;
+	host.event_delta_t = 0;
 
 	host.symap = symap_new();
 	uri_map.callback_data = &host;
 	host.midi_event_id = uri_to_id(&host,
 	                               "http://lv2plug.in/ns/ext/event",
 	                               "http://lv2plug.in/ns/ext/midi#MidiEvent");
-
-	host.events = jack_ringbuffer_create(4096);
-	jack_ringbuffer_mlock(host.events);
 
 	sem_init(&exit_sem, 0, 0);
 	host.done = &exit_sem;
@@ -369,8 +400,8 @@ main(int argc, char** argv)
 
 	/* Get a plugin UI */
 	LilvNode*       native_ui_type = jalv_native_ui_type(&host);
-	const LilvUI*   ui             = NULL;
 	const LilvNode* ui_type        = NULL;
+	host.ui = NULL;
 	if (native_ui_type) {
 		LilvUIs* uis = lilv_plugin_get_uis(host.plugin); // FIXME: leak
 		LILV_FOREACH(uis, u, uis) {
@@ -380,15 +411,20 @@ main(int argc, char** argv)
 			                         native_ui_type,
 			                         &ui_type)) {
 				// TODO: Multiple UI support
-				ui = this_ui;
+				host.ui = this_ui;
 				break;
 			}
 		}
 	}
 
-	if (ui) {
+	if (host.ui) {
 		fprintf(stderr, "UI:        %s\n",
-		        lilv_node_as_uri(lilv_ui_get_uri(ui)));
+		        lilv_node_as_uri(lilv_ui_get_uri(host.ui)));
+
+		host.ui_events     = jack_ringbuffer_create(4096);
+		host.plugin_events = jack_ringbuffer_create(4096);
+		jack_ringbuffer_mlock(host.ui_events);
+		jack_ringbuffer_mlock(host.plugin_events);
 	} else {
 		fprintf(stderr, "No appropriate UI found\n");
 	}
@@ -456,27 +492,27 @@ main(int argc, char** argv)
 	/* Activate plugin and JACK */
 	lilv_instance_activate(host.instance);
 	jack_activate(host.jack_client);
+	host.sample_rate = jack_get_sample_rate(host.jack_client);
 
-	SuilHost*     ui_host     = NULL;
-	SuilInstance* ui_instance = NULL;
-	if (ui) {
+	SuilHost* ui_host = NULL;
+	if (host.ui) {
 		/* Instantiate UI */
 		ui_host = suil_host_new(lv2_ui_write, NULL, NULL, NULL);
 
-		ui_instance = suil_instance_new(
+		host.ui_instance = suil_instance_new(
 			ui_host,
 			&host,
 			lilv_node_as_uri(native_ui_type),
 			lilv_node_as_uri(lilv_plugin_get_uri(host.plugin)),
-			lilv_node_as_uri(lilv_ui_get_uri(ui)),
+			lilv_node_as_uri(lilv_ui_get_uri(host.ui)),
 			lilv_node_as_uri(ui_type),
-			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(ui))),
-			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(ui))),
+			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(host.ui))),
+			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(host.ui))),
 			features);
 	}
 
 	/* Run UI (or prompt at console) */
-	jalv_open_ui(&host, ui_instance);
+	jalv_open_ui(&host, host.ui_instance);
 
 	/* Wait for finish signal from UI or signal handler */
 	sem_wait(&exit_sem);
@@ -498,7 +534,8 @@ main(int argc, char** argv)
 
 	/* Clean up */
 	free(host.ports);
-	jack_ringbuffer_free(host.events);
+	jack_ringbuffer_free(host.ui_events);
+	jack_ringbuffer_free(host.plugin_events);
 	lilv_node_free(native_ui_type);
 	lilv_node_free(host.input_class);
 	lilv_node_free(host.output_class);
@@ -508,7 +545,7 @@ main(int argc, char** argv)
 	lilv_node_free(host.midi_class);
 	lilv_node_free(host.optional);
 	symap_free(host.symap);
-	suil_instance_free(ui_instance);
+	suil_instance_free(host.ui_instance);
 	suil_host_free(ui_host);
 	lilv_world_free(world);
 
