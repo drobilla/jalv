@@ -20,6 +20,7 @@
 #include <semaphore.h>
 
 #include <jack/jack.h>
+#include <jack/ringbuffer.h>
 
 #include "lilv/lilv.h"
 
@@ -30,20 +31,21 @@ extern "C" {
 #endif
 
 typedef struct {
-	LilvWorld*        world;         /**< Lilv World */
-	jack_client_t*    jack_client;   /**< Jack client */
-	sem_t*            done;          /**< Exit semaphore */
-	const LilvPlugin* plugin;        /**< Plugin class (RDF data) */
-	LilvInstance*     instance;      /**< Plugin instance (shared library) */
-	uint32_t          num_ports;     /**< Size of the two following arrays: */
-	struct Port*      ports;         /**< Port array of size num_ports */
-	LilvNode*         input_class;   /**< Input port class (URI) */
-	LilvNode*         output_class;  /**< Output port class (URI) */
-	LilvNode*         control_class; /**< Control port class (URI) */
-	LilvNode*         audio_class;   /**< Audio port class (URI) */
-	LilvNode*         event_class;   /**< Event port class (URI) */
-	LilvNode*         midi_class;    /**< MIDI event class (URI) */
-	LilvNode*         optional;      /**< lv2:connectionOptional port property */
+	LilvWorld*         world;         /**< Lilv World */
+	jack_client_t*     jack_client;   /**< Jack client */
+	jack_ringbuffer_t* events;        /***< Control change events */
+	sem_t*             done;          /**< Exit semaphore */
+	const LilvPlugin*  plugin;        /**< Plugin class (RDF data) */
+	LilvInstance*      instance;      /**< Plugin instance (shared library) */
+	uint32_t           num_ports;     /**< Size of the two following arrays: */
+	struct Port*       ports;         /**< Port array of size num_ports */
+	LilvNode*          input_class;   /**< Input port class (URI) */
+	LilvNode*          output_class;  /**< Output port class (URI) */
+	LilvNode*          control_class; /**< Control port class (URI) */
+	LilvNode*          audio_class;   /**< Audio port class (URI) */
+	LilvNode*          event_class;   /**< Event port class (URI) */
+	LilvNode*          midi_class;    /**< MIDI event class (URI) */
+	LilvNode*          optional;      /**< lv2:connectionOptional port property */
 } Jalv;
 
 void

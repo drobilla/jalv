@@ -25,7 +25,9 @@
 
 #include <jack/jack.h>
 #include <jack/midiport.h>
-#include <jack/session.h>
+#ifdef JALV_JACK_SESSION
+#    include <jack/session.h>
+#endif
 
 #include "lv2/lv2plug.in/ns/ext/event/event-helpers.h"
 #include "lv2/lv2plug.in/ns/ext/event/event.h"
@@ -41,6 +43,11 @@
 sem_t exit_sem;  /**< Exit semaphore */
 
 #define MIDI_BUFFER_SIZE 1024
+
+typedef struct {
+	uint32_t index;
+	float    value;
+} ControlChange;
 
 enum PortType {
 	CONTROL,
@@ -114,6 +121,10 @@ create_port(Jalv*    host,
 	const LilvNode* symbol     = lilv_port_get_symbol(host->plugin, port->lilv_port);
 	const char*     symbol_str = lilv_node_as_string(symbol);
 
+	const bool optional = lilv_port_has_property(host->plugin,
+	                                             port->lilv_port,
+	                                             host->optional);
+
 	enum JackPortFlags jack_flags = 0;
 	if (lilv_port_is_a(host->plugin, port->lilv_port, host->input_class)) {
 		jack_flags     = JackPortIsInput;
@@ -121,10 +132,11 @@ create_port(Jalv*    host,
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->output_class)) {
 		jack_flags     = JackPortIsOutput;
 		port->is_input = false;
-	} else if (lilv_port_has_property(host->plugin, port->lilv_port, host->optional)) {
+	} else if (optional) {
 		lilv_instance_connect_port(host->instance, port_index, NULL);
+		return;
 	} else {
-		die("Mandatory port has unknown type (neither input or output)");
+		die("Mandatory port has unknown type (neither input nor output)");
 	}
 
 	/* Set control values */
@@ -136,6 +148,11 @@ create_port(Jalv*    host,
 		port->type = AUDIO;
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->event_class)) {
 		port->type = EVENT;
+	} else if (optional) {
+		lilv_instance_connect_port(host->instance, port_index, NULL);
+		return;
+	} else {
+		die("Mandatory port has unknown type (neither control nor audio nor event)");
 	}
 
 	/* Connect the port based on its type */
@@ -154,9 +171,7 @@ create_port(Jalv*    host,
 		lilv_instance_connect_port(host->instance, port_index, port->ev_buffer);
 		break;
 	default:
-		/* FIXME: check if port connection is optional and die if not */
-		lilv_instance_connect_port(host->instance, port_index, NULL);
-		fprintf(stderr, "WARNING: Unknown port type, port not connected.\n");
+		break;
 	}
 }
 
@@ -199,6 +214,14 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				}
 			}
 		}
+	}
+
+	/* Read and apply control change events from UI */
+	ControlChange ev;
+	size_t        ev_read_size = jack_ringbuffer_read_space(host->events);
+	for (size_t i = 0; i < ev_read_size; i += sizeof(ev)) {
+		jack_ringbuffer_read(host->events, (char*)&ev, sizeof(ev));
+		host->ports[ev.index].control = ev.value;
 	}
 
 	/* Run plugin for this cycle */
@@ -265,7 +288,12 @@ lv2_ui_write(SuilController controller,
              uint32_t       format,
              const void*    buffer)
 {
-	fprintf(stderr, "UI WRITE\n");
+
+	Jalv* host = (Jalv*)controller;
+
+	// FIXME: not guaranteed to be a float change...
+	const ControlChange ev = { port_index, *(float*)buffer };
+	jack_ringbuffer_write(host->events, (const char*)&ev, sizeof(ev));
 }
 
 static void
@@ -283,6 +311,9 @@ main(int argc, char** argv)
 	host.jack_client = NULL;
 	host.num_ports   = 0;
 	host.ports       = NULL;
+
+	host.events = jack_ringbuffer_create(4096);
+	jack_ringbuffer_mlock(host.events);
 
 	sem_init(&exit_sem, 0, 0);
 	host.done = &exit_sem;
@@ -462,6 +493,7 @@ main(int argc, char** argv)
 
 	/* Clean up */
 	free(host.ports);
+	jack_ringbuffer_free(host.events);
 	lilv_node_free(native_ui_type);
 	lilv_node_free(host.input_class);
 	lilv_node_free(host.output_class);
