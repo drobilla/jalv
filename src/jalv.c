@@ -64,18 +64,16 @@ struct Port {
 	bool              is_input;
 };
 
-/** URI map feature, for event types (we use only MIDI) */
-#define MIDI_EVENT_ID 1
+/**
+   Map function for URI map extension.
+*/
 uint32_t
 uri_to_id(LV2_URI_Map_Callback_Data callback_data,
           const char*               map,
           const char*               uri)
 {
-	/* Note a non-trivial host needs to use an actual dictionary here */
-	if (!strcmp(map, LV2_EVENT_URI) && !strcmp(uri, LILV_URI_MIDI_EVENT))
-		return MIDI_EVENT_ID;
-	else
-		return 0;  /* Refuse to map ID */
+	Jalv* host = (Jalv*)callback_data;
+	return symap_map(host->symap, uri);
 }
 
 #define NS_EXT "http://lv2plug.in/ns/ext/"
@@ -210,7 +208,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					jack_midi_event_get(&ev, buf, i);
 					lv2_event_write(&iter,
 					                ev.time, 0,
-					                MIDI_EVENT_ID, ev.size, ev.buffer);
+					                host->midi_event_id,
+					                ev.size, ev.buffer);
 				}
 			}
 		}
@@ -311,6 +310,12 @@ main(int argc, char** argv)
 	host.jack_client = NULL;
 	host.num_ports   = 0;
 	host.ports       = NULL;
+
+	host.symap = symap_new();
+	uri_map.callback_data = &host;
+	host.midi_event_id = uri_to_id(&host,
+	                               "http://lv2plug.in/ns/ext/event",
+	                               "http://lv2plug.in/ns/ext/midi#MidiEvent");
 
 	host.events = jack_ringbuffer_create(4096);
 	jack_ringbuffer_mlock(host.events);
@@ -502,6 +507,7 @@ main(int argc, char** argv)
 	lilv_node_free(host.event_class);
 	lilv_node_free(host.midi_class);
 	lilv_node_free(host.optional);
+	symap_free(host.symap);
 	suil_instance_free(ui_instance);
 	suil_host_free(ui_host);
 	lilv_world_free(world);

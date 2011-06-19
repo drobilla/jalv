@@ -26,14 +26,17 @@
 
 #include "suil/suil.h"
 
+#include "symap.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct {
 	LilvWorld*         world;         /**< Lilv World */
+	Symap*             symap;         /**< Symbol (URI) map */
 	jack_client_t*     jack_client;   /**< Jack client */
-	jack_ringbuffer_t* events;        /***< Control change events */
+	jack_ringbuffer_t* events;        /**< Control change events */
 	sem_t*             done;          /**< Exit semaphore */
 	const LilvPlugin*  plugin;        /**< Plugin class (RDF data) */
 	LilvInstance*      instance;      /**< Plugin instance (shared library) */
@@ -46,6 +49,7 @@ typedef struct {
 	LilvNode*          event_class;   /**< Event port class (URI) */
 	LilvNode*          midi_class;    /**< MIDI event class (URI) */
 	LilvNode*          optional;      /**< lv2:connectionOptional port property */
+	uint32_t           midi_event_id; /**< MIDI event class ID */
 } Jalv;
 
 void

@@ -69,7 +69,7 @@ def build(bld):
 
     # Non-GUI version
     obj = bld(features     = 'c cprogram',
-              source       = 'src/jalv.c src/jalv_console.c',
+              source       = 'src/jalv.c src/symap.c src/jalv_console.c',
               target       = 'jalv',
               install_path = '${BINDIR}')
     autowaf.use_lib(bld, obj, libs)
@@ -77,7 +77,7 @@ def build(bld):
     # Gtk version
     if bld.is_defined('HAVE_GTK2'):
         obj = bld(features     = 'c cprogram',
-                  source       = 'src/jalv.c src/jalv_gtk2.c',
+                  source       = 'src/jalv.c src/symap.c src/jalv_gtk2.c',
                   target       = 'jalv.gtk',
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' GTK2')
@@ -85,7 +85,7 @@ def build(bld):
     # Qt version
     if bld.is_defined('HAVE_QT4'):
         obj = bld(features     = 'c cxx cxxprogram',
-                  source       = 'src/jalv.c src/jalv_qt4.cpp',
+                  source       = 'src/jalv.c src/symap.c src/jalv_qt4.cpp',
                   target       = 'jalv.qt',
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' QT4')
