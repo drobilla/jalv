@@ -73,10 +73,13 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
 
 #define NS_EXT "http://lv2plug.in/ns/ext/"
 
-static LV2_URI_Map_Feature uri_map         = { NULL, &uri_to_id };
-static const LV2_Feature   uri_map_feature = { NS_EXT "uri-map", &uri_map };
+static LV2_URI_Map_Feature uri_map          = { NULL, &uri_to_id };
+static const LV2_Feature   uri_map_feature  = { NS_EXT "uri-map", &uri_map };
+static LV2_Feature         instance_feature = { NS_EXT "instance-access", NULL };
 
-const LV2_Feature* features[2] = { &uri_map_feature, NULL };
+const LV2_Feature* features[3] = {
+	&uri_map_feature, &instance_feature, NULL
+};
 
 /** Abort and exit on error */
 static void
@@ -393,6 +396,9 @@ main(int argc, char** argv)
 	if (!host.instance)
 		die("Failed to instantiate plugin.\n");
 
+	/* Set instance for instance-access extension */
+	instance_feature.data = lilv_instance_get_handle(host.instance);
+
 	/* Set Jack callbacks */
 	jack_set_process_callback(host.jack_client, &jack_process_cb, (void*)(&host));
 #ifdef JALV_JACK_SESSION
@@ -430,7 +436,7 @@ main(int argc, char** argv)
 			lilv_node_as_uri(ui_type),
 			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(ui))),
 			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(ui))),
-			NULL);
+			features);
 	}
 
 	/* Run UI (or prompt at console) */
