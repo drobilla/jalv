@@ -23,6 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "jalv_internal.h"
+#include "jalv-config.h"
+
 #include <jack/jack.h>
 #include <jack/midiport.h>
 #ifdef JALV_JACK_SESSION
@@ -36,9 +39,6 @@
 #include "lilv/lilv.h"
 
 #include "suil/suil.h"
-
-#include "jalv_internal.h"
-#include "jalv-config.h"
 
 sem_t exit_sem;  /**< Exit semaphore */
 

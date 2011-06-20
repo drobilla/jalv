@@ -64,13 +64,12 @@ def configure(conf):
 
 def build(bld):
     libs = 'LILV SUIL JACK'
-    if bld.is_defined('JALV_JACK_SESSION'):
-        libs += ' GLIB GTHREAD'
 
     # Non-GUI version
     obj = bld(features     = 'c cprogram',
               source       = 'src/jalv.c src/symap.c src/jalv_console.c',
               target       = 'jalv',
+              includes     = ['.'],
               install_path = '${BINDIR}')
     autowaf.use_lib(bld, obj, libs)
 
@@ -79,6 +78,7 @@ def build(bld):
         obj = bld(features     = 'c cprogram',
                   source       = 'src/jalv.c src/symap.c src/jalv_gtk2.c',
                   target       = 'jalv.gtk',
+                  includes     = ['.'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' GTK2')
 
@@ -87,6 +87,7 @@ def build(bld):
         obj = bld(features     = 'c cxx cxxprogram',
                   source       = 'src/jalv.c src/symap.c src/jalv_qt4.cpp',
                   target       = 'jalv.qt',
+                  includes     = ['.'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' QT4')
 
