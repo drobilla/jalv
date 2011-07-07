@@ -72,6 +72,11 @@ jalv_open_ui(Jalv*         jalv,
 bool
 jalv_emit_ui_events(Jalv* jalv);
 
+void
+jalv_save(Jalv* jalv, const char* dir);
+
+void
+jalv_restore(Jalv* jalv, const char* dir);
 
 #ifdef __cplusplus
 } // extern "C"

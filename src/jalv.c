@@ -283,11 +283,12 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 
 	switch (event->type) {
 	case JackSessionSave:
+	case JackSessionSaveTemplate:
+		jalv_save(host, event->session_dir);
 		break;
 	case JackSessionSaveAndQuit:
+		jalv_save(host, event->session_dir);
 		sem_post(&exit_sem);
-		break;
-	case JackSessionSaveTemplate:
 		break;
 	}
 

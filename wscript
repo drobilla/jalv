@@ -43,10 +43,10 @@ def configure(conf):
     autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
                       atleast_version='4.0.0', mandatory=False)
 
-    autowaf.check_header(conf, 'lv2/lv2plug.in/ns/lv2core/lv2.h')
-    autowaf.check_header(conf, 'lv2/lv2plug.in/ns/ext/event/event.h')
-    autowaf.check_header(conf, 'lv2/lv2plug.in/ns/ext/event/event-helpers.h')
-    autowaf.check_header(conf, 'lv2/lv2plug.in/ns/ext/uri-map/uri-map.h')
+    autowaf.check_header(conf, 'c', 'lv2/lv2plug.in/ns/lv2core/lv2.h')
+    autowaf.check_header(conf, 'c', 'lv2/lv2plug.in/ns/ext/event/event.h')
+    autowaf.check_header(conf, 'c', 'lv2/lv2plug.in/ns/ext/event/event-helpers.h')
+    autowaf.check_header(conf, 'c', 'lv2/lv2plug.in/ns/ext/uri-map/uri-map.h')
 
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
@@ -65,9 +65,11 @@ def configure(conf):
 def build(bld):
     libs = 'LILV SUIL JACK'
 
+    source = 'src/jalv.c src/symap.c src/persist.c'
+
     # Non-GUI version
     obj = bld(features     = 'c cprogram',
-              source       = 'src/jalv.c src/symap.c src/jalv_console.c',
+              source       = source + ' src/jalv_console.c',
               target       = 'jalv',
               includes     = ['.'],
               install_path = '${BINDIR}')
@@ -76,7 +78,7 @@ def build(bld):
     # Gtk version
     if bld.is_defined('HAVE_GTK2'):
         obj = bld(features     = 'c cprogram',
-                  source       = 'src/jalv.c src/symap.c src/jalv_gtk2.c',
+                  source       = source + ' src/jalv_gtk2.c',
                   target       = 'jalv.gtk',
                   includes     = ['.'],
                   install_path = '${BINDIR}')
@@ -85,7 +87,7 @@ def build(bld):
     # Qt version
     if bld.is_defined('HAVE_QT4'):
         obj = bld(features     = 'c cxx cxxprogram',
-                  source       = 'src/jalv.c src/symap.c src/jalv_qt4.cpp',
+                  source       = source + ' src/jalv_qt4.cpp',
                   target       = 'jalv.qt',
                   includes     = ['.'],
                   install_path = '${BINDIR}')
