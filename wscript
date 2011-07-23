@@ -21,6 +21,7 @@ out = 'build'
 
 def options(opt):
     autowaf.set_options(opt)
+    opt.load('compiler_c')
     opt.add_option('--no-jack-session', action='store_true', default=False,
                    dest='no_jack_session',
                    help="Do not build JACK session support")
@@ -29,7 +30,7 @@ def configure(conf):
     conf.line_just = 63
     autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
-    conf.load('compiler_cc')
+    conf.load('compiler_c')
 
     autowaf.check_pkg(conf, 'lv2core', uselib_store='LV2CORE', mandatory=True)
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
