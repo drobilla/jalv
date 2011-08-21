@@ -63,6 +63,8 @@ jalv_open_ui(Jalv*         jalv,
 	                 G_CALLBACK(destroy), NULL);
 
 	gtk_container_set_border_width(GTK_CONTAINER(window), 8);
+	gtk_window_set_title(GTK_WINDOW(window),
+	                     lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
 
 	if (instance) {
 		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(instance);
