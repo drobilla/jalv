@@ -22,6 +22,7 @@ out = 'build'
 def options(opt):
     autowaf.set_options(opt)
     opt.load('compiler_c')
+    opt.load('compiler_cxx')
     opt.add_option('--no-jack-session', action='store_true', default=False,
                    dest='no_jack_session',
                    help="Do not build JACK session support")
@@ -31,10 +32,13 @@ def configure(conf):
     autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
     conf.load('compiler_c')
+    conf.load('compiler_cxx')
 
     autowaf.check_pkg(conf, 'lv2core', uselib_store='LV2CORE', mandatory=True)
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.4.0', mandatory=True)
+    autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',
+                      atleast_version='0.4.5', mandatory=True)
     autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
                       atleast_version='0.4.0', mandatory=True)
     autowaf.check_pkg(conf, 'jack', uselib_store='JACK',
@@ -65,7 +69,7 @@ def configure(conf):
     print('')
 
 def build(bld):
-    libs = 'LILV SUIL JACK'
+    libs = 'LILV SUIL JACK SERD'
 
     source = 'src/jalv.c src/symap.c src/persist.c'
 

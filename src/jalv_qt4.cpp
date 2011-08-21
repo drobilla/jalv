@@ -25,10 +25,11 @@ static QApplication* app = NULL;
 
 extern "C" {
 
-void
-jalv_init(int* argc, char*** argv)
+int
+jalv_init(int* argc, char*** argv, JalvOptions* opts)
 {
 	app = new QApplication(*argc, *argv, true);
+	return 0;
 }
 
 LilvNode*

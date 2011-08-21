@@ -22,6 +22,10 @@
 #include <jack/jack.h>
 #include <jack/ringbuffer.h>
 
+#include "lv2/lv2plug.in/ns/ext/event/event.h"
+
+#include "serd/serd.h"
+
 #include "lilv/lilv.h"
 
 #include "suil/suil.h"
@@ -34,8 +38,47 @@ extern "C" {
 
 #define JALV_UI_UPDATE_HZ 15
 
+enum PortFlow {
+	FLOW_UNKNOWN,
+	FLOW_INPUT,
+	FLOW_OUTPUT
+};
+
+enum PortType {
+	TYPE_UNKNOWN,
+	TYPE_CONTROL,
+	TYPE_AUDIO,
+	TYPE_EVENT
+};
+
+struct Port {
+	const LilvPort*   lilv_port;
+	enum PortType     type;
+	enum PortFlow     flow;
+	jack_port_t*      jack_port; /**< For audio/MIDI ports, otherwise NULL */
+	float             control;   /**< For control ports, otherwise 0.0f */
+	LV2_Event_Buffer* ev_buffer; /**< For MIDI ports, otherwise NULL */
+};
+
+struct Property {
+	uint32_t key;
+	SerdNode value;
+	SerdNode datatype;
+};
+
 typedef struct {
+	char* uuid;
+	char* load;
+} JalvOptions;
+
+typedef struct {
+	JalvOptions        opts;          /**< Command-line options */
 	LilvWorld*         world;         /**< Lilv World */
+	SerdReader*        reader;        /**< RDF reader (for persistence) */
+	SerdWriter*        writer;        /**< RDF writer (for persistence) */
+	struct Property*   props;         /**< Restored state properties */
+	SerdNode           state_node;    /**< Instance state node (for persistence) */
+	SerdNode           last_sym;      /**< Last port symbol encountered in state */
 	Symap*             symap;         /**< Symbol (URI) map */
 	jack_client_t*     jack_client;   /**< Jack client */
 	jack_ringbuffer_t* ui_events;     /**< Port events from UI */
@@ -47,6 +90,8 @@ typedef struct {
 	SuilInstance*      ui_instance;   /**< Plugin UI instance (shared library) */
 	struct Port*       ports;         /**< Port array of size num_ports */
 	uint32_t           num_ports;     /**< Size of the two following arrays: */
+	uint32_t           num_props;     /**< Number of properties */
+	uint32_t           longest_sym;   /**< Longest port symbol */
 	jack_nframes_t     sample_rate;   /**< Sample rate */
 	jack_nframes_t     event_delta_t; /**< Frames since last update sent to UI */
 	LilvNode*          input_class;   /**< Input port class (URI) */
@@ -57,10 +102,17 @@ typedef struct {
 	LilvNode*          midi_class;    /**< MIDI event class (URI) */
 	LilvNode*          optional;      /**< lv2:connectionOptional port property */
 	uint32_t           midi_event_id; /**< MIDI event class ID */
+	bool               in_state;      /**< True iff reading instance state */
 } Jalv;
 
+int
+jalv_init(int* argc, char*** argv, JalvOptions* opts);
+
 void
-jalv_init(int* argc, char*** argv);
+jalv_create_ports(Jalv* jalv);
+
+struct Port*
+jalv_port_by_symbol(Jalv* jalv, const char* sym);
 
 LilvNode*
 jalv_native_ui_type(Jalv* jalv);
@@ -77,6 +129,9 @@ jalv_save(Jalv* jalv, const char* dir);
 
 void
 jalv_restore(Jalv* jalv, const char* dir);
+
+void
+jalv_restore_instance(Jalv* jalv, const char* dir);
 
 #ifdef __cplusplus
 } // extern "C"

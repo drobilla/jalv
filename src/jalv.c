@@ -33,7 +33,6 @@
 #endif
 
 #include "lv2/lv2plug.in/ns/ext/event/event-helpers.h"
-#include "lv2/lv2plug.in/ns/ext/event/event.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
 
 #include "lilv/lilv.h"
@@ -48,21 +47,6 @@ typedef struct {
 	uint32_t index;
 	float    value;
 } ControlChange;
-
-enum PortType {
-	CONTROL,
-	AUDIO,
-	EVENT
-};
-
-struct Port {
-	const LilvPort*   lilv_port;
-	enum PortType     type;
-	jack_port_t*      jack_port; /**< For audio/MIDI ports, otherwise NULL */
-	float             control;   /**< For control ports, otherwise 0.0f */
-	LV2_Event_Buffer* ev_buffer; /**< For MIDI ports, otherwise NULL */
-	bool              is_input;
-};
 
 /**
    Map function for URI map extension.
@@ -94,13 +78,9 @@ die(const char* msg)
 	exit(EXIT_FAILURE);
 }
 
-/** Creates a port and connects the plugin instance to its data location.
- *
- * For audio ports, creates a jack port and connects plugin port to buffer.
- *
- * For control ports, sets controls array to default value and connects plugin
- * port to that element.
- */
+/**
+   Create a port structure from data (pre-instantiation/pre-Jack).
+*/
 void
 create_port(Jalv*    host,
             uint32_t port_index,
@@ -112,8 +92,7 @@ create_port(Jalv*    host,
 	port->jack_port = NULL;
 	port->control   = 0.0f;
 	port->ev_buffer = NULL;
-
-	lilv_instance_connect_port(host->instance, port_index, NULL);
+	port->flow      = FLOW_UNKNOWN;
 
 	/* Get the port symbol for console printing */
 	const LilvNode* symbol     = lilv_port_get_symbol(host->plugin, port->lilv_port);
@@ -123,46 +102,99 @@ create_port(Jalv*    host,
 	                                             port->lilv_port,
 	                                             host->optional);
 
-	enum JackPortFlags jack_flags = 0;
+	/* Set the port flow (input or output) */
 	if (lilv_port_is_a(host->plugin, port->lilv_port, host->input_class)) {
-		jack_flags     = JackPortIsInput;
-		port->is_input = true;
+		port->flow = FLOW_INPUT;
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->output_class)) {
-		jack_flags     = JackPortIsOutput;
-		port->is_input = false;
-	} else if (optional) {
-		lilv_instance_connect_port(host->instance, port_index, NULL);
-		return;
-	} else {
+		port->flow = FLOW_OUTPUT;
+	} else if (!optional) {
 		die("Mandatory port has unknown type (neither input nor output)");
 	}
 
 	/* Set control values */
 	if (lilv_port_is_a(host->plugin, port->lilv_port, host->control_class)) {
-		port->type    = CONTROL;
+		port->type    = TYPE_CONTROL;
 		port->control = isnan(default_value) ? 0.0 : default_value;
-		printf("%s = %f\n", symbol_str, host->ports[port_index].control);
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->audio_class)) {
-		port->type = AUDIO;
+		port->type = TYPE_AUDIO;
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->event_class)) {
-		port->type = EVENT;
-	} else if (optional) {
-		lilv_instance_connect_port(host->instance, port_index, NULL);
-		return;
-	} else {
+		port->type = TYPE_EVENT;
+	} else if (!optional) {
 		die("Mandatory port has unknown type (neither control nor audio nor event)");
 	}
 
+	const size_t sym_len = strlen(symbol_str);
+	host->longest_sym = (sym_len > host->longest_sym) ? sym_len : host->longest_sym;
+}
+
+void
+jalv_create_ports(Jalv* jalv)
+{
+	jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
+	jalv->ports     = calloc((size_t)jalv->num_ports, sizeof(struct Port));
+	float* default_values = calloc(lilv_plugin_get_num_ports(jalv->plugin),
+	                               sizeof(float));
+	lilv_plugin_get_port_ranges_float(jalv->plugin, NULL, NULL, default_values);
+
+	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+		create_port(jalv, i, default_values[i]);
+	}
+
+	free(default_values);
+}
+
+struct Port*
+jalv_port_by_symbol(Jalv* jalv, const char* sym)
+{
+	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+		struct Port* const port     = &jalv->ports[i];
+		const LilvNode*    port_sym = lilv_port_get_symbol(jalv->plugin,
+		                                                   port->lilv_port);
+
+		if (!strcmp(lilv_node_as_string(port_sym), sym)) {
+			return port;
+		}
+	}
+
+	return NULL;
+}
+
+/**
+   Expose a port to Jack (if applicable) and connect it to its buffer.
+*/
+void
+activate_port(Jalv*    host,
+              uint32_t port_index)
+{
+	struct Port* const port = &host->ports[port_index];
+
+	/* Get the port symbol for console printing */
+	const LilvNode* symbol     = lilv_port_get_symbol(host->plugin, port->lilv_port);
+	const char*     symbol_str = lilv_node_as_string(symbol);
+
+	/* Connect unsupported ports to NULL (known to be optional by this point) */
+	if (port->flow == FLOW_UNKNOWN || port->type == TYPE_UNKNOWN) {
+		lilv_instance_connect_port(host->instance, port_index, NULL);
+		return;
+	}
+
+	/* Build Jack flags for port */
+	enum JackPortFlags jack_flags = (port->flow == FLOW_INPUT)
+		? JackPortIsInput
+		: JackPortIsOutput;
+
 	/* Connect the port based on its type */
 	switch (port->type) {
-	case CONTROL:
+	case TYPE_CONTROL:
+		printf("%-*s = %f\n", host->longest_sym, symbol_str,
+		       host->ports[port_index].control);
 		lilv_instance_connect_port(host->instance, port_index, &port->control);
 		break;
-	case AUDIO:
+	case TYPE_AUDIO:
 		port->jack_port = jack_port_register(
 			host->jack_client, symbol_str, JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
 		break;
-	case EVENT:
+	case TYPE_EVENT:
 		port->jack_port = jack_port_register(
 			host->jack_client, symbol_str, JACK_DEFAULT_MIDI_TYPE, jack_flags, 0);
 		port->ev_buffer = lv2_event_buffer_new(MIDI_BUFFER_SIZE, LV2_EVENT_AUDIO_STAMP);
@@ -184,19 +216,19 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 		if (!host->ports[p].jack_port)
 			continue;
 
-		if (host->ports[p].type == AUDIO) {
+		if (host->ports[p].type == TYPE_AUDIO) {
 			/* Connect plugin port directly to Jack port buffer. */
 			lilv_instance_connect_port(
 				host->instance, p,
 				jack_port_get_buffer(host->ports[p].jack_port, nframes));
 
-		} else if (host->ports[p].type == EVENT) {
+		} else if (host->ports[p].type == TYPE_EVENT) {
 			/* Clear Jack event port buffer. */
 			lv2_event_buffer_reset(host->ports[p].ev_buffer,
 			                       LV2_EVENT_AUDIO_STAMP,
 			                       (uint8_t*)(host->ports[p].ev_buffer + 1));
 
-			if (host->ports[p].is_input) {
+			if (host->ports[p].flow == FLOW_INPUT) {
 				void* buf = jack_port_get_buffer(host->ports[p].jack_port,
 				                                 nframes);
 
@@ -239,8 +271,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	/* Deliver MIDI output and UI events */
 	for (uint32_t p = 0; p < host->num_ports; ++p) {
 		if (host->ports[p].jack_port
-		    && !host->ports[p].is_input
-		    && host->ports[p].type == EVENT) {
+		    && !host->ports[p].flow == FLOW_INPUT
+		    && host->ports[p].type == TYPE_EVENT) {
 
 			void* buf = jack_port_get_buffer(host->ports[p].jack_port,
 			                                 nframes);
@@ -257,8 +289,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				lv2_event_increment(&iter);
 			}
 		} else if (send_ui_updates
-		           && !host->ports[p].is_input
-		           && host->ports[p].type == CONTROL) {
+		           && !host->ports[p].flow == FLOW_INPUT
+		           && host->ports[p].type == TYPE_CONTROL) {
 			const ControlChange ev = { p, host->ports[p].control };
 			jack_ringbuffer_write(host->plugin_events, (const char*)&ev, sizeof(ev));
 		}
@@ -279,7 +311,6 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 	         event->client_uuid);
 
 	event->command_line = strdup(cmd);
-	jack_session_reply(host->jack_client, event);
 
 	switch (event->type) {
 	case JackSessionSave:
@@ -292,6 +323,7 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 		break;
 	}
 
+	jack_session_reply(host->jack_client, event);
 	jack_session_event_free(event);
 }
 #endif /* JALV_JACK_SESSION */
@@ -336,15 +368,16 @@ signal_handler(int ignored)
 int
 main(int argc, char** argv)
 {
-	jalv_init(&argc, &argv);
-
 	Jalv host;
-	host.jack_client   = NULL;
-	host.num_ports     = 0;
-	host.ports         = NULL;
-	host.ui_events     = NULL;
-	host.plugin_events = NULL;
-	host.event_delta_t = 0;
+	memset(&host, '\0', sizeof(Jalv));
+
+	if (jalv_init(&argc, &argv, &host.opts)) {
+		return EXIT_FAILURE;
+	}
+
+	if (host.opts.uuid) {
+		printf("UUID: %s\n", host.opts.uuid);
+	}
 
 	host.symap = symap_new();
 	uri_map.callback_data = &host;
@@ -374,30 +407,26 @@ main(int argc, char** argv)
 	host.optional      = lilv_new_uri(world, LILV_NS_LV2
 	                                  "connectionOptional");
 
-#ifdef JALV_JACK_SESSION
-	if (argc != 2 && argc != 3) {
-		fprintf(stderr, "Usage: %s PLUGIN_URI [JACK_UUID]\n", argv[0]);
-#else
-	if (argc != 2) {
-		fprintf(stderr, "Usage: %s PLUGIN_URI\n", argv[0]);
-#endif
-		lilv_world_free(world);
-		return EXIT_FAILURE;
+	if (host.opts.load) {
+		jalv_restore(&host, host.opts.load);
+	} else {
+		const char* const plugin_uri_str = argv[1];
+
+		/* Get the plugin */
+		LilvNode* plugin_uri = lilv_new_uri(world, plugin_uri_str);
+		host.plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
+		lilv_node_free(plugin_uri);
+		if (!host.plugin) {
+			fprintf(stderr, "Failed to find plugin %s\n", plugin_uri_str);
+			lilv_world_free(world);
+			return EXIT_FAILURE;
+		}
+
+		jalv_create_ports(&host);
 	}
 
-	const char* const plugin_uri_str = argv[1];
-
-	printf("Plugin:    %s\n", plugin_uri_str);
-
-	/* Get the plugin */
-	LilvNode* plugin_uri = lilv_new_uri(world, plugin_uri_str);
-	host.plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
-	lilv_node_free(plugin_uri);
-	if (!host.plugin) {
-		fprintf(stderr, "Failed to find plugin %s.\n", plugin_uri_str);
-		lilv_world_free(world);
-		return EXIT_FAILURE;
-	}
+	printf("Plugin:    %s\n",
+	       lilv_node_as_string(lilv_plugin_get_uri(host.plugin)));
 
 	/* Get a plugin UI */
 	LilvNode*       native_ui_type = jalv_native_ui_type(&host);
@@ -446,10 +475,9 @@ main(int argc, char** argv)
 	/* Connect to JACK */
 	printf("JACK Name: %s\n\n", jack_name);
 #ifdef JALV_JACK_SESSION
-	const char* const jack_uuid_str = (argc > 2) ? argv[2] : NULL;
-	if (jack_uuid_str) {
+	if (host.opts.uuid) {
 		host.jack_client = jack_client_open(jack_name, JackSessionID, NULL,
-		                                    jack_uuid_str);
+		                                    host.opts.uuid);
 	}
 #endif
 
@@ -469,6 +497,11 @@ main(int argc, char** argv)
 	if (!host.instance)
 		die("Failed to instantiate plugin.\n");
 
+	/* Apply restored state to plugin instance (if applicable) */
+	if (host.opts.load) {
+		jalv_restore_instance(&host, host.opts.load);
+	}
+
 	/* Set instance for instance-access extension */
 	instance_feature.data = lilv_instance_get_handle(host.instance);
 
@@ -478,20 +511,15 @@ main(int argc, char** argv)
 	jack_set_session_callback(host.jack_client, &jack_session_cb, (void*)(&host));
 #endif
 
-	/* Create ports */
-	host.num_ports = lilv_plugin_get_num_ports(host.plugin);
-	host.ports     = calloc((size_t)host.num_ports, sizeof(struct Port));
-	float* default_values = calloc(lilv_plugin_get_num_ports(host.plugin),
-	                               sizeof(float));
-	lilv_plugin_get_port_ranges_float(host.plugin, NULL, NULL, default_values);
+	/* Create Jack ports and connect plugin ports to buffers */
+	for (uint32_t i = 0; i < host.num_ports; ++i) {
+		activate_port(&host, i);
+	}
 
-	for (uint32_t i = 0; i < host.num_ports; ++i)
-		create_port(&host, i, default_values[i]);
-
-	free(default_values);
-
-	/* Activate plugin and JACK */
+	/* Activate plugin */
 	lilv_instance_activate(host.instance);
+
+	/* Activate Jack */
 	jack_activate(host.jack_client);
 	host.sample_rate = jack_get_sample_rate(host.jack_client);
 
@@ -510,6 +538,15 @@ main(int argc, char** argv)
 			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(host.ui))),
 			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(host.ui))),
 			features);
+
+		/* Set initial control values for UI */
+		for (uint32_t i = 0; i < host.num_ports; ++i) {
+			if (host.ports[i].type == TYPE_CONTROL) {
+				suil_instance_port_event(host.ui_instance, i,
+				                         sizeof(float), 0,
+				                         &host.ports[i].control);
+			}
+		}
 	}
 
 	/* Run UI (or prompt at console) */

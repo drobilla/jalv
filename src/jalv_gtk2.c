@@ -24,14 +24,26 @@ static void destroy(GtkWidget* widget,
 	gtk_main_quit();
 }
 
-void
-jalv_init(int* argc, char*** argv)
+int
+jalv_init(int* argc, char*** argv, JalvOptions* opts)
 {
+	GOptionEntry entries[] = {
+		{ "uuid", 'u', 0, G_OPTION_ARG_STRING, &opts->uuid,
+		  "UUID for Jack session restoration", "UUID" },
+		{ "load", 'l', 0, G_OPTION_ARG_STRING, &opts->load,
+		  "Load state from save directory", "DIR" },
+		{ 0,0,0,0,0,0,0 } };
 	GError* error = NULL;
-	gtk_init_with_args(
+	const int err = gtk_init_with_args(
 		argc, argv,
-		"PLUGIN_URI [JACK_UUID] - Run an LV2 plugin as a Jack application",
-		NULL, NULL, &error);
+		"PLUGIN_URI - Run an LV2 plugin as a Jack application",
+		entries, NULL, &error);
+
+	if (!err) {
+		fprintf(stderr, "%s\n", error->message);
+	}
+
+	return !err;
 }
 
 LilvNode*
