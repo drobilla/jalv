@@ -62,13 +62,29 @@ jalv_open_ui(Jalv*         jalv,
 	g_signal_connect(window, "destroy",
 	                 G_CALLBACK(destroy), NULL);
 
-	gtk_container_set_border_width(GTK_CONTAINER(window), 8);
 	gtk_window_set_title(GTK_WINDOW(window),
 	                     lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
 
+	GtkWidget* vbox      = gtk_vbox_new(FALSE, 0);
+	GtkWidget* menubar   = gtk_menu_bar_new();
+	GtkWidget* file      = gtk_menu_item_new_with_mnemonic("_File");
+	GtkWidget* file_menu = gtk_menu_new();
+	GtkWidget* quit      = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL);
+
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(file), file_menu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), quit);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file);
+	gtk_box_pack_start(GTK_BOX(vbox), menubar, FALSE, FALSE, 0);
+
+	g_signal_connect(G_OBJECT(quit), "activate",
+	                 G_CALLBACK(gtk_main_quit), NULL);
+
+	GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);
+	gtk_box_pack_start(GTK_BOX(vbox), alignment, TRUE, TRUE, 0);
+	
 	if (instance) {
 		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(instance);
-		gtk_container_add(GTK_CONTAINER(window), widget);
+		gtk_container_add(GTK_CONTAINER(alignment), widget);
 	} else {
 		GtkWidget* button = gtk_button_new_with_label("Close");
 
@@ -76,12 +92,13 @@ jalv_open_ui(Jalv*         jalv,
 		                         G_CALLBACK(gtk_widget_destroy),
 		                         window);
 
-		gtk_container_add(GTK_CONTAINER(window), button);
+		gtk_container_add(GTK_CONTAINER(alignment), button);
 	}
 
 	// TODO: Check UI properties for resizable
 	gtk_window_set_resizable(GTK_WINDOW(window), false);
 
+	gtk_container_add(GTK_CONTAINER(window), vbox);
 	gtk_widget_show_all(window);
 
 	g_timeout_add(1000 / JALV_UI_UPDATE_HZ,
