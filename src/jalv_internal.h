@@ -73,6 +73,7 @@ typedef struct {
 
 typedef struct {
 	JalvOptions        opts;          /**< Command-line options */
+	const char*        prog_name;     /**< Program name (argv[0]) */
 	LilvWorld*         world;         /**< Lilv World */
 	SerdReader*        reader;        /**< RDF reader (for persistence) */
 	SerdWriter*        writer;        /**< RDF writer (for persistence) */

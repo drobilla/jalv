@@ -306,9 +306,10 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 	Jalv* host = (Jalv*)arg;
 
 	char cmd[256];
-	snprintf(cmd, sizeof(cmd), "jalv %s %s",
-	         lilv_node_as_uri(lilv_plugin_get_uri(host->plugin)),
-	         event->client_uuid);
+	snprintf(cmd, sizeof(cmd), "%s -u %s -l '%s'",
+	         host->prog_name,
+	         event->client_uuid,
+	         event->session_dir);
 
 	event->command_line = strdup(cmd);
 
@@ -370,6 +371,7 @@ main(int argc, char** argv)
 {
 	Jalv host;
 	memset(&host, '\0', sizeof(Jalv));
+	host.prog_name = argv[0];
 
 	if (jalv_init(&argc, &argv, &host.opts)) {
 		return EXIT_FAILURE;
