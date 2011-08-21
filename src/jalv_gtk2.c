@@ -53,6 +53,30 @@ jalv_native_ui_type(Jalv* jalv)
 	                    "http://lv2plug.in/ns/extensions/ui#GtkUI");
 }
 
+static void
+on_save(GtkWidget* widget, void* ptr)
+{
+	Jalv* jalv = (Jalv*)ptr;
+	GtkWidget* dialog = gtk_file_chooser_dialog_new(
+		"Save State",
+		NULL, // FIXME: parent
+		GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
+		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+		GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+		NULL);
+
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+		char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+		char* base     = g_build_filename(filename, "/", NULL);
+		fprintf(stderr, "SAVE TO %s\n", base);
+		jalv_save(jalv, base);
+		g_free(filename);
+		g_free(base);
+	}
+
+	gtk_widget_destroy(dialog);
+}
+
 int
 jalv_open_ui(Jalv*         jalv,
              SuilInstance* instance)
@@ -65,19 +89,27 @@ jalv_open_ui(Jalv*         jalv,
 	gtk_window_set_title(GTK_WINDOW(window),
 	                     lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
 
+	GtkAccelGroup* accels = gtk_accel_group_new();
+	gtk_window_add_accel_group(GTK_WINDOW(window), accels);
+
 	GtkWidget* vbox      = gtk_vbox_new(FALSE, 0);
-	GtkWidget* menubar   = gtk_menu_bar_new();
+	GtkWidget* menu_bar  = gtk_menu_bar_new();
 	GtkWidget* file      = gtk_menu_item_new_with_mnemonic("_File");
 	GtkWidget* file_menu = gtk_menu_new();
-	GtkWidget* quit      = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL);
+	GtkWidget* save      = gtk_image_menu_item_new_from_stock(GTK_STOCK_SAVE, accels);
+	GtkWidget* quit      = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, accels);
 
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(file), file_menu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), save);
 	gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), quit);
-	gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file);
-	gtk_box_pack_start(GTK_BOX(vbox), menubar, FALSE, FALSE, 0);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file);
+	gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
 
 	g_signal_connect(G_OBJECT(quit), "activate",
 	                 G_CALLBACK(gtk_main_quit), NULL);
+
+	g_signal_connect(G_OBJECT(save), "activate",
+	                 G_CALLBACK(on_save), jalv);
 
 	GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);
 	gtk_box_pack_start(GTK_BOX(vbox), alignment, TRUE, TRUE, 0);
