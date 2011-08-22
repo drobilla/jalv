@@ -43,6 +43,9 @@ sem_t exit_sem;  /**< Exit semaphore */
 
 #define MIDI_BUFFER_SIZE 1024
 
+/**
+   Control change event, sent through ring buffers for UI updates.
+*/
 typedef struct {
 	uint32_t index;
 	float    value;
@@ -79,7 +82,9 @@ die(const char* msg)
 }
 
 /**
-   Create a port structure from data (pre-instantiation/pre-Jack).
+   Create a port structure from data description.  This is called before plugin
+   and Jack instantiation.  The remaining instance-specific setup
+   (e.g. buffers) is done later in expose_port().
 */
 void
 create_port(Jalv*    host,
@@ -127,6 +132,9 @@ create_port(Jalv*    host,
 	host->longest_sym = (sym_len > host->longest_sym) ? sym_len : host->longest_sym;
 }
 
+/**
+   Create port structures from data (via create_port()) for all ports.
+*/
 void
 jalv_create_ports(Jalv* jalv)
 {
@@ -143,6 +151,12 @@ jalv_create_ports(Jalv* jalv)
 	free(default_values);
 }
 
+/**
+   Get a port structure by symbol.
+
+   TODO: Build an index to make this faster, currently O(n) which may be
+   a problem when restoring the state of plugins with many ports.
+*/
 struct Port*
 jalv_port_by_symbol(Jalv* jalv, const char* sym)
 {
