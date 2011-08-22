@@ -18,8 +18,9 @@
 
 #include "jalv_internal.h"
 
-static void destroy(GtkWidget* widget,
-                    gpointer   data)
+static void
+on_window_destroy(GtkWidget* widget,
+                  gpointer   data)
 {
 	gtk_main_quit();
 }
@@ -54,7 +55,7 @@ jalv_native_ui_type(Jalv* jalv)
 }
 
 static void
-on_save(GtkWidget* widget, void* ptr)
+on_save_activate(GtkWidget* widget, void* ptr)
 {
 	Jalv* jalv = (Jalv*)ptr;
 	GtkWidget* dialog = gtk_file_chooser_dialog_new(
@@ -77,6 +78,15 @@ on_save(GtkWidget* widget, void* ptr)
 	gtk_widget_destroy(dialog);
 }
 
+static void
+on_quit_activate(GtkWidget* widget,
+                 gpointer   data)
+{
+	GtkWidget* window = (GtkWidget*)data;
+	gtk_widget_destroy(window);
+}
+
+
 int
 jalv_open_ui(Jalv*         jalv,
              SuilInstance* instance)
@@ -84,7 +94,7 @@ jalv_open_ui(Jalv*         jalv,
 	GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
 	g_signal_connect(window, "destroy",
-	                 G_CALLBACK(destroy), NULL);
+	                 G_CALLBACK(on_window_destroy), NULL);
 
 	gtk_window_set_title(GTK_WINDOW(window),
 	                     lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
@@ -106,10 +116,10 @@ jalv_open_ui(Jalv*         jalv,
 	gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
 
 	g_signal_connect(G_OBJECT(quit), "activate",
-	                 G_CALLBACK(gtk_main_quit), NULL);
+	                 G_CALLBACK(on_quit_activate), window);
 
 	g_signal_connect(G_OBJECT(save), "activate",
-	                 G_CALLBACK(on_save), jalv);
+	                 G_CALLBACK(on_save_activate), jalv);
 
 	GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);
 	gtk_box_pack_start(GTK_BOX(vbox), alignment, TRUE, TRUE, 0);
