@@ -127,6 +127,9 @@ jalv_open_ui(Jalv*         jalv,
 	if (instance) {
 		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(instance);
 		gtk_container_add(GTK_CONTAINER(alignment), widget);
+
+		g_timeout_add(1000 / JALV_UI_UPDATE_HZ,
+		              (GSourceFunc)jalv_emit_ui_events, jalv);
 	} else {
 		GtkWidget* button = gtk_button_new_with_label("Close");
 
@@ -142,9 +145,6 @@ jalv_open_ui(Jalv*         jalv,
 
 	gtk_container_add(GTK_CONTAINER(window), vbox);
 	gtk_widget_show_all(window);
-
-	g_timeout_add(1000 / JALV_UI_UPDATE_HZ,
-	              (GSourceFunc)jalv_emit_ui_events, jalv);
 
 	gtk_main();
 	sem_post(jalv->done);

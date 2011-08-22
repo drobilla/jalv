@@ -574,8 +574,10 @@ main(int argc, char** argv)
 
 	/* Clean up */
 	free(host.ports);
-	jack_ringbuffer_free(host.ui_events);
-	jack_ringbuffer_free(host.plugin_events);
+	if (host.ui) {
+		jack_ringbuffer_free(host.ui_events);
+		jack_ringbuffer_free(host.plugin_events);
+	}
 	lilv_node_free(native_ui_type);
 	lilv_node_free(host.input_class);
 	lilv_node_free(host.output_class);
