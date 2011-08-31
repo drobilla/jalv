@@ -41,8 +41,6 @@
 
 sem_t exit_sem;  /**< Exit semaphore */
 
-#define MIDI_BUFFER_SIZE 1024
-
 /**
    Control change event, sent through ring buffers for UI updates.
 */
@@ -152,6 +150,27 @@ jalv_create_ports(Jalv* jalv)
 }
 
 /**
+   Allocate port buffers (only necessary for MIDI).
+*/
+void
+jalv_allocate_port_buffers(Jalv* jalv)
+{
+	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+		struct Port* const port = &jalv->ports[i];
+		switch (port->type) {
+		case TYPE_EVENT:
+			free(port->ev_buffer);
+			port->ev_buffer = lv2_event_buffer_new(
+				jalv->midi_buf_size, LV2_EVENT_AUDIO_STAMP);
+			lilv_instance_connect_port(
+				jalv->instance, i, port->ev_buffer);
+		default: break;
+		}
+	}
+}
+	
+
+/**
    Get a port structure by symbol.
 
    TODO: Build an index to make this faster, currently O(n) which may be
@@ -211,12 +230,22 @@ activate_port(Jalv*    host,
 	case TYPE_EVENT:
 		port->jack_port = jack_port_register(
 			host->jack_client, symbol_str, JACK_DEFAULT_MIDI_TYPE, jack_flags, 0);
-		port->ev_buffer = lv2_event_buffer_new(MIDI_BUFFER_SIZE, LV2_EVENT_AUDIO_STAMP);
-		lilv_instance_connect_port(host->instance, port_index, port->ev_buffer);
 		break;
 	default:
 		break;
 	}
+}
+
+/** Jack buffer size callback. */
+int
+jack_buffer_size_cb(jack_nframes_t nframes, void* data)
+{
+	Jalv* const host = (Jalv*)data;
+	host->buf_size_set = true;
+	host->midi_buf_size = jack_port_type_get_buffer_size(
+		host->jack_client, JACK_DEFAULT_MIDI_TYPE);
+	jalv_allocate_port_buffers(host);
+	return 0;
 }
 
 /** Jack process callback. */
@@ -385,7 +414,8 @@ main(int argc, char** argv)
 {
 	Jalv host;
 	memset(&host, '\0', sizeof(Jalv));
-	host.prog_name = argv[0];
+	host.prog_name     = argv[0];
+	host.midi_buf_size = 1024;  // Should be set by jack_buffer_size_cb
 
 	if (jalv_init(&argc, &argv, &host.opts)) {
 		return EXIT_FAILURE;
@@ -425,7 +455,7 @@ main(int argc, char** argv)
 
 	if (host.opts.load) {
 		jalv_restore(&host, host.opts.load);
-	} else {
+	} else if (argc > 1) {
 		const char* const plugin_uri_str = argv[1];
 
 		/* Get the plugin */
@@ -437,8 +467,9 @@ main(int argc, char** argv)
 			lilv_world_free(world);
 			return EXIT_FAILURE;
 		}
-
-		jalv_create_ports(&host);
+	} else {
+		fprintf(stderr, "Missing plugin URI parameter\n");
+		return EXIT_FAILURE;
 	}
 
 	printf("Plugin:    %s\n",
@@ -507,24 +538,37 @@ main(int argc, char** argv)
 	if (!host.jack_client)
 		die("Failed to connect to JACK.\n");
 
+	host.midi_buf_size = jack_port_type_get_buffer_size(
+		host.jack_client, JACK_DEFAULT_MIDI_TYPE);
+
 	/* Instantiate the plugin */
 	host.instance = lilv_plugin_instantiate(
 		host.plugin, jack_get_sample_rate(host.jack_client), features);
 	if (!host.instance)
 		die("Failed to instantiate plugin.\n");
 
+	if (!host.buf_size_set) {
+		jalv_allocate_port_buffers(&host);
+	}
+
 	/* Apply restored state to plugin instance (if applicable) */
 	if (host.opts.load) {
 		jalv_restore_instance(&host, host.opts.load);
+	} else {
+		jalv_create_ports(&host);
 	}
 
 	/* Set instance for instance-access extension */
 	instance_feature.data = lilv_instance_get_handle(host.instance);
 
 	/* Set Jack callbacks */
-	jack_set_process_callback(host.jack_client, &jack_process_cb, (void*)(&host));
+	jack_set_process_callback(host.jack_client,
+	                          &jack_process_cb, (void*)(&host));
+	jack_set_buffer_size_callback(host.jack_client,
+	                              &jack_buffer_size_cb, (void*)(&host));
 #ifdef JALV_JACK_SESSION
-	jack_set_session_callback(host.jack_client, &jack_session_cb, (void*)(&host));
+	jack_set_session_callback(host.jack_client,
+	                          &jack_session_cb, (void*)(&host));
 #endif
 
 	/* Create Jack ports and connect plugin ports to buffers */

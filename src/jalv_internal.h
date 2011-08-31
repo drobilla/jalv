@@ -90,6 +90,7 @@ typedef struct {
 	LilvInstance*      instance;      /**< Plugin instance (shared library) */
 	SuilInstance*      ui_instance;   /**< Plugin UI instance (shared library) */
 	struct Port*       ports;         /**< Port array of size num_ports */
+	size_t             midi_buf_size; /**< Size of MIDI port buffers */
 	uint32_t           num_ports;     /**< Size of the two following arrays: */
 	uint32_t           num_props;     /**< Number of properties */
 	uint32_t           longest_sym;   /**< Longest port symbol */
@@ -104,6 +105,7 @@ typedef struct {
 	LilvNode*          optional;      /**< lv2:connectionOptional port property */
 	uint32_t           midi_event_id; /**< MIDI event class ID */
 	bool               in_state;      /**< True iff reading instance state */
+	bool               buf_size_set;  /**< True iff Jack buf size callback fired */
 } Jalv;
 
 int
