@@ -57,7 +57,7 @@ def configure(conf):
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
 
-    conf.env.append_value('CFLAGS', '-std=c99')
+    conf.env.append_unique('CFLAGS', '-std=c99')
     autowaf.define(conf, 'JALV_VERSION', JALV_VERSION)
 
     conf.write_config_header('jalv-config.h', remove=False)
