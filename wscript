@@ -30,7 +30,7 @@ def options(opt):
 def configure(conf):
     conf.load('compiler_c')
     conf.load('compiler_cxx')
-    conf.line_just = 63
+    conf.line_just = 44
     autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
 
@@ -48,11 +48,13 @@ def configure(conf):
     autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
                       atleast_version='4.0.0', mandatory=False)
 
-    autowaf.check_header(conf, 'c', 'lv2/lv2plug.in/ns/lv2core/lv2.h')
-    autowaf.check_header(conf, 'c', 'lv2/lv2plug.in/ns/ext/event/event.h')
-    autowaf.check_header(conf, 'c', 'lv2/lv2plug.in/ns/ext/event/event-helpers.h')
-    autowaf.check_header(conf, 'c', 'lv2/lv2plug.in/ns/ext/uri-map/uri-map.h')
-    autowaf.check_header(conf, 'c', 'lv2/lv2plug.in/ns/ext/persist/persist.h')
+    autowaf.check_pkg(conf, 'lv2core', uselib_store='LV2CORE')
+    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-event',
+                      uselib_store='LV2_EVENT')
+    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-uri-map',
+                      uselib_store='LV2_URI_MAP')
+    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-persist',
+                      uselib_store='LV2_PERSIST')
 
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
@@ -69,7 +71,7 @@ def configure(conf):
     print('')
 
 def build(bld):
-    libs = 'LILV SUIL JACK SERD'
+    libs = 'LILV SUIL JACK SERD LV2CORE LV2_EVENT LV2_URI_MAP LV2_PERSIST'
 
     source = 'src/jalv.c src/symap.c src/persist.c'
 
