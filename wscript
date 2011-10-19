@@ -54,7 +54,7 @@ def configure(conf):
     autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-uri-map',
                       uselib_store='LV2_URI_MAP')
     autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-persist',
-                      uselib_store='LV2_PERSIST')
+                      uselib_store='LV2_PERSIST', mandatory=False)
 
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
@@ -64,6 +64,8 @@ def configure(conf):
 
     conf.write_config_header('jalv-config.h', remove=False)
 
+    autowaf.display_msg(conf, "LV2 Persist support",
+                        conf.is_defined('HAVE_LV2_PERSIST'))
     autowaf.display_msg(conf, "Gtk 2.0 support",
                         conf.is_defined('HAVE_GTK2'))
     autowaf.display_msg(conf, "Qt 4.0 support",
