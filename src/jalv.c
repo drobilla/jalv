@@ -454,9 +454,9 @@ main(int argc, char** argv)
 
 #ifdef HAVE_LV2_UI_RESIZE
 	ui_resize.data = &host;
+#endif
 	host.ui_width  = -1;
 	host.ui_height = -1;
-#endif
 
 	sem_init(&exit_sem, 0, 0);
 	host.done = &exit_sem;
