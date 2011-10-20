@@ -34,6 +34,9 @@
 
 #include "lv2/lv2plug.in/ns/ext/event/event-helpers.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
+#ifdef HAVE_LV2_UI_RESIZE
+#    include "lv2/lv2plug.in/ns/ext/ui-resize/ui-resize.h"
+#endif
 
 #include "lilv/lilv.h"
 
@@ -67,9 +70,27 @@ static LV2_URI_Map_Feature uri_map          = { NULL, &uri_to_id };
 static const LV2_Feature   uri_map_feature  = { NS_EXT "uri-map", &uri_map };
 static LV2_Feature         instance_feature = { NS_EXT "instance-access", NULL };
 
+#ifdef HAVE_LV2_UI_RESIZE
+static int
+lv2_ui_resize(LV2_UI_Resize_Feature_Data data, int width, int height)
+{
+	Jalv* jalv = (Jalv*)data;
+	jalv->ui_width  = width;
+	jalv->ui_height = height;
+	return jalv_ui_resize(jalv, width, height);
+}
+
+LV2_UI_Resize_Feature    ui_resize         = { NULL, &lv2_ui_resize };
+static const LV2_Feature ui_resize_feature = { NS_EXT "ui-resize#UIResize", &ui_resize };
+
+const LV2_Feature* features[4] = {
+	&uri_map_feature, &instance_feature, &ui_resize_feature
+};
+#else
 const LV2_Feature* features[3] = {
 	&uri_map_feature, &instance_feature, NULL
 };
+#endif
 
 /** Abort and exit on error */
 static void
@@ -430,6 +451,12 @@ main(int argc, char** argv)
 	host.midi_event_id = uri_to_id(&host,
 	                               "http://lv2plug.in/ns/ext/event",
 	                               "http://lv2plug.in/ns/ext/midi#MidiEvent");
+
+#ifdef HAVE_LV2_UI_RESIZE
+	ui_resize.data = &host;
+	host.ui_width  = -1;
+	host.ui_height = -1;
+#endif
 
 	sem_init(&exit_sem, 0, 0);
 	host.done = &exit_sem;

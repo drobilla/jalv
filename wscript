@@ -30,7 +30,7 @@ def options(opt):
 def configure(conf):
     conf.load('compiler_c')
     conf.load('compiler_cxx')
-    conf.line_just = 44
+    conf.line_just = 46
     autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
 
@@ -55,6 +55,8 @@ def configure(conf):
                       uselib_store='LV2_URI_MAP')
     autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-persist',
                       uselib_store='LV2_PERSIST', mandatory=False)
+    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-ui-resize',
+                      uselib_store='LV2_UI_RESIZE', mandatory=False)
 
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)

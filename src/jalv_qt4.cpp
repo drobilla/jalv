@@ -39,6 +39,18 @@ jalv_native_ui_type(Jalv* jalv)
 	                    "http://lv2plug.in/ns/extensions/ui#Qt4UI");
 }
 
+int
+jalv_ui_resize(Jalv* jalv, int width, int height)
+{
+	if (jalv->ui_instance && width > 0 && height > 0) {
+		QWidget* widget = (QWidget*)suil_instance_get_widget(jalv->ui_instance);
+		if (widget) {
+			widget->resize(width, height);
+		}
+	}
+	return 0;
+}
+
 class Timer : public QTimer {
 public:
 	Timer(Jalv* j) : jalv(j) {}
@@ -58,6 +70,7 @@ jalv_open_ui(Jalv*         jalv,
 	if (instance) {
 		QWidget* widget = (QWidget*)suil_instance_get_widget(instance);
 		widget->show();
+		jalv_ui_resize(jalv, jalv->ui_width, jalv->ui_height);
 	} else {
 		QPushButton* button = new QPushButton("Close");
 		button->show();

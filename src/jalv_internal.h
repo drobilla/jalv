@@ -75,6 +75,10 @@ typedef struct {
 	JalvOptions        opts;          /**< Command-line options */
 	const char*        prog_name;     /**< Program name (argv[0]) */
 	LilvWorld*         world;         /**< Lilv World */
+#ifdef HAVE_LV2_UI_RESIZE
+	int                ui_width;      /**< Requested UI width */
+	int                ui_height;     /**< Requested UI height */
+#endif
 	SerdReader*        reader;        /**< RDF reader (for persistence) */
 	SerdWriter*        writer;        /**< RDF writer (for persistence) */
 	struct Property*   props;         /**< Restored state properties */
@@ -126,6 +130,9 @@ jalv_open_ui(Jalv*         jalv,
 
 bool
 jalv_emit_ui_events(Jalv* jalv);
+
+int
+jalv_ui_resize(Jalv* jalv, int width, int height);
 
 void
 jalv_save(Jalv* jalv, const char* dir);

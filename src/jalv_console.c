@@ -36,6 +36,12 @@ print_usage(const char* name, bool error)
 }
 
 int
+jalv_ui_resize(Jalv* jalv, int width, int height)
+{
+	return 0;
+}
+
+int
 jalv_init(int* argc, char*** argv, JalvOptions* opts)
 {
 	int a = 1;

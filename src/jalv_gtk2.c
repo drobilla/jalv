@@ -86,6 +86,17 @@ on_quit_activate(GtkWidget* widget,
 	gtk_widget_destroy(window);
 }
 
+int
+jalv_ui_resize(Jalv* jalv, int width, int height)
+{
+	if (jalv->ui_instance) {
+		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(jalv->ui_instance);
+		if (widget) {
+			gtk_widget_set_size_request(GTK_WIDGET(widget), width, height);
+		}
+	}
+	return 0;
+}
 
 int
 jalv_open_ui(Jalv*         jalv,
@@ -130,6 +141,8 @@ jalv_open_ui(Jalv*         jalv,
 
 		g_timeout_add(1000 / JALV_UI_UPDATE_HZ,
 		              (GSourceFunc)jalv_emit_ui_events, jalv);
+
+		jalv_ui_resize(jalv, jalv->ui_width, jalv->ui_height);
 	} else {
 		GtkWidget* button = gtk_button_new_with_label("Close");
 
