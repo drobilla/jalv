@@ -77,7 +77,7 @@ def configure(conf):
 def build(bld):
     libs = 'LILV SUIL JACK SERD LV2CORE LV2_EVENT LV2_URI_MAP LV2_PERSIST'
 
-    source = 'src/jalv.c src/symap.c src/persist.c'
+    source = 'src/jalv.c src/symap.c src/persist.c src/lv2_evbuf.c'
 
     # Non-GUI version
     obj = bld(features     = 'c cprogram',

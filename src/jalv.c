@@ -32,7 +32,6 @@
 #    include <jack/session.h>
 #endif
 
-#include "lv2/lv2plug.in/ns/ext/event/event-helpers.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
 #ifdef HAVE_LV2_UI_RESIZE
 #    include "lv2/lv2plug.in/ns/ext/ui-resize/ui-resize.h"
@@ -41,6 +40,8 @@
 #include "lilv/lilv.h"
 
 #include "suil/suil.h"
+
+#include "lv2_evbuf.h"
 
 sem_t exit_sem;  /**< Exit semaphore */
 
@@ -115,7 +116,7 @@ create_port(Jalv*    host,
 	port->lilv_port = lilv_plugin_get_port_by_index(host->plugin, port_index);
 	port->jack_port = NULL;
 	port->control   = 0.0f;
-	port->ev_buffer = NULL;
+	port->evbuf     = NULL;
 	port->flow      = FLOW_UNKNOWN;
 
 	/* Get the port symbol for console printing */
@@ -180,16 +181,15 @@ jalv_allocate_port_buffers(Jalv* jalv)
 		struct Port* const port = &jalv->ports[i];
 		switch (port->type) {
 		case TYPE_EVENT:
-			free(port->ev_buffer);
-			port->ev_buffer = lv2_event_buffer_new(
-				jalv->midi_buf_size, LV2_EVENT_AUDIO_STAMP);
+			lv2_evbuf_free(port->evbuf);
+			port->evbuf = lv2_evbuf_new(jalv->midi_buf_size);
 			lilv_instance_connect_port(
-				jalv->instance, i, port->ev_buffer);
+				jalv->instance, i, lv2_evbuf_get_buffer(port->evbuf));
 		default: break;
 		}
 	}
 }
-	
+
 
 /**
    Get a port structure by symbol.
@@ -288,21 +288,19 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 		} else if (host->ports[p].type == TYPE_EVENT) {
 			/* Clear Jack event port buffer. */
-			lv2_event_buffer_reset(host->ports[p].ev_buffer,
-			                       LV2_EVENT_AUDIO_STAMP,
-			                       (uint8_t*)(host->ports[p].ev_buffer + 1));
+			lv2_evbuf_reset(host->ports[p].evbuf);
 
 			if (host->ports[p].flow == FLOW_INPUT) {
 				void* buf = jack_port_get_buffer(host->ports[p].jack_port,
 				                                 nframes);
 
-				LV2_Event_Iterator iter;
-				lv2_event_begin(&iter, host->ports[p].ev_buffer);
+				LV2_Evbuf_Iterator iter;
+				lv2_evbuf_begin(&iter, host->ports[p].evbuf);
 
 				for (uint32_t i = 0; i < jack_midi_get_event_count(buf); ++i) {
 					jack_midi_event_t ev;
 					jack_midi_event_get(&ev, buf, i);
-					lv2_event_write(&iter,
+					lv2_evbuf_write(&iter,
 					                ev.time, 0,
 					                host->midi_event_id,
 					                ev.size, ev.buffer);
@@ -343,14 +341,17 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 			jack_midi_clear_buffer(buf);
 
-			LV2_Event_Iterator iter;
-			lv2_event_begin(&iter, host->ports[p].ev_buffer);
+			LV2_Evbuf_Iterator iter;
+			lv2_evbuf_begin(&iter, host->ports[p].evbuf);
 
-			for (uint32_t i = 0; i < iter.buf->event_count; ++i) {
-				uint8_t*   data;
-				LV2_Event* ev = lv2_event_get(&iter, &data);
-				jack_midi_event_write(buf, ev->frames, data, ev->size);
-				lv2_event_increment(&iter);
+			const uint32_t event_count = lv2_evbuf_get_event_count(iter.evbuf);
+			for (uint32_t i = 0; i < event_count; ++i) {
+				uint32_t frames, subframes, type, size;
+				uint8_t* data;
+				lv2_evbuf_get(&iter, &frames, &subframes,
+				              &type, &size, &data);
+				jack_midi_event_write(buf, frames, data, size);
+				lv2_evbuf_increment(&iter);
 			}
 		} else if (send_ui_updates
 		           && !host->ports[p].flow == FLOW_INPUT
@@ -647,8 +648,8 @@ main(int argc, char** argv)
 	/* Deactivate JACK */
 	jack_deactivate(host.jack_client);
 	for (uint32_t i = 0; i < host.num_ports; ++i) {
-		if (host.ports[i].ev_buffer) {
-			free(host.ports[i].ev_buffer);
+		if (host.ports[i].evbuf) {
+			lv2_evbuf_free(host.ports[i].evbuf);
 		}
 	}
 	jack_client_close(host.jack_client);

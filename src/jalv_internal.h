@@ -22,14 +22,11 @@
 #include <jack/jack.h>
 #include <jack/ringbuffer.h>
 
-#include "lv2/lv2plug.in/ns/ext/event/event.h"
-
-#include "serd/serd.h"
-
 #include "lilv/lilv.h"
-
+#include "serd/serd.h"
 #include "suil/suil.h"
 
+#include "lv2_evbuf.h"
 #include "symap.h"
 
 #ifdef __cplusplus
@@ -55,9 +52,9 @@ struct Port {
 	const LilvPort*   lilv_port;
 	enum PortType     type;
 	enum PortFlow     flow;
-	jack_port_t*      jack_port; /**< For audio/MIDI ports, otherwise NULL */
-	float             control;   /**< For control ports, otherwise 0.0f */
-	LV2_Event_Buffer* ev_buffer; /**< For MIDI ports, otherwise NULL */
+	jack_port_t*      jack_port;  /**< For audio/MIDI ports, otherwise NULL */
+	float             control;    /**< For control ports, otherwise 0.0f */
+	LV2_Evbuf*        evbuf;      /**< For MIDI ports, otherwise NULL */
 };
 
 struct Property {
