@@ -17,11 +17,10 @@
 /**
    @file symap.h API for Symap, a basic symbol map (string interner).
 
-   Particularly useful and intended for implementation of the LV2 URI map and
-   URI unmap extensions.
+   Particularly useful for implementing LV2 URI mapping.
 
-   @see <a href="http://lv2plug.in/ns/ext/uri-map/">LV2 URI Map</a>
-   @see <a href="http://lv2plug.in/ns/ext/uri-unmap/">LV2 URI Unmap</a>
+   @see <a href="http://lv2plug.in/ns/ext/urid">LV2 URID</a>
+   @see <a href="http://lv2plug.in/ns/ext/uri-map">LV2 URI Map</a>
 */
     
 #ifndef SYMAP_H

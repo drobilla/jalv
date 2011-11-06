@@ -20,15 +20,15 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+#include "lv2/lv2plug.in/ns/ext/atom/atom-buffer.h"
 #include "lv2/lv2plug.in/ns/ext/event/event.h"
 
 #include "lv2_evbuf.h"
 
 struct LV2_Evbuf_Impl {
 	union {
-		LV2_Event_Buffer      event;
-		LV2_Atom_Event_Buffer atom_event;
+		LV2_Event_Buffer event;
+		LV2_Atom_Buffer  atom_event;
 	} buf;
 	LV2_Evbuf_Type type;
 };

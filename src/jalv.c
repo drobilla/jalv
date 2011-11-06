@@ -33,6 +33,7 @@
 #endif
 
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
+#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #ifdef HAVE_LV2_UI_RESIZE
 #    include "lv2/lv2plug.in/ns/ext/ui-resize/ui-resize.h"
 #endif
@@ -53,6 +54,20 @@ typedef struct {
 	float    value;
 } ControlChange;
 
+LV2_URID
+map_uri(LV2_URID_Mapper_Handle handle,
+        const char*            uri)
+{
+	return symap_map(((Jalv*)handle)->symap, uri);
+}
+
+const char*
+unmap_uri(LV2_URID_Unmapper_Handle handle,
+          LV2_URID                 urid)
+{
+	return symap_unmap(((Jalv*)handle)->symap, urid);
+}
+
 /**
    Map function for URI map extension.
 */
@@ -69,6 +84,10 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
 
 static LV2_URI_Map_Feature uri_map          = { NULL, &uri_to_id };
 static const LV2_Feature   uri_map_feature  = { NS_EXT "uri-map", &uri_map };
+static LV2_URID_Mapper     mapper           = { NULL, &map_uri };
+static const LV2_Feature   mapper_feature   = { NS_EXT "urid#Mapper", &mapper };
+static LV2_URID_Unmapper   unmapper         = { NULL, &unmap_uri };
+static const LV2_Feature   unmapper_feature = { NS_EXT "urid#Unmapper", &unmapper };
 static LV2_Feature         instance_feature = { NS_EXT "instance-access", NULL };
 
 #ifdef HAVE_LV2_UI_RESIZE
