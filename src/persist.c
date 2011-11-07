@@ -14,8 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#define _XOPEN_SOURCE 500
-
 #include <assert.h>
 #include <locale.h>
 #include <stdio.h>
@@ -115,7 +113,7 @@ jalv_save(Jalv* jalv, const char* dir)
 	assert(!jalv->writer);
 
 	// Set numeric locale to C so snprintf %f is Turtle compatible
-	char* locale = strdup(setlocale(LC_NUMERIC, NULL));
+	char* locale = jalv_strdup(setlocale(LC_NUMERIC, NULL));
 	setlocale(LC_NUMERIC, "C");
 
 	const size_t      dir_len  = strlen(dir);

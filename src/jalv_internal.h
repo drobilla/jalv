@@ -18,6 +18,8 @@
 #define JALV_INTERNAL_H
 
 #include <semaphore.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <jack/jack.h>
 #include <jack/ringbuffer.h>
@@ -137,6 +139,15 @@ jalv_restore(Jalv* jalv, const char* dir);
 
 void
 jalv_restore_instance(Jalv* jalv, const char* dir);
+
+static inline char*
+jalv_strdup(const char* str)
+{
+	const size_t len  = strlen(str);
+	char*        copy = (char*)malloc(len + 1);
+	memcpy(copy, str, len + 1);
+	return copy;
+}
 
 #ifdef __cplusplus
 } // extern "C"

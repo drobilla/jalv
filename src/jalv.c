@@ -14,8 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#define _XOPEN_SOURCE 500
-
 #include <math.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -389,13 +387,12 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 {
 	Jalv* host = (Jalv*)arg;
 
-	char cmd[256];
-	snprintf(cmd, sizeof(cmd), "%s -u %s -l '%s'",
+	#define MAX_CMD_LEN 256
+	event->command_line = malloc(MAX_CMD_LEN);
+	snprintf(event->command_line, MAX_CMD_LEN, "%s -u %s -l '%s'",
 	         host->prog_name,
 	         event->client_uuid,
 	         event->session_dir);
-
-	event->command_line = strdup(cmd);
 
 	switch (event->type) {
 	case JackSessionSave:
@@ -563,7 +560,7 @@ main(int argc, char** argv)
 		jack_name = calloc(jack_client_name_size(), sizeof(char));
 		strncpy(jack_name, name_str, jack_client_name_size() - 1);
 	} else {
-		jack_name = strdup(name_str);
+		jack_name = jalv_strdup(name_str);
 	}
 
 	/* Connect to JACK */

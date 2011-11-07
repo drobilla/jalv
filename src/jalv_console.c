@@ -14,8 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#define _XOPEN_SOURCE 500
-
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -53,13 +51,13 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 				fprintf(stderr, "Missing argument for -u\n");
 				return 1;
 			}
-			opts->uuid = strdup((*argv)[a]);
+			opts->uuid = jalv_strdup((*argv)[a]);
 		} else if ((*argv)[a][1] == 'l') {
 			if (++a == *argc) {
 				fprintf(stderr, "Missing argument for -l\n");
 				return 1;
 			}
-			opts->load = strdup((*argv)[a]);
+			opts->load = jalv_strdup((*argv)[a]);
 		} else {
 			fprintf(stderr, "Unknown option %s\n", (*argv)[a]);
 			return print_usage((*argv)[0], true);
