@@ -31,12 +31,12 @@ typedef enum {
 	/**
 	   An old ev:EventBuffer (LV2_Event_Buffer).
 	*/
-	LV2_EVBUF_EVENT_BUFFER,
+	LV2_EVBUF_EVENT,
 
 	/**
 	   A new atom:EventBuffer (LV2_Atom_Event_Buffer).
 	*/
-	LV2_EVBUF_ATOM_EVENT_BUFFER
+	LV2_EVBUF_ATOM
 } LV2_Evbuf_Type;
 
 /**
@@ -56,7 +56,7 @@ typedef struct {
    Allocate a new, empty event buffer.
 */
 LV2_Evbuf*
-lv2_evbuf_new(uint32_t capacity);
+lv2_evbuf_new(uint32_t capacity, LV2_Evbuf_Type type);
 
 /**
    Free an event buffer allocated with lv2_evbuf_new.
@@ -71,6 +71,12 @@ lv2_evbuf_free(LV2_Evbuf* evbuf);
 */
 void
 lv2_evbuf_reset(LV2_Evbuf* evbuf);
+
+/**
+   Return the total padded size of the events stored in the buffer.
+*/
+uint32_t
+lv2_evbuf_get_size(LV2_Evbuf* evbuf);
 
 /**
    Return the number of events stored in the buffer.
@@ -89,24 +95,23 @@ lv2_evbuf_get_buffer(LV2_Evbuf* evbuf);
    Reset an iterator to point to the start of @a buf.
    @return True if @a iter is valid, otherwise false (buffer is empty)
 */
-bool
-lv2_evbuf_begin(LV2_Evbuf_Iterator* iter,
-                LV2_Evbuf*          evbuf);
+LV2_Evbuf_Iterator
+lv2_evbuf_begin(LV2_Evbuf* evbuf);
 
 /**
    Check if @a iter is valid.
    @return True if @a iter is valid, otherwise false (past end of buffer)
 */
 bool
-lv2_evbuf_is_valid(LV2_Evbuf_Iterator* iter);
+lv2_evbuf_is_valid(LV2_Evbuf_Iterator iter);
 
 /**
    Advance @a iter forward one event.
    @a iter must be valid.
    @return True if @a iter is valid, otherwise false (reached end of buffer)
 */
-bool
-lv2_evbuf_increment(LV2_Evbuf_Iterator* iter);
+LV2_Evbuf_Iterator
+lv2_evbuf_next(LV2_Evbuf_Iterator iter);
 
 /**
    Dereference an event iterator (i.e. get the event currently pointed to).
@@ -117,12 +122,12 @@ lv2_evbuf_increment(LV2_Evbuf_Iterator* iter);
    @return True on success.
 */
 bool
-lv2_evbuf_get(LV2_Evbuf_Iterator* iter,
-              uint32_t*           frames,
-              uint32_t*           subframes,
-              uint32_t*           type,
-              uint32_t*           size,
-              uint8_t**           data);
+lv2_evbuf_get(LV2_Evbuf_Iterator iter,
+              uint32_t*          frames,
+              uint32_t*          subframes,
+              uint32_t*          type,
+              uint32_t*          size,
+              uint8_t**          data);
 
 /**
    Write an event at @a iter.

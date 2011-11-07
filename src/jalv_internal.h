@@ -57,6 +57,7 @@ struct Port {
 	jack_port_t*      jack_port;  /**< For audio/MIDI ports, otherwise NULL */
 	float             control;    /**< For control ports, otherwise 0.0f */
 	LV2_Evbuf*        evbuf;      /**< For MIDI ports, otherwise NULL */
+	bool              old_api;    /**< True for event, false for atom */
 };
 
 struct Property {
@@ -102,6 +103,7 @@ typedef struct {
 	LilvNode*          control_class; /**< Control port class (URI) */
 	LilvNode*          audio_class;   /**< Audio port class (URI) */
 	LilvNode*          event_class;   /**< Event port class (URI) */
+	LilvNode*          aevent_class;  /**< Atom event port class (URI) */
 	LilvNode*          midi_class;    /**< MIDI event class (URI) */
 	LilvNode*          optional;      /**< lv2:connectionOptional port property */
 	uint32_t           midi_event_id; /**< MIDI event class ID */

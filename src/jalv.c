@@ -42,6 +42,8 @@
 
 #include "lv2_evbuf.h"
 
+#define NS_ATOM "http://lv2plug.in/ns/ext/atom#"
+
 sem_t exit_sem;  /**< Exit semaphore */
 
 /**
@@ -101,12 +103,12 @@ lv2_ui_resize(LV2_UI_Resize_Feature_Data data, int width, int height)
 LV2_UI_Resize_Feature    ui_resize         = { NULL, &lv2_ui_resize };
 static const LV2_Feature ui_resize_feature = { NS_EXT "ui-resize#UIResize", &ui_resize };
 
-const LV2_Feature* features[4] = {
-	&uri_map_feature, &instance_feature, &ui_resize_feature
+const LV2_Feature* features[5] = {
+	&uri_map_feature, &mapper_feature, &instance_feature, &ui_resize_feature
 };
 #else
-const LV2_Feature* features[3] = {
-	&uri_map_feature, &instance_feature, NULL
+const LV2_Feature* features[4] = {
+	&uri_map_feature, &mapper_feature, &instance_feature, NULL
 };
 #endif
 
@@ -161,6 +163,10 @@ create_port(Jalv*    host,
 		port->type = TYPE_AUDIO;
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->event_class)) {
 		port->type = TYPE_EVENT;
+		port->old_api = true;
+	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->aevent_class)) {
+		port->type = TYPE_EVENT;
+		port->old_api = false;
 	} else if (!optional) {
 		die("Mandatory port has unknown type (neither control nor audio nor event)");
 	}
@@ -199,14 +205,15 @@ jalv_allocate_port_buffers(Jalv* jalv)
 		switch (port->type) {
 		case TYPE_EVENT:
 			lv2_evbuf_free(port->evbuf);
-			port->evbuf = lv2_evbuf_new(jalv->midi_buf_size);
+			port->evbuf = lv2_evbuf_new(
+				jalv->midi_buf_size,
+				port->old_api ? LV2_EVBUF_EVENT : LV2_EVBUF_ATOM);
 			lilv_instance_connect_port(
 				jalv->instance, i, lv2_evbuf_get_buffer(port->evbuf));
 		default: break;
 		}
 	}
 }
-
 
 /**
    Get a port structure by symbol.
@@ -311,9 +318,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				void* buf = jack_port_get_buffer(host->ports[p].jack_port,
 				                                 nframes);
 
-				LV2_Evbuf_Iterator iter;
-				lv2_evbuf_begin(&iter, host->ports[p].evbuf);
-
+				LV2_Evbuf_Iterator iter = lv2_evbuf_begin(host->ports[p].evbuf);
 				for (uint32_t i = 0; i < jack_midi_get_event_count(buf); ++i) {
 					jack_midi_event_t ev;
 					jack_midi_event_get(&ev, buf, i);
@@ -358,17 +363,15 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 			jack_midi_clear_buffer(buf);
 
-			LV2_Evbuf_Iterator iter;
-			lv2_evbuf_begin(&iter, host->ports[p].evbuf);
-
-			const uint32_t event_count = lv2_evbuf_get_event_count(iter.evbuf);
+			LV2_Evbuf_Iterator iter        = lv2_evbuf_begin(host->ports[p].evbuf);
+			const uint32_t     event_count = lv2_evbuf_get_event_count(iter.evbuf);
 			for (uint32_t i = 0; i < event_count; ++i) {
 				uint32_t frames, subframes, type, size;
 				uint8_t* data;
-				lv2_evbuf_get(&iter, &frames, &subframes,
+				lv2_evbuf_get(iter, &frames, &subframes,
 				              &type, &size, &data);
 				jack_midi_event_write(buf, frames, data, size);
-				lv2_evbuf_increment(&iter);
+				iter = lv2_evbuf_next(iter);
 			}
 		} else if (send_ui_updates
 		           && !host->ports[p].flow == FLOW_INPUT
@@ -465,6 +468,7 @@ main(int argc, char** argv)
 
 	host.symap = symap_new();
 	uri_map.callback_data = &host;
+	mapper.handle = &host;
 	host.midi_event_id = uri_to_id(&host,
 	                               "http://lv2plug.in/ns/ext/event",
 	                               "http://lv2plug.in/ns/ext/midi#MidiEvent");
@@ -493,6 +497,7 @@ main(int argc, char** argv)
 	host.control_class = lilv_new_uri(world, LILV_URI_CONTROL_PORT);
 	host.audio_class   = lilv_new_uri(world, LILV_URI_AUDIO_PORT);
 	host.event_class   = lilv_new_uri(world, LILV_URI_EVENT_PORT);
+	host.aevent_class  = lilv_new_uri(world, NS_ATOM "EventPort");
 	host.midi_class    = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
 	host.optional      = lilv_new_uri(world, LILV_NS_LV2
 	                                  "connectionOptional");
