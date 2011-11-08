@@ -118,11 +118,11 @@ symap_search(const Symap* map, const char* sym, bool* exact)
 			}
 			upper = i - 1;
 		} else {
-			lower = i + 1;
+			lower = ++i;
 		}
 	}
 
-	assert(strcmp(map->symbols[map->index[i] - 1], sym) > 0);
+	assert(!*exact || strcmp(map->symbols[map->index[i] - 1], sym) > 0);
 	return i;
 }
 
