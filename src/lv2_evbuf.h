@@ -92,11 +92,16 @@ void*
 lv2_evbuf_get_buffer(LV2_Evbuf* evbuf);
 
 /**
-   Reset an iterator to point to the start of @a buf.
-   @return True if @a iter is valid, otherwise false (buffer is empty)
+   Return an iterator to the start of @a buf.
 */
 LV2_Evbuf_Iterator
 lv2_evbuf_begin(LV2_Evbuf* evbuf);
+
+/**
+   Return an iterator to the end of @a buf.
+*/
+LV2_Evbuf_Iterator
+lv2_evbuf_end(LV2_Evbuf* evbuf);
 
 /**
    Check if @a iter is valid.

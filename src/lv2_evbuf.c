@@ -119,6 +119,14 @@ lv2_evbuf_begin(LV2_Evbuf* evbuf)
 	return iter;
 }
 
+LV2_Evbuf_Iterator
+lv2_evbuf_end(LV2_Evbuf* evbuf)
+{
+	const size_t             size = lv2_evbuf_get_size(evbuf);
+	const LV2_Evbuf_Iterator iter = { evbuf, lv2_atom_pad_size(size) };
+	return iter;
+}
+
 bool
 lv2_evbuf_is_valid(LV2_Evbuf_Iterator iter)
 {

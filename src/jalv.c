@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "jalv_internal.h"
 #include "jalv-config.h"
@@ -30,6 +31,7 @@
 #    include <jack/session.h>
 #endif
 
+#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #ifdef HAVE_LV2_UI_RESIZE
@@ -43,6 +45,7 @@
 #include "lv2_evbuf.h"
 
 #define NS_ATOM "http://lv2plug.in/ns/ext/atom#"
+#define NS_MIDI "http://lv2plug.in/ns/ext/midi#"
 
 sem_t exit_sem;  /**< Exit semaphore */
 
@@ -51,18 +54,23 @@ sem_t exit_sem;  /**< Exit semaphore */
 */
 typedef struct {
 	uint32_t index;
-	float    value;
+	uint32_t protocol;
+	uint32_t size;
+	uint8_t  body[];
 } ControlChange;
 
 LV2_URID
-map_uri(LV2_URID_Mapper_Handle handle,
+map_uri(LV2_URID_Map_Handle handle,
         const char*            uri)
 {
-	return symap_map(((Jalv*)handle)->symap, uri);
+	//return symap_map(((Jalv*)handle)->symap, uri);
+	const LV2_URID id = symap_map(((Jalv*)handle)->symap, uri);
+	printf("MAP %s => %u\n", uri, id);
+	return id;
 }
 
 const char*
-unmap_uri(LV2_URID_Unmapper_Handle handle,
+unmap_uri(LV2_URID_Unmap_Handle handle,
           LV2_URID                 urid)
 {
 	return symap_unmap(((Jalv*)handle)->symap, urid);
@@ -76,18 +84,20 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
           const char*               map,
           const char*               uri)
 {
-	Jalv* host = (Jalv*)callback_data;
-	return symap_map(host->symap, uri);
+	//return symap_map(((Jalv*)callback_data)->symap, uri);
+	const LV2_URID id = symap_map(((Jalv*)callback_data)->symap, uri);
+	printf("MAP %s => %u\n", uri, id);
+	return id;
 }
 
 #define NS_EXT "http://lv2plug.in/ns/ext/"
 
 static LV2_URI_Map_Feature uri_map          = { NULL, &uri_to_id };
 static const LV2_Feature   uri_map_feature  = { NS_EXT "uri-map", &uri_map };
-static LV2_URID_Mapper     mapper           = { NULL, &map_uri };
-static const LV2_Feature   mapper_feature   = { NS_EXT "urid#Mapper", &mapper };
-static LV2_URID_Unmapper   unmapper         = { NULL, &unmap_uri };
-static const LV2_Feature   unmapper_feature = { NS_EXT "urid#Unmapper", &unmapper };
+static LV2_URID_Map     map           = { NULL, &map_uri };
+static const LV2_Feature   map_feature   = { NS_EXT "urid#map", &map };
+static LV2_URID_Unmap   unmap         = { NULL, &unmap_uri };
+static const LV2_Feature   unmap_feature = { NS_EXT "urid#unmap", &unmap };
 static LV2_Feature         instance_feature = { NS_EXT "instance-access", NULL };
 
 #ifdef HAVE_LV2_UI_RESIZE
@@ -104,11 +114,11 @@ LV2_UI_Resize_Feature    ui_resize         = { NULL, &lv2_ui_resize };
 static const LV2_Feature ui_resize_feature = { NS_EXT "ui-resize#UIResize", &ui_resize };
 
 const LV2_Feature* features[5] = {
-	&uri_map_feature, &mapper_feature, &instance_feature, &ui_resize_feature
+	&uri_map_feature, &map_feature, &instance_feature, &ui_resize_feature
 };
 #else
 const LV2_Feature* features[4] = {
-	&uri_map_feature, &mapper_feature, &instance_feature, NULL
+	&uri_map_feature, &map_feature, &instance_feature, NULL
 };
 #endif
 
@@ -335,11 +345,29 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	if (host->ui) {
 		ControlChange ev;
 		size_t        ev_read_size = jack_ringbuffer_read_space(host->ui_events);
-		for (size_t i = 0; i < ev_read_size; i += sizeof(ev)) {
+		for (size_t i = 0; i < ev_read_size; i += sizeof(ev) + ev.size) {
 			jack_ringbuffer_read(host->ui_events, (char*)&ev, sizeof(ev));
-			host->ports[ev.index].control = ev.value;
+			char body[ev.size];
+			jack_ringbuffer_read(host->ui_events, body, ev.size);
+			if (ev.protocol == 0) {
+				assert(ev.size == sizeof(float));
+				host->ports[ev.index].control = *(float*)body;
+			} else if (ev.protocol == host->atom_prot_id) {
+				printf("ATOM UI READ\n");
+				for (uint32_t i = 0; i < ev.size; ++i) {
+					printf("%c", body[i]);
+				}
+				printf("\n");
+				LV2_Evbuf_Iterator i = lv2_evbuf_end(host->ports[ev.index].evbuf);
+				const LV2_Atom* const atom = (const LV2_Atom*)body;
+				lv2_evbuf_write(&i, nframes, 0, atom->type, atom->size, atom->body);
+			} else {
+				fprintf(stderr, "error: Unknown control change protocol %d\n",
+				        ev.protocol);
+			}
 		}
 	}
+
 
 	/* Run plugin for this cycle */
 	lilv_instance_run(host->instance, nframes);
@@ -376,8 +404,13 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 		} else if (send_ui_updates
 		           && !host->ports[p].flow == FLOW_INPUT
 		           && host->ports[p].type == TYPE_CONTROL) {
-			const ControlChange ev = { p, host->ports[p].control };
-			jack_ringbuffer_write(host->plugin_events, (const char*)&ev, sizeof(ev));
+			char buf[sizeof(ControlChange) + sizeof(float)];
+			ControlChange* ev = (ControlChange*)buf;
+			ev->index    = p;
+			ev->protocol = 0;
+			ev->size     = sizeof(float);
+			*(float*)ev->body = host->ports[p].control;
+			jack_ringbuffer_write(host->plugin_events, buf, sizeof(buf));
 		}
 	}
 
@@ -417,29 +450,52 @@ static void
 lv2_ui_write(SuilController controller,
              uint32_t       port_index,
              uint32_t       buffer_size,
-             uint32_t       format,
+             uint32_t       protocol,
              const void*    buffer)
 {
-	if (format != 0) {
+	Jalv* host = (Jalv*)controller;
+
+	if (protocol != 0 && protocol != host->atom_prot_id) {
+		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
+		        protocol, unmap.unmap(host, protocol));
 		return;
 	}
 
-	Jalv* host = (Jalv*)controller;
+	if (protocol == host->atom_prot_id) {
+		printf("ATOM UI WRITE: %d\n", protocol);
+		for (uint32_t i = 0; i < buffer_size; ++i) {
+			printf("%c", ((uint8_t*)buffer)[i]);
+		}
+		printf("\n");
+	}
 
-	const ControlChange ev = { port_index, *(float*)buffer };
-	jack_ringbuffer_write(host->ui_events, (const char*)&ev, sizeof(ev));
+	//const ControlChange ev = { port_index, *(float*)buffer };
+	//jack_ringbuffer_write(host->ui_events, (const char*)&ev, sizeof(ev));
+	char buf[sizeof(ControlChange) + buffer_size];
+	ControlChange* ev = (ControlChange*)buf;
+	ev->index    = port_index;
+	ev->protocol = protocol;
+	ev->size     = buffer_size;
+	memcpy(ev->body, buffer, buffer_size);
+	printf("WRITE: ");
+	for (uint32_t i = 0; i < sizeof(buf); ++i) {
+		printf("%c", buf[i]);
+	}
+	jack_ringbuffer_write(host->ui_events, buf, sizeof(buf));
 }
 
 bool
 jalv_emit_ui_events(Jalv* host)
 {
+	#if 0
 	ControlChange ev;
 	size_t        ev_read_size = jack_ringbuffer_read_space(host->plugin_events);
-	for (size_t i = 0; i < ev_read_size; i += sizeof(ev)) {
+	for (size_t i = 0; i < ev_read_size; i += sizeof(ev) + ev.size) {
 		jack_ringbuffer_read(host->plugin_events, (char*)&ev, sizeof(ev));
 		suil_instance_port_event(host->ui_instance, ev.index,
 		                         sizeof(float), 0, &ev.value);
 	}
+	#endif
 
 	return true;
 }
@@ -468,10 +524,12 @@ main(int argc, char** argv)
 
 	host.symap = symap_new();
 	uri_map.callback_data = &host;
-	mapper.handle = &host;
+	map.handle = &host;
+	unmap.handle = &host;
 	host.midi_event_id = uri_to_id(&host,
 	                               "http://lv2plug.in/ns/ext/event",
-	                               "http://lv2plug.in/ns/ext/midi#MidiEvent");
+	                               NS_MIDI "MidiEvent");
+	host.atom_prot_id = map.map(map.handle, NS_ATOM "atomTransfer");
 
 #ifdef HAVE_LV2_UI_RESIZE
 	ui_resize.data = &host;

@@ -107,6 +107,7 @@ typedef struct {
 	LilvNode*          midi_class;    /**< MIDI event class (URI) */
 	LilvNode*          optional;      /**< lv2:connectionOptional port property */
 	uint32_t           midi_event_id; /**< MIDI event class ID */
+	uint32_t           atom_prot_id;  /**< Atom protocol ID */
 	bool               in_state;      /**< True iff reading instance state */
 	bool               buf_size_set;  /**< True iff Jack buf size callback fired */
 } Jalv;
