@@ -53,8 +53,8 @@ def configure(conf):
                       uselib_store='LV2_EVENT')
     autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-uri-map',
                       uselib_store='LV2_URI_MAP')
-    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-persist',
-                      uselib_store='LV2_PERSIST', mandatory=False)
+    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-state',
+                      uselib_store='LV2_STATE', mandatory=False)
     autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-ui-resize',
                       uselib_store='LV2_UI_RESIZE', mandatory=False)
 
@@ -66,8 +66,8 @@ def configure(conf):
 
     conf.write_config_header('jalv-config.h', remove=False)
 
-    autowaf.display_msg(conf, "LV2 Persist support",
-                        conf.is_defined('HAVE_LV2_PERSIST'))
+    autowaf.display_msg(conf, "LV2 State support",
+                        conf.is_defined('HAVE_LV2_STATE'))
     autowaf.display_msg(conf, "Gtk 2.0 support",
                         conf.is_defined('HAVE_GTK2'))
     autowaf.display_msg(conf, "Qt 4.0 support",
@@ -75,7 +75,7 @@ def configure(conf):
     print('')
 
 def build(bld):
-    libs = 'LILV SUIL JACK SERD LV2CORE LV2_EVENT LV2_URI_MAP LV2_PERSIST'
+    libs = 'LILV SUIL JACK SERD LV2CORE LV2_EVENT LV2_URI_MAP LV2_STATE'
 
     source = 'src/jalv.c src/symap.c src/persist.c src/lv2_evbuf.c'
 

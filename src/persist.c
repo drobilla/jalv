@@ -20,18 +20,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_LV2_PERSIST
-#    include "lv2/lv2plug.in/ns/ext/persist/persist.h"
+#ifdef HAVE_LV2_STATE
+#    include "lv2/lv2plug.in/ns/ext/state/state.h"
 #endif
 
 #include "jalv-config.h"
 #include "jalv_internal.h"
 
-#define NS_JALV    (const uint8_t*)"http://drobilla.net/ns/jalv#"
-#define NS_LV2     (const uint8_t*)"http://lv2plug.in/ns/lv2core#"
-#define NS_XSD     (const uint8_t*)"http://www.w3.org/2001/XMLSchema#"
-#define NS_ATOM    (const uint8_t*)"http://lv2plug.in/ns/ext/atom#"
-#define NS_PERSIST (const uint8_t*)"http://lv2plug.in/ns/ext/persist#"
+#define NS_JALV  (const uint8_t*)"http://drobilla.net/ns/jalv#"
+#define NS_LV2   (const uint8_t*)"http://lv2plug.in/ns/lv2core#"
+#define NS_XSD   (const uint8_t*)"http://www.w3.org/2001/XMLSchema#"
+#define NS_ATOM  (const uint8_t*)"http://lv2plug.in/ns/ext/atom#"
+#define NS_STATE (const uint8_t*)"http://lv2plug.in/ns/ext/state#"
 
 #define USTR(s) ((const uint8_t*)s)
 
@@ -43,7 +43,7 @@ property_cmp(const void* a, const void* b)
 	return pa->key - pb->key;
 }
 
-#ifdef HAVE_LV2_PERSIST
+#ifdef HAVE_LV2_STATE
 static int
 store_callback(void*       host_data,
                uint32_t    key,
@@ -98,7 +98,7 @@ retrieve_callback(void*     host_data,
 	return NULL;
 	
 }
-#endif  // HAVE_LV2_PERSIST
+#endif  // HAVE_LV2_STATE
 
 static size_t
 file_sink(const void* buf, size_t len, void* stream)
@@ -124,19 +124,19 @@ jalv_save(Jalv* jalv, const char* dir)
 	snprintf(path, path_len + 1, "%s%s", dir, filename);
 	FILE* out_fd = fopen(path, "w");
 
-	SerdNode jalv_name      = serd_node_from_string(SERD_LITERAL, USTR("jalv"));
-	SerdNode jalv_prefix    = serd_node_from_string(SERD_URI, NS_JALV);
-	SerdNode lv2_name       = serd_node_from_string(SERD_LITERAL, USTR("lv2"));
-	SerdNode lv2_prefix     = serd_node_from_string(SERD_URI, NS_LV2);
-	SerdNode persist_name   = serd_node_from_string(SERD_LITERAL, USTR("persist"));
-	SerdNode persist_prefix = serd_node_from_string(SERD_URI, NS_PERSIST);
-	SerdNode atom_name      = serd_node_from_string(SERD_LITERAL, USTR("atom"));
-	SerdNode atom_prefix    = serd_node_from_string(SERD_URI, NS_ATOM);
-	SerdNode jalv_plugin    = serd_node_from_string(SERD_URI, NS_JALV "plugin");
-	SerdNode jalv_value     = serd_node_from_string(SERD_URI, (NS_JALV "value"));
-	SerdNode lv2_symbol     = serd_node_from_string(SERD_URI, (NS_LV2 "symbol"));
-	SerdNode xsd_decimal    = serd_node_from_string(SERD_URI, (NS_XSD "decimal"));
-	SerdNode jalv_port      = serd_node_from_string(SERD_URI, (NS_JALV "port"));
+	SerdNode jalv_name    = serd_node_from_string(SERD_LITERAL, USTR("jalv"));
+	SerdNode jalv_prefix  = serd_node_from_string(SERD_URI, NS_JALV);
+	SerdNode lv2_name     = serd_node_from_string(SERD_LITERAL, USTR("lv2"));
+	SerdNode lv2_prefix   = serd_node_from_string(SERD_URI, NS_LV2);
+	SerdNode state_name   = serd_node_from_string(SERD_LITERAL, USTR("state"));
+	SerdNode state_prefix = serd_node_from_string(SERD_URI, NS_STATE);
+	SerdNode atom_name    = serd_node_from_string(SERD_LITERAL, USTR("atom"));
+	SerdNode atom_prefix  = serd_node_from_string(SERD_URI, NS_ATOM);
+	SerdNode jalv_plugin  = serd_node_from_string(SERD_URI, NS_JALV "plugin");
+	SerdNode jalv_value   = serd_node_from_string(SERD_URI, (NS_JALV "value"));
+	SerdNode lv2_symbol   = serd_node_from_string(SERD_URI, (NS_LV2 "symbol"));
+	SerdNode xsd_decimal  = serd_node_from_string(SERD_URI, (NS_XSD "decimal"));
+	SerdNode jalv_port    = serd_node_from_string(SERD_URI, (NS_JALV "port"));
 
 	SerdNode plugin_uri = serd_node_from_string(SERD_URI, USTR(lilv_node_as_uri(
 			               lilv_plugin_get_uri(jalv->plugin))));
@@ -156,7 +156,7 @@ jalv_save(Jalv* jalv, const char* dir)
 	serd_writer_set_prefix(jalv->writer, &atom_name, &atom_prefix);
 	serd_writer_set_prefix(jalv->writer, &jalv_name, &jalv_prefix);
 	serd_writer_set_prefix(jalv->writer, &lv2_name, &lv2_prefix);
-	serd_writer_set_prefix(jalv->writer, &persist_name, &persist_prefix);
+	serd_writer_set_prefix(jalv->writer, &state_name, &state_prefix);
 
 	// <> jalv:plugin <http://example.org/plugin>
 	serd_writer_write_statement(jalv->writer, 0, NULL,
@@ -200,33 +200,34 @@ jalv_save(Jalv* jalv, const char* dir)
 		serd_writer_end_anon(jalv->writer, &blank);
 	}
 
-#ifdef HAVE_LV2_PERSIST
+#ifdef HAVE_LV2_STATE
 	assert(jalv->symap);
-	const LV2_Persist* persist = (const LV2_Persist*)
-		lilv_instance_get_extension_data(jalv->instance,
-		                                 "http://lv2plug.in/ns/ext/persist");
+	const LV2_State_Interface* state = (const LV2_State_Interface*)
+		lilv_instance_get_extension_data(jalv->instance, LV2_STATE_INTERFACE_URI);
 
-	if (persist) {
-		SerdNode persist_instanceState = serd_node_from_string(
-			SERD_URI, (NS_PERSIST "instanceState"));
+	if (state) {
+		SerdNode state_instanceState = serd_node_from_string(
+			SERD_URI, (NS_STATE "instanceState"));
 
-		// [] persist:instanceState [
+		// [] state:instanceState [
 		jalv->state_node = serd_node_from_string(SERD_BLANK, USTR("state"));
 		serd_writer_write_statement(jalv->writer, SERD_ANON_O_BEGIN, NULL,
 		                            &subject,
-		                            &persist_instanceState,
+		                            &state_instanceState,
 		                            &jalv->state_node, NULL, NULL);
 
 		// Write properties to state blank node
-		persist->save(lilv_instance_get_handle(jalv->instance),
-		              store_callback,
-		              jalv);
+		state->save(lilv_instance_get_handle(jalv->instance),
+		            store_callback,
+		            jalv,
+		            LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE,
+		            NULL);
 
 		// ]
 		serd_writer_end_anon(jalv->writer, &jalv->state_node);
 		jalv->state_node = SERD_NODE_NULL;
 	}
-#endif  // HAVE_LV2_PERSIST
+#endif  // HAVE_LV2_STATE
 
 	// Close state file and clean up Serd
 	serd_writer_free(jalv->writer);
@@ -282,7 +283,7 @@ on_statement(void*              handle,
 		} else {
 			fprintf(stderr, "error: Failed to find port `%s'\n", sym);
 		}
-	} else if (!strcmp((const char*)predicate->buf, "persist:instanceState")) {
+	} else if (!strcmp((const char*)predicate->buf, "state:instanceState")) {
 		jalv->in_state = true;
 	}
 	
@@ -325,14 +326,14 @@ jalv_restore(Jalv* jalv, const char* dir)
 void
 jalv_restore_instance(Jalv* jalv, const char* dir)
 {
-#ifdef HAVE_LV2_PERSIST
-	const LV2_Persist* persist = (const LV2_Persist*)
-		lilv_instance_get_extension_data(jalv->instance,
-		                                 "http://lv2plug.in/ns/ext/persist");
-	if (persist) {
-		persist->restore(lilv_instance_get_handle(jalv->instance),
-		                 retrieve_callback,
-		                 jalv);
+#ifdef HAVE_LV2_STATE
+	const LV2_State_Interface* state_iface = (const LV2_State_Interface*)
+		lilv_instance_get_extension_data(jalv->instance, LV2_STATE_INTERFACE_URI);
+
+	if (state_iface) {
+		state_iface->restore(lilv_instance_get_handle(jalv->instance),
+		                     retrieve_callback,
+		                     jalv, 0, NULL);
 	}
-#endif  // HAVE_LV2_PERSIST
+#endif  // HAVE_LV2_STATE
 }

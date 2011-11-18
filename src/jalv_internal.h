@@ -77,10 +77,10 @@ typedef struct {
 	LilvWorld*         world;         /**< Lilv World */
 	int                ui_width;      /**< Requested UI width */
 	int                ui_height;     /**< Requested UI height */
-	SerdReader*        reader;        /**< RDF reader (for persistence) */
-	SerdWriter*        writer;        /**< RDF writer (for persistence) */
+	SerdReader*        reader;        /**< RDF reader (for state) */
+	SerdWriter*        writer;        /**< RDF writer (for state) */
 	struct Property*   props;         /**< Restored state properties */
-	SerdNode           state_node;    /**< Instance state node (for persistence) */
+	SerdNode           state_node;    /**< Instance state node (for state) */
 	SerdNode           last_sym;      /**< Last port symbol encountered in state */
 	Symap*             symap;         /**< Symbol (URI) map */
 	jack_client_t*     jack_client;   /**< Jack client */
