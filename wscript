@@ -51,6 +51,8 @@ def configure(conf):
     autowaf.check_pkg(conf, 'lv2core', uselib_store='LV2CORE')
     autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-event',
                       uselib_store='LV2_EVENT')
+    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-atom',
+                      uselib_store='LV2_ATOM')
     autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-uri-map',
                       uselib_store='LV2_URI_MAP')
     autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-state',
@@ -75,7 +77,7 @@ def configure(conf):
     print('')
 
 def build(bld):
-    libs = 'LILV SUIL JACK SERD LV2CORE LV2_EVENT LV2_URI_MAP LV2_STATE'
+    libs = 'LILV SUIL JACK SERD LV2CORE LV2_EVENT LV2_ATOM LV2_URI_MAP LV2_STATE'
 
     source = 'src/jalv.c src/symap.c src/persist.c src/lv2_evbuf.c'
 
