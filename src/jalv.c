@@ -481,6 +481,7 @@ lv2_ui_write(SuilController controller,
 	for (uint32_t i = 0; i < sizeof(buf); ++i) {
 		printf("%c", buf[i]);
 	}
+	printf("\n");
 	jack_ringbuffer_write(host->ui_events, buf, sizeof(buf));
 }
 
