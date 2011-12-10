@@ -707,6 +707,10 @@ main(int argc, char** argv)
 			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(host.ui))),
 			features);
 
+		if (!host.ui_instance) {
+			die("Failed to instantiate plugin.\n");
+		}
+
 		/* Set initial control values for UI */
 		for (uint32_t i = 0; i < host.num_ports; ++i) {
 			if (host.ports[i].type == TYPE_CONTROL) {
