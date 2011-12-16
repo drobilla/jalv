@@ -46,6 +46,7 @@
 
 #define NS_ATOM "http://lv2plug.in/ns/ext/atom#"
 #define NS_MIDI "http://lv2plug.in/ns/ext/midi#"
+#define NS_PSET "http://lv2plug.in/ns/ext/presets#"
 
 sem_t exit_sem;  /**< Exit semaphore */
 
@@ -144,8 +145,9 @@ create_port(Jalv*    host,
 
 	port->lilv_port = lilv_plugin_get_port_by_index(host->plugin, port_index);
 	port->jack_port = NULL;
-	port->control   = 0.0f;
 	port->evbuf     = NULL;
+	port->index     = port_index;
+	port->control   = 0.0f;
 	port->flow      = FLOW_UNKNOWN;
 
 	/* Get the port symbol for console printing */
@@ -446,12 +448,12 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 }
 #endif /* JALV_JACK_SESSION */
 
-static void
-lv2_ui_write(SuilController controller,
-             uint32_t       port_index,
-             uint32_t       buffer_size,
-             uint32_t       protocol,
-             const void*    buffer)
+void
+jalv_ui_write(SuilController controller,
+              uint32_t       port_index,
+              uint32_t       buffer_size,
+              uint32_t       protocol,
+              const void*    buffer)
 {
 	Jalv* host = (Jalv*)controller;
 
@@ -477,11 +479,13 @@ lv2_ui_write(SuilController controller,
 	ev->protocol = protocol;
 	ev->size     = buffer_size;
 	memcpy(ev->body, buffer, buffer_size);
+	#if 0
 	printf("WRITE: ");
 	for (uint32_t i = 0; i < sizeof(buf); ++i) {
 		printf("%c", buf[i]);
 	}
 	printf("\n");
+	#endif
 	jack_ringbuffer_write(host->ui_events, buf, sizeof(buf));
 }
 
@@ -558,6 +562,8 @@ main(int argc, char** argv)
 	host.event_class   = lilv_new_uri(world, LILV_URI_EVENT_PORT);
 	host.aevent_class  = lilv_new_uri(world, NS_ATOM "EventPort");
 	host.midi_class    = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
+	host.preset_class  = lilv_new_uri(world, NS_PSET "Preset");
+	host.label_pred    = lilv_new_uri(world, LILV_NS_RDFS "label");
 	host.optional      = lilv_new_uri(world, LILV_NS_LV2
 	                                  "connectionOptional");
 
@@ -694,7 +700,7 @@ main(int argc, char** argv)
 	SuilHost* ui_host = NULL;
 	if (host.ui) {
 		/* Instantiate UI */
-		ui_host = suil_host_new(lv2_ui_write, NULL, NULL, NULL);
+		ui_host = suil_host_new(jalv_ui_write, NULL, NULL, NULL);
 
 		host.ui_instance = suil_instance_new(
 			ui_host,
@@ -755,6 +761,8 @@ main(int argc, char** argv)
 	lilv_node_free(host.audio_class);
 	lilv_node_free(host.event_class);
 	lilv_node_free(host.midi_class);
+	lilv_node_free(host.preset_class);
+	lilv_node_free(host.label_pred);
 	lilv_node_free(host.optional);
 	symap_free(host.symap);
 	suil_instance_free(host.ui_instance);

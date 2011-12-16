@@ -55,8 +55,9 @@ struct Port {
 	enum PortType     type;
 	enum PortFlow     flow;
 	jack_port_t*      jack_port;  /**< For audio/MIDI ports, otherwise NULL */
-	float             control;    /**< For control ports, otherwise 0.0f */
 	LV2_Evbuf*        evbuf;      /**< For MIDI ports, otherwise NULL */
+	uint32_t          index;      /**< Port index */
+	float             control;    /**< For control ports, otherwise 0.0f */
 	bool              old_api;    /**< True for event, false for atom */
 };
 
@@ -105,6 +106,8 @@ typedef struct {
 	LilvNode*          event_class;   /**< Event port class (URI) */
 	LilvNode*          aevent_class;  /**< Atom event port class (URI) */
 	LilvNode*          midi_class;    /**< MIDI event class (URI) */
+	LilvNode*          preset_class;  /**< Preset class (URI) */
+	LilvNode*          label_pred;    /**< rdfs:label */
 	LilvNode*          optional;      /**< lv2:connectionOptional port property */
 	uint32_t           midi_event_id; /**< MIDI event class ID */
 	uint32_t           atom_prot_id;  /**< Atom protocol ID */
@@ -128,11 +131,29 @@ int
 jalv_open_ui(Jalv*         jalv,
              SuilInstance* instance);
 
+void
+jalv_ui_write(SuilController controller,
+              uint32_t       port_index,
+              uint32_t       buffer_size,
+              uint32_t       protocol,
+              const void*    buffer);
+
 bool
 jalv_emit_ui_events(Jalv* jalv);
 
 int
 jalv_ui_resize(Jalv* jalv, int width, int height);
+
+typedef int (*PresetSink)(Jalv*           jalv,
+                          const LilvNode* node,
+                          const LilvNode* title,
+                          void*           data);
+
+int
+jalv_load_presets(Jalv* jalv, PresetSink sink, void* data);
+
+int
+jalv_apply_preset(Jalv* jalv, LilvNode* preset);
 
 void
 jalv_save(Jalv* jalv, const char* dir);

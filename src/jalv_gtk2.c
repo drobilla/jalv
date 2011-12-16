@@ -79,11 +79,53 @@ on_save_activate(GtkWidget* widget, void* ptr)
 }
 
 static void
-on_quit_activate(GtkWidget* widget,
-                 gpointer   data)
+on_quit_activate(GtkWidget* widget, gpointer data)
 {
 	GtkWidget* window = (GtkWidget*)data;
 	gtk_widget_destroy(window);
+}
+
+typedef struct {
+	Jalv*     jalv;
+	LilvNode* preset;
+} PresetRecord;
+
+static void
+on_preset_activate(GtkWidget* widget, gpointer data)
+{
+	PresetRecord* record = (PresetRecord*)data;
+	jalv_apply_preset(record->jalv, record->preset);
+}
+
+static void
+on_preset_destroy(gpointer data, GClosure* closure)
+{
+	PresetRecord* record = (PresetRecord*)data;
+	lilv_node_free(record->preset);
+	free(record);
+}
+
+static int
+add_preset_to_menu(Jalv*           jalv,
+                   const LilvNode* node,
+                   const LilvNode* title,
+                   void*           data)
+{
+	GtkWidget*  presets_menu = GTK_WIDGET(data);
+	const char* label        = lilv_node_as_string(title);
+	GtkWidget*  item         = gtk_menu_item_new_with_label(label);
+
+	PresetRecord* record = (PresetRecord*)malloc(sizeof(PresetRecord));
+	record->jalv   = jalv;
+	record->preset = lilv_node_duplicate(node);
+
+	g_signal_connect_data(G_OBJECT(item), "activate",
+	                      G_CALLBACK(on_preset_activate),
+	                      record, on_preset_destroy,
+	                      0);
+
+	gtk_menu_shell_append(GTK_MENU_SHELL(presets_menu), item);
+	return 0;
 }
 
 int
@@ -124,6 +166,14 @@ jalv_open_ui(Jalv*         jalv,
 	gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), save);
 	gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), quit);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file);
+
+	GtkWidget* presets      = gtk_menu_item_new_with_mnemonic("_Presets");
+	GtkWidget* presets_menu = gtk_menu_new();
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(presets), presets_menu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), presets);
+
+	jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
+
 	gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
 
 	g_signal_connect(G_OBJECT(quit), "activate",
