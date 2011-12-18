@@ -50,16 +50,6 @@
 
 sem_t exit_sem;  /**< Exit semaphore */
 
-/**
-   Control change event, sent through ring buffers for UI updates.
-*/
-typedef struct {
-	uint32_t index;
-	uint32_t protocol;
-	uint32_t size;
-	uint8_t  body[];
-} ControlChange;
-
 LV2_URID
 map_uri(LV2_URID_Map_Handle handle,
         const char*         uri)
@@ -370,7 +360,6 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 		}
 	}
 
-
 	/* Run plugin for this cycle */
 	lilv_instance_run(host->instance, nframes);
 
@@ -384,16 +373,17 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 	/* Deliver MIDI output and UI events */
 	for (uint32_t p = 0; p < host->num_ports; ++p) {
-		if (host->ports[p].jack_port
-		    && !host->ports[p].flow == FLOW_INPUT
-		    && host->ports[p].type == TYPE_EVENT) {
+		struct Port* const port = &host->ports[p];
+		if (port->jack_port
+		    && !port->flow == FLOW_INPUT
+		    && port->type == TYPE_EVENT) {
 
-			void* buf = jack_port_get_buffer(host->ports[p].jack_port,
+			void* buf = jack_port_get_buffer(port->jack_port,
 			                                 nframes);
 
 			jack_midi_clear_buffer(buf);
 
-			LV2_Evbuf_Iterator iter        = lv2_evbuf_begin(host->ports[p].evbuf);
+			LV2_Evbuf_Iterator iter        = lv2_evbuf_begin(port->evbuf);
 			const uint32_t     event_count = lv2_evbuf_get_event_count(iter.evbuf);
 			for (uint32_t i = 0; i < event_count; ++i) {
 				uint32_t frames, subframes, type, size;
@@ -404,14 +394,14 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				iter = lv2_evbuf_next(iter);
 			}
 		} else if (send_ui_updates
-		           && !host->ports[p].flow == FLOW_INPUT
-		           && host->ports[p].type == TYPE_CONTROL) {
+		           && port->flow != FLOW_INPUT
+		           && port->type == TYPE_CONTROL) {
 			char buf[sizeof(ControlChange) + sizeof(float)];
 			ControlChange* ev = (ControlChange*)buf;
 			ev->index    = p;
 			ev->protocol = 0;
 			ev->size     = sizeof(float);
-			*(float*)ev->body = host->ports[p].control;
+			*(float*)ev->body = port->control;
 			jack_ringbuffer_write(host->plugin_events, buf, sizeof(buf));
 		}
 	}
@@ -492,15 +482,15 @@ jalv_ui_write(SuilController controller,
 bool
 jalv_emit_ui_events(Jalv* host)
 {
-	#if 0
 	ControlChange ev;
 	size_t        ev_read_size = jack_ringbuffer_read_space(host->plugin_events);
 	for (size_t i = 0; i < ev_read_size; i += sizeof(ev) + ev.size) {
 		jack_ringbuffer_read(host->plugin_events, (char*)&ev, sizeof(ev));
+		char buf[ev.size];
+		jack_ringbuffer_read(host->plugin_events, buf, ev.size);
 		suil_instance_port_event(host->ui_instance, ev.index,
-		                         sizeof(float), 0, &ev.value);
+		                         ev.size, ev.protocol, buf);
 	}
-	#endif
 
 	return true;
 }

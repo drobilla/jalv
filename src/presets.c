@@ -86,7 +86,17 @@ jalv_apply_preset(Jalv* jalv, const LilvNode* preset)
 			struct Port* p   = jalv_port_by_symbol(jalv, sym);
 			if (p) {
 				const float fvalue = lilv_node_as_float(value);
+				// Send value to plugin
 				jalv_ui_write(jalv, p->index, sizeof(float), 0, &fvalue);
+
+				// Update UI
+				char buf[sizeof(ControlChange) + sizeof(float)];
+				ControlChange* ev = (ControlChange*)buf;
+				ev->index    = p->index;
+				ev->protocol = 0;
+				ev->size     = sizeof(float);
+				*(float*)ev->body = fvalue;
+				jack_ringbuffer_write(jalv->plugin_events, buf, sizeof(buf));
 			} else {
 				fprintf(stderr, "error: Preset port `%s' is missing\n", sym);
 			}
