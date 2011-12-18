@@ -139,7 +139,6 @@ jalv_save(Jalv* jalv, const char* dir)
 	SerdNode plugin_uri = serd_node_from_string(SERD_URI, USTR(lilv_node_as_uri(
 			               lilv_plugin_get_uri(jalv->plugin))));
 
-
 	SerdNode subject = serd_node_from_string(SERD_URI, USTR(""));
 
 	jalv->writer = serd_writer_new(
