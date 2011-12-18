@@ -62,7 +62,7 @@ typedef struct {
 
 LV2_URID
 map_uri(LV2_URID_Map_Handle handle,
-        const char*            uri)
+        const char*         uri)
 {
 	//return symap_map(((Jalv*)handle)->symap, uri);
 	const LV2_URID id = symap_map(((Jalv*)handle)->symap, uri);
@@ -72,7 +72,7 @@ map_uri(LV2_URID_Map_Handle handle,
 
 const char*
 unmap_uri(LV2_URID_Unmap_Handle handle,
-          LV2_URID                 urid)
+          LV2_URID              urid)
 {
 	return symap_unmap(((Jalv*)handle)->symap, urid);
 }

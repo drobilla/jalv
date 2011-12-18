@@ -92,6 +92,7 @@ typedef struct {
 	const LilvUI*      ui;            /**< Plugin UI (RDF data) */
 	LilvInstance*      instance;      /**< Plugin instance (shared library) */
 	SuilInstance*      ui_instance;   /**< Plugin UI instance (shared library) */
+	void*              window;        /**< Window (if applicable) */
 	struct Port*       ports;         /**< Port array of size num_ports */
 	size_t             midi_buf_size; /**< Size of MIDI port buffers */
 	uint32_t           num_ports;     /**< Size of the two following arrays: */
@@ -153,7 +154,10 @@ int
 jalv_load_presets(Jalv* jalv, PresetSink sink, void* data);
 
 int
-jalv_apply_preset(Jalv* jalv, LilvNode* preset);
+jalv_apply_preset(Jalv* jalv, const LilvNode* preset);
+
+int
+jalv_save_preset(Jalv* jalv, const char* label);
 
 void
 jalv_save(Jalv* jalv, const char* dir);

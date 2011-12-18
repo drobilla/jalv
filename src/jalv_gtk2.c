@@ -60,7 +60,7 @@ on_save_activate(GtkWidget* widget, void* ptr)
 	Jalv* jalv = (Jalv*)ptr;
 	GtkWidget* dialog = gtk_file_chooser_dialog_new(
 		"Save State",
-		NULL, // FIXME: parent
+		jalv->window,
 		GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
 		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
@@ -89,6 +89,36 @@ typedef struct {
 	Jalv*     jalv;
 	LilvNode* preset;
 } PresetRecord;
+
+static void
+on_save_preset_activate(GtkWidget* widget, void* ptr)
+{
+	Jalv* jalv = (Jalv*)ptr;
+
+	GtkDialog* dialog = GTK_DIALOG(gtk_dialog_new_with_buttons(
+		"Save Preset", jalv->window,
+		GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT,
+		GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
+		GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+		NULL));
+
+	GtkWidget* content = gtk_dialog_get_content_area(dialog);
+	GtkWidget* hbox    = gtk_hbox_new(FALSE, 0);
+	GtkWidget* entry   = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_new("Label:"), FALSE, TRUE, 6);
+	gtk_box_pack_start(GTK_BOX(hbox), entry, FALSE, TRUE, 6);
+	gtk_box_pack_start(GTK_BOX(content), hbox, TRUE, TRUE, 12);
+
+	gtk_widget_show_all(GTK_WIDGET(dialog));
+	gtk_entry_set_activates_default(GTK_ENTRY(entry), TRUE);
+	gtk_dialog_set_default_response(dialog, GTK_RESPONSE_ACCEPT);
+	if (gtk_dialog_run(dialog) == GTK_RESPONSE_ACCEPT) {
+		const char* label_str = gtk_entry_get_text(GTK_ENTRY(entry));
+		jalv_save_preset(jalv, label_str);
+	}
+
+	gtk_widget_destroy(GTK_WIDGET(dialog));
+}
 
 static void
 on_preset_activate(GtkWidget* widget, gpointer data)
@@ -145,6 +175,7 @@ jalv_open_ui(Jalv*         jalv,
              SuilInstance* instance)
 {
 	GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	jalv->window = window;
 
 	g_signal_connect(window, "destroy",
 	                 G_CALLBACK(on_window_destroy), NULL);
@@ -169,7 +200,11 @@ jalv_open_ui(Jalv*         jalv,
 
 	GtkWidget* presets      = gtk_menu_item_new_with_mnemonic("_Presets");
 	GtkWidget* presets_menu = gtk_menu_new();
+	GtkWidget* save_preset  = gtk_menu_item_new_with_mnemonic("_Save Preset...");
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(presets), presets_menu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(presets_menu), save_preset);
+	gtk_menu_shell_append(GTK_MENU_SHELL(presets_menu),
+	                      gtk_separator_menu_item_new());
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), presets);
 
 	jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
@@ -181,6 +216,9 @@ jalv_open_ui(Jalv*         jalv,
 
 	g_signal_connect(G_OBJECT(save), "activate",
 	                 G_CALLBACK(on_save_activate), jalv);
+
+	g_signal_connect(G_OBJECT(save_preset), "activate",
+	                 G_CALLBACK(on_save_preset_activate), jalv);
 
 	GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);
 	gtk_box_pack_start(GTK_BOX(vbox), alignment, TRUE, TRUE, 0);
