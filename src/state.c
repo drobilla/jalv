@@ -46,17 +46,23 @@ property_cmp(const void* a, const void* b)
 }
 
 #ifdef HAVE_LV2_STATE
+typedef struct {
+	LV2_URID_Unmap* unmap;
+	const SerdNode* subject;
+	SerdWriter*     writer;
+} StoreData;
+
 static int
-store_callback(void*       host_data,
+store_callback(void*       handle,
                uint32_t    key,
                const void* value,
                size_t      size,
                uint32_t    type,
                uint32_t    flags)
 {
-	Jalv*       jalv     = (Jalv*)host_data;
-	const char* key_uri  = symap_unmap(jalv->symap, key);
-	const char* type_uri = symap_unmap(jalv->symap, type);
+	StoreData*  data     = (StoreData*)handle;
+	const char* key_uri  = data->unmap->unmap(data->unmap->handle, key);
+	const char* type_uri = data->unmap->unmap(data->unmap->handle, type);
 	if (strcmp(type_uri, (const char*)(NS_ATOM "String"))) {
 		fprintf(stderr, "error: Unsupported (not atom:String) value stored\n");
 		return 1;
@@ -67,8 +73,8 @@ store_callback(void*       host_data,
 		const SerdNode o = serd_node_from_string(SERD_LITERAL, USTR(value));
 		const SerdNode t = serd_node_from_string(SERD_URI, USTR(type_uri));
 
-		serd_writer_write_statement(jalv->writer, SERD_ANON_CONT, NULL,
-		                            &jalv->state_node, &p, &o, &t, NULL);
+		serd_writer_write_statement(data->writer, SERD_ANON_CONT, NULL,
+		                            data->subject, &p, &o, &t, NULL);
 
 		return 0;
 	}
@@ -77,22 +83,29 @@ store_callback(void*       host_data,
 	return 1;
 }
 
+typedef struct {
+	LV2_URID_Map*          map;
+	const struct Property* props;
+	const uint32_t         num_props;
+} RetrieveData;
+
 static const void*
-retrieve_callback(void*     host_data,
+retrieve_callback(void*     handle,
                   uint32_t  key,
                   size_t*   size,
                   uint32_t* type,
                   uint32_t* flags)
 {
-	Jalv* jalv = (Jalv*)host_data;
+	RetrieveData* data = (RetrieveData*)handle;
 	struct Property  search_key = { key, SERD_NODE_NULL, SERD_NODE_NULL };
 	struct Property* prop       = (struct Property*)bsearch(
-		&search_key, jalv->props, jalv->num_props,
+		&search_key, data->props, data->num_props,
 		sizeof(struct Property), property_cmp);
 
 	if (prop) {
 		*size  = prop->value.n_bytes;
-		*type  = symap_map(jalv->symap, (const char*)(NS_ATOM "String"));
+		*type  = data->map->map(data->map->handle,
+		                        (const char*)(NS_ATOM "String"));
 		*flags = 0;
 		return prop->value.buf;
 	}
@@ -175,10 +188,12 @@ jalv_save(Jalv* jalv, const char* dir)
 		                            &state_instanceState,
 		                            &jalv->state_node, NULL, NULL);
 
+		StoreData data = { &jalv->unmap, &jalv->state_node, jalv->writer };
+
 		// Write properties to state blank node
 		state->save(lilv_instance_get_handle(jalv->instance),
 		            store_callback,
-		            jalv,
+		            &data,
 		            LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE,
 		            NULL);
 
@@ -290,9 +305,10 @@ jalv_restore_instance(Jalv* jalv, const char* dir)
 		lilv_instance_get_extension_data(jalv->instance, LV2_STATE_INTERFACE_URI);
 
 	if (state_iface) {
+		RetrieveData data = { &jalv->map, jalv->props, jalv->num_props };
 		state_iface->restore(lilv_instance_get_handle(jalv->instance),
 		                     retrieve_callback,
-		                     jalv, 0, NULL);
+		                     &data, 0, NULL);
 	}
 #endif  // HAVE_LV2_STATE
 }

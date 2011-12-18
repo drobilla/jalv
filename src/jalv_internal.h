@@ -28,6 +28,8 @@
 #include "serd/serd.h"
 #include "suil/suil.h"
 
+#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
+
 #include "lv2_evbuf.h"
 #include "symap.h"
 
@@ -92,7 +94,9 @@ typedef struct {
 	SerdWriter*        writer;        /**< RDF writer (for state) */
 	struct Property*   props;         /**< Restored state properties */
 	SerdNode           state_node;    /**< Instance state node (for state) */
-	SerdNode           last_sym;      /**< Last port symbol encountered in state */
+	SerdNode           last_sym;      /**< Last port symbol found in state */
+	LV2_URID_Map       map;
+	LV2_URID_Unmap     unmap;
 	Symap*             symap;         /**< Symbol (URI) map */
 	jack_client_t*     jack_client;   /**< Jack client */
 	jack_ringbuffer_t* ui_events;     /**< Port events from UI */

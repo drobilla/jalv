@@ -84,11 +84,9 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
 #define NS_EXT "http://lv2plug.in/ns/ext/"
 
 static LV2_URI_Map_Feature uri_map          = { NULL, &uri_to_id };
-static const LV2_Feature   uri_map_feature  = { NS_EXT "uri-map", &uri_map };
-static LV2_URID_Map        map              = { NULL, &map_uri };
-static const LV2_Feature   map_feature      = { NS_EXT "urid#map", &map };
-static LV2_URID_Unmap      unmap            = { NULL, &unmap_uri };
-static const LV2_Feature   unmap_feature    = { NS_EXT "urid#unmap", &unmap };
+static LV2_Feature         uri_map_feature  = { NS_EXT "uri-map", &uri_map };
+static LV2_Feature         map_feature      = { NS_EXT "urid#map", NULL };
+static LV2_Feature         unmap_feature    = { NS_EXT "urid#unmap", NULL };
 static LV2_Feature         instance_feature = { NS_EXT "instance-access", NULL };
 
 #ifdef HAVE_LV2_UI_RESIZE
@@ -449,7 +447,7 @@ jalv_ui_write(SuilController controller,
 
 	if (protocol != 0 && protocol != host->atom_prot_id) {
 		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
-		        protocol, unmap.unmap(host, protocol));
+		        protocol, symap_unmap(host->symap, protocol));
 		return;
 	}
 
@@ -519,12 +517,19 @@ main(int argc, char** argv)
 
 	host.symap = symap_new();
 	uri_map.callback_data = &host;
-	map.handle = &host;
-	unmap.handle = &host;
+
+	host.map.handle  = &host;
+	host.map.map     = map_uri;
+	map_feature.data = &host.map;
+
+	host.unmap.handle  = &host;
+	host.unmap.unmap   = unmap_uri;
+	unmap_feature.data = &host.unmap;
+
 	host.midi_event_id = uri_to_id(&host,
 	                               "http://lv2plug.in/ns/ext/event",
 	                               NS_MIDI "MidiEvent");
-	host.atom_prot_id = map.map(map.handle, NS_ATOM "atomTransfer");
+	host.atom_prot_id = symap_map(host.symap, NS_ATOM "atomTransfer");
 
 #ifdef HAVE_LV2_UI_RESIZE
 	ui_resize.data = &host;
