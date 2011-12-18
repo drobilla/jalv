@@ -85,10 +85,10 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
 
 static LV2_URI_Map_Feature uri_map          = { NULL, &uri_to_id };
 static const LV2_Feature   uri_map_feature  = { NS_EXT "uri-map", &uri_map };
-static LV2_URID_Map     map           = { NULL, &map_uri };
-static const LV2_Feature   map_feature   = { NS_EXT "urid#map", &map };
-static LV2_URID_Unmap   unmap         = { NULL, &unmap_uri };
-static const LV2_Feature   unmap_feature = { NS_EXT "urid#unmap", &unmap };
+static LV2_URID_Map        map              = { NULL, &map_uri };
+static const LV2_Feature   map_feature      = { NS_EXT "urid#map", &map };
+static LV2_URID_Unmap      unmap            = { NULL, &unmap_uri };
+static const LV2_Feature   unmap_feature    = { NS_EXT "urid#unmap", &unmap };
 static LV2_Feature         instance_feature = { NS_EXT "instance-access", NULL };
 
 #ifdef HAVE_LV2_UI_RESIZE

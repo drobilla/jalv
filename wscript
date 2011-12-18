@@ -60,6 +60,11 @@ def configure(conf):
     autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-ui-resize',
                       uselib_store='LV2_UI_RESIZE', mandatory=False)
 
+    conf.check(function_name='lockf',
+               header_name='unistd.h',
+               define_name='HAVE_LOCKF',
+               mandatory=False)
+
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
 

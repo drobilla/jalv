@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#define _POSIX_C_SOURCE 200112L /* for fileno */
+#define _BSD_SOURCE 1 /* for lockf */
+
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -22,6 +25,10 @@
 
 #include "jalv-config.h"
 #include "jalv_internal.h"
+
+#ifdef HAVE_LOCKF
+#include <unistd.h>
+#endif
 
 #define NS_LV2  "http://lv2plug.in/ns/lv2core#"
 #define NS_PSET "http://lv2plug.in/ns/ext/presets#"
@@ -274,6 +281,10 @@ jalv_save_preset(Jalv* jalv, const char* label)
 		goto done;
 	}
 
+#ifdef HAVE_LOCKF
+	lockf(fileno(fd), F_LOCK, 0);
+#endif
+
 	base = serd_node_new_uri_from_string((const uint8_t*)manifest_uri,
 	                                     NULL, &base_uri);
 
@@ -308,6 +319,11 @@ jalv_save_preset(Jalv* jalv, const char* label)
 	serd_writer_free(writer);
 	serd_env_free(env);
 	serd_node_free(&base);
+
+#ifdef HAVE_LOCKF
+	lockf(fileno(fd), F_ULOCK, 0);
+#endif
+
 	fclose(fd);
 
 done:
