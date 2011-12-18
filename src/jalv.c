@@ -745,6 +745,7 @@ main(int argc, char** argv)
 	jack_client_close(host.jack_client);
 
 	/* Deactivate plugin */
+	suil_instance_free(host.ui_instance);
 	lilv_instance_deactivate(host.instance);
 	lilv_instance_free(host.instance);
 
@@ -765,7 +766,6 @@ main(int argc, char** argv)
 	lilv_node_free(host.label_pred);
 	lilv_node_free(host.optional);
 	symap_free(host.symap);
-	suil_instance_free(host.ui_instance);
 	suil_host_free(ui_host);
 	lilv_world_free(world);
 
