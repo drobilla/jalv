@@ -27,11 +27,13 @@
 #include "jalv-config.h"
 #include "jalv_internal.h"
 
+#define NS_ATOM  (const uint8_t*)"http://lv2plug.in/ns/ext/atom#"
 #define NS_JALV  (const uint8_t*)"http://drobilla.net/ns/jalv#"
 #define NS_LV2   (const uint8_t*)"http://lv2plug.in/ns/lv2core#"
-#define NS_XSD   (const uint8_t*)"http://www.w3.org/2001/XMLSchema#"
-#define NS_ATOM  (const uint8_t*)"http://lv2plug.in/ns/ext/atom#"
+#define NS_PSET  (const uint8_t*)"http://lv2plug.in/ns/ext/presets#"
 #define NS_STATE (const uint8_t*)"http://lv2plug.in/ns/ext/state#"
+#define NS_XSD   (const uint8_t*)"http://www.w3.org/2001/XMLSchema#"
+#define NS_RDFS  (const uint8_t*)"http://www.w3.org/2000/01/rdf-schema#"
 
 #define USTR(s) ((const uint8_t*)s)
 
@@ -124,24 +126,19 @@ jalv_save(Jalv* jalv, const char* dir)
 	snprintf(path, path_len + 1, "%s%s", dir, filename);
 	FILE* out_fd = fopen(path, "w");
 
-	SerdNode jalv_name    = serd_node_from_string(SERD_LITERAL, USTR("jalv"));
-	SerdNode jalv_prefix  = serd_node_from_string(SERD_URI, NS_JALV);
-	SerdNode lv2_name     = serd_node_from_string(SERD_LITERAL, USTR("lv2"));
-	SerdNode lv2_prefix   = serd_node_from_string(SERD_URI, NS_LV2);
-	SerdNode state_name   = serd_node_from_string(SERD_LITERAL, USTR("state"));
-	SerdNode state_prefix = serd_node_from_string(SERD_URI, NS_STATE);
-	SerdNode atom_name    = serd_node_from_string(SERD_LITERAL, USTR("atom"));
-	SerdNode atom_prefix  = serd_node_from_string(SERD_URI, NS_ATOM);
-	SerdNode jalv_plugin  = serd_node_from_string(SERD_URI, NS_JALV "plugin");
-	SerdNode jalv_value   = serd_node_from_string(SERD_URI, (NS_JALV "value"));
-	SerdNode lv2_symbol   = serd_node_from_string(SERD_URI, (NS_LV2 "symbol"));
-	SerdNode xsd_decimal  = serd_node_from_string(SERD_URI, (NS_XSD "decimal"));
-	SerdNode jalv_port    = serd_node_from_string(SERD_URI, (NS_JALV "port"));
+	SerdEnv* env = serd_env_new(NULL);
+	serd_env_set_prefix_from_strings(env, USTR("atom"),  USTR(NS_ATOM));
+	serd_env_set_prefix_from_strings(env, USTR("jalv"),  USTR(NS_JALV));
+	serd_env_set_prefix_from_strings(env, USTR("lv2"),   USTR(NS_LV2));
+	serd_env_set_prefix_from_strings(env, USTR("pset"),  USTR(NS_PSET));
+	serd_env_set_prefix_from_strings(env, USTR("rdfs"),  USTR(NS_RDFS));
+	serd_env_set_prefix_from_strings(env, USTR("state"), USTR(NS_STATE));
+
+	SerdNode jalv_plugin = serd_node_from_string(SERD_URI, NS_JALV "plugin");
 
 	SerdNode plugin_uri = serd_node_from_string(SERD_URI, USTR(lilv_node_as_uri(
 			               lilv_plugin_get_uri(jalv->plugin))));
 
-	SerdEnv* env = serd_env_new(NULL);
 
 	SerdNode subject = serd_node_from_string(SERD_URI, USTR(""));
 
@@ -153,10 +150,7 @@ jalv_save(Jalv* jalv, const char* dir)
 		file_sink,
 		out_fd);
 
-	serd_writer_set_prefix(jalv->writer, &atom_name, &atom_prefix);
-	serd_writer_set_prefix(jalv->writer, &jalv_name, &jalv_prefix);
-	serd_writer_set_prefix(jalv->writer, &lv2_name, &lv2_prefix);
-	serd_writer_set_prefix(jalv->writer, &state_name, &state_prefix);
+	serd_env_foreach(env, (SerdPrefixSink)serd_writer_set_prefix, jalv->writer);
 
 	// <> jalv:plugin <http://example.org/plugin>
 	serd_writer_write_statement(jalv->writer, 0, NULL,
@@ -164,41 +158,7 @@ jalv_save(Jalv* jalv, const char* dir)
 	                            &jalv_plugin,
 	                            &plugin_uri, NULL, NULL);
 
-	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-		struct Port* port = &jalv->ports[i];
-		if (port->flow != FLOW_INPUT || port->type != TYPE_CONTROL) {
-			continue;
-		}
-
-		const uint8_t* sym = (const uint8_t*)lilv_node_as_string(
-			lilv_port_get_symbol(jalv->plugin, port->lilv_port));
-
-		const SerdNode sym_node = serd_node_from_string(SERD_LITERAL, sym);
-		const SerdNode blank    = serd_node_from_string(SERD_BLANK, sym);
-
-		// <> jalv:port []
-		serd_writer_write_statement(jalv->writer, SERD_ANON_O_BEGIN, NULL,
-		                            &subject,
-		                            &jalv_port,
-		                            &blank, NULL, NULL);
-
-		char value_str[128];
-		snprintf(value_str, sizeof(value_str), "%f", port->control);
-			
-		SerdNode value = serd_node_from_string(SERD_LITERAL, USTR(value_str));
-
-		// [] lv2:symbol "example"
-		serd_writer_write_statement(jalv->writer, SERD_ANON_CONT, NULL,
-		                            &blank, &lv2_symbol, &sym_node,
-		                            NULL, NULL);
-
-		// [] jalv:value 1.0
-		serd_writer_write_statement(jalv->writer, SERD_ANON_CONT, NULL,
-		                            &blank, &jalv_value, &value,
-		                            &xsd_decimal, NULL);
-
-		serd_writer_end_anon(jalv->writer, &blank);
-	}
+	jalv_save_port_values(jalv, jalv->writer, &subject);
 
 #ifdef HAVE_LV2_STATE
 	assert(jalv->symap);
@@ -275,7 +235,7 @@ on_statement(void*              handle,
 	} else if (!strcmp((const char*)predicate->buf, "lv2:symbol")) {
 		serd_node_free(&jalv->last_sym);
 		jalv->last_sym = serd_node_copy(object);
-	} else if (!strcmp((const char*)predicate->buf, "jalv:value")) {
+	} else if (!strcmp((const char*)predicate->buf, "pset:value")) {
 		const char*  sym  = (const char*)jalv->last_sym.buf;
 		struct Port* port = jalv_port_by_symbol(jalv, sym);
 		if (port) {

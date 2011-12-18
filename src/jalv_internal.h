@@ -173,6 +173,11 @@ void
 jalv_save(Jalv* jalv, const char* dir);
 
 void
+jalv_save_port_values(Jalv*           jalv,
+                      SerdWriter*     writer,
+                      const SerdNode* subject);
+
+void
 jalv_restore(Jalv* jalv, const char* dir);
 
 void

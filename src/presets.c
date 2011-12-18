@@ -161,6 +161,49 @@ strjoin(const char* a, const char* b)
 	return out;
 }
 
+void
+jalv_save_port_values(Jalv*           jalv,
+                      SerdWriter*     writer,
+                      const SerdNode* subject)
+{
+	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+		struct Port* const port = &jalv->ports[i];
+		if (port->type != TYPE_CONTROL || port->flow != FLOW_INPUT) {
+			continue;
+		}
+
+		const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
+		LilvNode*       val = lilv_new_float(jalv->world, port->control);
+
+		const SerdNode port_node = serd_node_from_string(
+			SERD_BLANK, USTR(lilv_node_as_string(sym)));
+
+		// <> lv2:port _:symbol
+		SerdNode p = serd_node_from_string(SERD_URI,
+		                                   USTR(NS_LV2 "port"));
+		serd_writer_write_statement(writer, SERD_ANON_O_BEGIN,
+		                            NULL, subject, &p, &port_node, NULL, NULL);
+
+		// _:symbol lv2:symbol "symbol"
+		p = serd_node_from_string(SERD_URI, USTR(NS_LV2 "symbol"));
+		SerdNode o = serd_node_from_string(SERD_LITERAL,
+		                                   USTR(lilv_node_as_string(sym)));
+		serd_writer_write_statement(writer, SERD_ANON_CONT,
+		                            NULL, &port_node, &p, &o, NULL, NULL);
+
+		// _:symbol pset:value value
+		p = serd_node_from_string(SERD_URI, USTR(NS_PSET "value"));
+		o = serd_node_from_string(SERD_LITERAL,
+		                          USTR(lilv_node_as_string(val)));
+		SerdNode t = serd_node_from_string(SERD_URI, USTR(NS_XSD "decimal"));
+		serd_writer_write_statement(writer, SERD_ANON_CONT,
+		                            NULL, &port_node, &p, &o, &t, NULL);
+
+		lilv_node_free(val);
+		serd_writer_end_anon(writer, &port_node);
+	}
+}
+
 int
 jalv_save_preset(Jalv* jalv, const char* label)
 {
@@ -230,41 +273,7 @@ jalv_save_preset(Jalv* jalv, const char* label)
 	serd_writer_write_statement(writer, 0,
 	                            NULL, &s, &p, &o, NULL, NULL);
 
-	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-		struct Port* const port = &jalv->ports[i];
-		if (port->type != TYPE_CONTROL || port->flow != FLOW_INPUT) {
-			continue;
-		}
-
-		const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-		LilvNode*       val = lilv_new_float(jalv->world, port->control);
-
-		const SerdNode port_node = serd_node_from_string(
-			SERD_BLANK, USTR(lilv_node_as_string(sym)));
-
-		// <> lv2:port _:symbol
-		p = serd_node_from_string(SERD_URI, USTR(NS_LV2 "port"));
-		serd_writer_write_statement(writer, SERD_ANON_O_BEGIN,
-		                            NULL, &s, &p, &port_node, NULL, NULL);
-
-		// _:symbol lv2:symbol "symbol"
-		p = serd_node_from_string(SERD_URI, USTR(NS_LV2 "symbol"));
-		o = serd_node_from_string(SERD_LITERAL,
-		                          USTR(lilv_node_as_string(sym)));
-		serd_writer_write_statement(writer, SERD_ANON_CONT,
-		                            NULL, &port_node, &p, &o, NULL, NULL);
-
-		// _:symbol pset:value value
-		p = serd_node_from_string(SERD_URI, USTR(NS_PSET "value"));
-		o = serd_node_from_string(SERD_LITERAL,
-		                          USTR(lilv_node_as_string(val)));
-		SerdNode t = serd_node_from_string(SERD_URI, USTR(NS_XSD "decimal"));
-		serd_writer_write_statement(writer, SERD_ANON_CONT,
-		                            NULL, &port_node, &p, &o, &t, NULL);
-
-		lilv_node_free(val);
-		serd_writer_end_anon(writer, &port_node);
-	}
+	jalv_save_port_values(jalv, writer, &s);
 
 	serd_writer_free(writer);
 	serd_node_free(&base);
