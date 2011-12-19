@@ -15,7 +15,6 @@
 */
 
 #include <assert.h>
-#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -127,10 +126,6 @@ jalv_save(Jalv* jalv, const char* dir)
 {
 	assert(!jalv->writer);
 
-	// Set numeric locale to C so snprintf %f is Turtle compatible
-	char* locale = jalv_strdup(setlocale(LC_NUMERIC, NULL));
-	setlocale(LC_NUMERIC, "C");
-
 	const size_t      dir_len  = strlen(dir);
 	const char* const filename = "state.ttl";
 	const size_t      path_len = dir_len + strlen(filename);
@@ -147,7 +142,7 @@ jalv_save(Jalv* jalv, const char* dir)
 	serd_env_set_prefix_from_strings(env, USTR("rdfs"),  USTR(NS_RDFS));
 	serd_env_set_prefix_from_strings(env, USTR("state"), USTR(NS_STATE));
 
-	SerdNode jalv_plugin = serd_node_from_string(SERD_URI, NS_JALV "plugin");
+	SerdNode lv2_appliesTo = serd_node_from_string(SERD_URI, NS_LV2 "appliesTo");
 
 	SerdNode plugin_uri = serd_node_from_string(SERD_URI, USTR(lilv_node_as_uri(
 			               lilv_plugin_get_uri(jalv->plugin))));
@@ -164,10 +159,10 @@ jalv_save(Jalv* jalv, const char* dir)
 
 	serd_env_foreach(env, (SerdPrefixSink)serd_writer_set_prefix, jalv->writer);
 
-	// <> jalv:plugin <http://example.org/plugin>
+	// <> lv2:appliesTo <http://example.org/plugin>
 	serd_writer_write_statement(jalv->writer, 0, NULL,
 	                            &subject,
-	                            &jalv_plugin,
+	                            &lv2_appliesTo,
 	                            &plugin_uri, NULL, NULL);
 
 	jalv_save_port_values(jalv, jalv->writer, &subject);
@@ -209,12 +204,25 @@ jalv_save(Jalv* jalv, const char* dir)
 	fclose(out_fd);
 	serd_env_free(env);
 
-	// Reset numeric locale to original value
-	setlocale(LC_NUMERIC, locale);
-	free(locale);
-
 	free(path);
 }
+
+typedef struct {
+	SerdNode symbol;
+	SerdNode value;
+	SerdNode datatype;
+} PortValue;
+
+typedef struct {
+	LilvWorld*       world;
+	LV2_URID_Map*    map;
+	LilvNode*        plugin_uri;
+	struct Property* props;
+	PortValue*       ports;
+	uint32_t         num_props;
+	uint32_t         num_ports;
+	bool             in_state;
+} RestoreData;
 
 static SerdStatus
 on_statement(void*              handle,
@@ -226,39 +234,30 @@ on_statement(void*              handle,
              const SerdNode*    object_datatype,
              const SerdNode*    object_lang)
 {
-	Jalv* jalv = (Jalv*)handle;
-	if (jalv->in_state) {
-		jalv->props = (struct Property*)realloc(
-			jalv->props,
-			sizeof(struct Property) * (++jalv->num_props));
-		struct Property* prop = &jalv->props[jalv->num_props - 1];
-		prop->key      = symap_map(jalv->symap, (const char*)predicate->buf);
+	RestoreData* data = (RestoreData*)handle;
+	if (data->in_state) {
+		data->props = (struct Property*)realloc(
+			data->props, sizeof(struct Property) * (++data->num_props));
+		struct Property* prop = &data->props[data->num_props - 1];
+		prop->key      = data->map->map(data->map->handle,
+		                                (const char*)predicate->buf);
 		prop->value    = serd_node_copy(object);
 		prop->datatype = serd_node_copy(object_datatype);
-	} else if (!strcmp((const char*)predicate->buf, "jalv:plugin")) {
-		const LilvPlugins* plugins    = lilv_world_get_all_plugins(jalv->world);
-		LilvNode*          plugin_uri = lilv_new_uri(jalv->world,
-		                                             (const char*)object->buf);
-		jalv->plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
-		lilv_node_free(plugin_uri);
-
-		jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
-		jalv->ports     = calloc((size_t)jalv->num_ports, sizeof(struct Port));
-
-		jalv_create_ports(jalv);
+	} else if (!strcmp((const char*)predicate->buf, "lv2:appliesTo")) {
+		data->plugin_uri = lilv_new_uri(data->world, (const char*)object->buf);
+	} else if (!strcmp((const char*)predicate->buf, "lv2:port")) {
+		data->ports = (PortValue*)realloc(
+			data->ports, sizeof(PortValue) * (++data->num_ports));
+		data->ports[data->num_ports - 1].symbol   = SERD_NODE_NULL;
+		data->ports[data->num_ports - 1].value    = SERD_NODE_NULL;
+		data->ports[data->num_ports - 1].datatype = SERD_NODE_NULL;
 	} else if (!strcmp((const char*)predicate->buf, "lv2:symbol")) {
-		serd_node_free(&jalv->last_sym);
-		jalv->last_sym = serd_node_copy(object);
+		data->ports[data->num_ports - 1].symbol = serd_node_copy(object);
 	} else if (!strcmp((const char*)predicate->buf, "pset:value")) {
-		const char*  sym  = (const char*)jalv->last_sym.buf;
-		struct Port* port = jalv_port_by_symbol(jalv, sym);
-		if (port) {
-			port->control = atof((const char*)object->buf);  // FIXME: Check type
-		} else {
-			fprintf(stderr, "error: Failed to find port `%s'\n", sym);
-		}
+		data->ports[data->num_ports - 1].value    = serd_node_copy(object);
+		data->ports[data->num_ports - 1].datatype = serd_node_copy(object_datatype);
 	} else if (!strcmp((const char*)predicate->buf, "state:instanceState")) {
-		jalv->in_state = true;
+		data->in_state = true;
 	}
 	
 	return SERD_SUCCESS;
@@ -267,9 +266,14 @@ on_statement(void*              handle,
 void
 jalv_restore(Jalv* jalv, const char* dir)
 {
+	RestoreData* data = (RestoreData*)malloc(sizeof(RestoreData));
+	memset(data, '\0', sizeof(RestoreData));
+	data->world = jalv->world;
+	data->map   = &jalv->map;
+
 	jalv->reader = serd_reader_new(
 		SERD_TURTLE,
-		jalv, NULL,
+		data, NULL,
 		NULL,
 		NULL,
 		on_statement,
@@ -292,9 +296,38 @@ jalv_restore(Jalv* jalv, const char* dir)
 	jalv->reader   = NULL;
 	jalv->in_state = false;
 
+	const LilvPlugins* plugins = lilv_world_get_all_plugins(data->world);
+	jalv->plugin = lilv_plugins_get_by_uri(plugins, data->plugin_uri);
+	if (!jalv->plugin) {
+		fprintf(stderr, "Failed to find plugin <%s> to restore\n",
+		        lilv_node_as_string(data->plugin_uri));
+		return;
+	}
+	
+	jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
+	jalv->ports     = calloc(data->num_ports, sizeof(struct Port));
+	
+	jalv_create_ports(jalv);
+
+	for (uint32_t i = 0; i < data->num_ports; ++i) {
+		PortValue*         dport = &data->ports[i];
+		const char*        sym   = (const char*)dport->symbol.buf;
+		struct Port* const jport = jalv_port_by_symbol(jalv, sym);
+		if (jport) {
+			jport->control = atof((const char*)dport->value.buf);  // FIXME: Check type
+		} else {
+			fprintf(stderr, "error: Failed to find port `%s'\n", sym);
+		}
+	}
+
 	if (jalv->props) {
 		qsort(jalv->props, jalv->num_props, sizeof(struct Property), property_cmp);
 	}
+
+	jalv->props     = data->props;
+	jalv->num_props = data->num_props;
+	free(data->ports);
+	free(data);
 }
 
 void
