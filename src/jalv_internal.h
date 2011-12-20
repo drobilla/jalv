@@ -90,11 +90,7 @@ typedef struct {
 	LilvWorld*         world;         /**< Lilv World */
 	int                ui_width;      /**< Requested UI width */
 	int                ui_height;     /**< Requested UI height */
-	SerdReader*        reader;        /**< RDF reader (for state) */
-	SerdWriter*        writer;        /**< RDF writer (for state) */
 	struct Property*   props;         /**< Restored state properties */
-	SerdNode           state_node;    /**< Instance state node (for state) */
-	SerdNode           last_sym;      /**< Last port symbol found in state */
 	LV2_URID_Map       map;
 	LV2_URID_Unmap     unmap;
 	Symap*             symap;         /**< Symbol (URI) map */
@@ -126,7 +122,6 @@ typedef struct {
 	LilvNode*          optional;      /**< lv2:connectionOptional port property */
 	uint32_t           midi_event_id; /**< MIDI event class ID */
 	uint32_t           atom_prot_id;  /**< Atom protocol ID */
-	bool               in_state;      /**< True iff reading instance state */
 	bool               buf_size_set;  /**< True iff Jack buf size callback fired */
 } Jalv;
 

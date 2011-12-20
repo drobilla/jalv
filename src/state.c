@@ -95,7 +95,7 @@ retrieve_callback(void*     handle,
                   uint32_t* type,
                   uint32_t* flags)
 {
-	RetrieveData* data = (RetrieveData*)handle;
+	RetrieveData*    data       = (RetrieveData*)handle;
 	struct Property  search_key = { key, SERD_NODE_NULL, SERD_NODE_NULL };
 	struct Property* prop       = (struct Property*)bsearch(
 		&search_key, data->props, data->num_props,
@@ -124,8 +124,6 @@ file_sink(const void* buf, size_t len, void* stream)
 void
 jalv_save(Jalv* jalv, const char* dir)
 {
-	assert(!jalv->writer);
-
 	const size_t      dir_len  = strlen(dir);
 	const char* const filename = "state.ttl";
 	const size_t      path_len = dir_len + strlen(filename);
@@ -149,7 +147,7 @@ jalv_save(Jalv* jalv, const char* dir)
 
 	SerdNode subject = serd_node_from_string(SERD_URI, USTR(""));
 
-	jalv->writer = serd_writer_new(
+	SerdWriter* writer = serd_writer_new(
 		SERD_TURTLE,
 		SERD_STYLE_ABBREVIATED|SERD_STYLE_CURIED,
 		env,
@@ -157,15 +155,15 @@ jalv_save(Jalv* jalv, const char* dir)
 		file_sink,
 		out_fd);
 
-	serd_env_foreach(env, (SerdPrefixSink)serd_writer_set_prefix, jalv->writer);
+	serd_env_foreach(env, (SerdPrefixSink)serd_writer_set_prefix, writer);
 
 	// <> lv2:appliesTo <http://example.org/plugin>
-	serd_writer_write_statement(jalv->writer, 0, NULL,
+	serd_writer_write_statement(writer, 0, NULL,
 	                            &subject,
 	                            &lv2_appliesTo,
 	                            &plugin_uri, NULL, NULL);
 
-	jalv_save_port_values(jalv, jalv->writer, &subject);
+	jalv_save_port_values(jalv, writer, &subject);
 
 #ifdef HAVE_LV2_STATE
 	assert(jalv->symap);
@@ -177,13 +175,13 @@ jalv_save(Jalv* jalv, const char* dir)
 			SERD_URI, (NS_STATE "instanceState"));
 
 		// [] state:instanceState [
-		jalv->state_node = serd_node_from_string(SERD_BLANK, USTR("state"));
-		serd_writer_write_statement(jalv->writer, SERD_ANON_O_BEGIN, NULL,
+		SerdNode state_node = serd_node_from_string(SERD_BLANK, USTR("state"));
+		serd_writer_write_statement(writer, SERD_ANON_O_BEGIN, NULL,
 		                            &subject,
 		                            &state_instanceState,
-		                            &jalv->state_node, NULL, NULL);
+		                            &state_node, NULL, NULL);
 
-		StoreData data = { &jalv->unmap, &jalv->state_node, jalv->writer };
+		StoreData data = { &jalv->unmap, &state_node, writer };
 
 		// Write properties to state blank node
 		state->save(lilv_instance_get_handle(jalv->instance),
@@ -193,14 +191,12 @@ jalv_save(Jalv* jalv, const char* dir)
 		            NULL);
 
 		// ]
-		serd_writer_end_anon(jalv->writer, &jalv->state_node);
-		jalv->state_node = SERD_NODE_NULL;
+		serd_writer_end_anon(writer, &state_node);
 	}
 #endif  // HAVE_LV2_STATE
 
 	// Close state file and clean up Serd
-	serd_writer_free(jalv->writer);
-	jalv->writer = NULL;
+	serd_writer_free(writer);
 	fclose(out_fd);
 	serd_env_free(env);
 
@@ -271,7 +267,7 @@ jalv_restore(Jalv* jalv, const char* dir)
 	data->world = jalv->world;
 	data->map   = &jalv->map;
 
-	jalv->reader = serd_reader_new(
+	SerdReader* reader = serd_reader_new(
 		SERD_TURTLE,
 		data, NULL,
 		NULL,
@@ -284,17 +280,14 @@ jalv_restore(Jalv* jalv, const char* dir)
 	char*        state_uri     = (char*)malloc(state_uri_len);
 	snprintf(state_uri, state_uri_len, "file://%s/state.ttl", dir);
 
-	SerdStatus st = serd_reader_read_file(jalv->reader, USTR(state_uri));
-	serd_node_free(&jalv->last_sym);
+	SerdStatus st = serd_reader_read_file(reader, USTR(state_uri));
 	if (st) {
 		fprintf(stderr, "Error reading state from %s (%s)\n",
 		        state_uri, serd_strerror(st));
 		return;
 	}
 
-	serd_reader_free(jalv->reader);
-	jalv->reader   = NULL;
-	jalv->in_state = false;
+	serd_reader_free(reader);
 
 	const LilvPlugins* plugins = lilv_world_get_all_plugins(data->world);
 	jalv->plugin = lilv_plugins_get_by_uri(plugins, data->plugin_uri);
