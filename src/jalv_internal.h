@@ -63,12 +63,11 @@ struct Port {
 	bool              old_api;    /**< True for event, false for atom */
 };
 
-struct Property {
-	uint32_t key;
-	SerdNode value;
-	SerdNode datatype;
-};
+typedef struct PluginStateImpl PluginState;
 
+const LilvNode*
+plugin_state_get_plugin_uri(const PluginState* state);
+	
 /**
    Control change event, sent through ring buffers for UI updates.
 */
@@ -90,7 +89,6 @@ typedef struct {
 	LilvWorld*         world;         /**< Lilv World */
 	int                ui_width;      /**< Requested UI width */
 	int                ui_height;     /**< Requested UI height */
-	struct Property*   props;         /**< Restored state properties */
 	LV2_URID_Map       map;
 	LV2_URID_Unmap     unmap;
 	Symap*             symap;         /**< Symbol (URI) map */
@@ -106,7 +104,6 @@ typedef struct {
 	struct Port*       ports;         /**< Port array of size num_ports */
 	size_t             midi_buf_size; /**< Size of MIDI port buffers */
 	uint32_t           num_ports;     /**< Size of the two following arrays: */
-	uint32_t           num_props;     /**< Number of properties */
 	uint32_t           longest_sym;   /**< Longest port symbol */
 	jack_nframes_t     sample_rate;   /**< Sample rate */
 	jack_nframes_t     event_delta_t; /**< Frames since last update sent to UI */
@@ -176,11 +173,11 @@ jalv_save_port_values(Jalv*           jalv,
                       SerdWriter*     writer,
                       const SerdNode* subject);
 
-void
-jalv_restore(Jalv* jalv, const char* dir);
+PluginState*
+jalv_load_state(Jalv* jalv, const char* dir);
 
 void
-jalv_restore_instance(Jalv* jalv, const char* dir);
+jalv_apply_state(Jalv* jalv, PluginState* state);
 
 static inline char*
 jalv_strdup(const char* str)

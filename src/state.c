@@ -36,12 +36,46 @@
 
 #define USTR(s) ((const uint8_t*)s)
 
+typedef struct {
+	uint32_t key;
+	SerdNode value;
+	SerdNode datatype;
+} Property;
+
+typedef struct {
+	SerdNode symbol;
+	SerdNode value;
+	SerdNode datatype;
+} PortValue;
+
+struct PluginStateImpl {
+	LilvNode*  plugin_uri;
+	Property*  props;
+	PortValue* values;
+	uint32_t   num_props;
+	uint32_t   num_values;
+};
+
+const LilvNode*
+plugin_state_get_plugin_uri(const PluginState* state)
+{
+	return state->plugin_uri;
+}
+
 static int
 property_cmp(const void* a, const void* b)
 {
-	const struct Property* pa = (const struct Property*)a;
-	const struct Property* pb = (const struct Property*)b;
+	const Property* pa = (const Property*)a;
+	const Property* pb = (const Property*)b;
 	return pa->key - pb->key;
+}
+
+static int
+value_cmp(const void* a, const void* b)
+{
+	const PortValue* pa = (const PortValue*)a;
+	const PortValue* pb = (const PortValue*)b;
+	return strcmp((const char*)pa->symbol.buf, (const char*)pb->symbol.buf);
 }
 
 #ifdef HAVE_LV2_STATE
@@ -83,9 +117,9 @@ store_callback(void*       handle,
 }
 
 typedef struct {
-	LV2_URID_Map*          map;
-	const struct Property* props;
-	const uint32_t         num_props;
+	LV2_URID_Map*   map;
+	const Property* props;
+	const uint32_t  num_props;
 } RetrieveData;
 
 static const void*
@@ -95,11 +129,11 @@ retrieve_callback(void*     handle,
                   uint32_t* type,
                   uint32_t* flags)
 {
-	RetrieveData*    data       = (RetrieveData*)handle;
-	struct Property  search_key = { key, SERD_NODE_NULL, SERD_NODE_NULL };
-	struct Property* prop       = (struct Property*)bsearch(
+	RetrieveData* data       = (RetrieveData*)handle;
+	Property      search_key = { key, SERD_NODE_NULL, SERD_NODE_NULL };
+	Property*     prop       = (Property*)bsearch(
 		&search_key, data->props, data->num_props,
-		sizeof(struct Property), property_cmp);
+		sizeof(Property), property_cmp);
 
 	if (prop) {
 		*size  = prop->value.n_bytes;
@@ -204,20 +238,14 @@ jalv_save(Jalv* jalv, const char* dir)
 }
 
 typedef struct {
-	SerdNode symbol;
-	SerdNode value;
-	SerdNode datatype;
-} PortValue;
-
-typedef struct {
-	LilvWorld*       world;
-	LV2_URID_Map*    map;
-	LilvNode*        plugin_uri;
-	struct Property* props;
-	PortValue*       ports;
-	uint32_t         num_props;
-	uint32_t         num_ports;
-	bool             in_state;
+	LilvWorld*    world;
+	LV2_URID_Map* map;
+	LilvNode*     plugin_uri;
+	Property*     props;
+	PortValue*    ports;
+	uint32_t      num_props;
+	uint32_t      num_ports;
+	bool          in_state;
 } RestoreData;
 
 static SerdStatus
@@ -232,9 +260,9 @@ on_statement(void*              handle,
 {
 	RestoreData* data = (RestoreData*)handle;
 	if (data->in_state) {
-		data->props = (struct Property*)realloc(
-			data->props, sizeof(struct Property) * (++data->num_props));
-		struct Property* prop = &data->props[data->num_props - 1];
+		data->props = (Property*)realloc(
+			data->props, sizeof(Property) * (++data->num_props));
+		Property* prop = &data->props[data->num_props - 1];
 		prop->key      = data->map->map(data->map->handle,
 		                                (const char*)predicate->buf);
 		prop->value    = serd_node_copy(object);
@@ -259,17 +287,17 @@ on_statement(void*              handle,
 	return SERD_SUCCESS;
 }
 
-void
-jalv_restore(Jalv* jalv, const char* dir)
+PluginState*
+jalv_load_state(Jalv* jalv, const char* dir)
 {
-	RestoreData* data = (RestoreData*)malloc(sizeof(RestoreData));
-	memset(data, '\0', sizeof(RestoreData));
-	data->world = jalv->world;
-	data->map   = &jalv->map;
+	RestoreData data;
+	memset(&data, '\0', sizeof(RestoreData));
+	data.world = jalv->world;
+	data.map   = &jalv->map;
 
 	SerdReader* reader = serd_reader_new(
 		SERD_TURTLE,
-		data, NULL,
+		&data, NULL,
 		NULL,
 		NULL,
 		on_statement,
@@ -284,26 +312,36 @@ jalv_restore(Jalv* jalv, const char* dir)
 	if (st) {
 		fprintf(stderr, "Error reading state from %s (%s)\n",
 		        state_uri, serd_strerror(st));
-		return;
+		free(state_uri);
+		return NULL;
 	}
 
+	free(state_uri);
 	serd_reader_free(reader);
 
-	const LilvPlugins* plugins = lilv_world_get_all_plugins(data->world);
-	jalv->plugin = lilv_plugins_get_by_uri(plugins, data->plugin_uri);
-	if (!jalv->plugin) {
-		fprintf(stderr, "Failed to find plugin <%s> to restore\n",
-		        lilv_node_as_string(data->plugin_uri));
-		return;
-	}
-	
-	jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
-	jalv->ports     = calloc(data->num_ports, sizeof(struct Port));
-	
-	jalv_create_ports(jalv);
+	PluginState* state = (PluginState*)malloc(sizeof(PluginState));
+	state->plugin_uri = data.plugin_uri;
+	state->props      = data.props;
+	state->num_props  = data.num_props;
+	state->values     = data.ports;
+	state->num_values = data.num_ports;
 
-	for (uint32_t i = 0; i < data->num_ports; ++i) {
-		PortValue*         dport = &data->ports[i];
+	if (state->props) {
+		qsort(state->props, state->num_props, sizeof(Property), property_cmp);
+	}
+	if (state->values) {
+		qsort(state->values, state->num_values, sizeof(PortValue), value_cmp);
+	}
+
+	return state;
+}
+
+void
+jalv_apply_state(Jalv* jalv, PluginState* state)
+{
+	/* Set port values */
+	for (uint32_t i = 0; i < state->num_values; ++i) {
+		PortValue*         dport = &state->values[i];
 		const char*        sym   = (const char*)dport->symbol.buf;
 		struct Port* const jport = jalv_port_by_symbol(jalv, sym);
 		if (jport) {
@@ -313,25 +351,12 @@ jalv_restore(Jalv* jalv, const char* dir)
 		}
 	}
 
-	if (jalv->props) {
-		qsort(jalv->props, jalv->num_props, sizeof(struct Property), property_cmp);
-	}
-
-	jalv->props     = data->props;
-	jalv->num_props = data->num_props;
-	free(data->ports);
-	free(data);
-}
-
-void
-jalv_restore_instance(Jalv* jalv, const char* dir)
-{
 #ifdef HAVE_LV2_STATE
 	const LV2_State_Interface* state_iface = (const LV2_State_Interface*)
 		lilv_instance_get_extension_data(jalv->instance, LV2_STATE_INTERFACE_URI);
 
 	if (state_iface) {
-		RetrieveData data = { &jalv->map, jalv->props, jalv->num_props };
+		RetrieveData data = { &jalv->map, state->props, state->num_props };
 		state_iface->restore(lilv_instance_get_handle(jalv->instance),
 		                     retrieve_callback,
 		                     &data, 0, NULL);

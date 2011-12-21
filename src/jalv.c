@@ -562,27 +562,32 @@ main(int argc, char** argv)
 	host.optional      = lilv_new_uri(world, LILV_NS_LV2
 	                                  "connectionOptional");
 
+	/* Get plugin URI from loaded state or command line */
+	PluginState* state      = NULL;
+	LilvNode*    plugin_uri = NULL;
 	if (host.opts.load) {
-		jalv_restore(&host, host.opts.load);
-	} else if (argc > 1) {
-		const char* const plugin_uri_str = argv[1];
-
-		/* Get the plugin */
-		LilvNode* plugin_uri = lilv_new_uri(world, plugin_uri_str);
-		host.plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
-		lilv_node_free(plugin_uri);
-		if (!host.plugin) {
-			fprintf(stderr, "Failed to find plugin %s\n", plugin_uri_str);
-			lilv_world_free(world);
+		state = jalv_load_state(&host, host.opts.load);
+		if (!state) {
+			fprintf(stderr, "Failed to load state from %s\n", host.opts.load);
 			return EXIT_FAILURE;
 		}
+		plugin_uri = lilv_node_duplicate(plugin_state_get_plugin_uri(state));
+	} else if (argc > 1) {
+		plugin_uri = lilv_new_uri(world, argv[1]);
 	} else {
 		fprintf(stderr, "Missing plugin URI parameter\n");
 		return EXIT_FAILURE;
 	}
 
-	printf("Plugin:    %s\n",
-	       lilv_node_as_string(lilv_plugin_get_uri(host.plugin)));
+	/* Find plugin */
+	printf("Plugin:    %s\n", lilv_node_as_string(plugin_uri));
+	host.plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
+	lilv_node_free(plugin_uri);
+	if (!host.plugin) {
+		fprintf(stderr, "Failed to find plugin\n");
+		lilv_world_free(world);
+		return EXIT_FAILURE;
+	}
 
 	/* Get a plugin UI */
 	LilvNode*       native_ui_type = jalv_native_ui_type(&host);
@@ -660,11 +665,12 @@ main(int argc, char** argv)
 		jalv_allocate_port_buffers(&host);
 	}
 
-	/* Apply restored state to plugin instance (if applicable) */
-	if (host.opts.load) {
-		jalv_restore_instance(&host, host.opts.load);
-	} else {
-		jalv_create_ports(&host);
+	/* Create port structures (host.ports) */
+	jalv_create_ports(&host);
+
+	/* Apply loaded state to plugin instance if necessary */
+	if (state) {
+		jalv_apply_state(&host, state);
 	}
 
 	/* Set instance for instance-access extension */
