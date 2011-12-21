@@ -182,11 +182,15 @@ file_sink(const void* buf, size_t len, void* stream)
 	return fwrite(buf, 1, len, file);
 }
 
-void
-jalv_save(Jalv* jalv, const char* dir)
+int
+write_preset(Jalv* jalv, const char* path)
 {
-	char* const path   = strjoin(dir, "/state.ttl");
-	FILE*       out_fd = fopen(path, "w");
+	FILE* fd = fopen(path, "w");
+	if (!fd) {
+		fprintf(stderr, "error: Failed to open %s (%s)\n",
+		        path, strerror(errno));
+		return 1;
+	}
 
 	SerdEnv* env = serd_env_new(NULL);
 	serd_env_set_prefix_from_strings(env, USTR("atom"),  USTR(NS_ATOM));
@@ -210,7 +214,7 @@ jalv_save(Jalv* jalv, const char* dir)
 		env,
 		&SERD_URI_NULL,
 		file_sink,
-		out_fd);
+		fd);
 
 	serd_env_foreach(env, (SerdPrefixSink)serd_writer_set_prefix, writer);
 
@@ -254,9 +258,17 @@ jalv_save(Jalv* jalv, const char* dir)
 
 	// Close state file and clean up Serd
 	serd_writer_free(writer);
-	fclose(out_fd);
+	fclose(fd);
 	serd_env_free(env);
 
+	return 0;
+}
+
+void
+jalv_save(Jalv* jalv, const char* dir)
+{
+	char* const path = strjoin(dir, "/state.ttl");
+	write_preset(jalv, path);
 	free(path);
 }
 
@@ -551,8 +563,7 @@ jalv_save_port_values(Jalv*           jalv,
 }
 
 static int
-add_preset_to_manifest(SerdEnv*          env,
-                       const LilvPlugin* plugin,
+add_preset_to_manifest(const LilvPlugin* plugin,
                        const char*       manifest_path,
                        const char*       preset_uri,
                        const char*       preset_file);
@@ -585,56 +596,11 @@ jalv_save_preset(Jalv* jalv, const char* label)
 		goto done;
 	}
 
-	// Open preset file
-	FILE* fd = fopen((char*)path, "w");
-	if (!fd) {
-		fprintf(stderr, "error: Failed to open %s (%s)\n",
-		        path, strerror(errno));
-		ret = 3;
-		goto done;
-	}
-
-	SerdURI  base_uri;
-	SerdNode base = serd_node_new_uri_from_string((const uint8_t*)uri,
-	                                              NULL, &base_uri);
-
-	SerdEnv* env = serd_env_new(&base);
-	serd_env_set_prefix_from_strings(env, USTR("lv2"),  USTR(NS_LV2));
-	serd_env_set_prefix_from_strings(env, USTR("pset"), USTR(NS_PSET));
-	serd_env_set_prefix_from_strings(env, USTR("rdfs"), USTR(NS_RDFS));
-
 	// Write preset file
+	write_preset(jalv, path);
 
-	SerdWriter* writer = serd_writer_new(
-		SERD_TURTLE, SERD_STYLE_ABBREVIATED|SERD_STYLE_CURIED,
-		env, &base_uri,
-		file_sink,
-		fd);
-
-	serd_env_foreach(env, (SerdPrefixSink)serd_writer_set_prefix, writer);
-
-	// <> a pset:Preset
-	SerdNode s = serd_node_from_string(SERD_URI, USTR(""));
-	SerdNode p = serd_node_from_string(SERD_URI, USTR(NS_RDF "type"));
-	SerdNode o = serd_node_from_string(SERD_CURIE, USTR("pset:Preset"));
-	serd_writer_write_statement(writer, 0, NULL, &s, &p, &o, NULL, NULL);
-
-	// <> rdfs:label label
-	p = serd_node_from_string(SERD_URI, USTR(NS_RDFS "label"));
-	o = serd_node_from_string(SERD_LITERAL, USTR(label));
-	serd_writer_write_statement(writer, 0,
-	                            NULL, &s, &p, &o, NULL, NULL);
-
-	jalv_save_port_values(jalv, writer, &s);
-
-	serd_writer_free(writer);
-	serd_node_free(&base);
-
-	fclose(fd);
-	add_preset_to_manifest(env, jalv->plugin,
-	                       manifest_path, filename, filename);
-
-	serd_env_free(env);
+	// Add entry to manifest
+	add_preset_to_manifest(jalv->plugin, manifest_path, filename, filename);
 
 done:
 	free(manifest_path);
@@ -648,8 +614,7 @@ done:
 }
 
 static int
-add_preset_to_manifest(SerdEnv*          env,
-                       const LilvPlugin* plugin,
+add_preset_to_manifest(const LilvPlugin* plugin,
                        const char*       manifest_path,
                        const char*       preset_uri,
                        const char*       preset_file)
@@ -660,6 +625,11 @@ add_preset_to_manifest(SerdEnv*          env,
 		        manifest_path, strerror(errno));
 		return 4;
 	}
+
+	SerdEnv* env = serd_env_new(NULL);
+	serd_env_set_prefix_from_strings(env, USTR("lv2"),   USTR(NS_LV2));
+	serd_env_set_prefix_from_strings(env, USTR("pset"),  USTR(NS_PSET));
+	serd_env_set_prefix_from_strings(env, USTR("rdfs"),  USTR(NS_RDFS));
 
 #ifdef HAVE_LOCKF
 	lockf(fileno(fd), F_LOCK, 0);
@@ -708,6 +678,7 @@ add_preset_to_manifest(SerdEnv*          env,
 
 	fclose(fd);
 	free(manifest_uri);
+	serd_env_free(env);
 
 	return 0;
 }
