@@ -222,7 +222,7 @@ jalv_open_ui(Jalv*         jalv,
 
 	GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);
 	gtk_box_pack_start(GTK_BOX(vbox), alignment, TRUE, TRUE, 0);
-	
+
 	if (instance) {
 		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(instance);
 		gtk_container_add(GTK_CONTAINER(alignment), widget);

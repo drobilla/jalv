@@ -138,7 +138,7 @@ store_callback(void*       handle,
 
 		return 0;
 	}
-	
+
 	fprintf(stderr, "error: Failed to store property (key %d)\n", key);
 	return 1;
 }
@@ -169,9 +169,9 @@ retrieve_callback(void*     handle,
 		*flags = 0;
 		return prop->value.buf;
 	}
-		
+
 	return NULL;
-	
+
 }
 #endif  // HAVE_LV2_STATE
 
@@ -183,7 +183,7 @@ file_sink(const void* buf, size_t len, void* stream)
 }
 
 int
-write_preset(Jalv* jalv, const char* path)
+write_preset(Jalv* jalv, const char* path, const char* label)
 {
 	FILE* fd = fopen(path, "w");
 	if (!fd) {
@@ -200,8 +200,8 @@ write_preset(Jalv* jalv, const char* path)
 	serd_env_set_prefix_from_strings(env, USTR("rdfs"),  USTR(NS_RDFS));
 	serd_env_set_prefix_from_strings(env, USTR("state"), USTR(NS_STATE));
 
-	SerdNode lv2_appliesTo = serd_node_from_string(SERD_URI,
-	                                               USTR(NS_LV2 "appliesTo"));
+	SerdNode lv2_appliesTo = serd_node_from_string(
+		SERD_CURIE, USTR("lv2:appliesTo"));
 
 	SerdNode plugin_uri = serd_node_from_string(SERD_URI, USTR(lilv_node_as_uri(
 			               lilv_plugin_get_uri(jalv->plugin))));
@@ -218,11 +218,25 @@ write_preset(Jalv* jalv, const char* path)
 
 	serd_env_foreach(env, (SerdPrefixSink)serd_writer_set_prefix, writer);
 
-	// <> lv2:appliesTo <http://example.org/plugin>
+	// subject a pset:Preset
+	SerdNode p = serd_node_from_string(SERD_URI, USTR(NS_RDF "type"));
+	SerdNode o = serd_node_from_string(SERD_CURIE, USTR("pset:Preset"));
+	serd_writer_write_statement(writer, 0, NULL,
+	                            &subject, &p, &o, NULL, NULL);
+
+	// subject lv2:appliesTo <http://example.org/plugin>
 	serd_writer_write_statement(writer, 0, NULL,
 	                            &subject,
 	                            &lv2_appliesTo,
 	                            &plugin_uri, NULL, NULL);
+
+	// subject rdfs:label label
+	if (label) {
+		p = serd_node_from_string(SERD_URI, USTR(NS_RDFS "label"));
+		o = serd_node_from_string(SERD_LITERAL, USTR(label));
+		serd_writer_write_statement(writer, 0,
+		                            NULL, &subject, &p, &o, NULL, NULL);
+	}
 
 	jalv_save_port_values(jalv, writer, &subject);
 
@@ -235,7 +249,7 @@ write_preset(Jalv* jalv, const char* path)
 		SerdNode state_instanceState = serd_node_from_string(
 			SERD_URI, USTR(NS_STATE "instanceState"));
 
-		// [] state:instanceState [
+		// subject state:instanceState [
 		SerdNode state_node = serd_node_from_string(SERD_BLANK, USTR("state"));
 		serd_writer_write_statement(writer, SERD_ANON_O_BEGIN, NULL,
 		                            &subject,
@@ -268,7 +282,7 @@ void
 jalv_save(Jalv* jalv, const char* dir)
 {
 	char* const path = strjoin(dir, "/state.ttl");
-	write_preset(jalv, path);
+	write_preset(jalv, path, NULL);
 	free(path);
 }
 
@@ -318,7 +332,7 @@ on_statement(void*              handle,
 	} else if (!strcmp((const char*)predicate->buf, "state:instanceState")) {
 		data->in_state = true;
 	}
-	
+
 	return SERD_SUCCESS;
 }
 
@@ -332,10 +346,6 @@ jalv_load_state(Jalv* jalv, const char* dir)
 {
 	char* base_uri  = strjoin("file://", dir);
 	char* state_uri = strjoin(base_uri, "/state.ttl");
-	fprintf(stderr, "DIR: %s\n", base_uri);
-	fprintf(stderr, "BASE: %s\n", base_uri);
-	fprintf(stderr, "LOAD: %s\n", state_uri);
-
 
 	PluginState* state = load_state_from_file(
 		jalv->world, &jalv->map, state_uri);
@@ -597,7 +607,7 @@ jalv_save_preset(Jalv* jalv, const char* label)
 	}
 
 	// Write preset file
-	write_preset(jalv, path);
+	write_preset(jalv, path, label);
 
 	// Add entry to manifest
 	add_preset_to_manifest(jalv->plugin, manifest_path, filename, filename);

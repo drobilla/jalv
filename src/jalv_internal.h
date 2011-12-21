@@ -67,7 +67,7 @@ typedef struct PluginStateImpl PluginState;
 
 const LilvNode*
 plugin_state_get_plugin_uri(const PluginState* state);
-	
+
 /**
    Control change event, sent through ring buffers for UI updates.
 */

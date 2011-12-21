@@ -207,18 +207,18 @@ main()
 			fprintf(stderr, "error: Symbol already mapped\n");
 			return 1;
 		}
-		
+
 		const uint32_t id = symap_map(map, syms[i]);
 		if (strcmp(map->symbols[id - 1], syms[i])) {
 			fprintf(stderr, "error: Corrupt symbol table\n");
-			return 1;			
+			return 1;
 		}
 
 		if (symap_map(map, syms[i]) != id) {
 			fprintf(stderr, "error: Remapped symbol to a different ID\n");
 			return 1;
 		}
-		
+
 		symap_dump(map);
 	}
 
