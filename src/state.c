@@ -491,7 +491,7 @@ pathify(const char* in, const char* ext)
 	const size_t in_len  = strlen(in);
 	const size_t ext_len = ext ? strlen(ext) : 0;
 
-	char* out = malloc(in_len + ext_len + 1);
+	char* out = calloc(in_len + ext_len + 1, 1);
 	for (size_t i = 0; i < in_len; ++i) {
 		char c = in[i];
 		if (!((c >= 'a' && c <= 'z')
@@ -550,6 +550,13 @@ jalv_save_port_values(Jalv*           jalv,
 	}
 }
 
+static int
+add_preset_to_manifest(SerdEnv*          env,
+                       const LilvPlugin* plugin,
+                       const char*       manifest_path,
+                       const char*       preset_uri,
+                       const char*       preset_file);
+
 int
 jalv_save_preset(Jalv* jalv, const char* label)
 {
@@ -568,7 +575,6 @@ jalv_save_preset(Jalv* jalv, const char* label)
 	char* const path          = strjoin(bundle, filename);
 	char* const uri           = strjoin("file://", path);
 	char* const manifest_path = strjoin(bundle, "manifest.ttl");
-	char* const manifest_uri  = strjoin("file: //", manifest_path);
 
 	int ret = 0;
 	if ((mkdir(lv2dir, 0755) && errno != EEXIST)
@@ -624,26 +630,48 @@ jalv_save_preset(Jalv* jalv, const char* label)
 	serd_writer_free(writer);
 	serd_node_free(&base);
 
-	// Append record to manifest
-
 	fclose(fd);
-	fd = fopen((char*)manifest_path, "a");
+	add_preset_to_manifest(env, jalv->plugin,
+	                       manifest_path, filename, filename);
+
+	serd_env_free(env);
+
+done:
+	free(manifest_path);
+	free(uri);
+	free(path);
+	free(filename);
+	free(bundle);
+	free(lv2dir);
+
+	return ret;
+}
+
+static int
+add_preset_to_manifest(SerdEnv*          env,
+                       const LilvPlugin* plugin,
+                       const char*       manifest_path,
+                       const char*       preset_uri,
+                       const char*       preset_file)
+{
+	FILE* fd = fopen((char*)manifest_path, "a");
 	if (!fd) {
 		fprintf(stderr, "error: Failed to open %s (%s)\n",
-		        path, strerror(errno));
-		serd_env_free(env);
-		ret = 4;
-		goto done;
+		        manifest_path, strerror(errno));
+		return 4;
 	}
 
 #ifdef HAVE_LOCKF
 	lockf(fileno(fd), F_LOCK, 0);
 #endif
 
-	base = serd_node_new_uri_from_string((const uint8_t*)manifest_uri,
-	                                     NULL, &base_uri);
+	char* const manifest_uri = strjoin("file://", manifest_path);
 
-	writer = serd_writer_new(
+	SerdURI base_uri;
+	SerdNode base = serd_node_new_uri_from_string(
+		(const uint8_t*)manifest_uri, NULL, &base_uri);
+
+	SerdWriter* writer = serd_writer_new(
 		SERD_TURTLE, SERD_STYLE_ABBREVIATED|SERD_STYLE_CURIED,
 		env, &base_uri,
 		file_sink,
@@ -654,11 +682,11 @@ jalv_save_preset(Jalv* jalv, const char* label)
 		serd_env_foreach(env, (SerdPrefixSink)serd_writer_set_prefix, writer);
 	}
 
-	s = serd_node_from_string(SERD_URI, USTR(filename));
+	SerdNode s = serd_node_from_string(SERD_URI, USTR(preset_uri));
 
 	// <preset> a pset:Preset
-	p = serd_node_from_string(SERD_URI, USTR(NS_RDF "type"));
-	o = serd_node_from_string(SERD_CURIE, USTR("pset:Preset"));
+	SerdNode p = serd_node_from_string(SERD_URI, USTR(NS_RDF "type"));
+	SerdNode o = serd_node_from_string(SERD_CURIE, USTR("pset:Preset"));
 	serd_writer_write_statement(writer, 0, NULL, &s, &p, &o, NULL, NULL);
 
 	// <preset> rdfs:seeAlso <preset>
@@ -668,11 +696,10 @@ jalv_save_preset(Jalv* jalv, const char* label)
 	// <preset> lv2:appliesTo <plugin>
 	p = serd_node_from_string(SERD_URI, USTR(NS_LV2 "appliesTo"));
 	o = serd_node_from_string(
-		SERD_URI, USTR(lilv_node_as_string(lilv_plugin_get_uri(jalv->plugin))));
+		SERD_URI, USTR(lilv_node_as_string(lilv_plugin_get_uri(plugin))));
 	serd_writer_write_statement(writer, 0, NULL, &s, &p, &o, NULL, NULL);
 
 	serd_writer_free(writer);
-	serd_env_free(env);
 	serd_node_free(&base);
 
 #ifdef HAVE_LOCKF
@@ -680,15 +707,7 @@ jalv_save_preset(Jalv* jalv, const char* label)
 #endif
 
 	fclose(fd);
-
-done:
 	free(manifest_uri);
-	free(manifest_path);
-	free(uri);
-	free(path);
-	free(filename);
-	free(bundle);
-	free(lv2dir);
 
-	return ret;
+	return 0;
 }
