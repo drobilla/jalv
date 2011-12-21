@@ -287,13 +287,35 @@ on_statement(void*              handle,
 	return SERD_SUCCESS;
 }
 
+static PluginState*
+load_state_from_file(LilvWorld*    world,
+                     LV2_URID_Map* map,
+                     const char*   state_uri);
+
 PluginState*
 jalv_load_state(Jalv* jalv, const char* dir)
 {
+	const size_t dir_len       = strlen(dir);
+	const size_t state_uri_len = strlen("file:///state.ttl") + dir_len + 1;
+	char*        state_uri     = (char*)malloc(state_uri_len);
+	snprintf(state_uri, state_uri_len, "file://%s/state.ttl", dir);
+
+	PluginState* state = load_state_from_file(
+		jalv->world, &jalv->map, state_uri);
+
+	free(state_uri);
+	return state;
+}
+
+static PluginState*
+load_state_from_file(LilvWorld*    world,
+                     LV2_URID_Map* map,
+                     const char*   state_uri)
+{
 	RestoreData data;
 	memset(&data, '\0', sizeof(RestoreData));
-	data.world = jalv->world;
-	data.map   = &jalv->map;
+	data.world = world;
+	data.map   = map;
 
 	SerdReader* reader = serd_reader_new(
 		SERD_TURTLE,
@@ -303,20 +325,13 @@ jalv_load_state(Jalv* jalv, const char* dir)
 		on_statement,
 		NULL);
 
-	const size_t dir_len       = strlen(dir);
-	const size_t state_uri_len = strlen("file:///state.ttl") + dir_len + 1;
-	char*        state_uri     = (char*)malloc(state_uri_len);
-	snprintf(state_uri, state_uri_len, "file://%s/state.ttl", dir);
-
 	SerdStatus st = serd_reader_read_file(reader, USTR(state_uri));
 	if (st) {
 		fprintf(stderr, "Error reading state from %s (%s)\n",
 		        state_uri, serd_strerror(st));
-		free(state_uri);
 		return NULL;
 	}
 
-	free(state_uri);
 	serd_reader_free(reader);
 
 	PluginState* state = (PluginState*)malloc(sizeof(PluginState));
