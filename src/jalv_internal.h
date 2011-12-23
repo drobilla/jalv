@@ -63,11 +63,6 @@ struct Port {
 	bool              old_api;    /**< True for event, false for atom */
 };
 
-typedef struct PluginStateImpl PluginState;
-
-const LilvNode*
-plugin_state_get_plugin_uri(const PluginState* state);
-
 /**
    Control change event, sent through ring buffers for UI updates.
 */
@@ -173,11 +168,8 @@ jalv_save_port_values(Jalv*           jalv,
                       SerdWriter*     writer,
                       const SerdNode* subject);
 
-PluginState*
-jalv_load_state(Jalv* jalv, const char* dir);
-
 void
-jalv_apply_state(Jalv* jalv, PluginState* state);
+jalv_apply_state(Jalv* jalv, LilvState* state);
 
 static inline char*
 jalv_strdup(const char* str)
@@ -186,6 +178,20 @@ jalv_strdup(const char* str)
 	char*        copy = (char*)malloc(len + 1);
 	memcpy(copy, str, len + 1);
 	return copy;
+}
+
+static inline char*
+jalv_strjoin(const char* a, const char* b)
+{
+	const size_t a_len = strlen(a);
+	const size_t b_len = strlen(b);
+	char* const  out   = (char*)malloc(a_len + b_len + 1);
+
+	memcpy(out,         a, a_len);
+	memcpy(out + a_len, b, b_len);
+	out[a_len + b_len] = '\0';
+
+	return out;
 }
 
 #ifdef __cplusplus

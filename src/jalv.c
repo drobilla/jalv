@@ -56,7 +56,7 @@ map_uri(LV2_URID_Map_Handle handle,
 {
 	//return symap_map(((Jalv*)handle)->symap, uri);
 	const LV2_URID id = symap_map(((Jalv*)handle)->symap, uri);
-	printf("MAP %s => %u\n", uri, id);
+	//printf("MAP %s => %u\n", uri, id);
 	return id;
 }
 
@@ -77,7 +77,7 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
 {
 	//return symap_map(((Jalv*)callback_data)->symap, uri);
 	const LV2_URID id = symap_map(((Jalv*)callback_data)->symap, uri);
-	printf("MAP %s => %u\n", uri, id);
+	//printf("MAP %s => %u\n", uri, id);
 	return id;
 }
 
@@ -563,15 +563,17 @@ main(int argc, char** argv)
 	                                  "connectionOptional");
 
 	/* Get plugin URI from loaded state or command line */
-	PluginState* state      = NULL;
-	LilvNode*    plugin_uri = NULL;
+	LilvState* state      = NULL;
+	LilvNode*  plugin_uri = NULL;
 	if (host.opts.load) {
-		state = jalv_load_state(&host, host.opts.load);
+		char* path = jalv_strjoin(host.opts.load, "/state.ttl");
+		state = lilv_state_new_from_file(host.world, &host.map, NULL, path);
+		free(path);
 		if (!state) {
 			fprintf(stderr, "Failed to load state from %s\n", host.opts.load);
 			return EXIT_FAILURE;
 		}
-		plugin_uri = lilv_node_duplicate(plugin_state_get_plugin_uri(state));
+		plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
 	} else if (argc > 1) {
 		plugin_uri = lilv_new_uri(world, argv[1]);
 	} else {
