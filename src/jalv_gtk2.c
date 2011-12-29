@@ -22,6 +22,9 @@ static void
 on_window_destroy(GtkWidget* widget,
                   gpointer   data)
 {
+	Jalv* jalv = (Jalv*)data;
+	suil_instance_free(jalv->ui_instance);
+	jalv->ui_instance = NULL;
 	gtk_main_quit();
 }
 
@@ -178,7 +181,7 @@ jalv_open_ui(Jalv*         jalv,
 	jalv->window = window;
 
 	g_signal_connect(window, "destroy",
-	                 G_CALLBACK(on_window_destroy), NULL);
+	                 G_CALLBACK(on_window_destroy), jalv);
 
 	gtk_window_set_title(GTK_WINDOW(window),
 	                     lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
