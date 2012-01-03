@@ -299,6 +299,28 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 {
 	Jalv* const host = (Jalv*)data;
 
+	switch (host->play_state) {
+	case JALV_PAUSE_REQUESTED:
+		host->play_state = JALV_PAUSED;
+		sem_post(&host->paused);
+		break;
+	case JALV_PAUSED:
+		for (uint32_t p = 0; p < host->num_ports; ++p) {
+			jack_port_t* jport = host->ports[p].jack_port;
+			if (jport && host->ports[p].flow == FLOW_OUTPUT) {
+				void* buf = jack_port_get_buffer(jport, nframes);
+				if (host->ports[p].type == TYPE_EVENT) {
+					jack_midi_clear_buffer(buf);
+				} else {
+					memset(buf, '\0', nframes * sizeof(float));
+				}
+			}
+		}
+		return 0;
+	default:
+		break;
+	}
+
 	/* Prepare port buffers */
 	for (uint32_t p = 0; p < host->num_ports; ++p) {
 		if (!host->ports[p].jack_port)
@@ -539,6 +561,8 @@ main(int argc, char** argv)
 
 	sem_init(&exit_sem, 0, 0);
 	host.done = &exit_sem;
+
+	sem_init(&host.paused, 0, 0);
 
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);

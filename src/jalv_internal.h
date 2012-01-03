@@ -78,6 +78,12 @@ typedef struct {
 	char* load;
 } JalvOptions;
 
+typedef enum {
+	JALV_RUNNING,
+	JALV_PAUSE_REQUESTED,
+	JALV_PAUSED
+} JalvPlayState;
+
 typedef struct {
 	JalvOptions        opts;          /**< Command-line options */
 	const char*        prog_name;     /**< Program name (argv[0]) */
@@ -91,6 +97,8 @@ typedef struct {
 	jack_ringbuffer_t* ui_events;     /**< Port events from UI */
 	jack_ringbuffer_t* plugin_events; /**< Port events from plugin */
 	sem_t*             done;          /**< Exit semaphore */
+	sem_t              paused;        /**< Paused signal from process thread */
+	JalvPlayState      play_state;    /**< Current play state */
 	const LilvPlugin*  plugin;        /**< Plugin class (RDF data) */
 	const LilvUI*      ui;            /**< Plugin UI (RDF data) */
 	LilvInstance*      instance;      /**< Plugin instance (shared library) */

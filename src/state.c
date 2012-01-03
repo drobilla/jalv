@@ -132,8 +132,13 @@ void
 jalv_apply_state(Jalv* jalv, LilvState* state)
 {
 	if (state) {
+		jalv->play_state = JALV_PAUSE_REQUESTED;
+		sem_wait(&jalv->paused);
+
 		lilv_state_restore(
 			state, jalv->instance, set_port_value, jalv, 0, NULL);
+
+		jalv->play_state = JALV_RUNNING;
 	}
 }
 
