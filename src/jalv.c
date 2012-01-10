@@ -297,8 +297,10 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 {
 	Jalv* const host = (Jalv*)data;
 	host->buf_size_set = true;
+#ifdef jack_port_type_get_buffer_size
 	host->midi_buf_size = jack_port_type_get_buffer_size(
 		host->jack_client, JACK_DEFAULT_MIDI_TYPE);
+#endif
 	jalv_allocate_port_buffers(host);
 	return 0;
 }
@@ -696,8 +698,14 @@ main(int argc, char** argv)
 	if (!host.jack_client)
 		die("Failed to connect to JACK.\n");
 
+#ifdef jack_port_type_get_buffer_size
 	host.midi_buf_size = jack_port_type_get_buffer_size(
 		host.jack_client, JACK_DEFAULT_MIDI_TYPE);
+#else
+	host.midi_buf_size = 4096;
+	fprintf(stderr, "warning: Old JACK, using default MIDI buffer size %zu\n",
+	        host.midi_buf_size);
+#endif
 
 	/* Instantiate the plugin */
 	host.instance = lilv_plugin_instantiate(
