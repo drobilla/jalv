@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#define _POSIX_C_SOURCE 200809L  /* for mkdtemp */
+
 #include <math.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -83,11 +85,12 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
 
 #define NS_EXT "http://lv2plug.in/ns/ext/"
 
-static LV2_URI_Map_Feature uri_map          = { NULL, &uri_to_id };
-static LV2_Feature         uri_map_feature  = { NS_EXT "uri-map", &uri_map };
-static LV2_Feature         map_feature      = { NS_EXT "urid#map", NULL };
-static LV2_Feature         unmap_feature    = { NS_EXT "urid#unmap", NULL };
-static LV2_Feature         instance_feature = { NS_EXT "instance-access", NULL };
+static LV2_URI_Map_Feature uri_map           = { NULL, &uri_to_id };
+static LV2_Feature         uri_map_feature   = { NS_EXT "uri-map", &uri_map };
+static LV2_Feature         map_feature       = { NS_EXT "urid#map", NULL };
+static LV2_Feature         unmap_feature     = { NS_EXT "urid#unmap", NULL };
+static LV2_Feature         instance_feature  = { NS_EXT "instance-access", NULL };
+static LV2_Feature         make_path_feature = { LV2_STATE_MAKE_PATH_URI, NULL };
 
 #ifdef HAVE_LV2_UI_RESIZE
 static int
@@ -102,12 +105,19 @@ lv2_ui_resize(LV2_UI_Resize_Feature_Data data, int width, int height)
 LV2_UI_Resize_Feature    ui_resize         = { NULL, &lv2_ui_resize };
 static const LV2_Feature ui_resize_feature = { NS_EXT "ui-resize#UIResize", &ui_resize };
 
-const LV2_Feature* features[5] = {
-	&uri_map_feature, &map_feature, &instance_feature, &ui_resize_feature
+const LV2_Feature* features[8] = {
+	&uri_map_feature, &map_feature, &unmap_feature,
+	&instance_feature,
+	&make_path_feature,
+	&ui_resize_feature,
+	NULL
 };
 #else
-const LV2_Feature* features[4] = {
-	&uri_map_feature, &map_feature, &instance_feature, NULL
+const LV2_Feature* features[7] = {
+	&uri_map_feature, &map_feature, &unmap_feature,
+	&instance_feature,
+	&make_path_feature,
+	NULL
 };
 #endif
 
@@ -528,6 +538,7 @@ main(int argc, char** argv)
 	memset(&host, '\0', sizeof(Jalv));
 	host.prog_name     = argv[0];
 	host.midi_buf_size = 1024;  // Should be set by jack_buffer_size_cb
+	host.play_state    = JALV_PAUSED;
 
 	if (jalv_init(&argc, &argv, &host.opts)) {
 		return EXIT_FAILURE;
@@ -552,6 +563,13 @@ main(int argc, char** argv)
 	                               "http://lv2plug.in/ns/ext/event",
 	                               NS_MIDI "MidiEvent");
 	host.atom_prot_id = symap_map(host.symap, NS_ATOM "atomTransfer");
+
+	char* template = jalv_strdup("/tmp/jalv-XXXXXX");
+	host.temp_dir = jalv_strjoin(mkdtemp(template), "/");
+	free(template);
+
+	LV2_State_Make_Path make_path = { &host, jalv_make_path };
+	make_path_feature.data = &make_path;
 
 #ifdef HAVE_LV2_UI_RESIZE
 	ui_resize.data = &host;
@@ -723,6 +741,7 @@ main(int argc, char** argv)
 	/* Activate Jack */
 	jack_activate(host.jack_client);
 	host.sample_rate = jack_get_sample_rate(host.jack_client);
+	host.play_state  = JALV_RUNNING;
 
 	SuilHost* ui_host = NULL;
 	if (host.ui) {
@@ -797,6 +816,9 @@ main(int argc, char** argv)
 	lilv_world_free(world);
 
 	sem_destroy(&exit_sem);
+
+	remove(host.temp_dir);
+	free(host.temp_dir);
 
 	return 0;
 }

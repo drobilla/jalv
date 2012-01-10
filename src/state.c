@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -45,6 +46,21 @@
 
 #define USTR(s) ((const uint8_t*)s)
 
+char*
+jalv_make_path(LV2_State_Make_Path_Handle handle,
+               const char*                path)
+{
+	Jalv* jalv = (Jalv*)handle;
+
+	// Create in save directory if saving, otherwise use temp directory
+	const char* dir = (jalv->save_dir) ? jalv->save_dir : jalv->temp_dir;
+
+	char* fullpath = jalv_strjoin(dir, path);
+	fprintf(stderr, "MAKE PATH `%s' => `%s'\n", path, fullpath);
+
+	return fullpath;
+}
+
 LilvNode*
 get_port_value(const char* port_symbol,
                void*       user_data)
@@ -60,15 +76,20 @@ get_port_value(const char* port_symbol,
 void
 jalv_save(Jalv* jalv, const char* dir)
 {
-	char* const      path  = jalv_strjoin(dir, "/state.ttl");
+	jalv->save_dir = jalv_strjoin(dir, "/");
+	
 	LilvState* const state = lilv_state_new_from_instance(
-		jalv->plugin, jalv->instance,
+		jalv->plugin, jalv->instance, &jalv->map, jalv->temp_dir,
 		get_port_value, jalv,
 		LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE, NULL);
 
-	lilv_state_save(jalv->world, &jalv->unmap, state, NULL, path, NULL);
+	lilv_state_save(jalv->world, &jalv->unmap, state, NULL,
+	                dir, "state.ttl", NULL);
 
 	lilv_state_free(state);
+
+	free(jalv->save_dir);
+	jalv->save_dir = NULL;
 }
 
 int
@@ -132,13 +153,18 @@ void
 jalv_apply_state(Jalv* jalv, LilvState* state)
 {
 	if (state) {
-		jalv->play_state = JALV_PAUSE_REQUESTED;
-		sem_wait(&jalv->paused);
+		const bool must_pause = (jalv->play_state == JALV_RUNNING);
+		if (must_pause) {
+			jalv->play_state = JALV_PAUSE_REQUESTED;
+			sem_wait(&jalv->paused);
+		}
 
 		lilv_state_restore(
 			state, jalv->instance, set_port_value, jalv, 0, NULL);
 
-		jalv->play_state = JALV_RUNNING;
+		if (must_pause) {
+			jalv->play_state = JALV_RUNNING;
+		}
 	}
 }
 
@@ -156,13 +182,13 @@ int
 jalv_save_preset(Jalv* jalv, const char* label)
 {
 	LilvState* const state = lilv_state_new_from_instance(
-		jalv->plugin, jalv->instance,
+		jalv->plugin, jalv->instance, &jalv->map, jalv->temp_dir,
 		get_port_value, jalv,
 		LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE, NULL);
 
 	lilv_state_set_label(state, label);
 	int ret = lilv_state_save(jalv->world, &jalv->unmap, state,
-	                          NULL, NULL, NULL);
+	                          NULL, NULL, NULL, NULL);
 	lilv_state_free(state);
 
 	return ret;

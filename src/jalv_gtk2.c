@@ -72,7 +72,6 @@ on_save_activate(GtkWidget* widget, void* ptr)
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
 		char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 		char* base     = g_build_filename(filename, "/", NULL);
-		fprintf(stderr, "SAVE TO %s\n", base);
 		jalv_save(jalv, base);
 		g_free(filename);
 		g_free(base);

@@ -29,6 +29,7 @@
 #include "suil/suil.h"
 
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
+#include "lv2/lv2plug.in/ns/ext/state/state.h"
 
 #include "lv2_evbuf.h"
 #include "symap.h"
@@ -90,8 +91,8 @@ typedef struct {
 	LilvWorld*         world;         /**< Lilv World */
 	int                ui_width;      /**< Requested UI width */
 	int                ui_height;     /**< Requested UI height */
-	LV2_URID_Map       map;
-	LV2_URID_Unmap     unmap;
+	LV2_URID_Map       map;           /**< URI => Int map */
+	LV2_URID_Unmap     unmap;         /**< Int => URI map */
 	Symap*             symap;         /**< Symbol (URI) map */
 	jack_client_t*     jack_client;   /**< Jack client */
 	jack_ringbuffer_t* ui_events;     /**< Port events from UI */
@@ -99,6 +100,8 @@ typedef struct {
 	sem_t*             done;          /**< Exit semaphore */
 	sem_t              paused;        /**< Paused signal from process thread */
 	JalvPlayState      play_state;    /**< Current play state */
+	char*              temp_dir;      /**< Temporary plugin state directory */
+	char*              save_dir;      /**< Plugin save directory */
 	const LilvPlugin*  plugin;        /**< Plugin class (RDF data) */
 	const LilvUI*      ui;            /**< Plugin UI (RDF data) */
 	LilvInstance*      instance;      /**< Plugin instance (shared library) */
@@ -175,6 +178,9 @@ void
 jalv_save_port_values(Jalv*           jalv,
                       SerdWriter*     writer,
                       const SerdNode* subject);
+char*
+jalv_make_path(LV2_State_Make_Path_Handle handle,
+               const char*                path);
 
 void
 jalv_apply_state(Jalv* jalv, LilvState* state);
