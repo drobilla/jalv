@@ -16,13 +16,16 @@
 
 #define _POSIX_C_SOURCE 200809L  /* for mkdtemp */
 
+#include <assert.h>
 #include <math.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "jalv_internal.h"
 #include "jalv-config.h"
@@ -610,9 +613,16 @@ main(int argc, char** argv)
 	LilvState* state      = NULL;
 	LilvNode*  plugin_uri = NULL;
 	if (host.opts.load) {
-		char* path = jalv_strjoin(host.opts.load, "/state.ttl");
-		state = lilv_state_new_from_file(host.world, &host.map, NULL, path);
-		free(path);
+		struct stat info;
+		stat(host.opts.load, &info);
+		if (S_ISDIR(info.st_mode)) {
+			char* path = jalv_strjoin(host.opts.load, "/state.ttl");
+			state = lilv_state_new_from_file(host.world, &host.map, NULL, path);
+			free(path);
+		} else {
+			state = lilv_state_new_from_file(host.world, &host.map, NULL,
+			                                 host.opts.load);
+		}
 		if (!state) {
 			fprintf(stderr, "Failed to load state from %s\n", host.opts.load);
 			return EXIT_FAILURE;
