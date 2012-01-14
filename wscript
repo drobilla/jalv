@@ -86,6 +86,7 @@ def build(bld):
               source       = source + ' src/jalv_console.c',
               target       = 'jalv',
               includes     = ['.'],
+              lib          = ['pthread'],
               install_path = '${BINDIR}')
     autowaf.use_lib(bld, obj, libs)
 
@@ -95,6 +96,7 @@ def build(bld):
                   source       = source + ' src/jalv_gtk2.c',
                   target       = 'jalv.gtk',
                   includes     = ['.'],
+                  lib          = ['pthread'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' GTK2')
 
@@ -104,6 +106,7 @@ def build(bld):
                   source       = source + ' src/jalv_qt4.cpp',
                   target       = 'jalv.qt',
                   includes     = ['.'],
+                  lib          = ['pthread'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' QT4')
 
