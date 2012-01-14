@@ -711,6 +711,7 @@ main(int argc, char** argv)
 #ifdef jack_port_type_get_buffer_size
 	host.midi_buf_size = jack_port_type_get_buffer_size(
 		host.jack_client, JACK_DEFAULT_MIDI_TYPE);
+	printf("MIDI buffer size: %zu\n", host.midi_buf_size);
 #else
 	host.midi_buf_size = 4096;
 	fprintf(stderr, "warning: Old JACK, using default MIDI buffer size %zu\n",
