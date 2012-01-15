@@ -153,7 +153,7 @@ symap_map(Symap* map, const char* sym)
 	char* const    str = symap_strdup(sym);
 
 	/* Append new symbol to symbols array */
-	map->symbols = realloc(map->symbols, map->size * sizeof(char*));
+	map->symbols = realloc(map->symbols, map->size * sizeof(str));
 	map->symbols[id - 1] = str;
 
 	/* Insert new index element into sorted index */
@@ -187,7 +187,8 @@ symap_dump(Symap* map)
 {
 	fprintf(stderr, "{\n");
 	for (uint32_t i = 0; i < map->size; ++i) {
-		fprintf(stderr, "\t%u = %s\n", map->index[i], map->symbols[map->index[i] - 1]);
+		fprintf(stderr, "\t%u = %s\n",
+		        map->index[i], map->symbols[map->index[i] - 1]);
 	}
 	fprintf(stderr, "}\n");
 }

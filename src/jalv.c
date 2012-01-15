@@ -59,10 +59,7 @@ LV2_URID
 map_uri(LV2_URID_Map_Handle handle,
         const char*         uri)
 {
-	//return symap_map(((Jalv*)handle)->symap, uri);
-	const LV2_URID id = symap_map(((Jalv*)handle)->symap, uri);
-	//printf("MAP %s => %u\n", uri, id);
-	return id;
+	return symap_map(((Jalv*)handle)->symap, uri);
 }
 
 const char*
@@ -80,20 +77,18 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
           const char*               map,
           const char*               uri)
 {
-	//return symap_map(((Jalv*)callback_data)->symap, uri);
-	const LV2_URID id = symap_map(((Jalv*)callback_data)->symap, uri);
-	//printf("MAP %s => %u\n", uri, id);
-	return id;
+	return symap_map(((Jalv*)callback_data)->symap, uri);
 }
 
 #define NS_EXT "http://lv2plug.in/ns/ext/"
 
-static LV2_URI_Map_Feature uri_map           = { NULL, &uri_to_id };
-static LV2_Feature         uri_map_feature   = { NS_EXT "uri-map", &uri_map };
-static LV2_Feature         map_feature       = { NS_EXT "urid#map", NULL };
-static LV2_Feature         unmap_feature     = { NS_EXT "urid#unmap", NULL };
-static LV2_Feature         instance_feature  = { NS_EXT "instance-access", NULL };
-static LV2_Feature         make_path_feature = { LV2_STATE_MAKE_PATH_URI, NULL };
+static LV2_URI_Map_Feature uri_map = { NULL, &uri_to_id };
+
+static LV2_Feature uri_map_feature   = { NS_EXT "uri-map", &uri_map };
+static LV2_Feature map_feature       = { NS_EXT "urid#map", NULL };
+static LV2_Feature unmap_feature     = { NS_EXT "urid#unmap", NULL };
+static LV2_Feature instance_feature  = { NS_EXT "instance-access", NULL };
+static LV2_Feature make_path_feature = { LV2_STATE_MAKE_PATH_URI, NULL };
 
 #ifdef HAVE_LV2_UI_RESIZE
 static int
@@ -106,7 +101,8 @@ lv2_ui_resize(LV2_UI_Resize_Feature_Data data, int width, int height)
 }
 
 LV2_UI_Resize_Feature    ui_resize         = { NULL, &lv2_ui_resize };
-static const LV2_Feature ui_resize_feature = { NS_EXT "ui-resize#UIResize", &ui_resize };
+static const LV2_Feature ui_resize_feature = { NS_EXT "ui-resize#UIResize",
+                                               &ui_resize };
 
 const LV2_Feature* features[8] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
@@ -152,8 +148,8 @@ create_port(Jalv*    host,
 	port->flow      = FLOW_UNKNOWN;
 
 	/* Get the port symbol for console printing */
-	const LilvNode* symbol     = lilv_port_get_symbol(host->plugin, port->lilv_port);
-	const char*     symbol_str = lilv_node_as_string(symbol);
+	const LilvNode* symbol = lilv_port_get_symbol(host->plugin,
+	                                              port->lilv_port);
 
 	const bool optional = lilv_port_has_property(host->plugin,
 	                                             port->lilv_port,
@@ -162,7 +158,8 @@ create_port(Jalv*    host,
 	/* Set the port flow (input or output) */
 	if (lilv_port_is_a(host->plugin, port->lilv_port, host->input_class)) {
 		port->flow = FLOW_INPUT;
-	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->output_class)) {
+	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
+	                          host->output_class)) {
 		port->flow = FLOW_OUTPUT;
 	} else if (!optional) {
 		die("Mandatory port has unknown type (neither input nor output)");
@@ -172,20 +169,25 @@ create_port(Jalv*    host,
 	if (lilv_port_is_a(host->plugin, port->lilv_port, host->control_class)) {
 		port->type    = TYPE_CONTROL;
 		port->control = isnan(default_value) ? 0.0 : default_value;
-	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->audio_class)) {
+	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
+	                          host->audio_class)) {
 		port->type = TYPE_AUDIO;
-	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->event_class)) {
+	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
+	                          host->event_class)) {
 		port->type = TYPE_EVENT;
 		port->old_api = true;
-	} else if (lilv_port_is_a(host->plugin, port->lilv_port, host->aevent_class)) {
+	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
+	                          host->aevent_class)) {
 		port->type = TYPE_EVENT;
 		port->old_api = false;
 	} else if (!optional) {
-		die("Mandatory port has unknown type (neither control nor audio nor event)");
+		die("Mandatory port has unknown data type");
 	}
 
-	const size_t sym_len = strlen(symbol_str);
-	host->longest_sym = (sym_len > host->longest_sym) ? sym_len : host->longest_sym;
+	const size_t sym_len = strlen(lilv_node_as_string(symbol));
+	if (sym_len > host->longest_sym) {
+		host->longest_sym = sym_len;
+	}
 }
 
 /**
@@ -260,8 +262,9 @@ activate_port(Jalv*    host,
 	struct Port* const port = &host->ports[port_index];
 
 	/* Get the port symbol for console printing */
-	const LilvNode* symbol     = lilv_port_get_symbol(host->plugin, port->lilv_port);
-	const char*     symbol_str = lilv_node_as_string(symbol);
+	const LilvNode* symbol = lilv_port_get_symbol(host->plugin,
+	                                              port->lilv_port);
+	const char* symbol_str = lilv_node_as_string(symbol);
 
 	/* Connect unsupported ports to NULL (known to be optional by this point) */
 	if (port->flow == FLOW_UNKNOWN || port->type == TYPE_UNKNOWN) {
@@ -283,11 +286,13 @@ activate_port(Jalv*    host,
 		break;
 	case TYPE_AUDIO:
 		port->jack_port = jack_port_register(
-			host->jack_client, symbol_str, JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
+			host->jack_client, symbol_str,
+			JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
 		break;
 	case TYPE_EVENT:
 		port->jack_port = jack_port_register(
-			host->jack_client, symbol_str, JACK_DEFAULT_MIDI_TYPE, jack_flags, 0);
+			host->jack_client, symbol_str,
+			JACK_DEFAULT_MIDI_TYPE, jack_flags, 0);
 		break;
 	default:
 		break;
@@ -371,23 +376,25 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	/* Read and apply control change events from UI */
 	if (host->ui) {
 		ControlChange ev;
-		size_t        ev_read_size = jack_ringbuffer_read_space(host->ui_events);
-		for (size_t i = 0; i < ev_read_size; i += sizeof(ev) + ev.size) {
+		const size_t  space = jack_ringbuffer_read_space(host->ui_events);
+		for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
 			jack_ringbuffer_read(host->ui_events, (char*)&ev, sizeof(ev));
 			char body[ev.size];
 			jack_ringbuffer_read(host->ui_events, body, ev.size);
+			struct Port* const port = &host->ports[ev.index];
 			if (ev.protocol == 0) {
 				assert(ev.size == sizeof(float));
-				host->ports[ev.index].control = *(float*)body;
+				port->control = *(float*)body;
 			} else if (ev.protocol == host->atom_prot_id) {
 				printf("ATOM UI READ\n");
 				for (uint32_t i = 0; i < ev.size; ++i) {
 					printf("%c", body[i]);
 				}
 				printf("\n");
-				LV2_Evbuf_Iterator i = lv2_evbuf_end(host->ports[ev.index].evbuf);
+				LV2_Evbuf_Iterator    i    = lv2_evbuf_end(port->evbuf);
 				const LV2_Atom* const atom = (const LV2_Atom*)body;
-				lv2_evbuf_write(&i, nframes, 0, atom->type, atom->size, atom->body);
+				lv2_evbuf_write(&i, nframes, 0,
+				                atom->type, atom->size, atom->body);
 			} else {
 				fprintf(stderr, "error: Unknown control change protocol %d\n",
 				        ev.protocol);
@@ -400,8 +407,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 	/* Check if it's time to send updates to the UI */
 	host->event_delta_t += nframes;
-	bool send_ui_updates = false;
-	if (host->ui && (host->event_delta_t > host->sample_rate / JALV_UI_UPDATE_HZ)) {
+	bool           send_ui_updates = false;
+	jack_nframes_t update_frames   = host->sample_rate / JALV_UI_UPDATE_HZ;
+	if (host->ui && (host->event_delta_t > update_frames)) {
 		send_ui_updates = true;
 		host->event_delta_t = 0;
 	}
@@ -409,18 +417,14 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	/* Deliver MIDI output and UI events */
 	for (uint32_t p = 0; p < host->num_ports; ++p) {
 		struct Port* const port = &host->ports[p];
-		if (port->jack_port
-		    && !port->flow == FLOW_INPUT
+		if (port->jack_port && port->flow == FLOW_OUTPUT
 		    && port->type == TYPE_EVENT) {
-
-			void* buf = jack_port_get_buffer(port->jack_port,
-			                                 nframes);
-
+			void* buf = jack_port_get_buffer(port->jack_port, nframes);
 			jack_midi_clear_buffer(buf);
 
-			LV2_Evbuf_Iterator iter        = lv2_evbuf_begin(port->evbuf);
-			const uint32_t     event_count = lv2_evbuf_get_event_count(iter.evbuf);
-			for (uint32_t i = 0; i < event_count; ++i) {
+			LV2_Evbuf_Iterator iter  = lv2_evbuf_begin(port->evbuf);
+			const uint32_t     count = lv2_evbuf_get_event_count(iter.evbuf);
+			for (uint32_t i = 0; i < count; ++i) {
 				uint32_t frames, subframes, type, size;
 				uint8_t* data;
 				lv2_evbuf_get(iter, &frames, &subframes,
@@ -496,8 +500,6 @@ jalv_ui_write(SuilController controller,
 		printf("\n");
 	}
 
-	//const ControlChange ev = { port_index, *(float*)buffer };
-	//jack_ringbuffer_write(host->ui_events, (const char*)&ev, sizeof(ev));
 	char buf[sizeof(ControlChange) + buffer_size];
 	ControlChange* ev = (ControlChange*)buf;
 	ev->index    = port_index;
@@ -518,8 +520,8 @@ bool
 jalv_emit_ui_events(Jalv* host)
 {
 	ControlChange ev;
-	size_t        ev_read_size = jack_ringbuffer_read_space(host->plugin_events);
-	for (size_t i = 0; i < ev_read_size; i += sizeof(ev) + ev.size) {
+	const size_t  space = jack_ringbuffer_read_space(host->plugin_events);
+	for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
 		jack_ringbuffer_read(host->plugin_events, (char*)&ev, sizeof(ev));
 		char buf[ev.size];
 		jack_ringbuffer_read(host->plugin_events, buf, ev.size);
@@ -650,7 +652,7 @@ main(int argc, char** argv)
 	const LilvNode* ui_type        = NULL;
 	host.ui = NULL;
 	if (native_ui_type) {
-		LilvUIs* uis = lilv_plugin_get_uis(host.plugin); // FIXME: leak
+		LilvUIs* uis = lilv_plugin_get_uis(host.plugin);  // FIXME: leak
 		LILV_FOREACH(uis, u, uis) {
 			const LilvUI* this_ui = lilv_uis_get(uis, u);
 			if (lilv_ui_is_supported(this_ui,
@@ -683,7 +685,7 @@ main(int argc, char** argv)
 	/* Truncate plugin name to suit JACK (if necessary) */
 	char* jack_name = NULL;
 	if (strlen(name_str) >= (unsigned)jack_client_name_size() - 1) {
-		jack_name = calloc(jack_client_name_size(), sizeof(char));
+		jack_name = calloc(jack_client_name_size(), 1);
 		strncpy(jack_name, name_str, jack_client_name_size() - 1);
 	} else {
 		jack_name = jalv_strdup(name_str);

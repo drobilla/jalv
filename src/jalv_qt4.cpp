@@ -53,7 +53,7 @@ jalv_ui_resize(Jalv* jalv, int width, int height)
 
 class Timer : public QTimer {
 public:
-	Timer(Jalv* j) : jalv(j) {}
+	explicit Timer(Jalv* j) : jalv(j) {}
 
 	void timerEvent(QTimerEvent* e) {
 		jalv_emit_ui_events(jalv);
@@ -86,4 +86,4 @@ jalv_open_ui(Jalv*         jalv,
 	return ret;
 }
 
-} // extern "C"
+}  // extern "C"

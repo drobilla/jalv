@@ -36,7 +36,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "UUID for Jack session restoration", "UUID" },
 		{ "load", 'l', 0, G_OPTION_ARG_STRING, &opts->load,
 		  "Load state from save directory", "DIR" },
-		{ 0,0,0,0,0,0,0 } };
+		{ 0, 0, 0, 0, 0, 0, 0 } };
 	GError* error = NULL;
 	const int err = gtk_init_with_args(
 		argc, argv,
@@ -70,10 +70,10 @@ on_save_activate(GtkWidget* widget, void* ptr)
 		NULL);
 
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-		char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-		char* base     = g_build_filename(filename, "/", NULL);
+		char* path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+		char* base = g_build_filename(path, "/", NULL);
 		jalv_save(jalv, base);
-		g_free(filename);
+		g_free(path);
 		g_free(base);
 	}
 
@@ -164,7 +164,7 @@ int
 jalv_ui_resize(Jalv* jalv, int width, int height)
 {
 	if (jalv->ui_instance) {
-		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(jalv->ui_instance);
+		GtkWidget* widget = suil_instance_get_widget(jalv->ui_instance);
 		if (widget) {
 			gtk_widget_set_size_request(GTK_WIDGET(widget), width, height);
 		}
@@ -182,18 +182,20 @@ jalv_open_ui(Jalv*         jalv,
 	g_signal_connect(window, "destroy",
 	                 G_CALLBACK(on_window_destroy), jalv);
 
-	gtk_window_set_title(GTK_WINDOW(window),
-	                     lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
-
-	GtkAccelGroup* accels = gtk_accel_group_new();
-	gtk_window_add_accel_group(GTK_WINDOW(window), accels);
+	gtk_window_set_title(
+		GTK_WINDOW(window),
+		lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
 
 	GtkWidget* vbox      = gtk_vbox_new(FALSE, 0);
 	GtkWidget* menu_bar  = gtk_menu_bar_new();
 	GtkWidget* file      = gtk_menu_item_new_with_mnemonic("_File");
 	GtkWidget* file_menu = gtk_menu_new();
-	GtkWidget* save      = gtk_image_menu_item_new_from_stock(GTK_STOCK_SAVE, accels);
-	GtkWidget* quit      = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, accels);
+
+	GtkAccelGroup* ag = gtk_accel_group_new();
+	gtk_window_add_accel_group(GTK_WINDOW(window), ag);
+
+	GtkWidget* save = gtk_image_menu_item_new_from_stock(GTK_STOCK_SAVE, ag);
+	GtkWidget* quit = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, ag);
 
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(file), file_menu);
 	gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), save);
@@ -202,7 +204,8 @@ jalv_open_ui(Jalv*         jalv,
 
 	GtkWidget* presets      = gtk_menu_item_new_with_mnemonic("_Presets");
 	GtkWidget* presets_menu = gtk_menu_new();
-	GtkWidget* save_preset  = gtk_menu_item_new_with_mnemonic("_Save Preset...");
+	GtkWidget* save_preset  = gtk_menu_item_new_with_mnemonic(
+		"_Save Preset...");
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(presets), presets_menu);
 	gtk_menu_shell_append(GTK_MENU_SHELL(presets_menu), save_preset);
 	gtk_menu_shell_append(GTK_MENU_SHELL(presets_menu),

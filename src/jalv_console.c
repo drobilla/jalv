@@ -80,7 +80,6 @@ jalv_open_ui(Jalv*         jalv,
 #ifdef JALV_JACK_SESSION
 	printf("\nPress Ctrl-C to quit: ");
 	fflush(stdout);
-	//g_cond_wait(exit_cond, exit_mutex);
 #else
 	printf("\nPress enter to quit: ");
 	fflush(stdout);

@@ -77,7 +77,7 @@ void
 jalv_save(Jalv* jalv, const char* dir)
 {
 	jalv->save_dir = jalv_strjoin(dir, "/");
-	
+
 	LilvState* const state = lilv_state_new_from_instance(
 		jalv->plugin, jalv->instance, &jalv->map, jalv->temp_dir,
 		get_port_value, jalv,
@@ -137,14 +137,14 @@ set_port_value(const char*     port_symbol,
 	const float fvalue = lilv_node_as_float(value);
 
 	// Send value to plugin
-	jalv_ui_write(jalv, port->index, sizeof(float), 0, &fvalue);
+	jalv_ui_write(jalv, port->index, sizeof(fvalue), 0, &fvalue);
 
 	// Update UI
-	char buf[sizeof(ControlChange) + sizeof(float)];
+	char buf[sizeof(ControlChange) + sizeof(fvalue)];
 	ControlChange* ev = (ControlChange*)buf;
 	ev->index    = port->index;
 	ev->protocol = 0;
-	ev->size     = sizeof(float);
+	ev->size     = sizeof(fvalue);
 	*(float*)ev->body = fvalue;
 	jack_ringbuffer_write(jalv->plugin_events, buf, sizeof(buf));
 }
