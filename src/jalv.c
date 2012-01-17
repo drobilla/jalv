@@ -486,6 +486,10 @@ jalv_ui_write(SuilController controller,
 {
 	Jalv* host = (Jalv*)controller;
 
+	if (!host->ui) {
+		return;
+	}
+
 	if (protocol != 0 && protocol != host->atom_prot_id) {
 		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
 		        protocol, symap_unmap(host->symap, protocol));

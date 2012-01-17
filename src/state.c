@@ -140,13 +140,15 @@ set_port_value(const char*     port_symbol,
 	jalv_ui_write(jalv, port->index, sizeof(fvalue), 0, &fvalue);
 
 	// Update UI
-	char buf[sizeof(ControlChange) + sizeof(fvalue)];
-	ControlChange* ev = (ControlChange*)buf;
-	ev->index    = port->index;
-	ev->protocol = 0;
-	ev->size     = sizeof(fvalue);
-	*(float*)ev->body = fvalue;
-	jack_ringbuffer_write(jalv->plugin_events, buf, sizeof(buf));
+	if (jalv->ui) {
+		char buf[sizeof(ControlChange) + sizeof(fvalue)];
+		ControlChange* ev = (ControlChange*)buf;
+		ev->index    = port->index;
+		ev->protocol = 0;
+		ev->size     = sizeof(fvalue);
+		*(float*)ev->body = fvalue;
+		jack_ringbuffer_write(jalv->plugin_events, buf, sizeof(buf));
+	}
 }
 
 void
