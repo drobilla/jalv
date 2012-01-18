@@ -32,7 +32,7 @@
 
 #include "lilv/lilv.h"
 
-#include "jalv-config.h"
+#include "jalv_config.h"
 #include "jalv_internal.h"
 
 #define NS_ATOM  "http://lv2plug.in/ns/ext/atom#"

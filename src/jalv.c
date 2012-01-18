@@ -27,8 +27,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "jalv_config.h"
 #include "jalv_internal.h"
-#include "jalv-config.h"
 
 #include <jack/jack.h>
 #include <jack/midiport.h>

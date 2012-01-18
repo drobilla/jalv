@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "jalv-config.h"
+#include "jalv_config.h"
 #include "jalv_internal.h"
 
 static int

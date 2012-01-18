@@ -66,7 +66,7 @@ def configure(conf):
     conf.env.append_unique('CFLAGS', '-std=c99')
     autowaf.define(conf, 'JALV_VERSION', JALV_VERSION)
 
-    conf.write_config_header('jalv-config.h', remove=False)
+    conf.write_config_header('jalv_config.h', remove=False)
 
     autowaf.display_msg(conf, "LV2 State support",
                         conf.is_defined('HAVE_LV2_STATE'))
