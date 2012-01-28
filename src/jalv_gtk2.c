@@ -97,26 +97,53 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 {
 	Jalv* jalv = (Jalv*)ptr;
 
-	GtkDialog* dialog = GTK_DIALOG(gtk_dialog_new_with_buttons(
-		"Save Preset", jalv->window,
-		GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT,
+	GtkWidget* dialog = gtk_file_chooser_dialog_new(
+		"Save Preset",
+		jalv->window,
+		GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
 		GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
 		GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
-		NULL));
+		NULL);
 
-	GtkWidget* content = gtk_dialog_get_content_area(dialog);
-	GtkWidget* hbox    = gtk_hbox_new(FALSE, 0);
-	GtkWidget* entry   = gtk_entry_new();
-	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_new("Label:"), FALSE, TRUE, 6);
-	gtk_box_pack_start(GTK_BOX(hbox), entry, FALSE, TRUE, 6);
-	gtk_box_pack_start(GTK_BOX(content), hbox, TRUE, TRUE, 12);
+	char* dot_lv2 = g_build_filename(g_get_home_dir(), ".lv2", NULL);
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), dot_lv2);
+	free(dot_lv2);
+
+	GtkWidget* content     = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	GtkTable*  table       = GTK_TABLE(gtk_table_new(2, 2, FALSE));
+	GtkWidget* label_label = gtk_label_new("Label:");
+	GtkWidget* uri_label   = gtk_label_new("URI:");
+	GtkWidget* label_entry = gtk_entry_new();
+	GtkWidget* uri_entry   = gtk_entry_new();
+	gtk_misc_set_alignment(GTK_MISC(label_label), 1.0, 0.5);
+	gtk_misc_set_alignment(GTK_MISC(uri_label), 1.0, 0.5);
+	gtk_table_attach(table, label_label,
+	                 0, 1, 0, 1, GTK_SHRINK, GTK_SHRINK, 6, 12);
+	gtk_table_attach(table, label_entry,
+	                 1, 2, 0, 1,
+	                 GTK_FILL|GTK_EXPAND, GTK_FILL|GTK_EXPAND, 6, 6);
+	gtk_table_attach(table, uri_label,
+	                 0, 1, 1, 2,
+	                 GTK_SHRINK, GTK_SHRINK, 6, 12);
+	gtk_table_attach(table, uri_entry,
+	                 1, 2, 1, 2,
+	                 GTK_FILL|GTK_EXPAND, GTK_FILL|GTK_EXPAND, 6, 6);
+	gtk_box_pack_start(GTK_BOX(content), GTK_WIDGET(table), FALSE, FALSE, 6);
 
 	gtk_widget_show_all(GTK_WIDGET(dialog));
-	gtk_entry_set_activates_default(GTK_ENTRY(entry), TRUE);
-	gtk_dialog_set_default_response(dialog, GTK_RESPONSE_ACCEPT);
-	if (gtk_dialog_run(dialog) == GTK_RESPONSE_ACCEPT) {
-		const char* label_str = gtk_entry_get_text(GTK_ENTRY(entry));
-		jalv_save_preset(jalv, label_str);
+	gtk_entry_set_activates_default(GTK_ENTRY(label_entry), TRUE);
+	gtk_entry_set_activates_default(GTK_ENTRY(uri_entry), TRUE);
+	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+		const char* path   = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+		const char* label  = gtk_entry_get_text(GTK_ENTRY(label_entry));
+		const char* uri    = gtk_entry_get_text(GTK_ENTRY(uri_entry));
+		char* l = ((strlen(label) > 0)
+		           ? g_strdup(label)
+		           : g_path_get_basename(path));
+
+		jalv_save_preset(jalv, path, (strlen(uri) ? uri : NULL), l);
+		free(l);
 	}
 
 	gtk_widget_destroy(GTK_WIDGET(dialog));

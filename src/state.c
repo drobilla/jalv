@@ -79,7 +79,8 @@ jalv_save(Jalv* jalv, const char* dir)
 	jalv->save_dir = jalv_strjoin(dir, "/");
 
 	LilvState* const state = lilv_state_new_from_instance(
-		jalv->plugin, jalv->instance, &jalv->map, jalv->temp_dir,
+		jalv->plugin, jalv->instance, &jalv->map,
+		jalv->temp_dir, dir, dir, dir,
 		get_port_value, jalv,
 		LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE, NULL);
 
@@ -181,16 +182,20 @@ jalv_apply_preset(Jalv* jalv, const LilvNode* preset)
 }
 
 int
-jalv_save_preset(Jalv* jalv, const char* label)
+jalv_save_preset(Jalv* jalv, const char* dir, const char* uri, const char* label)
 {
 	LilvState* const state = lilv_state_new_from_instance(
-		jalv->plugin, jalv->instance, &jalv->map, jalv->temp_dir,
+		jalv->plugin, jalv->instance, &jalv->map,
+		jalv->temp_dir, dir, dir, dir,
 		get_port_value, jalv,
 		LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE, NULL);
 
-	lilv_state_set_label(state, label);
+	if (label) {
+		lilv_state_set_label(state, label);
+	}
+
 	int ret = lilv_state_save(jalv->world, &jalv->unmap, state,
-	                          NULL, NULL, NULL, NULL);
+	                          uri, dir, "state.ttl", NULL);
 	lilv_state_free(state);
 
 	return ret;

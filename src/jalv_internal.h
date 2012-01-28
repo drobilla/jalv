@@ -169,7 +169,10 @@ int
 jalv_apply_preset(Jalv* jalv, const LilvNode* preset);
 
 int
-jalv_save_preset(Jalv* jalv, const char* label);
+jalv_save_preset(Jalv*       jalv,
+                 const char* dir,
+                 const char* uri,
+                 const char* label);
 
 void
 jalv_save(Jalv* jalv, const char* dir);
