@@ -118,7 +118,7 @@ typedef struct {
 	LilvNode*          control_class;  ///< Control port class (URI)
 	LilvNode*          audio_class;    ///< Audio port class (URI)
 	LilvNode*          event_class;    ///< Event port class (URI)
-	LilvNode*          aevent_class;   ///< Atom event port class (URI)
+	LilvNode*          msg_port_class; ///< Atom event port class (URI)
 	LilvNode*          midi_class;     ///< MIDI event class (URI)
 	LilvNode*          preset_class;   ///< Preset class (URI)
 	LilvNode*          label_pred;     ///< rdfs:label

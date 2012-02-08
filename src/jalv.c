@@ -177,7 +177,7 @@ create_port(Jalv*    host,
 		port->type = TYPE_EVENT;
 		port->old_api = true;
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
-	                          host->aevent_class)) {
+	                          host->msg_port_class)) {
 		port->type = TYPE_EVENT;
 		port->old_api = false;
 	} else if (!optional) {
@@ -394,7 +394,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				LV2_Evbuf_Iterator    i    = lv2_evbuf_end(port->evbuf);
 				const LV2_Atom* const atom = (const LV2_Atom*)body;
 				lv2_evbuf_write(&i, nframes, 0,
-				                atom->type, atom->size, atom->body);
+				                atom->type, atom->size, LV2_ATOM_BODY(atom));
 			} else {
 				fprintf(stderr, "error: Unknown control change protocol %d\n",
 				        ev.protocol);
@@ -422,15 +422,14 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			void* buf = jack_port_get_buffer(port->jack_port, nframes);
 			jack_midi_clear_buffer(buf);
 
-			LV2_Evbuf_Iterator iter  = lv2_evbuf_begin(port->evbuf);
-			const uint32_t     count = lv2_evbuf_get_event_count(iter.evbuf);
-			for (uint32_t i = 0; i < count; ++i) {
+			for (LV2_Evbuf_Iterator i = lv2_evbuf_begin(port->evbuf);
+			     lv2_evbuf_is_valid(i);
+			     i = lv2_evbuf_next(i)) {
 				uint32_t frames, subframes, type, size;
 				uint8_t* data;
-				lv2_evbuf_get(iter, &frames, &subframes,
+				lv2_evbuf_get(i, &frames, &subframes,
 				              &type, &size, &data);
 				jack_midi_event_write(buf, frames, data, size);
-				iter = lv2_evbuf_next(iter);
 			}
 		} else if (send_ui_updates
 		           && port->flow != FLOW_INPUT
@@ -603,17 +602,17 @@ main(int argc, char** argv)
 	const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
 
 	/* Set up the port classes this app supports */
-	host.input_class   = lilv_new_uri(world, LILV_URI_INPUT_PORT);
-	host.output_class  = lilv_new_uri(world, LILV_URI_OUTPUT_PORT);
-	host.control_class = lilv_new_uri(world, LILV_URI_CONTROL_PORT);
-	host.audio_class   = lilv_new_uri(world, LILV_URI_AUDIO_PORT);
-	host.event_class   = lilv_new_uri(world, LILV_URI_EVENT_PORT);
-	host.aevent_class  = lilv_new_uri(world, NS_ATOM "EventPort");
-	host.midi_class    = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
-	host.preset_class  = lilv_new_uri(world, NS_PSET "Preset");
-	host.label_pred    = lilv_new_uri(world, LILV_NS_RDFS "label");
-	host.optional      = lilv_new_uri(world, LILV_NS_LV2
-	                                  "connectionOptional");
+	host.input_class    = lilv_new_uri(world, LILV_URI_INPUT_PORT);
+	host.output_class   = lilv_new_uri(world, LILV_URI_OUTPUT_PORT);
+	host.control_class  = lilv_new_uri(world, LILV_URI_CONTROL_PORT);
+	host.audio_class    = lilv_new_uri(world, LILV_URI_AUDIO_PORT);
+	host.event_class    = lilv_new_uri(world, LILV_URI_EVENT_PORT);
+	host.msg_port_class = lilv_new_uri(world, NS_ATOM "MessagePort");
+	host.midi_class     = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
+	host.preset_class   = lilv_new_uri(world, NS_PSET "Preset");
+	host.label_pred     = lilv_new_uri(world, LILV_NS_RDFS "label");
+	host.optional       = lilv_new_uri(world, LILV_NS_LV2
+	                                   "connectionOptional");
 
 	/* Get plugin URI from loaded state or command line */
 	LilvState* state      = NULL;

@@ -1,5 +1,5 @@
 /*
-  Copyright 2008-2011 David Robillard <http://drobilla.net>
+  Copyright 2008-2012 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -29,12 +29,12 @@ extern "C" {
 */
 typedef enum {
 	/**
-	   An old ev:EventBuffer (LV2_Event_Buffer).
+	   An (old) ev:EventBuffer (LV2_Event_Buffer).
 	*/
 	LV2_EVBUF_EVENT,
 
 	/**
-	   A new atom:EventBuffer (LV2_Atom_Event_Buffer).
+	   A (new) atom:Sequence (LV2_Atom_Sequence).
 	*/
 	LV2_EVBUF_ATOM
 } LV2_Evbuf_Type;
@@ -79,12 +79,6 @@ uint32_t
 lv2_evbuf_get_size(LV2_Evbuf* evbuf);
 
 /**
-   Return the number of events stored in the buffer.
-*/
-uint32_t
-lv2_evbuf_get_event_count(LV2_Evbuf* evbuf);
-
-/**
    Return the actual buffer implementation.
    The format of the buffer returned depends on the buffer type.
 */
@@ -92,7 +86,7 @@ void*
 lv2_evbuf_get_buffer(LV2_Evbuf* evbuf);
 
 /**
-   Return an iterator to the start of @a buf.
+   Return an iterator to the start of @p buf.
 */
 LV2_Evbuf_Iterator
 lv2_evbuf_begin(LV2_Evbuf* evbuf);
@@ -104,26 +98,26 @@ LV2_Evbuf_Iterator
 lv2_evbuf_end(LV2_Evbuf* evbuf);
 
 /**
-   Check if @a iter is valid.
-   @return True if @a iter is valid, otherwise false (past end of buffer)
+   Check if @p iter is valid.
+   @return True if @p iter is valid, otherwise false (past end of buffer)
 */
 bool
 lv2_evbuf_is_valid(LV2_Evbuf_Iterator iter);
 
 /**
-   Advance @a iter forward one event.
-   @a iter must be valid.
-   @return True if @a iter is valid, otherwise false (reached end of buffer)
+   Advance @p iter forward one event.
+   @p iter must be valid.
+   @return True if @p iter is valid, otherwise false (reached end of buffer)
 */
 LV2_Evbuf_Iterator
 lv2_evbuf_next(LV2_Evbuf_Iterator iter);
 
 /**
    Dereference an event iterator (i.e. get the event currently pointed to).
-   @a iter must be valid.
-   @a type Set to the type of the event.
-   @a size Set to the size of the event.
-   @a data Set to the contents of the event.
+   @p iter must be valid.
+   @p type Set to the type of the event.
+   @p size Set to the size of the event.
+   @p data Set to the contents of the event.
    @return True on success.
 */
 bool
@@ -135,8 +129,8 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
               uint8_t**          data);
 
 /**
-   Write an event at @a iter.
-   The event (if any) pointed to by @a iter will be overwritten, and @a iter
+   Write an event at @p iter.
+   The event (if any) pointed to by @p iter will be overwritten, and @p iter
    incremented to point to the following event (i.e. several calls to this
    function can be done in sequence without twiddling iter in-between).
    @return True if event was written, otherwise false (buffer is full).
