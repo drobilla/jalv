@@ -82,7 +82,7 @@ jalv_open_ui(Jalv*         jalv,
 	timer->start(1000 / JALV_UI_UPDATE_HZ);
 
 	int ret = app->exec();
-	sem_post(jalv->done);
+	zix_sem_post(jalv->done);
 	return ret;
 }
 
