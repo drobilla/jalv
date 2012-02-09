@@ -159,7 +159,7 @@ jalv_apply_state(Jalv* jalv, LilvState* state)
 		const bool must_pause = (jalv->play_state == JALV_RUNNING);
 		if (must_pause) {
 			jalv->play_state = JALV_PAUSE_REQUESTED;
-			sem_wait(&jalv->paused);
+			zix_sem_wait(&jalv->paused);
 		}
 
 		lilv_state_restore(

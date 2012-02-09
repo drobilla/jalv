@@ -17,7 +17,6 @@
 #ifndef JALV_INTERNAL_H
 #define JALV_INTERNAL_H
 
-#include <semaphore.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -30,6 +29,8 @@
 
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
+
+#include "zix/sem.h"
 
 #include "lv2_evbuf.h"
 #include "symap.h"
@@ -97,8 +98,8 @@ typedef struct {
 	jack_client_t*     jack_client;    ///< Jack client
 	jack_ringbuffer_t* ui_events;      ///< Port events from UI
 	jack_ringbuffer_t* plugin_events;  ///< Port events from plugin
-	sem_t*             done;           ///< Exit semaphore
-	sem_t              paused;         ///< Paused signal from process thread
+	ZixSem*            done;           ///< Exit semaphore
+	ZixSem             paused;         ///< Paused signal from process thread
 	JalvPlayState      play_state;     ///< Current play state
 	char*              temp_dir;       ///< Temporary plugin state directory
 	char*              save_dir;       ///< Plugin save directory

@@ -280,6 +280,6 @@ jalv_open_ui(Jalv*         jalv,
 	gtk_widget_show_all(window);
 
 	gtk_main();
-	sem_post(jalv->done);
+	zix_sem_post(jalv->done);
 	return 0;
 }

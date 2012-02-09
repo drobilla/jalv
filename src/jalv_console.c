@@ -84,7 +84,7 @@ jalv_open_ui(Jalv*         jalv,
 	printf("\nPress enter to quit: ");
 	fflush(stdout);
 	getc(stdin);
-	sem_post(jalv->done);
+	zix_sem_post(jalv->done);
 #endif
 	printf("\n");
 

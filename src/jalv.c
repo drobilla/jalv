@@ -15,7 +15,7 @@
 */
 
 #define _POSIX_C_SOURCE 200809L  /* for mkdtemp */
-
+#define _DARWIN_C_SOURCE /* for mkdtemp on OSX */
 #include <assert.h>
 #include <math.h>
 #include <signal.h>
@@ -53,7 +53,7 @@
 #define NS_MIDI "http://lv2plug.in/ns/ext/midi#"
 #define NS_PSET "http://lv2plug.in/ns/ext/presets#"
 
-sem_t exit_sem;  /**< Exit semaphore */
+ZixSem exit_sem;  /**< Exit semaphore */
 
 LV2_URID
 map_uri(LV2_URID_Map_Handle handle,
@@ -197,6 +197,7 @@ void
 jalv_create_ports(Jalv* jalv)
 {
 	jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
+	fprintf(stderr, "CREATE PORTS %d\n", jalv->num_ports);
 	jalv->ports     = calloc((size_t)jalv->num_ports, sizeof(struct Port));
 	float* default_values = calloc(lilv_plugin_get_num_ports(jalv->plugin),
 	                               sizeof(float));
@@ -215,11 +216,14 @@ jalv_create_ports(Jalv* jalv)
 void
 jalv_allocate_port_buffers(Jalv* jalv)
 {
+	fprintf(stderr, "ALLOCATE PORT BUFFERS %d\n", jalv->num_ports);
 	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
 		struct Port* const port = &jalv->ports[i];
+		fprintf(stderr, "PORT %d TYPE %d\n", i, port->type);
 		switch (port->type) {
 		case TYPE_EVENT:
 			lv2_evbuf_free(port->evbuf);
+			fprintf(stderr, "ALLOCATE PORT BUFFERS %d\n", i);
 			port->evbuf = lv2_evbuf_new(
 				jalv->midi_buf_size,
 				port->old_api ? LV2_EVBUF_EVENT : LV2_EVBUF_ATOM);
@@ -322,7 +326,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	switch (host->play_state) {
 	case JALV_PAUSE_REQUESTED:
 		host->play_state = JALV_PAUSED;
-		sem_post(&host->paused);
+		zix_sem_post(&host->paused);
 		break;
 	case JALV_PAUSED:
 		for (uint32_t p = 0; p < host->num_ports; ++p) {
@@ -467,7 +471,7 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 		break;
 	case JackSessionSaveAndQuit:
 		jalv_save(host, event->session_dir);
-		sem_post(&exit_sem);
+		zix_sem_post(&exit_sem);
 		break;
 	}
 
@@ -538,7 +542,7 @@ jalv_emit_ui_events(Jalv* host)
 static void
 signal_handler(int ignored)
 {
-	sem_post(&exit_sem);
+	zix_sem_post(&exit_sem);
 }
 
 int
@@ -587,10 +591,10 @@ main(int argc, char** argv)
 	host.ui_width  = -1;
 	host.ui_height = -1;
 
-	sem_init(&exit_sem, 0, 0);
+	zix_sem_init(&exit_sem, 0);
 	host.done = &exit_sem;
 
-	sem_init(&host.paused, 0, 0);
+	zix_sem_init(&host.paused, 0);
 
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
@@ -681,6 +685,9 @@ main(int argc, char** argv)
 		fprintf(stderr, "No appropriate UI found\n");
 	}
 
+	/* Create port structures (host.ports) */
+	jalv_create_ports(&host);
+
 	/* Get the plugin's name */
 	LilvNode*   name     = lilv_plugin_get_name(host.plugin);
 	const char* name_str = lilv_node_as_string(name);
@@ -726,15 +733,13 @@ main(int argc, char** argv)
 	/* Instantiate the plugin */
 	host.instance = lilv_plugin_instantiate(
 		host.plugin, jack_get_sample_rate(host.jack_client), features);
-	if (!host.instance)
+	if (!host.instance) {
 		die("Failed to instantiate plugin.\n");
+	}
 
 	if (!host.buf_size_set) {
 		jalv_allocate_port_buffers(&host);
 	}
-
-	/* Create port structures (host.ports) */
-	jalv_create_ports(&host);
 
 	/* Apply loaded state to plugin instance if necessary */
 	if (state) {
@@ -801,7 +806,7 @@ main(int argc, char** argv)
 	jalv_open_ui(&host, host.ui_instance);
 
 	/* Wait for finish signal from UI or signal handler */
-	sem_wait(&exit_sem);
+	zix_sem_wait(&exit_sem);
 
 	fprintf(stderr, "Exiting...\n");
 
@@ -839,7 +844,7 @@ main(int argc, char** argv)
 	suil_host_free(ui_host);
 	lilv_world_free(world);
 
-	sem_destroy(&exit_sem);
+	zix_sem_destroy(&exit_sem);
 
 	remove(host.temp_dir);
 	free(host.temp_dir);
