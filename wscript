@@ -45,6 +45,8 @@ def configure(conf):
                       atleast_version='0.120.0', mandatory=True)
     autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
                       atleast_version='2.18.0', mandatory=False)
+    autowaf.check_pkg(conf, 'gtkmm-2.4', uselib_store='GTKMM2',
+                      atleast_version='2.20.0', mandatory=False)
     autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
                       atleast_version='4.0.0', mandatory=False)
 
@@ -72,6 +74,8 @@ def configure(conf):
                         conf.is_defined('HAVE_LV2_STATE'))
     autowaf.display_msg(conf, "Gtk 2.0 support",
                         conf.is_defined('HAVE_GTK2'))
+    autowaf.display_msg(conf, "Gtkmm 2.0 support",
+                        conf.is_defined('HAVE_GTKMM2'))
     autowaf.display_msg(conf, "Qt 4.0 support",
                         conf.is_defined('HAVE_QT4'))
     print('')
@@ -99,6 +103,16 @@ def build(bld):
                   lib          = ['pthread'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' GTK2')
+
+    # Gtkmm version
+    if bld.is_defined('HAVE_GTKMM2'):
+        obj = bld(features     = 'c cxx cxxprogram',
+                  source       = source + ' src/jalv_gtkmm2.cpp',
+                  target       = 'jalv.gtkmm',
+                  includes     = ['.', 'src'],
+                  lib          = ['pthread'],
+                  install_path = '${BINDIR}')
+        autowaf.use_lib(bld, obj, libs + ' GTKMM2')
 
     # Qt version
     if bld.is_defined('HAVE_QT4'):
