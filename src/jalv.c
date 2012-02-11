@@ -197,7 +197,6 @@ void
 jalv_create_ports(Jalv* jalv)
 {
 	jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
-	fprintf(stderr, "CREATE PORTS %d\n", jalv->num_ports);
 	jalv->ports     = calloc((size_t)jalv->num_ports, sizeof(struct Port));
 	float* default_values = calloc(lilv_plugin_get_num_ports(jalv->plugin),
 	                               sizeof(float));
@@ -216,14 +215,11 @@ jalv_create_ports(Jalv* jalv)
 void
 jalv_allocate_port_buffers(Jalv* jalv)
 {
-	fprintf(stderr, "ALLOCATE PORT BUFFERS %d\n", jalv->num_ports);
 	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
 		struct Port* const port = &jalv->ports[i];
-		fprintf(stderr, "PORT %d TYPE %d\n", i, port->type);
 		switch (port->type) {
 		case TYPE_EVENT:
 			lv2_evbuf_free(port->evbuf);
-			fprintf(stderr, "ALLOCATE PORT BUFFERS %d\n", i);
 			port->evbuf = lv2_evbuf_new(
 				jalv->midi_buf_size,
 				port->old_api ? LV2_EVBUF_EVENT : LV2_EVBUF_ATOM);
