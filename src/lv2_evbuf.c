@@ -26,6 +26,7 @@
 
 struct LV2_Evbuf_Impl {
 	LV2_Evbuf_Type type;
+	uint32_t       capacity;
 	union {
 		LV2_Event_Buffer  event;
 		LV2_Atom_Sequence atom;
@@ -41,8 +42,10 @@ lv2_evbuf_pad_size(uint32_t size)
 LV2_Evbuf*
 lv2_evbuf_new(uint32_t capacity, LV2_Evbuf_Type type)
 {
+	// FIXME: memory must be 64-bit aligned
 	LV2_Evbuf* evbuf = (LV2_Evbuf*)malloc(sizeof(LV2_Evbuf) + capacity);
-	evbuf->type = type;
+	evbuf->type     = type;
+	evbuf->capacity = capacity;
 	switch (type) {
 	case LV2_EVBUF_EVENT:
 		evbuf->buf.event.data     = (uint8_t*)evbuf + sizeof(LV2_Evbuf);
@@ -50,7 +53,7 @@ lv2_evbuf_new(uint32_t capacity, LV2_Evbuf_Type type)
 		break;
 	case LV2_EVBUF_ATOM:
 		// FIXME: set type
-		evbuf->buf.atom.capacity = capacity;
+		break;
 	}
 	lv2_evbuf_reset(evbuf);
 	return evbuf;
@@ -74,6 +77,18 @@ lv2_evbuf_reset(LV2_Evbuf* evbuf)
 		break;
 	case LV2_EVBUF_ATOM:
 		evbuf->buf.atom.atom.size = 0;
+	}
+}
+
+void
+lv2_evbuf_prepare_write(LV2_Evbuf* evbuf)
+{
+	switch (evbuf->type) {
+	case LV2_EVBUF_EVENT:
+		break;
+	case LV2_EVBUF_ATOM:
+		evbuf->buf.atom.atom.type = 0;
+		evbuf->buf.atom.atom.size = evbuf->capacity;
 	}
 }
 
@@ -223,7 +238,7 @@ lv2_evbuf_write(LV2_Evbuf_Iterator* iter,
 		break;
 	case LV2_EVBUF_ATOM:
 		abuf = &iter->evbuf->buf.atom;
-		if (abuf->capacity - abuf->atom.size < sizeof(LV2_Atom_Event) + size) {
+		if (iter->evbuf->capacity - abuf->atom.size < sizeof(LV2_Atom_Event) + size) {
 			return false;
 		}
 

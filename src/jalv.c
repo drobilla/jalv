@@ -369,6 +369,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					                host->midi_event_id,
 					                ev.size, ev.buffer);
 				}
+			} else {
+				lv2_evbuf_prepare_write(host->ports[p].evbuf);
 			}
 		}
 	}

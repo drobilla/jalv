@@ -73,6 +73,14 @@ void
 lv2_evbuf_reset(LV2_Evbuf* evbuf);
 
 /**
+   Initialize the event buffer before it is written to.
+   This MUST be called for all output event buffers immediately before running
+   the plugin every time run is to be called.
+*/
+void
+lv2_evbuf_prepare_write(LV2_Evbuf* evbuf);
+
+/**
    Return the total padded size of the events stored in the buffer.
 */
 uint32_t
