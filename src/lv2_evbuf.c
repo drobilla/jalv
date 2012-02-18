@@ -53,7 +53,7 @@ lv2_evbuf_new(uint32_t capacity, LV2_Evbuf_Type type)
 		evbuf->buf.atom.data     = (LV2_Atom*)((uint8_t*)evbuf + sizeof(LV2_Evbuf));
 		evbuf->buf.atom.size     = sizeof(LV2_Atom_Port_Buffer);
 		evbuf->buf.atom.capacity = capacity - sizeof(LV2_Atom);
-		// FIXME: set type
+		evbuf->buf.atom.data->type = 0;  // FIXME: set type to atom:Sequence
 		evbuf->buf.atom.data->size = 0;
 		break;
 	}
@@ -169,11 +169,14 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
 		return false;
 	}
 
-	LV2_Event*      ev;
-	LV2_Atom_Event* aev;
+	LV2_Event_Buffer*     ebuf;
+	LV2_Event*            ev;
+	LV2_Atom_Port_Buffer* abuf;
+	LV2_Atom_Event*       aev;
 	switch (iter.evbuf->type) {
 	case LV2_EVBUF_EVENT:
-		ev = (LV2_Event*)(iter.evbuf->buf.event.data + iter.offset);
+		ebuf = &iter.evbuf->buf.event;
+		ev = (LV2_Event*)ebuf->data + iter.offset;
 		*frames    = ev->frames;
 		*subframes = ev->subframes;
 		*type      = ev->type;
@@ -181,8 +184,9 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
 		*data      = (uint8_t*)ev + sizeof(LV2_Event);
 		break;
 	case LV2_EVBUF_ATOM:
+		abuf = &iter.evbuf->buf.atom;
 		aev = (LV2_Atom_Event*)(
-			(char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, iter.evbuf->buf.atom.data)
+			(char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, abuf->data)
 			+ iter.offset);
 		*frames    = aev->time.audio.frames;
 		*subframes = aev->time.audio.subframes;

@@ -430,6 +430,21 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				lv2_evbuf_get(i, &frames, &subframes,
 				              &type, &size, &data);
 				jack_midi_event_write(buf, frames, data, size);
+
+				/* TODO: Be more disciminate about what to send */
+				if (!port->old_api) {
+					char buf[sizeof(ControlChange) + sizeof(LV2_Atom)];
+					ControlChange* ev = (ControlChange*)buf;
+					ev->index    = p;
+					ev->protocol = host->atom_prot_id;
+					ev->size     = sizeof(LV2_Atom) + size;
+					LV2_Atom* atom = (LV2_Atom*)ev->body;
+					atom->type = type;
+					atom->size = size;
+					jack_ringbuffer_write(host->plugin_events, buf, sizeof(buf));
+					/* TODO: race, ensure reader handles this correctly */
+					jack_ringbuffer_write(host->plugin_events, (void*)data, size);
+				}
 			}
 		} else if (send_ui_updates
 		           && port->flow != FLOW_INPUT
@@ -572,7 +587,7 @@ main(int argc, char** argv)
 	host.midi_event_id = uri_to_id(&host,
 	                               "http://lv2plug.in/ns/ext/event",
 	                               NS_MIDI "MidiEvent");
-	host.atom_prot_id = symap_map(host.symap, NS_ATOM "atomTransfer");
+	host.atom_prot_id = symap_map(host.symap, NS_ATOM "eventTransfer");
 
 	char* template = jalv_strdup("/tmp/jalv-XXXXXX");
 	host.temp_dir = jalv_strjoin(mkdtemp(template), "/");
