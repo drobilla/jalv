@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2011 David Robillard <http://drobilla.net>
+  Copyright 2007-2012 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -36,6 +36,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "UUID for Jack session restoration", "UUID" },
 		{ "load", 'l', 0, G_OPTION_ARG_STRING, &opts->load,
 		  "Load state from save directory", "DIR" },
+		{ "dump", 'd', 0, G_OPTION_ARG_NONE, &opts->dump,
+		  "Dump plugin <=> UI communication", NULL },
 		{ 0, 0, 0, 0, 0, 0, 0 } };
 	GError* error = NULL;
 	const int err = gtk_init_with_args(

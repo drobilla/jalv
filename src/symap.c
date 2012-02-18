@@ -1,5 +1,5 @@
 /*
-  Copyright 2011 David Robillard <http://drobilla.net>
+  Copyright 2011-2012 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -172,7 +172,9 @@ symap_map(Symap* map, const char* sym)
 const char*
 symap_unmap(Symap* map, uint32_t id)
 {
-	if (id <= map->size) {
+	if (id == 0) {
+		return NULL;
+	} else if (id <= map->size) {
 		return map->symbols[id - 1];
 	}
 	return NULL;

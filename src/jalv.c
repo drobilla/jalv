@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2011 David Robillard <http://drobilla.net>
+  Copyright 2007-2012 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -52,7 +52,10 @@
 #define NS_ATOM "http://lv2plug.in/ns/ext/atom#"
 #define NS_MIDI "http://lv2plug.in/ns/ext/midi#"
 #define NS_PSET "http://lv2plug.in/ns/ext/presets#"
+#define NS_RDF  "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 
+#define USTR(str) ((const uint8_t*)str)
+	
 ZixSem exit_sem;  /**< Exit semaphore */
 
 LV2_URID
@@ -386,11 +389,6 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				assert(ev.size == sizeof(float));
 				port->control = *(float*)body;
 			} else if (ev.protocol == host->atom_prot_id) {
-				printf("ATOM UI READ\n");
-				for (uint32_t i = 0; i < ev.size; ++i) {
-					printf("%c", body[i]);
-				}
-				printf("\n");
 				LV2_Evbuf_Iterator    i    = lv2_evbuf_end(port->evbuf);
 				const LV2_Atom* const atom = (const LV2_Atom*)body;
 				lv2_evbuf_write(&i, nframes, 0,
@@ -511,11 +509,11 @@ jalv_ui_write(SuilController controller,
 	}
 
 	if (protocol == host->atom_prot_id) {
-		printf("ATOM UI WRITE: %d\n", protocol);
-		for (uint32_t i = 0; i < buffer_size; ++i) {
-			printf("%c", ((uint8_t*)buffer)[i]);
-		}
-		printf("\n");
+		SerdNode s   = serd_node_from_string(SERD_BLANK, USTR("msg"));
+		SerdNode p   = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
+		char*    str = atom_to_turtle(&host->unmap, &s, &p, (LV2_Atom*)buffer);
+		printf("\n## UI => Plugin ##\n%s\n", str);
+		free(str);
 	}
 
 	char buf[sizeof(ControlChange) + buffer_size];
@@ -524,13 +522,6 @@ jalv_ui_write(SuilController controller,
 	ev->protocol = protocol;
 	ev->size     = buffer_size;
 	memcpy(ev->body, buffer, buffer_size);
-	#if 0
-	printf("WRITE: ");
-	for (uint32_t i = 0; i < sizeof(buf); ++i) {
-		printf("%c", buf[i]);
-	}
-	printf("\n");
-	#endif
 	jack_ringbuffer_write(host->ui_events, buf, sizeof(buf));
 }
 
@@ -543,6 +534,15 @@ jalv_emit_ui_events(Jalv* host)
 		jack_ringbuffer_read(host->plugin_events, (char*)&ev, sizeof(ev));
 		char buf[ev.size];
 		jack_ringbuffer_read(host->plugin_events, buf, ev.size);
+
+		if (ev.protocol == host->atom_prot_id) {
+			SerdNode s   = serd_node_from_string(SERD_BLANK, USTR("msg"));
+			SerdNode p   = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
+			char*    str = atom_to_turtle(&host->unmap, &s, &p, (LV2_Atom*)buf);
+			printf("\n## Plugin => UI ##\n%s\n", str);
+			free(str);
+		}
+
 		suil_instance_port_event(host->ui_instance, ev.index,
 		                         ev.size, ev.protocol, buf);
 	}

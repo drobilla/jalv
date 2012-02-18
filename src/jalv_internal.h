@@ -27,6 +27,7 @@
 #include "serd/serd.h"
 #include "suil/suil.h"
 
+#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
 
@@ -78,6 +79,7 @@ typedef struct {
 typedef struct {
 	char* uuid;
 	char* load;
+	bool  dump;
 } JalvOptions;
 
 typedef enum {
@@ -188,6 +190,12 @@ jalv_make_path(LV2_State_Make_Path_Handle handle,
 
 void
 jalv_apply_state(Jalv* jalv, LilvState* state);
+
+char*
+atom_to_turtle(LV2_URID_Unmap* unmap,
+               const SerdNode* subject,
+               const SerdNode* predicate,
+               const LV2_Atom* atom);
 
 static inline char*
 jalv_strdup(const char* str)

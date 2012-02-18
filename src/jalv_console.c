@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2011 David Robillard <http://drobilla.net>
+  Copyright 2007-2012 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -30,6 +30,7 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -h           Display this help and exit\n");
 	fprintf(os, "  -u UUID      UUID for Jack session restoration\n");
 	fprintf(os, "  -l DIR       Load state from save directory\n");
+	fprintf(os, "  -d DIR       Dump plugin <=> UI communication\n");
 	return error ? 1 : 0;
 }
 
@@ -58,6 +59,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 				return 1;
 			}
 			opts->load = jalv_strdup((*argv)[a]);
+		} else if ((*argv)[a][1] == 'd') {
+			opts->dump = true;
 		} else {
 			fprintf(stderr, "Unknown option %s\n", (*argv)[a]);
 			return print_usage((*argv)[0], true);
