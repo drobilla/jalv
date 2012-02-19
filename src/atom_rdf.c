@@ -25,7 +25,7 @@
 
 #define NS_XSD "http://www.w3.org/2001/XMLSchema#"
 
-#define USTR(str) ((const uint8_t*)str)
+#define USTR(str) ((const uint8_t*)(str))
 
 typedef struct {
 	char*  buf;
@@ -83,13 +83,11 @@ atom_to_rdf(SerdWriter*     writer,
 		object   = serd_node_new_decimal(*(float*)LV2_ATOM_BODY(atom), 16);
 		datatype = serd_node_from_string(SERD_URI, USTR(NS_XSD "decimal"));
 	} else if (!strcmp(type, LV2_ATOM__Bool)) {
+		const int32_t val = *(const int32_t*)LV2_ATOM_BODY(atom);
 		new_node = true;
 		datatype = serd_node_from_string(SERD_URI, USTR(NS_XSD "boolean"));
-		if (*(int32_t*)LV2_ATOM_BODY(atom)) {
-			object = serd_node_from_string(SERD_LITERAL, USTR("true"));
-		} else {
-			object = serd_node_from_string(SERD_LITERAL, USTR("false"));
-		}
+		object   = serd_node_from_string(SERD_LITERAL,
+		                                 USTR(val ? "true" : "false"));
 	} else if (!strcmp(type, LV2_ATOM__Blank)) {
 		const LV2_Atom_Object* obj = (const LV2_Atom_Object*)atom;
 		SerdNode idnum = serd_node_new_integer(obj->id);
