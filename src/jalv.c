@@ -91,7 +91,7 @@ static LV2_Feature uri_map_feature   = { NS_EXT "uri-map", &uri_map };
 static LV2_Feature map_feature       = { NS_EXT "urid#map", NULL };
 static LV2_Feature unmap_feature     = { NS_EXT "urid#unmap", NULL };
 static LV2_Feature instance_feature  = { NS_EXT "instance-access", NULL };
-static LV2_Feature make_path_feature = { LV2_STATE_MAKE_PATH_URI, NULL };
+static LV2_Feature make_path_feature = { LV2_STATE__makePath, NULL };
 
 #ifdef HAVE_LV2_UI_RESIZE
 static int

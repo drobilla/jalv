@@ -18,13 +18,12 @@
 #include <string.h>
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
-#include "lv2/lv2plug.in/ns/ext/atom/atom-helpers.h"
+#include "lv2/lv2plug.in/ns/ext/atom/util.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 
 #include "serd/serd.h"
 
-#define NS_ATOM "http://lv2plug.in/ns/ext/atom#"
-#define NS_XSD  "http://www.w3.org/2001/XMLSchema#"
+#define NS_XSD "http://www.w3.org/2001/XMLSchema#"
 
 #define USTR(str) ((const uint8_t*)str)
 
@@ -57,29 +56,33 @@ atom_to_rdf(SerdWriter*     writer,
 	bool              new_node = false;
 	if (atom->type == 0 && atom->size == 0) {
 		object = serd_node_from_string(SERD_BLANK, USTR("null"));
-	} else if (!strcmp(type, NS_ATOM "String")) {
+	} else if (!strcmp(type, LV2_ATOM__String)) {
 		const uint8_t* str = USTR(LV2_ATOM_BODY(atom));
 		object = serd_node_from_string(SERD_LITERAL, str);
-	} else if (!strcmp(type, NS_ATOM "URID")) {
+	} else if (!strcmp(type, LV2_ATOM__URID)) {
 		const uint32_t id  = *(const uint32_t*)LV2_ATOM_BODY(atom);
 		const uint8_t* str = USTR(unmap->unmap(unmap->handle, id));
 		object = serd_node_from_string(SERD_URI, str);
-	} else if (!strcmp(type, NS_ATOM "URI")) {
+	} else if (!strcmp(type, LV2_ATOM__Path)) {
+		const uint8_t* str = USTR(LV2_ATOM_BODY(atom));
+		object = serd_node_from_string(SERD_LITERAL, str);
+		datatype = serd_node_from_string(SERD_URI, USTR(LV2_ATOM__Path));
+	} else if (!strcmp(type, LV2_ATOM__URI)) {
 		const uint8_t* str = USTR(LV2_ATOM_BODY(atom));
 		object = serd_node_from_string(SERD_URI, str);
-	} else if (!strcmp(type, NS_ATOM "Int32")) {
+	} else if (!strcmp(type, LV2_ATOM__Int32)) {
 		new_node = true;
 		object   = serd_node_new_integer(*(int32_t*)LV2_ATOM_BODY(atom));
 		datatype = serd_node_from_string(SERD_URI, USTR(NS_XSD "integer"));
-	} else if (!strcmp(type, NS_ATOM "Float")) {
+	} else if (!strcmp(type, LV2_ATOM__Float)) {
 		new_node = true;
 		object   = serd_node_new_decimal(*(float*)LV2_ATOM_BODY(atom), 8);
 		datatype = serd_node_from_string(SERD_URI, USTR(NS_XSD "decimal"));
-	} else if (!strcmp(type, NS_ATOM "Double")) {
+	} else if (!strcmp(type, LV2_ATOM__Double)) {
 		new_node = true;
 		object   = serd_node_new_decimal(*(float*)LV2_ATOM_BODY(atom), 16);
 		datatype = serd_node_from_string(SERD_URI, USTR(NS_XSD "decimal"));
-	} else if (!strcmp(type, NS_ATOM "Bool")) {
+	} else if (!strcmp(type, LV2_ATOM__Bool)) {
 		new_node = true;
 		datatype = serd_node_from_string(SERD_URI, USTR(NS_XSD "boolean"));
 		if (*(int32_t*)LV2_ATOM_BODY(atom)) {
@@ -87,7 +90,7 @@ atom_to_rdf(SerdWriter*     writer,
 		} else {
 			object = serd_node_from_string(SERD_LITERAL, USTR("false"));
 		}
-	} else if (!strcmp(type, NS_ATOM "Blank")) {
+	} else if (!strcmp(type, LV2_ATOM__Blank)) {
 		const LV2_Atom_Object* obj = (const LV2_Atom_Object*)atom;
 		SerdNode idnum = serd_node_new_integer(obj->id);
 		SerdNode id    = serd_node_from_string(SERD_BLANK, idnum.buf);
