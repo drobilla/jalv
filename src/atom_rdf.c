@@ -90,7 +90,7 @@ atom_to_rdf(SerdWriter*     writer,
 		                                 USTR(val ? "true" : "false"));
 	} else if (!strcmp(type, LV2_ATOM__Blank)) {
 		const LV2_Atom_Object* obj = (const LV2_Atom_Object*)atom;
-		SerdNode idnum = serd_node_new_integer(obj->id);
+		SerdNode idnum = serd_node_new_integer(obj->body.id);
 		SerdNode id    = serd_node_from_string(SERD_BLANK, idnum.buf);
 		serd_writer_write_statement(
 			writer, flags|SERD_ANON_O_BEGIN, NULL,

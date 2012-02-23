@@ -188,8 +188,8 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
 		aev = (LV2_Atom_Event*)(
 			(char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, abuf->data)
 			+ iter.offset);
-		*frames    = aev->time.audio.frames;
-		*subframes = aev->time.audio.subframes;
+		*frames    = aev->time.frames;
+		*subframes = 0;
 		*type      = aev->body.type;
 		*size      = aev->body.size;
 		*data      = LV2_ATOM_BODY(&aev->body);
@@ -239,10 +239,9 @@ lv2_evbuf_write(LV2_Evbuf_Iterator* iter,
 		aev = (LV2_Atom_Event*)(
 			(char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, abuf->data)
 			+ iter->offset);
-		aev->time.audio.frames    = frames;
-		aev->time.audio.subframes = subframes;
-		aev->body.type            = type;
-		aev->body.size            = size;
+		aev->time.frames = frames;
+		aev->body.type   = type;
+		aev->body.size   = size;
 		memcpy(LV2_ATOM_BODY(&aev->body), data, size);
 
 		size              = lv2_evbuf_pad_size(sizeof(LV2_Atom_Event) + size);
