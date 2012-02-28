@@ -225,7 +225,9 @@ jalv_allocate_port_buffers(Jalv* jalv)
 			lv2_evbuf_free(port->evbuf);
 			port->evbuf = lv2_evbuf_new(
 				jalv->midi_buf_size,
-				port->old_api ? LV2_EVBUF_EVENT : LV2_EVBUF_ATOM);
+				port->old_api ? LV2_EVBUF_EVENT : LV2_EVBUF_ATOM,
+				jalv->map.map(jalv->map.handle,
+				              lilv_node_as_string(jalv->seq_class)));
 			lilv_instance_connect_port(
 				jalv->instance, i, lv2_evbuf_get_buffer(port->evbuf));
 		default: break;
@@ -427,6 +429,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				uint8_t* data;
 				lv2_evbuf_get(i, &frames, &subframes,
 				              &type, &size, &data);
+				// FIXME: check type
 				jack_midi_event_write(buf, frames, data, size);
 
 				/* TODO: Be more disciminate about what to send */
@@ -622,7 +625,8 @@ main(int argc, char** argv)
 	host.control_class  = lilv_new_uri(world, LILV_URI_CONTROL_PORT);
 	host.audio_class    = lilv_new_uri(world, LILV_URI_AUDIO_PORT);
 	host.event_class    = lilv_new_uri(world, LILV_URI_EVENT_PORT);
-	host.msg_port_class = lilv_new_uri(world, NS_ATOM "MessagePort");
+	host.seq_class      = lilv_new_uri(world, LV2_ATOM__Sequence);
+	host.msg_port_class = lilv_new_uri(world, LV2_ATOM__MessagePort);
 	host.midi_class     = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
 	host.preset_class   = lilv_new_uri(world, NS_PSET "Preset");
 	host.label_pred     = lilv_new_uri(world, LILV_NS_RDFS "label");

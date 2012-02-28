@@ -26,6 +26,7 @@
 
 struct LV2_Evbuf_Impl {
 	LV2_Evbuf_Type type;
+	uint32_t       capacity;
 	union {
 		LV2_Event_Buffer     event;
 		LV2_Atom_Port_Buffer atom;
@@ -39,24 +40,13 @@ lv2_evbuf_pad_size(uint32_t size)
 }
 
 LV2_Evbuf*
-lv2_evbuf_new(uint32_t capacity, LV2_Evbuf_Type type)
+lv2_evbuf_new(uint32_t capacity, LV2_Evbuf_Type type, uint32_t atom_type)
 {
 	// FIXME: memory must be 64-bit aligned
-	LV2_Evbuf* evbuf = (LV2_Evbuf*)malloc(sizeof(LV2_Evbuf) + capacity);
-	evbuf->type = type;
-	switch (type) {
-	case LV2_EVBUF_EVENT:
-		evbuf->buf.event.data     = (uint8_t*)evbuf + sizeof(LV2_Evbuf);
-		evbuf->buf.event.capacity = capacity;
-		break;
-	case LV2_EVBUF_ATOM:
-		evbuf->buf.atom.data     = (LV2_Atom*)((uint8_t*)evbuf + sizeof(LV2_Evbuf));
-		evbuf->buf.atom.size     = sizeof(LV2_Atom_Port_Buffer);
-		evbuf->buf.atom.capacity = capacity - sizeof(LV2_Atom);
-		evbuf->buf.atom.data->type = 0;  // FIXME: set type to atom:Sequence
-		evbuf->buf.atom.data->size = 0;
-		break;
-	}
+	LV2_Evbuf* evbuf = (LV2_Evbuf*)malloc(
+		sizeof(LV2_Evbuf) + sizeof(LV2_Atom_Sequence) + capacity);
+	evbuf->capacity = capacity;
+	lv2_evbuf_set_type(evbuf, type, atom_type);
 	lv2_evbuf_reset(evbuf);
 	return evbuf;
 }
@@ -65,6 +55,26 @@ void
 lv2_evbuf_free(LV2_Evbuf* evbuf)
 {
 	free(evbuf);
+}
+
+void
+lv2_evbuf_set_type(LV2_Evbuf* evbuf, LV2_Evbuf_Type type, uint32_t atom_type)
+{
+	evbuf->type = type;
+	switch (type) {
+	case LV2_EVBUF_EVENT:
+		evbuf->buf.event.data     = (uint8_t*)(evbuf + 1);
+		evbuf->buf.event.capacity = evbuf->capacity;
+		break;
+	case LV2_EVBUF_ATOM:
+		evbuf->buf.atom.data       = (LV2_Atom*)(evbuf + 1);
+		evbuf->buf.atom.size       = sizeof(LV2_Atom_Port_Buffer);
+		evbuf->buf.atom.capacity   = evbuf->capacity;
+		evbuf->buf.atom.data->type = atom_type;
+		evbuf->buf.atom.data->size = 0;
+		break;
+	}
+	lv2_evbuf_reset(evbuf);
 }
 
 void

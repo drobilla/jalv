@@ -54,15 +54,26 @@ typedef struct {
 
 /**
    Allocate a new, empty event buffer.
+   The URID for atom:Sequence must be passed for atom_Sequence if type is
+   LV2_EVBUF_ATOM.
 */
 LV2_Evbuf*
-lv2_evbuf_new(uint32_t capacity, LV2_Evbuf_Type type);
+lv2_evbuf_new(uint32_t capacity, LV2_Evbuf_Type type, uint32_t atom_type);
 
 /**
    Free an event buffer allocated with lv2_evbuf_new.
 */
 void
 lv2_evbuf_free(LV2_Evbuf* evbuf);
+
+/**
+   Change the type of an existing event buffer.  This will clear and reset the
+   buffer, it is not possible to change the type and preserve the buffer
+   contents since the formats differ.  The URID for atom:Sequence must be
+   passed for atom_Sequence if type is LV2_EVBUF_ATOM.
+*/
+void
+lv2_evbuf_set_type(LV2_Evbuf* evbuf, LV2_Evbuf_Type type, uint32_t atom_type);
 
 /**
    Clear and initialize an existing event buffer.
