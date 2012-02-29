@@ -28,6 +28,7 @@
 #include "suil/suil.h"
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+#include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
 
@@ -82,6 +83,18 @@ typedef struct {
 	bool  dump;
 } JalvOptions;
 
+typedef struct {
+	LV2_URID atom_eventTransfer;
+	LV2_URID time_Position;
+	LV2_URID time_barBeat;
+	LV2_URID time_bar;
+	LV2_URID time_beatUnit;
+	LV2_URID time_beatsPerBar;
+	LV2_URID time_beatsPerMinute;
+	LV2_URID time_frame;
+	LV2_URID time_speed;
+} JalvURIDs;
+	
 typedef enum {
 	JALV_RUNNING,
 	JALV_PAUSE_REQUESTED,
@@ -90,6 +103,8 @@ typedef enum {
 
 typedef struct {
 	JalvOptions        opts;           ///< Command-line options
+	JalvURIDs          urids;          ///< URIDs
+	LV2_Atom_Forge     forge;          ///< Atom forge
 	const char*        prog_name;      ///< Program name (argv[0])
 	LilvWorld*         world;          ///< Lilv World
 	int                ui_width;       ///< Requested UI width
@@ -121,14 +136,14 @@ typedef struct {
 	LilvNode*          control_class;  ///< Control port class (URI)
 	LilvNode*          audio_class;    ///< Audio port class (URI)
 	LilvNode*          event_class;    ///< Event port class (URI)
+	LilvNode*          chunk_class;    ///< Atom sequence class (URI)
 	LilvNode*          seq_class;      ///< Atom sequence class (URI)
 	LilvNode*          msg_port_class; ///< Atom event port class (URI)
 	LilvNode*          midi_class;     ///< MIDI event class (URI)
 	LilvNode*          preset_class;   ///< Preset class (URI)
 	LilvNode*          label_pred;     ///< rdfs:label
 	LilvNode*          optional;       ///< lv2:connectionOptional port property
-	uint32_t           midi_event_id;  ///< MIDI event class ID
-	uint32_t           atom_prot_id;   ///< Atom protocol ID
+	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
 	bool               buf_size_set;   ///< True iff buffer size callback fired
 } Jalv;
 

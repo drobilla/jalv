@@ -37,6 +37,7 @@
 #endif
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+#include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #ifdef HAVE_LV2_UI_RESIZE
@@ -227,6 +228,8 @@ jalv_allocate_port_buffers(Jalv* jalv)
 				jalv->midi_buf_size,
 				port->old_api ? LV2_EVBUF_EVENT : LV2_EVBUF_ATOM,
 				jalv->map.map(jalv->map.handle,
+				              lilv_node_as_string(jalv->chunk_class)),
+				jalv->map.map(jalv->map.handle,
 				              lilv_node_as_string(jalv->seq_class)));
 			lilv_instance_connect_port(
 				jalv->instance, i, lv2_evbuf_get_buffer(port->evbuf));
@@ -324,6 +327,40 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 {
 	Jalv* const host = (Jalv*)data;
 
+	jack_position_t pos;
+	double          speed = 0.0;
+	if (jack_transport_query(host->jack_client, &pos) == JackTransportRolling) {
+		speed = 1.0;
+	}
+
+	if (pos.valid & JackPositionBBT) {
+		uint8_t buf[1024];
+		lv2_atom_forge_set_buffer(&host->forge, buf, sizeof(buf));
+		LV2_Atom_Forge*      forge = &host->forge;
+		LV2_Atom_Forge_Frame frame;
+		lv2_atom_forge_blank(forge, &frame, 1, host->urids.time_Position);
+		lv2_atom_forge_property_head(forge, host->urids.time_barBeat, 0);
+		lv2_atom_forge_float(forge, pos.beat - 1 + (pos.tick / (float)pos.ticks_per_beat));
+		lv2_atom_forge_property_head(forge, host->urids.time_bar, 0);
+		lv2_atom_forge_float(forge, pos.bar - 1);
+		lv2_atom_forge_property_head(forge, host->urids.time_beatUnit, 0);
+		lv2_atom_forge_float(forge, pos.beat_type);
+		lv2_atom_forge_property_head(forge, host->urids.time_beatsPerBar, 0);
+		lv2_atom_forge_float(forge, pos.beats_per_bar);
+		lv2_atom_forge_property_head(forge, host->urids.time_beatsPerMinute, 0);
+		lv2_atom_forge_float(forge, pos.beats_per_minute);
+		lv2_atom_forge_property_head(forge, host->urids.time_frame, 0);
+		lv2_atom_forge_int64(forge, pos.frame);
+		lv2_atom_forge_property_head(forge, host->urids.time_speed, 0);
+		lv2_atom_forge_float(forge, speed);
+
+		SerdNode s   = serd_node_from_string(SERD_BLANK, USTR("pos"));
+		SerdNode p   = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
+		char*    str = atom_to_turtle(&host->unmap, &s, &p, frame.atom);
+		printf("\n## Position\n%s\n", str);
+		free(str);
+	}
+
 	switch (host->play_state) {
 	case JALV_PAUSE_REQUESTED:
 		host->play_state = JALV_PAUSED;
@@ -358,10 +395,10 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				jack_port_get_buffer(host->ports[p].jack_port, nframes));
 
 		} else if (host->ports[p].type == TYPE_EVENT) {
-			/* Clear Jack event port buffer. */
-			lv2_evbuf_reset(host->ports[p].evbuf);
-
+			/* Prepare event ports. */
 			if (host->ports[p].flow == FLOW_INPUT) {
+				lv2_evbuf_reset(host->ports[p].evbuf, true);
+
 				void* buf = jack_port_get_buffer(host->ports[p].jack_port,
 				                                 nframes);
 
@@ -374,7 +411,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					                host->midi_event_id,
 					                ev.size, ev.buffer);
 				}
-			}
+			} else {
+				lv2_evbuf_reset(host->ports[p].evbuf, false);
+			} 
 		}
 	}
 
@@ -390,7 +429,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			if (ev.protocol == 0) {
 				assert(ev.size == sizeof(float));
 				port->control = *(float*)body;
-			} else if (ev.protocol == host->atom_prot_id) {
+			} else if (ev.protocol == host->urids.atom_eventTransfer) {
 				LV2_Evbuf_Iterator    i    = lv2_evbuf_end(port->evbuf);
 				const LV2_Atom* const atom = (const LV2_Atom*)body;
 				lv2_evbuf_write(&i, nframes, 0,
@@ -437,7 +476,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					char buf[sizeof(ControlChange) + sizeof(LV2_Atom)];
 					ControlChange* ev = (ControlChange*)buf;
 					ev->index    = p;
-					ev->protocol = host->atom_prot_id;
+					ev->protocol = host->urids.atom_eventTransfer;
 					ev->size     = sizeof(LV2_Atom) + size;
 					LV2_Atom* atom = (LV2_Atom*)ev->body;
 					atom->type = type;
@@ -505,13 +544,13 @@ jalv_ui_write(SuilController controller,
 		return;
 	}
 
-	if (protocol != 0 && protocol != host->atom_prot_id) {
+	if (protocol != 0 && protocol != host->urids.atom_eventTransfer) {
 		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
 		        protocol, symap_unmap(host->symap, protocol));
 		return;
 	}
 
-	if (protocol == host->atom_prot_id) {
+	if (protocol == host->urids.atom_eventTransfer) {
 		SerdNode s   = serd_node_from_string(SERD_BLANK, USTR("msg"));
 		SerdNode p   = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
 		char*    str = atom_to_turtle(&host->unmap, &s, &p, (LV2_Atom*)buffer);
@@ -538,7 +577,7 @@ jalv_emit_ui_events(Jalv* host)
 		char buf[ev.size];
 		jack_ringbuffer_read(host->plugin_events, buf, ev.size);
 
-		if (ev.protocol == host->atom_prot_id) {
+		if (ev.protocol == host->urids.atom_eventTransfer) {
 			SerdNode s   = serd_node_from_string(SERD_BLANK, USTR("msg"));
 			SerdNode p   = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
 			char*    str = atom_to_turtle(&host->unmap, &s, &p, (LV2_Atom*)buf);
@@ -587,10 +626,20 @@ main(int argc, char** argv)
 	host.unmap.unmap   = unmap_uri;
 	unmap_feature.data = &host.unmap;
 
+	lv2_atom_forge_init(&host.forge, &host.map);
+
 	host.midi_event_id = uri_to_id(&host,
 	                               "http://lv2plug.in/ns/ext/event",
 	                               NS_MIDI "MidiEvent");
-	host.atom_prot_id = symap_map(host.symap, NS_ATOM "eventTransfer");
+	host.urids.atom_eventTransfer  = symap_map(host.symap, LV2_ATOM__eventTransfer);
+	host.urids.time_Position       = symap_map(host.symap, LV2_TIME__Position);
+	host.urids.time_barBeat        = symap_map(host.symap, LV2_TIME__barBeat);
+	host.urids.time_bar            = symap_map(host.symap, LV2_TIME__bar);
+	host.urids.time_beatUnit       = symap_map(host.symap, LV2_TIME__beatUnit);
+	host.urids.time_beatsPerBar    = symap_map(host.symap, LV2_TIME__beatsPerBar);
+	host.urids.time_beatsPerMinute = symap_map(host.symap, LV2_TIME__beatsPerMinute);
+	host.urids.time_frame          = symap_map(host.symap, LV2_TIME__frame);
+	host.urids.time_speed          = symap_map(host.symap, LV2_TIME__speed);
 
 	char* template = jalv_strdup("/tmp/jalv-XXXXXX");
 	host.temp_dir = jalv_strjoin(mkdtemp(template), "/");
@@ -625,6 +674,7 @@ main(int argc, char** argv)
 	host.control_class  = lilv_new_uri(world, LILV_URI_CONTROL_PORT);
 	host.audio_class    = lilv_new_uri(world, LILV_URI_AUDIO_PORT);
 	host.event_class    = lilv_new_uri(world, LILV_URI_EVENT_PORT);
+	host.chunk_class    = lilv_new_uri(world, LV2_ATOM__Chunk);
 	host.seq_class      = lilv_new_uri(world, LV2_ATOM__Sequence);
 	host.msg_port_class = lilv_new_uri(world, LV2_ATOM__MessagePort);
 	host.midi_class     = lilv_new_uri(world, LILV_URI_MIDI_EVENT);

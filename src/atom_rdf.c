@@ -79,12 +79,10 @@ atom_to_rdf(SerdWriter*     writer,
 		object   = serd_node_new_decimal(*(float*)LV2_ATOM_BODY(atom), 8);
 		datatype = serd_node_from_string(SERD_URI, USTR(NS_XSD "decimal"));
 	} else if (!strcmp(type, LV2_ATOM__Double)) {
-		new_node = true;
 		object   = serd_node_new_decimal(*(float*)LV2_ATOM_BODY(atom), 16);
 		datatype = serd_node_from_string(SERD_URI, USTR(NS_XSD "decimal"));
 	} else if (!strcmp(type, LV2_ATOM__Bool)) {
 		const int32_t val = *(const int32_t*)LV2_ATOM_BODY(atom);
-		new_node = true;
 		datatype = serd_node_from_string(SERD_URI, USTR(NS_XSD "boolean"));
 		object   = serd_node_from_string(SERD_LITERAL,
 		                                 USTR(val ? "true" : "false"));
