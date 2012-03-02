@@ -356,7 +356,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 		SerdNode s   = serd_node_from_string(SERD_BLANK, USTR("pos"));
 		SerdNode p   = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
-		char*    str = atom_to_turtle(&host->unmap, &s, &p, frame.atom);
+		char*    str = atom_to_turtle(&host->unmap, &s, &p, (LV2_Atom*)frame.ref);
 		printf("\n## Position\n%s\n", str);
 		free(str);
 	}
