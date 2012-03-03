@@ -84,8 +84,8 @@ jalv_save(Jalv* jalv, const char* dir)
 		get_port_value, jalv,
 		LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE, NULL);
 
-	lilv_state_save(jalv->world, &jalv->unmap, state, NULL,
-	                dir, "state.ttl", NULL);
+	lilv_state_save(jalv->world, &jalv->map, &jalv->unmap, state, NULL,
+	                dir, "state.ttl");
 
 	lilv_state_free(state);
 
@@ -194,8 +194,8 @@ jalv_save_preset(Jalv* jalv, const char* dir, const char* uri, const char* label
 		lilv_state_set_label(state, label);
 	}
 
-	int ret = lilv_state_save(jalv->world, &jalv->unmap, state,
-	                          uri, dir, "state.ttl", NULL);
+	int ret = lilv_state_save(jalv->world, &jalv->map, &jalv->unmap, state,
+	                          uri, dir, "state.ttl");
 	lilv_state_free(state);
 
 	return ret;
