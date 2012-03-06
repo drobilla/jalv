@@ -61,15 +61,20 @@ jalv_make_path(LV2_State_Make_Path_Handle handle,
 	return fullpath;
 }
 
-LilvNode*
+const void*
 get_port_value(const char* port_symbol,
-               void*       user_data)
+               void*       user_data,
+               uint32_t*   size,
+               uint32_t*   type)
 {
 	Jalv*        jalv = (Jalv*)user_data;
 	struct Port* port = jalv_port_by_symbol(jalv, port_symbol);
 	if (port && port->flow == FLOW_INPUT && port->type == TYPE_CONTROL) {
-		return lilv_new_float(jalv->world, port->control);
+		*size = sizeof(float);
+		*type = jalv->forge.Float;
+		return &port->control;
 	}
+	*size = *type = 0;
 	return NULL;
 }
 
@@ -118,9 +123,11 @@ jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
 }
 
 static void
-set_port_value(const char*     port_symbol,
-               const LilvNode* value,
-               void*           user_data)
+set_port_value(const char* port_symbol,
+               void*       user_data,
+               const void* value,
+               uint32_t    size,
+               uint32_t    type)
 {
 	Jalv*        jalv = (Jalv*)user_data;
 	struct Port* port = jalv_port_by_symbol(jalv, port_symbol);
@@ -129,13 +136,13 @@ set_port_value(const char*     port_symbol,
 		return;
 	}
 
-	if (!lilv_node_is_float(value) && !lilv_node_is_int(value)) {
-		fprintf(stderr, "error: Preset port `%s' value is not a number\n",
+	if (type != jalv->forge.Float) {
+		fprintf(stderr, "error: Preset port `%s' value is not a float\n",
 		        port_symbol);
 		return;
 	}
 
-	const float fvalue = lilv_node_as_float(value);
+	const float fvalue = *(float*)value;
 
 	// Send value to plugin
 	jalv_ui_write(jalv, port->index, sizeof(fvalue), 0, &fvalue);
