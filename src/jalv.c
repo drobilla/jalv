@@ -424,7 +424,10 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 		for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
 			jack_ringbuffer_read(host->ui_events, (char*)&ev, sizeof(ev));
 			char body[ev.size];
-			jack_ringbuffer_read(host->ui_events, body, ev.size);
+			if (jack_ringbuffer_read(host->ui_events, body, ev.size) != ev.size) {
+				fprintf(stderr, "error: Error reading from UI ring buffer\n");
+				break;
+			}
 			struct Port* const port = &host->ports[ev.index];
 			if (ev.protocol == 0) {
 				assert(ev.size == sizeof(float));
@@ -468,6 +471,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				uint8_t* data;
 				lv2_evbuf_get(i, &frames, &subframes,
 				              &type, &size, &data);
+				assert(size > 0);
 				// FIXME: check type
 				jack_midi_event_write(buf, frames, data, size);
 
@@ -551,10 +555,12 @@ jalv_ui_write(SuilController controller,
 	}
 
 	if (protocol == host->urids.atom_eventTransfer) {
-		SerdNode s   = serd_node_from_string(SERD_BLANK, USTR("msg"));
-		SerdNode p   = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
-		char*    str = atom_to_turtle(&host->unmap, &s, &p, (LV2_Atom*)buffer);
-		printf("\n## UI => Plugin ##\n%s\n", str);
+		SerdNode s = serd_node_from_string(SERD_BLANK, USTR("msg"));
+		SerdNode p = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
+
+		const LV2_Atom* atom = (const LV2_Atom*)buffer;
+		char*           str  = atom_to_turtle(&host->unmap, &s, &p, atom);
+		printf("\n## UI => Plugin (%u bytes) ##\n%s\n", atom->size, str);
 		free(str);
 	}
 
