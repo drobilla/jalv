@@ -163,6 +163,9 @@ int
 jalv_open_ui(Jalv*         jalv,
              SuilInstance* instance);
 
+bool
+jalv_ui_is_resizable(Jalv* jalv);
+
 void
 jalv_ui_write(SuilController controller,
               uint32_t       port_index,

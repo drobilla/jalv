@@ -275,8 +275,7 @@ jalv_open_ui(Jalv*         jalv,
 		gtk_container_add(GTK_CONTAINER(alignment), button);
 	}
 
-	// TODO: Check UI properties for resizable
-	gtk_window_set_resizable(GTK_WINDOW(window), false);
+	gtk_window_set_resizable(GTK_WINDOW(window), jalv_ui_is_resizable(jalv));
 
 	gtk_container_add(GTK_CONTAINER(window), vbox);
 	gtk_widget_show_all(window);

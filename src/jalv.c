@@ -54,6 +54,7 @@
 #define NS_MIDI "http://lv2plug.in/ns/ext/midi#"
 #define NS_PSET "http://lv2plug.in/ns/ext/presets#"
 #define NS_RDF  "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+#define NS_UI   "http://lv2plug.in/ns/extensions/ui#"
 
 #define USTR(str) ((const uint8_t*)str)
 	
@@ -534,6 +535,22 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 	jack_session_event_free(event);
 }
 #endif /* JALV_JACK_SESSION */
+
+bool
+jalv_ui_is_resizable(Jalv* jalv)
+{
+	const LilvNode* s = lilv_ui_get_uri(jalv->ui);
+	LilvNode*       p = lilv_new_uri(jalv->world, LV2_CORE__requiredFeature);
+	LilvNode*       o = lilv_new_uri(jalv->world, NS_UI "fixedSize");
+
+	LilvNodes* matches = lilv_world_find_nodes(jalv->world, s, p, o);
+	
+	lilv_node_free(o);
+	lilv_node_free(p);
+	lilv_nodes_free(matches);
+
+	return matches == NULL;
+}
 
 void
 jalv_ui_write(SuilController controller,
