@@ -328,6 +328,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 {
 	Jalv* const host = (Jalv*)data;
 
+#if 0
 	jack_position_t pos;
 	double          speed = 0.0;
 	if (jack_transport_query(host->jack_client, &pos) == JackTransportRolling) {
@@ -361,6 +362,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 		printf("\n## Position\n%s\n", str);
 		free(str);
 	}
+#endif
 
 	switch (host->play_state) {
 	case JALV_PAUSE_REQUESTED:
@@ -576,7 +578,9 @@ jalv_ui_write(SuilController controller,
 		SerdNode p = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
 
 		const LV2_Atom* atom = (const LV2_Atom*)buffer;
-		char*           str  = atom_to_turtle(&host->unmap, &s, &p, atom);
+		char*           str  = sratom_to_turtle(
+			host->sratom, &host->unmap, "jalv:", &s, &p,
+			atom->type, atom->size, LV2_ATOM_BODY(atom));
 		printf("\n## UI => Plugin (%u bytes) ##\n%s\n", atom->size, str);
 		free(str);
 	}
@@ -601,9 +605,12 @@ jalv_emit_ui_events(Jalv* host)
 		jack_ringbuffer_read(host->plugin_events, buf, ev.size);
 
 		if (ev.protocol == host->urids.atom_eventTransfer) {
-			SerdNode s   = serd_node_from_string(SERD_BLANK, USTR("msg"));
-			SerdNode p   = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
-			char*    str = atom_to_turtle(&host->unmap, &s, &p, (LV2_Atom*)buf);
+			SerdNode  s    = serd_node_from_string(SERD_BLANK, USTR("msg"));
+			SerdNode  p    = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
+			LV2_Atom* atom = (LV2_Atom*)buf;
+			char*     str  = sratom_to_turtle(
+				host->sratom, &host->unmap, "jalv:", &s, &p,
+				atom->type, atom->size, LV2_ATOM_BODY(atom));
 			printf("\n## Plugin => UI ##\n%s\n", str);
 			free(str);
 		}
@@ -650,6 +657,8 @@ main(int argc, char** argv)
 	unmap_feature.data = &host.unmap;
 
 	lv2_atom_forge_init(&host.forge, &host.map);
+
+	host.sratom = sratom_new(&host.map);
 
 	host.midi_event_id = uri_to_id(&host,
 	                               "http://lv2plug.in/ns/ext/event",

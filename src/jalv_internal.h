@@ -34,6 +34,8 @@
 
 #include "zix/sem.h"
 
+#include "sratom/sratom.h"
+
 #include "lv2_evbuf.h"
 #include "symap.h"
 
@@ -111,6 +113,7 @@ typedef struct {
 	int                ui_height;      ///< Requested UI height
 	LV2_URID_Map       map;            ///< URI => Int map
 	LV2_URID_Unmap     unmap;          ///< Int => URI map
+	Sratom*            sratom;         ///< Atom serialiser
 	Symap*             symap;          ///< Symbol (URI) map
 	jack_client_t*     jack_client;    ///< Jack client
 	jack_ringbuffer_t* ui_events;      ///< Port events from UI
