@@ -541,6 +541,10 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 bool
 jalv_ui_is_resizable(Jalv* jalv)
 {
+	if (!jalv->ui) {
+		return false;
+	}
+
 	const LilvNode* s = lilv_ui_get_uri(jalv->ui);
 	LilvNode*       p = lilv_new_uri(jalv->world, LV2_CORE__requiredFeature);
 	LilvNode*       o = lilv_new_uri(jalv->world, NS_UI "fixedSize");
