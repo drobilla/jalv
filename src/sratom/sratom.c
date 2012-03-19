@@ -473,9 +473,9 @@ read_node(Sratom*         sratom,
 		if (datatype) {
 			const char* type_uri = (const char*)sord_node_get_string(datatype);
 			if (!strcmp(type_uri, (char*)NS_XSD "int")) {
-				lv2_atom_forge_int32(forge, strtol(str, &endptr, 10));
+				lv2_atom_forge_int(forge, strtol(str, &endptr, 10));
 			} else if (!strcmp(type_uri, (char*)NS_XSD "long")) {
-				lv2_atom_forge_int64(forge, strtol(str, &endptr, 10));
+				lv2_atom_forge_long(forge, strtol(str, &endptr, 10));
 			} else if (!strcmp(type_uri, (char*)NS_XSD "float")) {
 				lv2_atom_forge_float(forge, serd_strtod(str, &endptr));
 			} else if (!strcmp(type_uri, (char*)NS_XSD "double")) {

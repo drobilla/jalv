@@ -615,7 +615,7 @@ jalv_emit_ui_events(Jalv* host)
 			char*     str  = sratom_to_turtle(
 				host->sratom, &host->unmap, "jalv:", &s, &p,
 				atom->type, atom->size, LV2_ATOM_BODY(atom));
-			printf("\n## Plugin => UI ##\n%s\n", str);
+			printf("\n## Plugin => UI (%u bytes) ##\n%s\n", atom->size, str);
 			free(str);
 		}
 
