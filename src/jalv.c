@@ -551,7 +551,7 @@ jalv_ui_is_resizable(Jalv* jalv)
 	const LilvNode* s   = lilv_ui_get_uri(jalv->ui);
 	LilvNode*       p   = lilv_new_uri(jalv->world, LV2_CORE__requiredFeature);
 	LilvNode*       fs  = lilv_new_uri(jalv->world, NS_UI "fixedSize");
-	LilvNode*       nrs = lilv_new_uri(jalv->world, NS_UI "fixedSize");
+	LilvNode*       nrs = lilv_new_uri(jalv->world, NS_UI "noUserResize");
 
 	LilvNodes* fs_matches = lilv_world_find_nodes(jalv->world, s, p, fs);
 	LilvNodes* nrs_matches = lilv_world_find_nodes(jalv->world, s, p, nrs);
