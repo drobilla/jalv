@@ -83,7 +83,7 @@ def configure(conf):
     print('')
 
 def build(bld):
-    libs = 'LILV SUIL JACK SERD LV2CORE LV2_EVENT LV2_ATOM LV2_URI_MAP LV2_STATE'
+    libs = 'LILV SUIL JACK SERD SRATOM LV2CORE LV2_EVENT LV2_ATOM LV2_URI_MAP LV2_STATE'
 
     source = 'src/jalv.c src/symap.c src/state.c src/lv2_evbuf.c'
 
