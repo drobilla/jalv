@@ -548,17 +548,21 @@ jalv_ui_is_resizable(Jalv* jalv)
 		return false;
 	}
 
-	const LilvNode* s = lilv_ui_get_uri(jalv->ui);
-	LilvNode*       p = lilv_new_uri(jalv->world, LV2_CORE__requiredFeature);
-	LilvNode*       o = lilv_new_uri(jalv->world, NS_UI "fixedSize");
+	const LilvNode* s   = lilv_ui_get_uri(jalv->ui);
+	LilvNode*       p   = lilv_new_uri(jalv->world, LV2_CORE__requiredFeature);
+	LilvNode*       fs  = lilv_new_uri(jalv->world, NS_UI "fixedSize");
+	LilvNode*       nrs = lilv_new_uri(jalv->world, NS_UI "fixedSize");
 
-	LilvNodes* matches = lilv_world_find_nodes(jalv->world, s, p, o);
+	LilvNodes* fs_matches = lilv_world_find_nodes(jalv->world, s, p, fs);
+	LilvNodes* nrs_matches = lilv_world_find_nodes(jalv->world, s, p, nrs);
 	
-	lilv_node_free(o);
+	lilv_nodes_free(nrs_matches);
+	lilv_nodes_free(fs_matches);
+	lilv_node_free(nrs);
+	lilv_node_free(fs);
 	lilv_node_free(p);
-	lilv_nodes_free(matches);
 
-	return matches == NULL;
+	return !fs_matches && !nrs_matches;
 }
 
 void
