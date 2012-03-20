@@ -41,6 +41,8 @@ def configure(conf):
                       atleast_version='0.4.5', mandatory=True)
     autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
                       atleast_version='0.4.0', mandatory=True)
+    autowaf.check_pkg(conf, 'sratom-0', uselib_store='SRATOM',
+                      atleast_version='0.1.0', mandatory=True)
     autowaf.check_pkg(conf, 'jack', uselib_store='JACK',
                       atleast_version='0.120.0', mandatory=True)
     autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
@@ -83,7 +85,7 @@ def configure(conf):
 def build(bld):
     libs = 'LILV SUIL JACK SERD LV2CORE LV2_EVENT LV2_ATOM LV2_URI_MAP LV2_STATE'
 
-    source = 'src/jalv.c src/symap.c src/state.c src/lv2_evbuf.c src/sratom/sratom.c'
+    source = 'src/jalv.c src/symap.c src/state.c src/lv2_evbuf.c'
 
     # Non-GUI version
     obj = bld(features     = 'c cprogram',
