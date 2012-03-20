@@ -66,8 +66,7 @@ jalv_open_ui(Jalv*         jalv,
 		window->add(*Gtk::manage(button));
 	}
 
-	// TODO: Check UI properties for resizable
-	window->set_resizable(false);
+	window->set_resizable(jalv_ui_is_resizable(jalv));
 	window->show_all();
 
 	Gtk::Main::run(*window);
