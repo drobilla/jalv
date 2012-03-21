@@ -109,8 +109,6 @@ typedef struct {
 	LV2_Atom_Forge     forge;          ///< Atom forge
 	const char*        prog_name;      ///< Program name (argv[0])
 	LilvWorld*         world;          ///< Lilv World
-	int                ui_width;       ///< Requested UI width
-	int                ui_height;      ///< Requested UI height
 	LV2_URID_Map       map;            ///< URI => Int map
 	LV2_URID_Unmap     unmap;          ///< Int => URI map
 	Sratom*            sratom;         ///< Atom serialiser

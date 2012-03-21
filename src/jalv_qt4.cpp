@@ -70,7 +70,6 @@ jalv_open_ui(Jalv*         jalv,
 	if (instance) {
 		QWidget* widget = (QWidget*)suil_instance_get_widget(instance);
 		widget->show();
-		jalv_ui_resize(jalv, jalv->ui_width, jalv->ui_height);
 	} else {
 		QPushButton* button = new QPushButton("Close");
 		button->show();

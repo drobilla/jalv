@@ -40,9 +40,6 @@
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
-#ifdef HAVE_LV2_UI_RESIZE
-#    include "lv2/lv2plug.in/ns/ext/ui-resize/ui-resize.h"
-#endif
 
 #include "lilv/lilv.h"
 
@@ -57,7 +54,7 @@
 #define NS_UI   "http://lv2plug.in/ns/extensions/ui#"
 
 #define USTR(str) ((const uint8_t*)str)
-	
+
 ZixSem exit_sem;  /**< Exit semaphore */
 
 LV2_URID
@@ -95,35 +92,12 @@ static LV2_Feature unmap_feature     = { NS_EXT "urid#unmap", NULL };
 static LV2_Feature instance_feature  = { NS_EXT "instance-access", NULL };
 static LV2_Feature make_path_feature = { LV2_STATE__makePath, NULL };
 
-#ifdef HAVE_LV2_UI_RESIZE
-static int
-lv2_ui_resize(LV2_UI_Resize_Feature_Data data, int width, int height)
-{
-	Jalv* jalv = (Jalv*)data;
-	jalv->ui_width  = width;
-	jalv->ui_height = height;
-	return jalv_ui_resize(jalv, width, height);
-}
-
-LV2_UI_Resize_Feature    ui_resize         = { NULL, &lv2_ui_resize };
-static const LV2_Feature ui_resize_feature = { NS_EXT "ui-resize#UIResize",
-                                               &ui_resize };
-
-const LV2_Feature* features[8] = {
-	&uri_map_feature, &map_feature, &unmap_feature,
-	&instance_feature,
-	&make_path_feature,
-	&ui_resize_feature,
-	NULL
-};
-#else
 const LV2_Feature* features[7] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
 	&instance_feature,
 	&make_path_feature,
 	NULL
 };
-#endif
 
 /** Abort and exit on error */
 static void
@@ -416,7 +390,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				}
 			} else {
 				lv2_evbuf_reset(host->ports[p].evbuf, false);
-			} 
+			}
 		}
 	}
 
@@ -431,6 +405,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				fprintf(stderr, "error: Error reading from UI ring buffer\n");
 				break;
 			}
+			assert(ev.index < host->num_ports);
 			struct Port* const port = &host->ports[ev.index];
 			if (ev.protocol == 0) {
 				assert(ev.size == sizeof(float));
@@ -549,13 +524,13 @@ jalv_ui_is_resizable(Jalv* jalv)
 	}
 
 	const LilvNode* s   = lilv_ui_get_uri(jalv->ui);
-	LilvNode*       p   = lilv_new_uri(jalv->world, LV2_CORE__requiredFeature);
+	LilvNode*       p   = lilv_new_uri(jalv->world, NS_UI "optionalFeature");
 	LilvNode*       fs  = lilv_new_uri(jalv->world, NS_UI "fixedSize");
 	LilvNode*       nrs = lilv_new_uri(jalv->world, NS_UI "noUserResize");
 
 	LilvNodes* fs_matches = lilv_world_find_nodes(jalv->world, s, p, fs);
 	LilvNodes* nrs_matches = lilv_world_find_nodes(jalv->world, s, p, nrs);
-	
+
 	lilv_nodes_free(nrs_matches);
 	lilv_nodes_free(fs_matches);
 	lilv_node_free(nrs);
@@ -581,6 +556,12 @@ jalv_ui_write(SuilController controller,
 	if (protocol != 0 && protocol != host->urids.atom_eventTransfer) {
 		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
 		        protocol, symap_unmap(host->symap, protocol));
+		return;
+	}
+
+	if (port_index >= host->num_ports) {
+		fprintf(stderr, "UI write to out of range port index %d\n",
+		        port_index);
 		return;
 	}
 
@@ -690,12 +671,6 @@ main(int argc, char** argv)
 
 	LV2_State_Make_Path make_path = { &host, jalv_make_path };
 	make_path_feature.data = &make_path;
-
-#ifdef HAVE_LV2_UI_RESIZE
-	ui_resize.data = &host;
-#endif
-	host.ui_width  = -1;
-	host.ui_height = -1;
 
 	zix_sem_init(&exit_sem, 0);
 	host.done = &exit_sem;

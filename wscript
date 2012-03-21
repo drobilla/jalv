@@ -61,8 +61,6 @@ def configure(conf):
                       uselib_store='LV2_URI_MAP')
     autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-state',
                       uselib_store='LV2_STATE', mandatory=False)
-    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-ui-resize',
-                      uselib_store='LV2_UI_RESIZE', mandatory=False)
 
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
