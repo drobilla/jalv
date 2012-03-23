@@ -40,6 +40,7 @@
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
+#include "lv2/lv2plug.in/ns/ext/worker/worker.h"
 
 #include "lilv/lilv.h"
 
@@ -91,11 +92,13 @@ static LV2_Feature map_feature       = { NS_EXT "urid#map", NULL };
 static LV2_Feature unmap_feature     = { NS_EXT "urid#unmap", NULL };
 static LV2_Feature instance_feature  = { NS_EXT "instance-access", NULL };
 static LV2_Feature make_path_feature = { LV2_STATE__makePath, NULL };
+static LV2_Feature schedule_feature  = { LV2_WORKER__schedule, NULL };
 
-const LV2_Feature* features[7] = {
+const LV2_Feature* features[8] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
 	&instance_feature,
 	&make_path_feature,
+	&schedule_feature,
 	NULL
 };
 
@@ -425,6 +428,23 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	/* Run plugin for this cycle */
 	lilv_instance_run(host->instance, nframes);
 
+	/* Process any replies from the worker. */
+	if (host->worker.responses) {
+		uint32_t read_space = jack_ringbuffer_read_space(host->worker.responses);
+		while (read_space) {
+			uint32_t size = 0;
+			jack_ringbuffer_read(host->worker.responses, (char*)&size, sizeof(size));
+			
+			jack_ringbuffer_read(
+				host->worker.responses, host->worker.response, size);
+
+			host->worker.iface->work_response(
+				host->instance->lv2_handle, size, host->worker.response);
+
+			read_space -= sizeof(size) + size;
+		}
+	}
+
 	/* Check if it's time to send updates to the UI */
 	host->event_delta_t += nframes;
 	bool           send_ui_updates = false;
@@ -614,6 +634,54 @@ jalv_emit_ui_events(Jalv* host)
 	return true;
 }
 
+LV2_Worker_Status
+schedule_work(LV2_Worker_Schedule_Handle handle,
+              uint32_t                   size,
+              const void*                data)
+{
+	Jalv* jalv = (Jalv*)handle;
+	jack_ringbuffer_write(jalv->worker.requests, (const char*)&size, sizeof(size));
+	jack_ringbuffer_write(jalv->worker.requests, data, size);
+	zix_sem_post(&jalv->worker.sem);
+	return LV2_WORKER_SUCCESS;
+}
+
+LV2_Worker_Status
+worker_respond(LV2_Worker_Respond_Handle handle,
+               uint32_t                  size,
+               const void*               data)
+{
+	Jalv* jalv = (Jalv*)handle;
+	jack_ringbuffer_write(jalv->worker.responses, (const char*)&size, sizeof(size));
+	jack_ringbuffer_write(jalv->worker.responses, data, size);
+	return LV2_WORKER_SUCCESS;
+}
+
+void*
+worker(void* data)
+{
+	Jalv* jalv = (Jalv*)data;
+	void* buf  = NULL;
+	while (true) {
+		zix_sem_wait(&jalv->worker.sem);
+		if (jalv->exit) {
+			break;
+		}
+
+		uint32_t size = 0;
+		jack_ringbuffer_read(jalv->worker.requests, (char*)&size, sizeof(size));
+
+		buf = realloc(buf, size);
+		jack_ringbuffer_read(jalv->worker.requests, buf, size);
+
+		jalv->worker.iface->work(
+			jalv->instance->lv2_handle, worker_respond, jalv, size, buf);
+	}
+
+	free(buf);
+	return NULL;
+}
+
 static void
 signal_handler(int ignored)
 {
@@ -672,10 +740,14 @@ main(int argc, char** argv)
 	LV2_State_Make_Path make_path = { &host, jalv_make_path };
 	make_path_feature.data = &make_path;
 
+	LV2_Worker_Schedule schedule = { &host, schedule_work };
+	schedule_feature.data = &schedule;
+
 	zix_sem_init(&exit_sem, 0);
 	host.done = &exit_sem;
 
 	zix_sem_init(&host.paused, 0);
+	zix_sem_init(&host.worker.sem, 0);
 
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
@@ -698,6 +770,7 @@ main(int argc, char** argv)
 	host.midi_class     = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
 	host.preset_class   = lilv_new_uri(world, NS_PSET "Preset");
 	host.label_pred     = lilv_new_uri(world, LILV_NS_RDFS "label");
+	host.work_schedule  = lilv_new_uri(world, LV2_WORKER__schedule);
 	host.optional       = lilv_new_uri(world, LILV_NS_LV2
 	                                   "connectionOptional");
 
@@ -756,6 +829,7 @@ main(int argc, char** argv)
 		}
 	}
 
+	/* Create ringbuffers for UI if necessary */
 	if (host.ui) {
 		fprintf(stderr, "UI:        %s\n",
 		        lilv_node_as_uri(lilv_ui_get_uri(host.ui)));
@@ -824,6 +898,18 @@ main(int argc, char** argv)
 		jalv_allocate_port_buffers(&host);
 	}
 
+	/* Create thread and ringbuffers for worker if necessary */
+	if (lilv_plugin_has_feature(host.plugin, host.work_schedule)) {
+		host.worker.iface = lilv_instance_get_extension_data(
+			host.instance, LV2_WORKER__Interface);
+		zix_thread_create(&host.worker.thread, 4096, worker, &host);
+		host.worker.requests  = jack_ringbuffer_create(4096);
+		host.worker.responses = jack_ringbuffer_create(4096);
+		host.worker.response  = malloc(4096);
+		jack_ringbuffer_mlock(host.worker.requests);
+		jack_ringbuffer_mlock(host.worker.responses);
+	}
+
 	/* Apply loaded state to plugin instance if necessary */
 	if (state) {
 		jalv_apply_state(&host, state);
@@ -890,8 +976,14 @@ main(int argc, char** argv)
 
 	/* Wait for finish signal from UI or signal handler */
 	zix_sem_wait(&exit_sem);
+	host.exit = true;
 
 	fprintf(stderr, "Exiting...\n");
+
+	if (host.worker.requests) {
+		zix_sem_post(&host.worker.sem);
+		zix_thread_join(host.worker.thread, NULL);
+	}
 
 	/* Deactivate JACK */
 	jack_deactivate(host.jack_client);
@@ -913,6 +1005,11 @@ main(int argc, char** argv)
 		jack_ringbuffer_free(host.ui_events);
 		jack_ringbuffer_free(host.plugin_events);
 	}
+	if (host.worker.requests) {
+		jack_ringbuffer_free(host.worker.requests);
+		jack_ringbuffer_free(host.worker.responses);
+		free(host.worker.response);
+	}
 	lilv_node_free(native_ui_type);
 	lilv_node_free(host.input_class);
 	lilv_node_free(host.output_class);
@@ -922,6 +1019,7 @@ main(int argc, char** argv)
 	lilv_node_free(host.midi_class);
 	lilv_node_free(host.preset_class);
 	lilv_node_free(host.label_pred);
+	lilv_node_free(host.work_schedule);
 	lilv_node_free(host.optional);
 	symap_free(host.symap);
 	suil_host_free(ui_host);

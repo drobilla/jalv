@@ -29,10 +29,12 @@
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
-#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
+#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
+#include "lv2/lv2plug.in/ns/ext/worker/worker.h"
 
 #include "zix/sem.h"
+#include "zix/thread.h"
 
 #include "sratom/sratom.h"
 
@@ -104,6 +106,15 @@ typedef enum {
 } JalvPlayState;
 
 typedef struct {
+	jack_ringbuffer_t*          requests;   ///< Requests to the worker
+	jack_ringbuffer_t*          responses;  ///< Responses from the worker
+	void*                       response;   ///< Worker response buffer
+	ZixSem                      sem;        ///< Worker semaphore
+	ZixThread                   thread;     ///< Worker thread
+	const LV2_Worker_Interface* iface;      ///< Plugin worker interface
+} JalvWorker;
+	
+typedef struct {
 	JalvOptions        opts;           ///< Command-line options
 	JalvURIDs          urids;          ///< URIDs
 	LV2_Atom_Forge     forge;          ///< Atom forge
@@ -116,6 +127,7 @@ typedef struct {
 	jack_client_t*     jack_client;    ///< Jack client
 	jack_ringbuffer_t* ui_events;      ///< Port events from UI
 	jack_ringbuffer_t* plugin_events;  ///< Port events from plugin
+	JalvWorker         worker;         ///< Worker thread implementation
 	ZixSem*            done;           ///< Exit semaphore
 	ZixSem             paused;         ///< Paused signal from process thread
 	JalvPlayState      play_state;     ///< Current play state
@@ -132,20 +144,22 @@ typedef struct {
 	uint32_t           longest_sym;    ///< Longest port symbol
 	jack_nframes_t     sample_rate;    ///< Sample rate
 	jack_nframes_t     event_delta_t;  ///< Frames since last update sent to UI
-	LilvNode*          input_class;    ///< Input port class (URI)
-	LilvNode*          output_class;   ///< Output port class (URI)
-	LilvNode*          control_class;  ///< Control port class (URI)
 	LilvNode*          audio_class;    ///< Audio port class (URI)
-	LilvNode*          event_class;    ///< Event port class (URI)
 	LilvNode*          chunk_class;    ///< Atom sequence class (URI)
-	LilvNode*          seq_class;      ///< Atom sequence class (URI)
-	LilvNode*          msg_port_class; ///< Atom event port class (URI)
-	LilvNode*          midi_class;     ///< MIDI event class (URI)
-	LilvNode*          preset_class;   ///< Preset class (URI)
+	LilvNode*          control_class;  ///< Control port class (URI)
+	LilvNode*          event_class;    ///< Event port class (URI)
+	LilvNode*          input_class;    ///< Input port class (URI)
 	LilvNode*          label_pred;     ///< rdfs:label
+	LilvNode*          midi_class;     ///< MIDI event class (URI)
+	LilvNode*          msg_port_class; ///< Atom event port class (URI)
 	LilvNode*          optional;       ///< lv2:connectionOptional port property
+	LilvNode*          output_class;   ///< Output port class (URI)
+	LilvNode*          preset_class;   ///< Preset class (URI)
+	LilvNode*          seq_class;      ///< Atom sequence class (URI)
+	LilvNode*          work_schedule;  ///< lv2:connectionOptional port property
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
 	bool               buf_size_set;   ///< True iff buffer size callback fired
+	bool               exit;           ///< True if execution is finished 
 } Jalv;
 
 int
