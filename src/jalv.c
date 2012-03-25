@@ -159,7 +159,7 @@ create_port(Jalv*    host,
 		port->type = TYPE_EVENT;
 		port->old_api = true;
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
-	                          host->msg_port_class)) {
+	                          host->atom_port_class)) {
 		port->type = TYPE_EVENT;
 		port->old_api = false;
 	} else if (!optional) {
@@ -759,19 +759,19 @@ main(int argc, char** argv)
 	const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
 
 	/* Set up the port classes this app supports */
-	host.input_class    = lilv_new_uri(world, LILV_URI_INPUT_PORT);
-	host.output_class   = lilv_new_uri(world, LILV_URI_OUTPUT_PORT);
-	host.control_class  = lilv_new_uri(world, LILV_URI_CONTROL_PORT);
-	host.audio_class    = lilv_new_uri(world, LILV_URI_AUDIO_PORT);
-	host.event_class    = lilv_new_uri(world, LILV_URI_EVENT_PORT);
-	host.chunk_class    = lilv_new_uri(world, LV2_ATOM__Chunk);
-	host.seq_class      = lilv_new_uri(world, LV2_ATOM__Sequence);
-	host.msg_port_class = lilv_new_uri(world, LV2_ATOM__MessagePort);
-	host.midi_class     = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
-	host.preset_class   = lilv_new_uri(world, NS_PSET "Preset");
-	host.label_pred     = lilv_new_uri(world, LILV_NS_RDFS "label");
-	host.work_schedule  = lilv_new_uri(world, LV2_WORKER__schedule);
-	host.optional       = lilv_new_uri(world, LILV_NS_LV2
+	host.input_class     = lilv_new_uri(world, LILV_URI_INPUT_PORT);
+	host.output_class    = lilv_new_uri(world, LILV_URI_OUTPUT_PORT);
+	host.control_class   = lilv_new_uri(world, LILV_URI_CONTROL_PORT);
+	host.audio_class     = lilv_new_uri(world, LILV_URI_AUDIO_PORT);
+	host.event_class     = lilv_new_uri(world, LILV_URI_EVENT_PORT);
+	host.chunk_class     = lilv_new_uri(world, LV2_ATOM__Chunk);
+	host.seq_class       = lilv_new_uri(world, LV2_ATOM__Sequence);
+	host.atom_port_class = lilv_new_uri(world, LV2_ATOM__AtomPort);
+	host.midi_class      = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
+	host.preset_class    = lilv_new_uri(world, NS_PSET "Preset");
+	host.label_pred      = lilv_new_uri(world, LILV_NS_RDFS "label");
+	host.work_schedule   = lilv_new_uri(world, LV2_WORKER__schedule);
+	host.optional        = lilv_new_uri(world, LILV_NS_LV2
 	                                   "connectionOptional");
 
 	/* Get plugin URI from loaded state or command line */

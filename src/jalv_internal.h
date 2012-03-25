@@ -151,7 +151,7 @@ typedef struct {
 	LilvNode*          input_class;    ///< Input port class (URI)
 	LilvNode*          label_pred;     ///< rdfs:label
 	LilvNode*          midi_class;     ///< MIDI event class (URI)
-	LilvNode*          msg_port_class; ///< Atom event port class (URI)
+	LilvNode*          atom_port_class; ///< Atom event port class (URI)
 	LilvNode*          optional;       ///< lv2:connectionOptional port property
 	LilvNode*          output_class;   ///< Output port class (URI)
 	LilvNode*          preset_class;   ///< Preset class (URI)
