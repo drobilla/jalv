@@ -34,7 +34,7 @@ def configure(conf):
     autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
 
-    autowaf.check_pkg(conf, 'lv2core', uselib_store='LV2CORE', mandatory=True)
+    autowaf.check_pkg(conf, 'lv2', atleast_version='0.1.0', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.4.0', mandatory=True)
     autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',
@@ -52,16 +52,6 @@ def configure(conf):
     autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
                       atleast_version='4.0.0', mandatory=False)
 
-    autowaf.check_pkg(conf, 'lv2core', uselib_store='LV2CORE')
-    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-event',
-                      uselib_store='LV2_EVENT')
-    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-atom',
-                      uselib_store='LV2_ATOM')
-    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-uri-map',
-                      uselib_store='LV2_URI_MAP')
-    autowaf.check_pkg(conf, 'lv2-lv2plug.in-ns-ext-state',
-                      uselib_store='LV2_STATE', mandatory=False)
-
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
 
@@ -70,8 +60,6 @@ def configure(conf):
 
     conf.write_config_header('jalv_config.h', remove=False)
 
-    autowaf.display_msg(conf, "LV2 State support",
-                        conf.is_defined('HAVE_LV2_STATE'))
     autowaf.display_msg(conf, "Gtk 2.0 support",
                         conf.is_defined('HAVE_GTK2'))
     autowaf.display_msg(conf, "Gtkmm 2.0 support",
@@ -81,7 +69,7 @@ def configure(conf):
     print('')
 
 def build(bld):
-    libs = 'LILV SUIL JACK SERD SRATOM LV2CORE LV2_EVENT LV2_ATOM LV2_URI_MAP LV2_STATE'
+    libs = 'LILV SUIL JACK SERD SRATOM LV2'
 
     source = 'src/jalv.c src/symap.c src/state.c src/lv2_evbuf.c'
 
