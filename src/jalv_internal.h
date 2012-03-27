@@ -98,7 +98,7 @@ typedef struct {
 	LV2_URID time_frame;
 	LV2_URID time_speed;
 } JalvURIDs;
-	
+
 typedef enum {
 	JALV_RUNNING,
 	JALV_PAUSE_REQUESTED,
@@ -113,7 +113,7 @@ typedef struct {
 	ZixThread                   thread;     ///< Worker thread
 	const LV2_Worker_Interface* iface;      ///< Plugin worker interface
 } JalvWorker;
-	
+
 typedef struct {
 	JalvOptions        opts;           ///< Command-line options
 	JalvURIDs          urids;          ///< URIDs
@@ -159,7 +159,7 @@ typedef struct {
 	LilvNode*          work_schedule;  ///< lv2:connectionOptional port property
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
 	bool               buf_size_set;   ///< True iff buffer size callback fired
-	bool               exit;           ///< True if execution is finished 
+	bool               exit;           ///< True if execution is finished
 } Jalv;
 
 int

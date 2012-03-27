@@ -434,7 +434,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 		while (read_space) {
 			uint32_t size = 0;
 			jack_ringbuffer_read(host->worker.responses, (char*)&size, sizeof(size));
-			
+
 			jack_ringbuffer_read(
 				host->worker.responses, host->worker.response, size);
 
