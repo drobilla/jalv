@@ -443,6 +443,10 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 			read_space -= sizeof(size) + size;
 		}
+
+		if (host->worker.iface->end_run) {
+			host->worker.iface->end_run(host->instance->lv2_handle);
+		}
 	}
 
 	/* Check if it's time to send updates to the UI */
