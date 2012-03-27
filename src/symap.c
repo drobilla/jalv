@@ -195,7 +195,6 @@ symap_dump(Symap* map)
 	fprintf(stderr, "}\n");
 }
 
-
 int
 main()
 {
