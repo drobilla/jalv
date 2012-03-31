@@ -16,6 +16,17 @@
 
 #include "worker.h"
 
+LV2_Worker_Status
+jalv_worker_respond(LV2_Worker_Respond_Handle handle,
+                    uint32_t                  size,
+                    const void*               data)
+{
+	Jalv* jalv = (Jalv*)handle;
+	jack_ringbuffer_write(jalv->worker.responses, (const char*)&size, sizeof(size));
+	jack_ringbuffer_write(jalv->worker.responses, data, size);
+	return LV2_WORKER_SUCCESS;
+}
+
 static void*
 worker_func(void* data)
 {
@@ -74,17 +85,6 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
 	jack_ringbuffer_write(jalv->worker.requests, (const char*)&size, sizeof(size));
 	jack_ringbuffer_write(jalv->worker.requests, data, size);
 	zix_sem_post(&jalv->worker.sem);
-	return LV2_WORKER_SUCCESS;
-}
-
-LV2_Worker_Status
-jalv_worker_respond(LV2_Worker_Respond_Handle handle,
-                    uint32_t                  size,
-                    const void*               data)
-{
-	Jalv* jalv = (Jalv*)handle;
-	jack_ringbuffer_write(jalv->worker.responses, (const char*)&size, sizeof(size));
-	jack_ringbuffer_write(jalv->worker.responses, data, size);
 	return LV2_WORKER_SUCCESS;
 }
 

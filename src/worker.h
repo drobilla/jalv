@@ -31,10 +31,5 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
                      uint32_t                   size,
                      const void*                data);
 
-LV2_Worker_Status
-jalv_worker_respond(LV2_Worker_Respond_Handle handle,
-                    uint32_t                  size,
-                    const void*               data);
-
 void
 jalv_worker_emit_responses(Jalv* jalv, JalvWorker* worker);
