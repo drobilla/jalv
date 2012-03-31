@@ -156,7 +156,8 @@ typedef struct {
 	LilvNode*          output_class;   ///< Output port class (URI)
 	LilvNode*          preset_class;   ///< Preset class (URI)
 	LilvNode*          seq_class;      ///< Atom sequence class (URI)
-	LilvNode*          work_schedule;  ///< lv2:connectionOptional port property
+	LilvNode*          work_interface; ///< Worker interface (URI)
+	LilvNode*          work_schedule;  ///< Worker schedule feature (URI)
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
 	bool               buf_size_set;   ///< True iff buffer size callback fired
 	bool               exit;           ///< True if execution is finished
