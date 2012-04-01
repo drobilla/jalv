@@ -433,7 +433,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	jalv_worker_emit_responses(host, &host->worker);
 
 	/* Notify the plugin the run() cycle is finished */
-	if (host->worker.iface->end_run) {
+	if (host->worker.iface && host->worker.iface->end_run) {
 		host->worker.iface->end_run(host->instance->lv2_handle);
 	}
 
