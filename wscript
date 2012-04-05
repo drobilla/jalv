@@ -71,7 +71,7 @@ def configure(conf):
 def build(bld):
     libs = 'LILV SUIL JACK SERD SRATOM LV2'
 
-    source = 'src/jalv.c src/symap.c src/state.c src/lv2_evbuf.c src/worker.c'
+    source = 'src/jalv.c src/symap.c src/state.c src/lv2_evbuf.c src/worker.c src/log.c'
 
     # Non-GUI version
     obj = bld(features     = 'c cprogram',

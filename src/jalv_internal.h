@@ -29,6 +29,7 @@
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
+#include "lv2/lv2plug.in/ns/ext/log/log.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/worker/worker.h"
@@ -89,9 +90,10 @@ typedef struct {
 
 typedef struct {
 	LV2_URID atom_eventTransfer;
+	LV2_URID log_Trace;
 	LV2_URID time_Position;
-	LV2_URID time_barBeat;
 	LV2_URID time_bar;
+	LV2_URID time_barBeat;
 	LV2_URID time_beatUnit;
 	LV2_URID time_beatsPerBar;
 	LV2_URID time_beatsPerMinute;
@@ -254,6 +256,17 @@ jalv_strjoin(const char* a, const char* b)
 
 	return out;
 }
+
+int
+jalv_printf(LV2_Log_Handle handle,
+            LV2_URID       type,
+            const char*    fmt, ...);
+
+int
+jalv_vprintf(LV2_Log_Handle handle,
+             LV2_URID       type,
+             const char*    fmt,
+             va_list        ap);
 
 #ifdef __cplusplus
 }  // extern "C"

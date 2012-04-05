@@ -94,12 +94,14 @@ static LV2_Feature unmap_feature     = { NS_EXT "urid#unmap", NULL };
 static LV2_Feature instance_feature  = { NS_EXT "instance-access", NULL };
 static LV2_Feature make_path_feature = { LV2_STATE__makePath, NULL };
 static LV2_Feature schedule_feature  = { LV2_WORKER__schedule, NULL };
+static LV2_Feature log_feature       = { LV2_LOG__log, NULL };
 
-const LV2_Feature* features[8] = {
+const LV2_Feature* features[9] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
 	&instance_feature,
 	&make_path_feature,
 	&schedule_feature,
+	&log_feature,
 	NULL
 };
 
@@ -577,7 +579,7 @@ jalv_ui_write(SuilController controller,
 		return;
 	}
 
-	if (protocol == host->urids.atom_eventTransfer) {
+	if (host->opts.dump && protocol == host->urids.atom_eventTransfer) {
 		SerdNode s = serd_node_from_string(SERD_BLANK, USTR("msg"));
 		SerdNode p = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
 
@@ -608,7 +610,7 @@ jalv_emit_ui_events(Jalv* host)
 		char buf[ev.size];
 		jack_ringbuffer_read(host->plugin_events, buf, ev.size);
 
-		if (ev.protocol == host->urids.atom_eventTransfer) {
+		if (host->opts.dump && ev.protocol == host->urids.atom_eventTransfer) {
 			SerdNode  s    = serd_node_from_string(SERD_BLANK, USTR("msg"));
 			SerdNode  p    = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
 			LV2_Atom* atom = (LV2_Atom*)buf;
@@ -668,9 +670,10 @@ main(int argc, char** argv)
 	                               "http://lv2plug.in/ns/ext/event",
 	                               NS_MIDI "MidiEvent");
 	host.urids.atom_eventTransfer  = symap_map(host.symap, LV2_ATOM__eventTransfer);
+	host.urids.log_Trace           = symap_map(host.symap, LV2_LOG__Trace);
 	host.urids.time_Position       = symap_map(host.symap, LV2_TIME__Position);
-	host.urids.time_barBeat        = symap_map(host.symap, LV2_TIME__barBeat);
 	host.urids.time_bar            = symap_map(host.symap, LV2_TIME__bar);
+	host.urids.time_barBeat        = symap_map(host.symap, LV2_TIME__barBeat);
 	host.urids.time_beatUnit       = symap_map(host.symap, LV2_TIME__beatUnit);
 	host.urids.time_beatsPerBar    = symap_map(host.symap, LV2_TIME__beatsPerBar);
 	host.urids.time_beatsPerMinute = symap_map(host.symap, LV2_TIME__beatsPerMinute);
@@ -686,6 +689,9 @@ main(int argc, char** argv)
 
 	LV2_Worker_Schedule schedule = { &host, jalv_worker_schedule };
 	schedule_feature.data = &schedule;
+
+	LV2_Log_Log log = { &host, jalv_printf, jalv_vprintf };
+	log_feature.data = &log;
 
 	zix_sem_init(&exit_sem, 0);
 	host.done = &exit_sem;
