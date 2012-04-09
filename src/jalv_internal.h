@@ -86,6 +86,7 @@ typedef struct {
 	char* uuid;
 	char* load;
 	bool  dump;
+	bool  generic_ui;
 } JalvOptions;
 
 typedef struct {
