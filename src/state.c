@@ -189,7 +189,10 @@ jalv_apply_preset(Jalv* jalv, const LilvNode* preset)
 }
 
 int
-jalv_save_preset(Jalv* jalv, const char* dir, const char* uri, const char* label)
+jalv_save_preset(Jalv*       jalv,
+                 const char* dir,
+                 const char* uri,
+                 const char* label)
 {
 	LilvState* const state = lilv_state_new_from_instance(
 		jalv->plugin, jalv->instance, &jalv->map,

@@ -116,4 +116,4 @@ def build(bld):
     bld.install_files('${MANDIR}/man1', bld.path.ant_glob('doc/*.1'))
 
 def lint(ctx):
-    subprocess.call('cpplint.py --filter=+whitespace/comments,-whitespace/tab,-whitespace/braces,-whitespace/labels,-build/header_guard,-readability/casting,-readability/todo,-build/include src/* jalv/*', shell=True)
+    subprocess.call('cpplint.py --filter=+whitespace/comments,-whitespace/tab,-whitespace/braces,-whitespace/labels,-build/header_guard,-readability/casting,-readability/todo,-build/include,-runtime/sizeof src/* jalv/*', shell=True)
