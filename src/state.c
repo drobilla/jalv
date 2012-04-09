@@ -102,12 +102,12 @@ int
 jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
 {
 	LilvNodes* presets = lilv_plugin_get_related(jalv->plugin,
-	                                             jalv->preset_class);
+	                                             jalv->nodes.pset_Preset);
 	LILV_FOREACH(nodes, i, presets) {
 		const LilvNode* preset = lilv_nodes_get(presets, i);
 		lilv_world_load_resource(jalv->world, preset);
 		LilvNodes* labels = lilv_world_find_nodes(
-			jalv->world, preset, jalv->label_pred, NULL);
+			jalv->world, preset, jalv->nodes.rdfs_label, NULL);
 		if (labels) {
 			const LilvNode* label = lilv_nodes_get_first(labels);
 			sink(jalv, preset, label, data);

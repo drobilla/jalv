@@ -30,6 +30,7 @@
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/log/log.h"
+#include "lv2/lv2plug.in/ns/ext/midi/midi.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/worker/worker.h"
@@ -102,6 +103,23 @@ typedef struct {
 	LV2_URID time_speed;
 } JalvURIDs;
 
+typedef struct {
+	LilvNode* atom_AtomPort;
+	LilvNode* atom_Chunk;    
+	LilvNode* atom_Sequence;
+	LilvNode* ev_EventPort;
+	LilvNode* lv2_AudioPort;    
+	LilvNode* lv2_ControlPort;
+	LilvNode* lv2_InputPort;
+	LilvNode* lv2_OutputPort;   
+	LilvNode* lv2_connectionOptional;
+	LilvNode* midi_MidiEvent;
+	LilvNode* pset_Preset;   
+	LilvNode* rdfs_label;
+	LilvNode* work_interface; 
+	LilvNode* work_schedule;  
+} JalvNodes;
+
 typedef enum {
 	JALV_RUNNING,
 	JALV_PAUSE_REQUESTED,
@@ -120,6 +138,7 @@ typedef struct {
 typedef struct {
 	JalvOptions        opts;           ///< Command-line options
 	JalvURIDs          urids;          ///< URIDs
+	JalvNodes          nodes;          ///< Nodes
 	LV2_Atom_Forge     forge;          ///< Atom forge
 	const char*        prog_name;      ///< Program name (argv[0])
 	LilvWorld*         world;          ///< Lilv World
@@ -147,20 +166,6 @@ typedef struct {
 	uint32_t           longest_sym;    ///< Longest port symbol
 	jack_nframes_t     sample_rate;    ///< Sample rate
 	jack_nframes_t     event_delta_t;  ///< Frames since last update sent to UI
-	LilvNode*          audio_class;    ///< Audio port class (URI)
-	LilvNode*          chunk_class;    ///< Atom sequence class (URI)
-	LilvNode*          control_class;  ///< Control port class (URI)
-	LilvNode*          event_class;    ///< Event port class (URI)
-	LilvNode*          input_class;    ///< Input port class (URI)
-	LilvNode*          label_pred;     ///< rdfs:label
-	LilvNode*          midi_class;     ///< MIDI event class (URI)
-	LilvNode*          atom_port_class; ///< Atom event port class (URI)
-	LilvNode*          optional;       ///< lv2:connectionOptional port property
-	LilvNode*          output_class;   ///< Output port class (URI)
-	LilvNode*          preset_class;   ///< Preset class (URI)
-	LilvNode*          seq_class;      ///< Atom sequence class (URI)
-	LilvNode*          work_interface; ///< Worker interface (URI)
-	LilvNode*          work_schedule;  ///< Worker schedule feature (URI)
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
 	bool               buf_size_set;   ///< True iff buffer size callback fired
 	bool               exit;           ///< True if execution is finished

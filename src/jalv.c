@@ -37,6 +37,8 @@
 #endif
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+#include "lv2/lv2plug.in/ns/ext/event/event.h"
+#include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
@@ -138,31 +140,31 @@ create_port(Jalv*    host,
 
 	const bool optional = lilv_port_has_property(host->plugin,
 	                                             port->lilv_port,
-	                                             host->optional);
+	                                             host->nodes.lv2_connectionOptional);
 
 	/* Set the port flow (input or output) */
-	if (lilv_port_is_a(host->plugin, port->lilv_port, host->input_class)) {
+	if (lilv_port_is_a(host->plugin, port->lilv_port, host->nodes.lv2_InputPort)) {
 		port->flow = FLOW_INPUT;
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
-	                          host->output_class)) {
+	                          host->nodes.lv2_OutputPort)) {
 		port->flow = FLOW_OUTPUT;
 	} else if (!optional) {
 		die("Mandatory port has unknown type (neither input nor output)");
 	}
 
 	/* Set control values */
-	if (lilv_port_is_a(host->plugin, port->lilv_port, host->control_class)) {
+	if (lilv_port_is_a(host->plugin, port->lilv_port, host->nodes.lv2_ControlPort)) {
 		port->type    = TYPE_CONTROL;
 		port->control = isnan(default_value) ? 0.0 : default_value;
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
-	                          host->audio_class)) {
+	                          host->nodes.lv2_AudioPort)) {
 		port->type = TYPE_AUDIO;
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
-	                          host->event_class)) {
+	                          host->nodes.ev_EventPort)) {
 		port->type = TYPE_EVENT;
 		port->old_api = true;
 	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
-	                          host->atom_port_class)) {
+	                          host->nodes.atom_AtomPort)) {
 		port->type = TYPE_EVENT;
 		port->old_api = false;
 	} else if (!optional) {
@@ -209,9 +211,9 @@ jalv_allocate_port_buffers(Jalv* jalv)
 				jalv->midi_buf_size,
 				port->old_api ? LV2_EVBUF_EVENT : LV2_EVBUF_ATOM,
 				jalv->map.map(jalv->map.handle,
-				              lilv_node_as_string(jalv->chunk_class)),
+				              lilv_node_as_string(jalv->nodes.atom_Chunk)),
 				jalv->map.map(jalv->map.handle,
-				              lilv_node_as_string(jalv->seq_class)));
+				              lilv_node_as_string(jalv->nodes.atom_Sequence)));
 			lilv_instance_connect_port(
 				jalv->instance, i, lv2_evbuf_get_buffer(port->evbuf));
 		default: break;
@@ -708,22 +710,21 @@ main(int argc, char** argv)
 	host.world = world;
 	const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
 
-	/* Set up the port classes this app supports */
-	host.input_class     = lilv_new_uri(world, LILV_URI_INPUT_PORT);
-	host.output_class    = lilv_new_uri(world, LILV_URI_OUTPUT_PORT);
-	host.control_class   = lilv_new_uri(world, LILV_URI_CONTROL_PORT);
-	host.audio_class     = lilv_new_uri(world, LILV_URI_AUDIO_PORT);
-	host.event_class     = lilv_new_uri(world, LILV_URI_EVENT_PORT);
-	host.chunk_class     = lilv_new_uri(world, LV2_ATOM__Chunk);
-	host.seq_class       = lilv_new_uri(world, LV2_ATOM__Sequence);
-	host.atom_port_class = lilv_new_uri(world, LV2_ATOM__AtomPort);
-	host.midi_class      = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
-	host.preset_class    = lilv_new_uri(world, NS_PSET "Preset");
-	host.label_pred      = lilv_new_uri(world, LILV_NS_RDFS "label");
-	host.work_interface  = lilv_new_uri(world, LV2_WORKER__interface);
-	host.work_schedule   = lilv_new_uri(world, LV2_WORKER__schedule);
-	host.optional        = lilv_new_uri(world, LILV_NS_LV2
-	                                    "connectionOptional");
+	/* Cache URIs for concepts we'll use */
+	host.nodes.atom_AtomPort          = lilv_new_uri(world, LV2_ATOM__AtomPort);
+	host.nodes.atom_Chunk             = lilv_new_uri(world, LV2_ATOM__Chunk);    
+	host.nodes.atom_Sequence          = lilv_new_uri(world, LV2_ATOM__Sequence);
+	host.nodes.ev_EventPort           = lilv_new_uri(world, LV2_EVENT__EventPort);
+	host.nodes.lv2_AudioPort          = lilv_new_uri(world, LV2_CORE__AudioPort);    
+	host.nodes.lv2_ControlPort        = lilv_new_uri(world, LV2_CORE__ControlPort);
+	host.nodes.lv2_InputPort          = lilv_new_uri(world, LV2_CORE__InputPort);
+	host.nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);   
+	host.nodes.lv2_connectionOptional = lilv_new_uri(world, LV2_CORE__connectionOptional);
+	host.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
+	host.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);   
+	host.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
+	host.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface); 
+	host.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);  
 
 	/* Get plugin URI from loaded state or command line */
 	LilvState* state      = NULL;
@@ -850,8 +851,8 @@ main(int argc, char** argv)
 	}
 
 	/* Create thread and ringbuffers for worker if necessary */
-	if (lilv_plugin_has_feature(host.plugin, host.work_schedule)
-	    && lilv_plugin_has_extension_data(host.plugin, host.work_interface)) {
+	if (lilv_plugin_has_feature(host.plugin, host.nodes.work_schedule)
+	    && lilv_plugin_has_extension_data(host.plugin, host.nodes.work_interface)) {
 		jalv_worker_init(
 			&host, &host.worker,
 			(LV2_Worker_Interface*)lilv_instance_get_extension_data(
@@ -952,16 +953,9 @@ main(int argc, char** argv)
 		jack_ringbuffer_free(host.plugin_events);
 	}
 	lilv_node_free(native_ui_type);
-	lilv_node_free(host.input_class);
-	lilv_node_free(host.output_class);
-	lilv_node_free(host.control_class);
-	lilv_node_free(host.audio_class);
-	lilv_node_free(host.event_class);
-	lilv_node_free(host.midi_class);
-	lilv_node_free(host.preset_class);
-	lilv_node_free(host.label_pred);
-	lilv_node_free(host.work_schedule);
-	lilv_node_free(host.optional);
+	for (LilvNode** n = (LilvNode**)&host.nodes; *n; ++n) {
+		lilv_node_free(*n);
+	}
 	symap_free(host.symap);
 	suil_host_free(ui_host);
 	lilv_world_free(world);
