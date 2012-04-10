@@ -63,14 +63,15 @@ enum PortType {
 };
 
 struct Port {
-	const LilvPort*   lilv_port;
-	enum PortType     type;
-	enum PortFlow     flow;
-	jack_port_t*      jack_port;  ///< For audio/MIDI ports, otherwise NULL
-	LV2_Evbuf*        evbuf;      ///< For MIDI ports, otherwise NULL
-	uint32_t          index;      ///< Port index
-	float             control;    ///< For control ports, otherwise 0.0f
-	bool              old_api;    ///< True for event, false for atom
+	const LilvPort* lilv_port;
+	enum PortType   type;
+	enum PortFlow   flow;
+	jack_port_t*    jack_port;  ///< For audio/MIDI ports, otherwise NULL
+	LV2_Evbuf*      evbuf;      ///< For MIDI ports, otherwise NULL
+	void*           widget;     ///< Control widget, if applicable
+	uint32_t        index;      ///< Port index
+	float           control;    ///< For control ports, otherwise 0.0f
+	bool            old_api;    ///< True for event, false for atom
 };
 
 /**
@@ -168,7 +169,8 @@ typedef struct {
 	jack_nframes_t     event_delta_t;  ///< Frames since last update sent to UI
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
 	bool               buf_size_set;   ///< True iff buffer size callback fired
-	bool               exit;           ///< True if execution is finished
+	bool               exit;           ///< True iff execution is finished
+	bool               has_ui;         ///< True iff a control UI is present 
 } Jalv;
 
 int
@@ -196,6 +198,13 @@ jalv_ui_write(SuilController controller,
               uint32_t       buffer_size,
               uint32_t       protocol,
               const void*    buffer);
+
+void
+jalv_ui_port_event(Jalv*       jalv,
+                   uint32_t    port_index,
+                   uint32_t    buffer_size,
+                   uint32_t    protocol,
+                   const void* buffer);
 
 bool
 jalv_emit_ui_events(Jalv* jalv);

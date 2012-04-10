@@ -403,7 +403,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	}
 
 	/* Read and apply control change events from UI */
-	if (host->ui) {
+	if (host->has_ui) {
 		ControlChange ev;
 		const size_t  space = jack_ringbuffer_read_space(host->ui_events);
 		for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
@@ -445,7 +445,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	host->event_delta_t += nframes;
 	bool           send_ui_updates = false;
 	jack_nframes_t update_frames   = host->sample_rate / JALV_UI_UPDATE_HZ;
-	if (host->ui && (host->event_delta_t > update_frames)) {
+	if (host->has_ui && (host->event_delta_t > update_frames)) {
 		send_ui_updates = true;
 		host->event_delta_t = 0;
 	}
@@ -564,8 +564,7 @@ jalv_ui_write(SuilController controller,
               const void*    buffer)
 {
 	Jalv* host = (Jalv*)controller;
-
-	if (!host->ui) {
+	if (!host->has_ui) {
 		return;
 	}
 
@@ -623,8 +622,12 @@ jalv_emit_ui_events(Jalv* host)
 			free(str);
 		}
 
-		suil_instance_port_event(host->ui_instance, ev.index,
-		                         ev.size, ev.protocol, buf);
+		if (host->ui_instance) {
+			suil_instance_port_event(host->ui_instance, ev.index,
+			                         ev.size, ev.protocol, buf);
+		} else {
+			jalv_ui_port_event(host, ev.index, ev.size, ev.protocol, buf);
+		}
 	}
 
 	return true;
@@ -770,10 +773,8 @@ main(int argc, char** argv)
 		LilvUIs* uis = lilv_plugin_get_uis(host.plugin);  // FIXME: leak
 		LILV_FOREACH(uis, u, uis) {
 			const LilvUI* this_ui = lilv_uis_get(uis, u);
-			if (lilv_ui_is_supported(this_ui,
-			                         suil_ui_supported,
-			                         native_ui_type,
-			                         &ui_type)) {
+			if (lilv_ui_is_supported(
+				    this_ui, suil_ui_supported, native_ui_type, &ui_type)) {
 				// TODO: Multiple UI support
 				host.ui = this_ui;
 				break;
@@ -785,14 +786,14 @@ main(int argc, char** argv)
 	if (host.ui) {
 		fprintf(stderr, "UI:        %s\n",
 		        lilv_node_as_uri(lilv_ui_get_uri(host.ui)));
-
-		host.ui_events     = jack_ringbuffer_create(4096);
-		host.plugin_events = jack_ringbuffer_create(4096);
-		jack_ringbuffer_mlock(host.ui_events);
-		jack_ringbuffer_mlock(host.plugin_events);
 	} else {
 		fprintf(stderr, "No appropriate UI found\n");
 	}
+
+	host.ui_events     = jack_ringbuffer_create(4096);
+	host.plugin_events = jack_ringbuffer_create(4096);
+	jack_ringbuffer_mlock(host.ui_events);
+	jack_ringbuffer_mlock(host.plugin_events);
 
 	/* Create port structures (host.ports) */
 	jalv_create_ports(&host);
@@ -895,6 +896,7 @@ main(int argc, char** argv)
 		/* Instantiate UI */
 		ui_host = suil_host_new(jalv_ui_write, NULL, NULL, NULL);
 
+		host.has_ui = true;
 		host.ui_instance = suil_instance_new(
 			ui_host,
 			&host,
@@ -948,16 +950,15 @@ main(int argc, char** argv)
 
 	/* Clean up */
 	free(host.ports);
-	if (host.ui) {
-		jack_ringbuffer_free(host.ui_events);
-		jack_ringbuffer_free(host.plugin_events);
-	}
+	jack_ringbuffer_free(host.ui_events);
+	jack_ringbuffer_free(host.plugin_events);
 	lilv_node_free(native_ui_type);
 	for (LilvNode** n = (LilvNode**)&host.nodes; *n; ++n) {
 		lilv_node_free(*n);
 	}
 	symap_free(host.symap);
 	suil_host_free(ui_host);
+	sratom_free(host.sratom);
 	lilv_world_free(world);
 
 	zix_sem_destroy(&exit_sem);

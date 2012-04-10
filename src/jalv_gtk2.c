@@ -191,6 +191,30 @@ add_preset_to_menu(Jalv*           jalv,
 	return 0;
 }
 
+void
+jalv_ui_port_event(Jalv*       jalv,
+                   uint32_t    port_index,
+                   uint32_t    buffer_size,
+                   uint32_t    protocol,
+                   const void* buffer)
+{
+	GtkWidget* widget = jalv->ports[port_index].widget;
+	if (!widget) {
+		return;
+	}
+
+	if (GTK_IS_COMBO_BOX(widget)) {
+		fprintf(stderr, "TODO: Combo box value change\n");
+	} else if (GTK_IS_TOGGLE_BUTTON(widget)) {
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget),
+		                             *(float*)buffer > 0.0f);
+	} else if (GTK_IS_RANGE(widget)) {
+		gtk_range_set_value(GTK_RANGE(widget), *(float*)buffer);
+	} else {
+		fprintf(stderr, "Unknown widget type for port %d\n", port_index);
+	}
+}
+
 static gboolean
 slider_changed(GtkRange* range, gpointer data)
 {
@@ -317,10 +341,11 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 			int      idx    = 0;
 			LILV_FOREACH(scale_points, i, sp) {
 				const LilvScalePoint* p = lilv_scale_points_get(sp, i);
-				values[idx++] = lilv_node_as_float(lilv_scale_point_get_value(p));
+				values[idx] = lilv_node_as_float(lilv_scale_point_get_value(p));
 				char* label = g_strdup(
 					lilv_node_as_string(lilv_scale_point_get_label(p)));
 				g_hash_table_insert(points, values + idx, label);
+				++idx;
 			}
 			lilv_scale_points_free(sp);
 		}
@@ -339,6 +364,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 				lilv_port_has_property(jalv->plugin, port, lv2_integer),
 				mins[i], maxs[i], defaults[i]);
 		}
+		jalv->ports[i].widget = control;
 
 		/* Set tooltip text */
 		LilvNodes* comments = lilv_port_get_value(
@@ -347,6 +373,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 			gtk_widget_set_tooltip_text(
 				control, lilv_node_as_string(lilv_nodes_get_first(comments)));
 		}
+		lilv_nodes_free(comments);
 
 		/* Add control table row */
 		GtkWidget* label  = gtk_label_new(NULL);
@@ -400,9 +427,9 @@ jalv_open_ui(Jalv*         jalv,
 	g_signal_connect(window, "destroy",
 	                 G_CALLBACK(on_window_destroy), jalv);
 
-	gtk_window_set_title(
-		GTK_WINDOW(window),
-		lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
+	LilvNode* name = lilv_plugin_get_name(jalv->plugin);
+	gtk_window_set_title(GTK_WINDOW(window), lilv_node_as_string(name));
+	lilv_node_free(name);
 
 	GtkWidget* vbox      = gtk_vbox_new(FALSE, 0);
 	GtkWidget* menu_bar  = gtk_menu_bar_new();
@@ -444,16 +471,12 @@ jalv_open_ui(Jalv*         jalv,
 	g_signal_connect(G_OBJECT(save_preset), "activate",
 	                 G_CALLBACK(on_save_preset_activate), jalv);
 
-
 	if (instance && !jalv->opts.generic_ui) {
 		GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);
 		GtkWidget* widget    = (GtkWidget*)suil_instance_get_widget(instance);
 
 		gtk_box_pack_start(GTK_BOX(vbox), alignment, TRUE, TRUE, 0);
 		gtk_container_add(GTK_CONTAINER(alignment), widget);
-
-		g_timeout_add(1000 / JALV_UI_UPDATE_HZ,
-		              (GSourceFunc)jalv_emit_ui_events, jalv);
 		gtk_window_set_resizable(GTK_WINDOW(window), jalv_ui_is_resizable(jalv));
 		gtk_widget_show_all(vbox);
 	} else {
@@ -477,6 +500,10 @@ jalv_open_ui(Jalv*         jalv,
 			box_size.height + controls_size.height);
 	}
 
+	g_timeout_add(1000 / JALV_UI_UPDATE_HZ,
+	              (GSourceFunc)jalv_emit_ui_events, jalv);
+
+	jalv->has_ui = TRUE;
 	gtk_window_present(GTK_WINDOW(window));
 
 	gtk_main();

@@ -47,6 +47,15 @@ jalv_ui_resize(Jalv* jalv, int width, int height)
 	return 0;
 }
 
+void
+jalv_ui_port_event(Jalv*       jalv,
+                   uint32_t    port_index,
+                   uint32_t    buffer_size,
+                   uint32_t    protocol,
+                   const void* buffer)
+{
+}
+
 int
 jalv_open_ui(Jalv*         jalv,
              SuilInstance* instance)

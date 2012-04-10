@@ -148,7 +148,7 @@ set_port_value(const char* port_symbol,
 	jalv_ui_write(jalv, port->index, sizeof(fvalue), 0, &fvalue);
 
 	// Update UI
-	if (jalv->ui) {
+	if (jalv->has_ui) {
 		char buf[sizeof(ControlChange) + sizeof(fvalue)];
 		ControlChange* ev = (ControlChange*)buf;
 		ev->index    = port->index;
