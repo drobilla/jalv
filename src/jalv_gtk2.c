@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <math.h>
+
 #include <gtk/gtk.h>
 
 #include "jalv_internal.h"
@@ -204,7 +206,20 @@ jalv_ui_port_event(Jalv*       jalv,
 	}
 
 	if (GTK_IS_COMBO_BOX(widget)) {
-		fprintf(stderr, "TODO: Combo box value change\n");
+		GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
+		GValue        value = G_VALUE_INIT;
+		GtkTreeIter   i;
+		bool          valid = gtk_tree_model_get_iter_first(model, &i);
+		while (valid) {
+			gtk_tree_model_get_value(model, &i, 0, &value);
+			const double v = g_value_get_double(&value);
+			g_value_unset(&value);
+			if (fabs(v - *(float*)buffer) < FLT_EPSILON) {
+				gtk_combo_box_set_active_iter(GTK_COMBO_BOX(widget), &i);
+				return;
+			}
+			valid = gtk_tree_model_iter_next(model, &i);
+		}
 	} else if (GTK_IS_TOGGLE_BUTTON(widget)) {
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget),
 		                             *(float*)buffer > 0.0f);
@@ -225,8 +240,17 @@ slider_changed(GtkRange* range, gpointer data)
 static void
 combo_changed(GtkComboBox* box, gpointer data)
 {
-	float fval = (float)gtk_combo_box_get_active(GTK_COMBO_BOX(box));
-	((struct Port*)data)->control = fval;
+	GtkTreeIter iter;
+	if (gtk_combo_box_get_active_iter(box, &iter)) {
+		GtkTreeModel* model = gtk_combo_box_get_model(box);
+		GValue        value = G_VALUE_INIT;
+
+		gtk_tree_model_get_value(model, &iter, 0, &value);
+		const double v = g_value_get_double(&value);
+		g_value_unset(&value);
+
+		((struct Port*)data)->control = v;
+	}
 }
 
 static gboolean
@@ -257,12 +281,15 @@ static GtkWidget*
 make_combo(struct Port* port, GHashTable* points, int deft)
 {
 	GList*        list       = g_hash_table_get_keys(points);
-	GtkListStore* list_store = gtk_list_store_new(1, G_TYPE_STRING);
+	GtkListStore* list_store = gtk_list_store_new(
+		2, G_TYPE_DOUBLE, G_TYPE_STRING);
 	for (GList* cur = g_list_sort(list, dcmp); cur; cur = cur->next) {
 		GtkTreeIter iter;
 		gtk_list_store_append(list_store, &iter);
 		gtk_list_store_set(list_store, &iter,
-		                   0, g_hash_table_lookup(points, cur->data), -1);
+		                   0, *(double*)cur->data,
+		                   1, g_hash_table_lookup(points, cur->data),
+		                   -1);
 	}
 	g_list_free(list);
 
@@ -272,7 +299,7 @@ make_combo(struct Port* port, GHashTable* points, int deft)
 
 	GtkCellRenderer* cell = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), cell, TRUE);
-	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), cell, "text", 0, NULL);
+	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), cell, "text", 1, NULL);
 
 	g_signal_connect(G_OBJECT(combo),
 	                 "changed", G_CALLBACK(combo_changed), port);
