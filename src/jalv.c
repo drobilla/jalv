@@ -464,9 +464,11 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				uint32_t frames, subframes, type, size;
 				uint8_t* data;
 				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &data);
-				assert(size > 0);
-				// FIXME: check type
-				jack_midi_event_write(buf, frames, data, size);
+				if (type == host->midi_event_id) {
+					jack_midi_event_write(buf, frames, data, size);
+				} else {
+					fprintf(stderr, "Non-MIDI event output type %d\n", type);
+				}
 
 				/* TODO: Be more disciminate about what to send */
 				if (!port->old_api) {
@@ -671,11 +673,12 @@ main(int argc, char** argv)
 
 	host.sratom = sratom_new(&host.map);
 
-	host.midi_event_id = uri_to_id(&host,
-	                               "http://lv2plug.in/ns/ext/event",
-	                               NS_MIDI "MidiEvent");
+	host.midi_event_id = uri_to_id(
+		&host, "http://lv2plug.in/ns/ext/event", LV2_MIDI__MidiEvent);
+
 	host.urids.atom_eventTransfer  = symap_map(host.symap, LV2_ATOM__eventTransfer);
 	host.urids.log_Trace           = symap_map(host.symap, LV2_LOG__Trace);
+	host.urids.midi_MidiEvent      = symap_map(host.symap, LV2_MIDI__MidiEvent);
 	host.urids.time_Position       = symap_map(host.symap, LV2_TIME__Position);
 	host.urids.time_bar            = symap_map(host.symap, LV2_TIME__bar);
 	host.urids.time_barBeat        = symap_map(host.symap, LV2_TIME__barBeat);

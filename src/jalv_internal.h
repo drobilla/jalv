@@ -94,6 +94,7 @@ typedef struct {
 typedef struct {
 	LV2_URID atom_eventTransfer;
 	LV2_URID log_Trace;
+	LV2_URID midi_MidiEvent;
 	LV2_URID time_Position;
 	LV2_URID time_bar;
 	LV2_URID time_barBeat;
