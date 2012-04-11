@@ -229,7 +229,8 @@ int
 jalv_save_preset(Jalv*       jalv,
                  const char* dir,
                  const char* uri,
-                 const char* label);
+                 const char* label,
+                 const char* filename);
 
 void
 jalv_save(Jalv* jalv, const char* dir);

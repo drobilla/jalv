@@ -192,7 +192,8 @@ int
 jalv_save_preset(Jalv*       jalv,
                  const char* dir,
                  const char* uri,
-                 const char* label)
+                 const char* label,
+                 const char* filename)
 {
 	LilvState* const state = lilv_state_new_from_instance(
 		jalv->plugin, jalv->instance, &jalv->map,
@@ -204,8 +205,9 @@ jalv_save_preset(Jalv*       jalv,
 		lilv_state_set_label(state, label);
 	}
 
-	int ret = lilv_state_save(jalv->world, &jalv->map, &jalv->unmap, state,
-	                          uri, dir, "state.ttl");
+	int ret = lilv_state_save(
+		jalv->world, &jalv->map, &jalv->unmap, state, uri, dir, filename);
+
 	lilv_state_free(state);
 
 	return ret;
