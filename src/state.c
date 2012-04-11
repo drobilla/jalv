@@ -137,8 +137,8 @@ set_port_value(const char* port_symbol,
 	}
 
 	if (type != jalv->forge.Float) {
-		fprintf(stderr, "error: Preset port `%s' value is not a float\n",
-		        port_symbol);
+		fprintf(stderr, "error: Preset port `%s' value is a <%s>, not float\n",
+		        port_symbol, jalv->unmap.unmap(jalv->unmap.handle, type));
 		return;
 	}
 
