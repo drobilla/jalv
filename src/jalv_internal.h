@@ -157,6 +157,7 @@ typedef struct {
 	char*              temp_dir;       ///< Temporary plugin state directory
 	char*              save_dir;       ///< Plugin save directory
 	const LilvPlugin*  plugin;         ///< Plugin class (RDF data)
+	LilvUIs*           uis;            ///< All plugin UIs (RDF data)
 	const LilvUI*      ui;             ///< Plugin UI (RDF data)
 	LilvInstance*      instance;       ///< Plugin instance (shared library)
 	SuilInstance*      ui_instance;    ///< Plugin UI instance (shared library)

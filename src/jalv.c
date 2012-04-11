@@ -770,9 +770,9 @@ main(int argc, char** argv)
 	const LilvNode* ui_type        = NULL;
 	host.ui = NULL;
 	if (native_ui_type) {
-		LilvUIs* uis = lilv_plugin_get_uis(host.plugin);  // FIXME: leak
-		LILV_FOREACH(uis, u, uis) {
-			const LilvUI* this_ui = lilv_uis_get(uis, u);
+		host.uis = lilv_plugin_get_uis(host.plugin);
+		LILV_FOREACH(uis, u, host.uis) {
+			const LilvUI* this_ui = lilv_uis_get(host.uis, u);
 			if (lilv_ui_is_supported(
 				    this_ui, suil_ui_supported, native_ui_type, &ui_type)) {
 				// TODO: Multiple UI support
@@ -959,6 +959,7 @@ main(int argc, char** argv)
 	symap_free(host.symap);
 	suil_host_free(ui_host);
 	sratom_free(host.sratom);
+	lilv_uis_free(host.uis);
 	lilv_world_free(world);
 
 	zix_sem_destroy(&exit_sem);
