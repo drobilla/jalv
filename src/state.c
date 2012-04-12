@@ -35,14 +35,10 @@
 #include "jalv_config.h"
 #include "jalv_internal.h"
 
-#define NS_ATOM  "http://lv2plug.in/ns/ext/atom#"
-#define NS_JALV  "http://drobilla.net/ns/jalv#"
-#define NS_LV2   "http://lv2plug.in/ns/lv2core#"
-#define NS_PSET  "http://lv2plug.in/ns/ext/presets#"
-#define NS_RDF   "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-#define NS_RDFS  "http://www.w3.org/2000/01/rdf-schema#"
-#define NS_STATE "http://lv2plug.in/ns/ext/state#"
-#define NS_XSD   "http://www.w3.org/2001/XMLSchema#"
+#define NS_JALV "http://drobilla.net/ns/jalv#"
+#define NS_RDF  "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+#define NS_RDFS "http://www.w3.org/2000/01/rdf-schema#"
+#define NS_XSD  "http://www.w3.org/2001/XMLSchema#"
 
 #define USTR(s) ((const uint8_t*)s)
 

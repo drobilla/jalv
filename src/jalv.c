@@ -43,6 +43,7 @@
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/worker/worker.h"
+#include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 
 #include "lilv/lilv.h"
 
@@ -51,11 +52,7 @@
 #include "lv2_evbuf.h"
 #include "worker.h"
 
-#define NS_ATOM "http://lv2plug.in/ns/ext/atom#"
-#define NS_MIDI "http://lv2plug.in/ns/ext/midi#"
-#define NS_PSET "http://lv2plug.in/ns/ext/presets#"
-#define NS_RDF  "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-#define NS_UI   "http://lv2plug.in/ns/extensions/ui#"
+#define NS_RDF "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 
 #define USTR(str) ((const uint8_t*)str)
 
@@ -542,9 +539,9 @@ jalv_ui_is_resizable(Jalv* jalv)
 	}
 
 	const LilvNode* s   = lilv_ui_get_uri(jalv->ui);
-	LilvNode*       p   = lilv_new_uri(jalv->world, NS_UI "optionalFeature");
-	LilvNode*       fs  = lilv_new_uri(jalv->world, NS_UI "fixedSize");
-	LilvNode*       nrs = lilv_new_uri(jalv->world, NS_UI "noUserResize");
+	LilvNode*       p   = lilv_new_uri(jalv->world, LV2_CORE__optionalFeature);
+	LilvNode*       fs  = lilv_new_uri(jalv->world, LV2_UI__fixedSize);
+	LilvNode*       nrs = lilv_new_uri(jalv->world, LV2_UI__noUserResize);
 
 	LilvNodes* fs_matches = lilv_world_find_nodes(jalv->world, s, p, fs);
 	LilvNodes* nrs_matches = lilv_world_find_nodes(jalv->world, s, p, nrs);
