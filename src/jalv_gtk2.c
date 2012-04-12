@@ -438,7 +438,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	lilv_node_free(lv2_toggled);
 	lilv_node_free(lv2_enum);
 	lilv_node_free(rdfs_comment);
-	
+
 	if (num_controls > 0) {
 		gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
 		GtkWidget* alignment = gtk_alignment_new(0.5, 0.0, 1.0, 0.0);

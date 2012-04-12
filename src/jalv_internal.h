@@ -107,19 +107,19 @@ typedef struct {
 
 typedef struct {
 	LilvNode* atom_AtomPort;
-	LilvNode* atom_Chunk;    
+	LilvNode* atom_Chunk;
 	LilvNode* atom_Sequence;
 	LilvNode* ev_EventPort;
-	LilvNode* lv2_AudioPort;    
+	LilvNode* lv2_AudioPort;
 	LilvNode* lv2_ControlPort;
 	LilvNode* lv2_InputPort;
-	LilvNode* lv2_OutputPort;   
+	LilvNode* lv2_OutputPort;
 	LilvNode* lv2_connectionOptional;
 	LilvNode* midi_MidiEvent;
-	LilvNode* pset_Preset;   
+	LilvNode* pset_Preset;
 	LilvNode* rdfs_label;
-	LilvNode* work_interface; 
-	LilvNode* work_schedule;  
+	LilvNode* work_interface;
+	LilvNode* work_schedule;
 } JalvNodes;
 
 typedef enum {
@@ -172,7 +172,7 @@ typedef struct {
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
 	bool               buf_size_set;   ///< True iff buffer size callback fired
 	bool               exit;           ///< True iff execution is finished
-	bool               has_ui;         ///< True iff a control UI is present 
+	bool               has_ui;         ///< True iff a control UI is present
 } Jalv;
 
 int

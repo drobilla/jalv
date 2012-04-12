@@ -718,19 +718,19 @@ main(int argc, char** argv)
 
 	/* Cache URIs for concepts we'll use */
 	host.nodes.atom_AtomPort          = lilv_new_uri(world, LV2_ATOM__AtomPort);
-	host.nodes.atom_Chunk             = lilv_new_uri(world, LV2_ATOM__Chunk);    
+	host.nodes.atom_Chunk             = lilv_new_uri(world, LV2_ATOM__Chunk);
 	host.nodes.atom_Sequence          = lilv_new_uri(world, LV2_ATOM__Sequence);
 	host.nodes.ev_EventPort           = lilv_new_uri(world, LV2_EVENT__EventPort);
-	host.nodes.lv2_AudioPort          = lilv_new_uri(world, LV2_CORE__AudioPort);    
+	host.nodes.lv2_AudioPort          = lilv_new_uri(world, LV2_CORE__AudioPort);
 	host.nodes.lv2_ControlPort        = lilv_new_uri(world, LV2_CORE__ControlPort);
 	host.nodes.lv2_InputPort          = lilv_new_uri(world, LV2_CORE__InputPort);
-	host.nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);   
+	host.nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);
 	host.nodes.lv2_connectionOptional = lilv_new_uri(world, LV2_CORE__connectionOptional);
 	host.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
-	host.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);   
+	host.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
 	host.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
-	host.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface); 
-	host.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);  
+	host.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
+	host.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
 
 	/* Get plugin URI from loaded state or command line */
 	LilvState* state      = NULL;
