@@ -18,6 +18,8 @@
 
 #include <gtk/gtk.h>
 
+#include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
+
 #include "jalv_internal.h"
 
 static void
@@ -248,6 +250,13 @@ slider_changed(GtkRange* range, gpointer data)
 	return FALSE;
 }
 
+static gboolean
+log_slider_changed(GtkRange* range, gpointer data)
+{
+	((struct Port*)data)->control = expf(gtk_range_get_value(range));
+	return FALSE;
+}
+
 static void
 combo_changed(GtkComboBox* box, gpointer data)
 {
@@ -278,6 +287,12 @@ scale_format(GtkScale* scale, gdouble value, gpointer user_data)
 	gpointer hval = g_hash_table_lookup(user_data, &value);
 	return hval ? g_strdup(hval) :
 		g_strdup_printf("%0.*f", gtk_scale_get_digits(scale), value);
+}
+
+static gchar*
+log_scale_format(GtkScale* scale, gdouble value, gpointer user_data)
+{
+	return g_strdup_printf("%0.6g", exp(gtk_range_get_value(GTK_RANGE(scale))));
 }
 
 static gint
@@ -319,6 +334,24 @@ make_combo(struct Port* port, GHashTable* points, int deft)
 }
 
 static GtkWidget*
+make_log_slider(struct Port* port, GHashTable* points,
+                float min, float max, float deft)
+{
+	float      lmin   = logf(min);
+	float      lmax   = logf(max);
+	float      ldft   = logf(deft);
+	GtkWidget* slider = gtk_hscale_new_with_range(lmin, lmax, 0.001);
+	gtk_scale_set_digits(GTK_SCALE(slider), 6);
+	gtk_range_set_value(GTK_RANGE(slider), ldft);
+	g_signal_connect(G_OBJECT(slider),
+	                 "format-value", G_CALLBACK(log_scale_format), points);
+	g_signal_connect(G_OBJECT(slider),
+	                 "value-changed", G_CALLBACK(log_slider_changed), port);
+
+	return slider;
+}
+
+static GtkWidget*
 make_slider(struct Port* port, GHashTable* points,
             bool is_int, float min, float max, float deft)
 {
@@ -354,6 +387,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	LilvNode*  lv2_integer  = lilv_new_uri(jalv->world, LV2_CORE__integer);
 	LilvNode*  lv2_toggled  = lilv_new_uri(jalv->world, LV2_CORE__toggled);
 	LilvNode*  lv2_enum     = lilv_new_uri(jalv->world, LV2_CORE__enumeration);
+	LilvNode*  lv2_log      = lilv_new_uri(jalv->world, LV2_PORT_PROPS__logarithmic);
 	LilvNode*  rdfs_comment = lilv_new_uri(jalv->world, LILV_NS_RDFS "comment");
 	GtkWidget* port_table   = gtk_table_new(jalv->num_ports, 2, false);
 	float*     defaults     = calloc(jalv->num_ports, sizeof(float));
@@ -389,18 +423,22 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 		}
 
 		/* Make control */
-		GtkWidget* control = NULL;
+		GtkWidget* control    = NULL;
+		bool       is_integer = lilv_port_has_property(
+			jalv->plugin, port, lv2_integer);
 		if (lilv_port_has_property(jalv->plugin, port, lv2_toggled)) {
 			control = make_toggle(&jalv->ports[i], defaults[i]);
 		} else if (lilv_port_has_property(jalv->plugin, port, lv2_enum)
-		           || (lilv_port_has_property(jalv->plugin, port, lv2_integer)
-		               && points)) {
+		           || (is_integer && points &&
+		               (g_hash_table_size(points)
+		                == (unsigned)(maxs[i] - mins[i] + 1)))) {
 			control = make_combo(&jalv->ports[i], points, defaults[i]);
+		} else if (lilv_port_has_property(jalv->plugin, port, lv2_log)) {
+			control = make_log_slider(&jalv->ports[i], points,
+			                          mins[i], maxs[i], defaults[i]);
 		} else {
-			control = make_slider(
-				&jalv->ports[i], points,
-				lilv_port_has_property(jalv->plugin, port, lv2_integer),
-				mins[i], maxs[i], defaults[i]);
+			control = make_slider(&jalv->ports[i], points, is_integer,
+			                      mins[i], maxs[i], defaults[i]);
 		}
 		jalv->ports[i].widget = control;
 

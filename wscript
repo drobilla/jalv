@@ -34,7 +34,7 @@ def configure(conf):
     autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
 
-    autowaf.check_pkg(conf, 'lv2', atleast_version='0.5.0', uselib_store='LV2')
+    autowaf.check_pkg(conf, 'lv2', atleast_version='0.6.0', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.4.0', mandatory=True)
     autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',
@@ -88,7 +88,7 @@ def build(bld):
                   source       = source + ' src/jalv_gtk2.c',
                   target       = 'jalv.gtk',
                   includes     = ['.', 'src'],
-                  lib          = ['pthread'],
+                  lib          = ['pthread', 'm'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' GTK2')
 
