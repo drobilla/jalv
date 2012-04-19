@@ -8,7 +8,7 @@ import waflib.Options as Options
 import waflib.Logs as Logs
 
 # Version of this package (even if built as a child)
-JALV_VERSION = '0.0.0'
+JALV_VERSION = '1.0.0'
 
 # Variables for 'waf dist'
 APPNAME = 'jalv'
@@ -39,9 +39,9 @@ def configure(conf):
     autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',
                       atleast_version='0.4.5', mandatory=True)
     autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
-                      atleast_version='0.4.0', mandatory=True)
+                      atleast_version='0.6.0', mandatory=True)
     autowaf.check_pkg(conf, 'sratom-0', uselib_store='SRATOM',
-                      atleast_version='0.1.0', mandatory=True)
+                      atleast_version='0.2.0', mandatory=True)
     autowaf.check_pkg(conf, 'jack', uselib_store='JACK',
                       atleast_version='0.120.0', mandatory=True)
     autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
