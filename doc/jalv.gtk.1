@@ -1,10 +1,10 @@
-.TH JALV 1 "19 Apr 2012"
+.TH JALV.GTK "19 Apr 2012"
 
 .SH NAME
-.B jalv \- Run an LV2 plugin as a JACK application (console version).
+.B jalv.gtk \- Run an LV2 plugin as a JACK application (Gtk version).
 
 .SH SYNOPSIS
-.B jalv [OPTION]... PLUGIN_URI
+.B jalv.gtk [OPTION]... PLUGIN_URI
 
 .SH OPTIONS
 
@@ -24,8 +24,12 @@ Load state from state directory.
 \fB\-d\fR, \fB\-\-dump\fR
 Dump plugin <=> UI communication.
 
+.TP
+\fB\-g\fR, \fB\-\-generic\-ui\fR
+Use Jalv generic UI and not the plugin UI
+
 .SH SEE ALSO
-.BR jalv.gtk(1),
+.BR jalv(1),
 .BR jalv.gtkmm(1),
 .BR jalv.qt(2),
 .BR lv2ls(1),
