@@ -8,8 +8,7 @@ import waflib.Options as Options
 import waflib.Logs as Logs
 
 # Version of this package (even if built as a child)
-JALV_VERSION       = '0.0.0'
-JALV_MAJOR_VERSION = '0'
+JALV_VERSION = '0.0.0'
 
 # Variables for 'waf dist'
 APPNAME = 'jalv'
