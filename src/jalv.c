@@ -769,7 +769,7 @@ main(int argc, char** argv)
 	LilvNode*       native_ui_type = jalv_native_ui_type(&host);
 	const LilvNode* ui_type        = NULL;
 	host.ui = NULL;
-	if (native_ui_type) {
+	if (!host.opts.generic_ui && native_ui_type) {
 		host.uis = lilv_plugin_get_uis(host.plugin);
 		LILV_FOREACH(uis, u, host.uis) {
 			const LilvUI* this_ui = lilv_uis_get(host.uis, u);
