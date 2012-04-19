@@ -756,7 +756,7 @@ main(int argc, char** argv)
 	}
 
 	/* Find plugin */
-	printf("Plugin:    %s\n", lilv_node_as_string(plugin_uri));
+	printf("Plugin:       %s\n", lilv_node_as_string(plugin_uri));
 	host.plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
 	lilv_node_free(plugin_uri);
 	if (!host.plugin) {
@@ -784,7 +784,7 @@ main(int argc, char** argv)
 
 	/* Create ringbuffers for UI if necessary */
 	if (host.ui) {
-		fprintf(stderr, "UI:        %s\n",
+		fprintf(stderr, "UI:           %s\n",
 		        lilv_node_as_uri(lilv_ui_get_uri(host.ui)));
 	} else {
 		fprintf(stderr, "No appropriate UI found\n");
@@ -812,7 +812,7 @@ main(int argc, char** argv)
 	}
 
 	/* Connect to JACK */
-	printf("JACK Name: %s\n\n", jack_name);
+	printf("JACK Name:    %s\n", jack_name);
 #ifdef JALV_JACK_SESSION
 	if (host.opts.uuid) {
 		host.jack_client = jack_client_open(jack_name, JackSessionID, NULL,
@@ -830,15 +830,14 @@ main(int argc, char** argv)
 	if (!host.jack_client)
 		die("Failed to connect to JACK.\n");
 
-#ifdef jack_port_type_get_buffer_size
+#ifdef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
 	host.midi_buf_size = jack_port_type_get_buffer_size(
 		host.jack_client, JACK_DEFAULT_MIDI_TYPE);
-	printf("MIDI buffer size: %zu\n", host.midi_buf_size);
 #else
 	host.midi_buf_size = 4096;
-	fprintf(stderr, "warning: Old JACK, using default MIDI buffer size %zu\n",
-	        host.midi_buf_size);
+	fprintf(stderr, "warning: No jack_port_type_get_buffer_size.\n");
 #endif
+	printf("MIDI buffers: %zu bytes\n", host.midi_buf_size);
 
 	/* Instantiate the plugin */
 	host.instance = lilv_plugin_instantiate(
@@ -847,6 +846,7 @@ main(int argc, char** argv)
 		die("Failed to instantiate plugin.\n");
 	}
 
+	fprintf(stderr, "\n");
 	if (!host.buf_size_set) {
 		jalv_allocate_port_buffers(&host);
 	}

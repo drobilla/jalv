@@ -29,7 +29,7 @@ def options(opt):
 def configure(conf):
     conf.load('compiler_c')
     conf.load('compiler_cxx')
-    conf.line_just = 46
+    conf.line_just = 52
     autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
 
@@ -50,6 +50,11 @@ def configure(conf):
                       atleast_version='2.20.0', mandatory=False)
     autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
                       atleast_version='4.0.0', mandatory=False)
+
+    conf.check(function_name='jack_port_type_get_buffer_size',
+               header_name='jack/jack.h',
+               define_name='HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE',
+               mandatory=False)
 
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
