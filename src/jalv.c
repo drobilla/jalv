@@ -837,10 +837,7 @@ main(int argc, char** argv)
 	printf("MIDI buffers: %zu bytes\n", host.midi_buf_size);
 
 	if (host.opts.buffer_size == 0) {
-		fprintf(stderr, "USING DEFAULT BUFFER SIZE\n");
 		host.opts.buffer_size = host.midi_buf_size;
-	} else {
-		fprintf(stderr, "BUFFER SIZE: %d\n", host.opts.buffer_size);
 	}
 
 	/* Create Plugin <=> UI communication buffers */
