@@ -31,6 +31,7 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -u UUID      UUID for Jack session restoration\n");
 	fprintf(os, "  -l DIR       Load state from save directory\n");
 	fprintf(os, "  -d DIR       Dump plugin <=> UI communication\n");
+	fprintf(os, "  -b SIZE      Buffer size for plugin <=> UI communication\n");
 	return error ? 1 : 0;
 }
 
@@ -68,6 +69,12 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 				return 1;
 			}
 			opts->load = jalv_strdup((*argv)[a]);
+		} else if ((*argv)[a][1] == 'b') {
+			if (++a == *argc) {
+				fprintf(stderr, "Missing argument for -b\n");
+				return 1;
+			}
+			opts->buffer_size = atoi((*argv)[a]);
 		} else if ((*argv)[a][1] == 'd') {
 			opts->dump = true;
 		} else {

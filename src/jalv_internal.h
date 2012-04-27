@@ -85,10 +85,11 @@ typedef struct {
 } ControlChange;
 
 typedef struct {
-	char* uuid;
-	char* load;
-	bool  dump;
-	bool  generic_ui;
+	char*    uuid;
+	char*    load;
+	uint32_t buffer_size;
+	bool     dump;
+	bool     generic_ui;
 } JalvOptions;
 
 typedef struct {

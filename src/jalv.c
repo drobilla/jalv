@@ -463,8 +463,6 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &data);
 				if (type == host->midi_event_id) {
 					jack_midi_event_write(buf, frames, data, size);
-				} else {
-					fprintf(stderr, "Non-MIDI event output type %d\n", type);
 				}
 
 				/* TODO: Be more disciminate about what to send */
@@ -479,6 +477,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					atom->size = size;
 					if (jack_ringbuffer_write_space(host->plugin_events)
 					    < sizeof(buf) + size) {
+						fprintf(stderr, "Plugin => UI buffer overflow!\n");
 						break;
 					}
 					jack_ringbuffer_write(host->plugin_events, buf, sizeof(buf));
@@ -495,7 +494,10 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			ev->protocol = 0;
 			ev->size     = sizeof(float);
 			*(float*)ev->body = port->control;
-			jack_ringbuffer_write(host->plugin_events, buf, sizeof(buf));
+			if (jack_ringbuffer_write(host->plugin_events, buf, sizeof(buf))
+			    < sizeof(buf)) {
+				fprintf(stderr, "Plugin => UI buffer overflow!\n");
+			}
 		}
 	}
 
@@ -749,7 +751,7 @@ main(int argc, char** argv)
 		}
 		plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
 	} else if (argc > 1) {
-		plugin_uri = lilv_new_uri(world, argv[1]);
+		plugin_uri = lilv_new_uri(world, argv[argc - 1]);
 	} else {
 		fprintf(stderr, "Missing plugin URI parameter\n");
 		return EXIT_FAILURE;
@@ -789,11 +791,6 @@ main(int argc, char** argv)
 	} else {
 		fprintf(stderr, "No appropriate UI found\n");
 	}
-
-	host.ui_events     = jack_ringbuffer_create(4096);
-	host.plugin_events = jack_ringbuffer_create(4096);
-	jack_ringbuffer_mlock(host.ui_events);
-	jack_ringbuffer_mlock(host.plugin_events);
 
 	/* Create port structures (host.ports) */
 	jalv_create_ports(&host);
@@ -838,6 +835,20 @@ main(int argc, char** argv)
 	fprintf(stderr, "warning: No jack_port_type_get_buffer_size.\n");
 #endif
 	printf("MIDI buffers: %zu bytes\n", host.midi_buf_size);
+
+	if (host.opts.buffer_size == 0) {
+		fprintf(stderr, "USING DEFAULT BUFFER SIZE\n");
+		host.opts.buffer_size = host.midi_buf_size;
+	} else {
+		fprintf(stderr, "BUFFER SIZE: %d\n", host.opts.buffer_size);
+	}
+
+	/* Create Plugin <=> UI communication buffers */
+	host.ui_events     = jack_ringbuffer_create(host.opts.buffer_size);
+	host.plugin_events = jack_ringbuffer_create(host.opts.buffer_size);
+	jack_ringbuffer_mlock(host.ui_events);
+	jack_ringbuffer_mlock(host.plugin_events);
+
 
 	/* Instantiate the plugin */
 	host.instance = lilv_plugin_instantiate(
