@@ -87,7 +87,7 @@ jalv_open_ui(Jalv*         jalv,
 	app->connect(app, SIGNAL(lastWindowClosed()), app, SLOT(quit()));
 
 	Timer* timer = new Timer(jalv);
-	timer->start(1000 / JALV_UI_UPDATE_HZ);
+	timer->start(1000 / jalv->ui_update_hz);
 
 	int ret = app->exec();
 	zix_sem_post(jalv->done);

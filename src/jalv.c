@@ -56,6 +56,14 @@
 
 #define USTR(str) ((const uint8_t*)str)
 
+#ifndef MIN
+#    define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+
+#ifndef MAX
+#    define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
 ZixSem exit_sem;  /**< Exit semaphore */
 
 LV2_URID
@@ -441,7 +449,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	/* Check if it's time to send updates to the UI */
 	host->event_delta_t += nframes;
 	bool           send_ui_updates = false;
-	jack_nframes_t update_frames   = host->sample_rate / JALV_UI_UPDATE_HZ;
+	jack_nframes_t update_frames   = host->sample_rate / host->ui_update_hz;
 	if (host->has_ui && (host->event_delta_t > update_frames)) {
 		send_ui_updates = true;
 		host->event_delta_t = 0;
@@ -837,8 +845,24 @@ main(int argc, char** argv)
 	printf("MIDI buffers: %zu bytes\n", host.midi_buf_size);
 
 	if (host.opts.buffer_size == 0) {
-		host.opts.buffer_size = host.midi_buf_size;
+		/* The UI ring is fed by plugin output ports (usually one), and the UI
+		   updates roughly once per cycle.  The ring size is a few times the
+		   size of the MIDI output to give the UI a chance to keep up.  The UI
+		   should be able to keep up with 4 cycles, and tests show this works
+		   for me, but this value might need increasing to avoid overflows.
+		*/
+		host.opts.buffer_size = host.midi_buf_size * 4;
 	}
+
+	/* Calculate theoretical UI update frequency. */
+	host.sample_rate  = jack_get_sample_rate(host.jack_client);
+	host.ui_update_hz = (double)host.sample_rate / host.midi_buf_size;
+
+	/* The UI can only go so fast, clamp to reasonable limits */
+	host.ui_update_hz     = MIN(60, host.ui_update_hz);
+	host.opts.buffer_size = MAX(4096, host.opts.buffer_size);
+	fprintf(stderr, "Comm buffers: %d bytes\n", host.opts.buffer_size);
+	fprintf(stderr, "Update rate:  %d Hz\n", host.ui_update_hz);
 
 	/* Create Plugin <=> UI communication buffers */
 	host.ui_events     = jack_ringbuffer_create(host.opts.buffer_size);
@@ -846,10 +870,9 @@ main(int argc, char** argv)
 	jack_ringbuffer_mlock(host.ui_events);
 	jack_ringbuffer_mlock(host.plugin_events);
 
-
 	/* Instantiate the plugin */
 	host.instance = lilv_plugin_instantiate(
-		host.plugin, jack_get_sample_rate(host.jack_client), features);
+		host.plugin, host.sample_rate, features);
 	if (!host.instance) {
 		die("Failed to instantiate plugin.\n");
 	}

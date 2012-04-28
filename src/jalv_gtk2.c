@@ -578,7 +578,7 @@ jalv_open_ui(Jalv*         jalv,
 			box_size.height + controls_size.height);
 	}
 
-	g_timeout_add(1000 / JALV_UI_UPDATE_HZ,
+	g_timeout_add(1000 / jalv->ui_update_hz,
 	              (GSourceFunc)jalv_emit_ui_events, jalv);
 
 	jalv->has_ui = TRUE;

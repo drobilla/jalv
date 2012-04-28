@@ -1,3 +1,10 @@
+jalv (9999) unstable;
+
+  * Tune UI update rate and ring size based on JACK rate and MIDI buffer size
+    to handle the handle the maximum message rate the plugin can send.
+
+ -- David Robillard <d@drobilla.net>
+
 jalv (1.0.0) stable;
 
   * Initial release

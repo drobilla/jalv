@@ -47,8 +47,6 @@
 extern "C" {
 #endif
 
-#define JALV_UI_UPDATE_HZ 15
-
 enum PortFlow {
 	FLOW_UNKNOWN,
 	FLOW_INPUT,
@@ -168,6 +166,7 @@ typedef struct {
 	size_t             midi_buf_size;  ///< Size of MIDI port buffers
 	uint32_t           num_ports;      ///< Size of the two following arrays:
 	uint32_t           longest_sym;    ///< Longest port symbol
+	uint32_t           ui_update_hz;   ///< Frequency of UI updates
 	jack_nframes_t     sample_rate;    ///< Sample rate
 	jack_nframes_t     event_delta_t;  ///< Frames since last update sent to UI
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
