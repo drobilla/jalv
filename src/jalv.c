@@ -856,7 +856,7 @@ main(int argc, char** argv)
 
 	/* Calculate theoretical UI update frequency. */
 	host.sample_rate  = jack_get_sample_rate(host.jack_client);
-	host.ui_update_hz = (double)host.sample_rate / host.midi_buf_size;
+	host.ui_update_hz = (double)host.sample_rate / host.midi_buf_size * 2.0;
 
 	/* The UI can only go so fast, clamp to reasonable limits */
 	host.ui_update_hz     = MIN(60, host.ui_update_hz);
