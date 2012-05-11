@@ -14,7 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <gtkmm.h>
+#include <gtkmm/button.h>
+#include <gtkmm/main.h>
+#include <gtkmm/window.h>
 
 #include "jalv_internal.h"
 
