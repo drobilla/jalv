@@ -42,7 +42,12 @@ worker_func(void* data)
 		uint32_t size = 0;
 		jack_ringbuffer_read(jalv->worker.requests, (char*)&size, sizeof(size));
 
-		buf = realloc(buf, size);
+		if (!(buf = realloc(buf, size))) {
+			fprintf(stderr, "error: realloc() failed\n");
+			free(buf);
+			return NULL;
+		}
+
 		jack_ringbuffer_read(jalv->worker.requests, buf, size);
 
 		jalv->worker.iface->work(
