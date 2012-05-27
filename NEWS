@@ -2,6 +2,7 @@ jalv (9999) unstable;
 
   * Tune UI update rate and ring size based on JACK rate and MIDI buffer size
     to handle the handle the maximum message rate the plugin can send.
+  * Support lv2:sampleRate control ports.
 
  -- David Robillard <d@drobilla.net>
 

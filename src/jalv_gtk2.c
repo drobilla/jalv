@@ -386,16 +386,17 @@ make_toggle(struct Port* port, float deft)
 static GtkWidget*
 build_control_widget(Jalv* jalv, GtkWidget* window)
 {
-	LilvNode*  lv2_integer  = lilv_new_uri(jalv->world, LV2_CORE__integer);
-	LilvNode*  lv2_toggled  = lilv_new_uri(jalv->world, LV2_CORE__toggled);
-	LilvNode*  lv2_enum     = lilv_new_uri(jalv->world, LV2_CORE__enumeration);
-	LilvNode*  lv2_log      = lilv_new_uri(jalv->world, LV2_PORT_PROPS__logarithmic);
-	LilvNode*  rdfs_comment = lilv_new_uri(jalv->world, LILV_NS_RDFS "comment");
-	GtkWidget* port_table   = gtk_table_new(jalv->num_ports, 2, false);
-	float*     defaults     = calloc(jalv->num_ports, sizeof(float));
-	float*     mins         = calloc(jalv->num_ports, sizeof(float));
-	float*     maxs         = calloc(jalv->num_ports, sizeof(float));
-	int        num_controls = 0;
+	LilvNode*  lv2_sampleRate = lilv_new_uri(jalv->world, LV2_CORE__sampleRate);
+	LilvNode*  lv2_integer    = lilv_new_uri(jalv->world, LV2_CORE__integer);
+	LilvNode*  lv2_toggled    = lilv_new_uri(jalv->world, LV2_CORE__toggled);
+	LilvNode*  lv2_enum       = lilv_new_uri(jalv->world, LV2_CORE__enumeration);
+	LilvNode*  lv2_log        = lilv_new_uri(jalv->world, LV2_PORT_PROPS__logarithmic);
+	LilvNode*  rdfs_comment   = lilv_new_uri(jalv->world, LILV_NS_RDFS "comment");
+	GtkWidget* port_table     = gtk_table_new(jalv->num_ports, 2, false);
+	float*     defaults       = calloc(jalv->num_ports, sizeof(float));
+	float*     mins           = calloc(jalv->num_ports, sizeof(float));
+	float*     maxs           = calloc(jalv->num_ports, sizeof(float));
+	int        num_controls   = 0;
 	lilv_plugin_get_port_ranges_float(jalv->plugin, mins, maxs, defaults);
 	for (unsigned i = 0; i < jalv->num_ports; i++) {
 		if (jalv->ports[i].type != TYPE_CONTROL) {
@@ -406,6 +407,11 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 		const LilvPort* port = jalv->ports[i].lilv_port;
 		LilvNode*       name = lilv_port_get_name(jalv->plugin, port);
 
+		if (lilv_port_has_property(jalv->plugin, port, lv2_sampleRate)) {
+			mins[i] *= jalv->sample_rate;
+			maxs[i] *= jalv->sample_rate;
+		}
+		
 		/* Get scale points */
 		LilvScalePoints* sp     = lilv_port_get_scale_points(jalv->plugin, port);
 		GHashTable*      points = NULL;
@@ -474,6 +480,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	free(defaults);
 	free(mins);
 	free(maxs);
+	lilv_node_free(lv2_sampleRate);
 	lilv_node_free(lv2_integer);
 	lilv_node_free(lv2_toggled);
 	lilv_node_free(lv2_enum);
