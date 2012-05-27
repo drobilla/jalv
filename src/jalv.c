@@ -64,6 +64,12 @@
 #    define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
+#ifdef __clang__
+#    define REALTIME __attribute__((annotate("realtime")))
+#else
+#    define REALTIME
+#endif
+
 ZixSem exit_sem;  /**< Exit semaphore */
 
 LV2_URID
@@ -310,7 +316,7 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 }
 
 /** Jack process callback. */
-int
+REALTIME int
 jack_process_cb(jack_nframes_t nframes, void* data)
 {
 	Jalv* const host = (Jalv*)data;
