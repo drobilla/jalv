@@ -37,6 +37,7 @@
 #endif
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+#include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
 #include "lv2/lv2plug.in/ns/ext/event/event.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
@@ -108,13 +109,15 @@ static LV2_Feature instance_feature  = { NS_EXT "instance-access", NULL };
 static LV2_Feature make_path_feature = { LV2_STATE__makePath, NULL };
 static LV2_Feature schedule_feature  = { LV2_WORKER__schedule, NULL };
 static LV2_Feature log_feature       = { LV2_LOG__log, NULL };
+static LV2_Feature buf_size_feature  = { LV2_BUF_SIZE__access, NULL };
 
-const LV2_Feature* features[9] = {
+const LV2_Feature* features[10] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
 	&instance_feature,
 	&make_path_feature,
 	&schedule_feature,
 	&log_feature,
+	&buf_size_feature,
 	NULL
 };
 
@@ -306,6 +309,7 @@ int
 jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 {
 	Jalv* const host = (Jalv*)data;
+	host->block_length = nframes;
 	host->buf_size_set = true;
 #ifdef jack_port_type_get_buffer_size
 	host->midi_buf_size = jack_port_type_get_buffer_size(
@@ -648,6 +652,40 @@ jalv_emit_ui_events(Jalv* host)
 	return true;
 }
 
+static LV2_Buf_Size_Status
+jalv_get_sample_count(LV2_Buf_Size_Access_Handle handle,
+                      uint32_t*                  min,
+                      uint32_t*                  max,
+                      uint32_t*                  multiple_of,
+                      uint32_t*                  power_of)
+{
+	Jalv* jalv = (Jalv*)handle;
+	// TODO: Is this actually guaranteed with Jack2?
+	*min         = jalv->block_length;
+	*max         = jalv->block_length;
+	*multiple_of = 1;
+	*power_of    = 0;
+	if (!(jalv->block_length & (jalv->block_length - 1))) {
+		// Block length is a power of 2
+		*power_of    = 2;
+		*multiple_of = 2;
+	}
+	return 0;
+}
+
+static size_t
+jalv_get_buf_size(LV2_Buf_Size_Access_Handle handle,
+                  LV2_URID                   type,
+                  LV2_URID                   subtype)
+{
+	Jalv* jalv = (Jalv*)handle;
+	if (!jalv->buf_size_set) {
+		fprintf(stderr, "Buffer size requested but it is not yet known.\n");
+		return 0;
+	}
+	return 0;
+}
+
 static void
 signal_handler(int ignored)
 {
@@ -660,6 +698,7 @@ main(int argc, char** argv)
 	Jalv host;
 	memset(&host, '\0', sizeof(Jalv));
 	host.prog_name     = argv[0];
+	host.block_length  = 4096;  // Should be set by jack_buffer_size_cb
 	host.midi_buf_size = 1024;  // Should be set by jack_buffer_size_cb
 	host.play_state    = JALV_PAUSED;
 
@@ -713,6 +752,10 @@ main(int argc, char** argv)
 
 	LV2_Log_Log log = { &host, jalv_printf, jalv_vprintf };
 	log_feature.data = &log;
+
+	LV2_Buf_Size_Access access = { &host, sizeof(LV2_Buf_Size_Access),
+	                               jalv_get_sample_count, jalv_get_buf_size };
+	buf_size_feature.data = &access;
 
 	zix_sem_init(&exit_sem, 0);
 	host.done = &exit_sem;
@@ -841,6 +884,7 @@ main(int argc, char** argv)
 	if (!host.jack_client)
 		die("Failed to connect to JACK.\n");
 
+	host.block_length = jack_get_buffer_size(host.jack_client);
 #ifdef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
 	host.midi_buf_size = jack_port_type_get_buffer_size(
 		host.jack_client, JACK_DEFAULT_MIDI_TYPE);

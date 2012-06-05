@@ -163,6 +163,7 @@ typedef struct {
 	SuilInstance*      ui_instance;    ///< Plugin UI instance (shared library)
 	void*              window;         ///< Window (if applicable)
 	struct Port*       ports;          ///< Port array of size num_ports
+	uint32_t           block_length;   ///< Jack buffer size (block length)
 	size_t             midi_buf_size;  ///< Size of MIDI port buffers
 	uint32_t           num_ports;      ///< Size of the two following arrays:
 	uint32_t           longest_sym;    ///< Longest port symbol
