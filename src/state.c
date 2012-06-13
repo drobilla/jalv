@@ -132,13 +132,20 @@ set_port_value(const char* port_symbol,
 		return;
 	}
 
-	if (type != jalv->forge.Float) {
-		fprintf(stderr, "error: Preset port `%s' value is a <%s>, not float\n",
+	float fvalue;
+	if (type == jalv->forge.Float) {
+		fvalue = *(float*)value;
+	} else if (type == jalv->forge.Double) {
+		fvalue = *(double*)value;
+	} else if (type == jalv->forge.Int) {
+		fvalue = *(int32_t*)value;
+	} else if (type == jalv->forge.Long) {
+		fvalue = *(int64_t*)value;
+	} else {
+		fprintf(stderr, "error: Preset `%s' value has bad type <%s>\n",
 		        port_symbol, jalv->unmap.unmap(jalv->unmap.handle, type));
 		return;
 	}
-
-	const float fvalue = *(float*)value;
 
 	// Send value to plugin
 	jalv_ui_write(jalv, port->index, sizeof(fvalue), 0, &fvalue);
