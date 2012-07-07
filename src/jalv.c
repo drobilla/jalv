@@ -484,7 +484,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				}
 
 				/* TODO: Be more disciminate about what to send */
-				if (!port->old_api) {
+				if (send_ui_updates && !port->old_api) {
 					char buf[sizeof(ControlChange) + sizeof(LV2_Atom)];
 					ControlChange* ev = (ControlChange*)buf;
 					ev->index    = p;
