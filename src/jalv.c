@@ -325,41 +325,53 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 {
 	Jalv* const host = (Jalv*)data;
 
-#if 0
+	/* Get Jack transport position */
 	jack_position_t pos;
-	double          speed = 0.0;
-	if (jack_transport_query(host->jack_client, &pos) == JackTransportRolling) {
-		speed = 1.0;
-	}
+	const bool rolling = (jack_transport_query(host->jack_client, &pos)
+	                      == JackTransportRolling);
 
-	if (pos.valid & JackPositionBBT) {
-		uint8_t buf[1024];
-		lv2_atom_forge_set_buffer(&host->forge, buf, sizeof(buf));
+	/* If transport state is not as expected, then something has changed */
+	const bool xport_changed = (rolling != host->rolling ||
+	                            pos.frame != host->position);
+
+	uint8_t   pos_buf[256];
+	LV2_Atom* lv2_pos = (LV2_Atom*)pos_buf;
+	if (xport_changed) {
+		/* Build an LV2 position object to report change to plugin */
+		lv2_atom_forge_set_buffer(&host->forge, pos_buf, sizeof(pos_buf));
 		LV2_Atom_Forge*      forge = &host->forge;
 		LV2_Atom_Forge_Frame frame;
 		lv2_atom_forge_blank(forge, &frame, 1, host->urids.time_Position);
-		lv2_atom_forge_property_head(forge, host->urids.time_barBeat, 0);
-		lv2_atom_forge_float(forge, pos.beat - 1 + (pos.tick / (float)pos.ticks_per_beat));
-		lv2_atom_forge_property_head(forge, host->urids.time_bar, 0);
-		lv2_atom_forge_float(forge, pos.bar - 1);
-		lv2_atom_forge_property_head(forge, host->urids.time_beatUnit, 0);
-		lv2_atom_forge_float(forge, pos.beat_type);
-		lv2_atom_forge_property_head(forge, host->urids.time_beatsPerBar, 0);
-		lv2_atom_forge_float(forge, pos.beats_per_bar);
-		lv2_atom_forge_property_head(forge, host->urids.time_beatsPerMinute, 0);
-		lv2_atom_forge_float(forge, pos.beats_per_minute);
 		lv2_atom_forge_property_head(forge, host->urids.time_frame, 0);
-		lv2_atom_forge_int64(forge, pos.frame);
+		lv2_atom_forge_long(forge, pos.frame);
 		lv2_atom_forge_property_head(forge, host->urids.time_speed, 0);
-		lv2_atom_forge_float(forge, speed);
+		lv2_atom_forge_float(forge, rolling ? 1.0 : 0.0);
+		if (pos.valid & JackPositionBBT) {
+			lv2_atom_forge_property_head(forge, host->urids.time_barBeat, 0);
+			lv2_atom_forge_float(
+				forge, pos.beat - 1 + (pos.tick / pos.ticks_per_beat));
+			lv2_atom_forge_property_head(forge, host->urids.time_bar, 0);
+			lv2_atom_forge_float(forge, pos.bar - 1);
+			lv2_atom_forge_property_head(forge, host->urids.time_beatUnit, 0);
+			lv2_atom_forge_float(forge, pos.beat_type);
+			lv2_atom_forge_property_head(forge, host->urids.time_beatsPerBar, 0);
+			lv2_atom_forge_float(forge, pos.beats_per_bar);
+			lv2_atom_forge_property_head(forge, host->urids.time_beatsPerMinute, 0);
+			lv2_atom_forge_float(forge, pos.beats_per_minute);
+		}
 
-		SerdNode s   = serd_node_from_string(SERD_BLANK, USTR("pos"));
-		SerdNode p   = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
-		char*    str = atom_to_turtle(&host->unmap, &s, &p, (LV2_Atom*)frame.ref);
-		printf("\n## Position\n%s\n", str);
-		free(str);
+		if (host->opts.dump) {
+			char* str = sratom_to_turtle(
+				host->sratom, &host->unmap, "time:", NULL, NULL,
+				lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
+			printf("\n## Position\n%s\n", str);
+			free(str);
+		}
 	}
-#endif
+
+	/* Update transport state to expected values for next cycle */
+	host->position = rolling ? pos.frame + nframes : pos.frame;
+	host->rolling  = rolling;
 
 	switch (host->play_state) {
 	case JALV_PAUSE_REQUESTED:
@@ -385,35 +397,40 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 	/* Prepare port buffers */
 	for (uint32_t p = 0; p < host->num_ports; ++p) {
-		if (!host->ports[p].jack_port)
+		struct Port* port = &host->ports[p];
+		if (!port->jack_port)
 			continue;
 
-		if (host->ports[p].type == TYPE_AUDIO) {
-			/* Connect plugin port directly to Jack port buffer. */
+		if (port->type == TYPE_AUDIO) {
+			/* Connect plugin port directly to Jack port buffer */
 			lilv_instance_connect_port(
 				host->instance, p,
-				jack_port_get_buffer(host->ports[p].jack_port, nframes));
+				jack_port_get_buffer(port->jack_port, nframes));
 
-		} else if (host->ports[p].type == TYPE_EVENT) {
-			/* Prepare event ports. */
-			if (host->ports[p].flow == FLOW_INPUT) {
-				lv2_evbuf_reset(host->ports[p].evbuf, true);
+		} else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
+			lv2_evbuf_reset(port->evbuf, true);
 
-				void* buf = jack_port_get_buffer(host->ports[p].jack_port,
-				                                 nframes);
-
-				LV2_Evbuf_Iterator iter = lv2_evbuf_begin(host->ports[p].evbuf);
-				for (uint32_t i = 0; i < jack_midi_get_event_count(buf); ++i) {
-					jack_midi_event_t ev;
-					jack_midi_event_get(&ev, buf, i);
-					lv2_evbuf_write(&iter,
-					                ev.time, 0,
-					                host->midi_event_id,
-					                ev.size, ev.buffer);
-				}
-			} else {
-				lv2_evbuf_reset(host->ports[p].evbuf, false);
+			/* Write transport change event if applicable */
+			LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
+			if (xport_changed) {
+				lv2_evbuf_write(
+					&iter, 0, 0,
+					lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
 			}
+
+			/* Write Jack MIDI input */
+			void* buf = jack_port_get_buffer(port->jack_port, nframes);
+			for (uint32_t i = 0; i < jack_midi_get_event_count(buf); ++i) {
+				jack_midi_event_t ev;
+				jack_midi_event_get(&ev, buf, i);
+				lv2_evbuf_write(&iter,
+				                ev.time, 0,
+				                host->midi_event_id,
+				                ev.size, ev.buffer);
+			}
+		} else if (port->type == TYPE_EVENT) {
+			/* Clear event output for plugin to write to */
+			lv2_evbuf_reset(port->evbuf, false);
 		}
 	}
 
@@ -787,6 +804,7 @@ main(int argc, char** argv)
 	host.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
 	host.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
 	host.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
+	host.nodes.end                    = NULL;
 
 	/* Get plugin URI from loaded state or command line */
 	LilvState* state      = NULL;

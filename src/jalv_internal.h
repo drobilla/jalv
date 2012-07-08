@@ -119,6 +119,7 @@ typedef struct {
 	LilvNode* rdfs_label;
 	LilvNode* work_interface;
 	LilvNode* work_schedule;
+	LilvNode* end;  ///< NULL terminator for easy freeing of entire structure
 } JalvNodes;
 
 typedef enum {
@@ -171,6 +172,8 @@ typedef struct {
 	jack_nframes_t     sample_rate;    ///< Sample rate
 	jack_nframes_t     event_delta_t;  ///< Frames since last update sent to UI
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
+	jack_nframes_t     position;       ///< Transport position in frames
+	bool               rolling;        ///< Transport speed (0=stop, 1=play)
 	bool               buf_size_set;   ///< True iff buffer size callback fired
 	bool               exit;           ///< True iff execution is finished
 	bool               has_ui;         ///< True iff a control UI is present
