@@ -501,7 +501,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				}
 
 				/* TODO: Be more disciminate about what to send */
-				if (jalv->has_ui && !port->old_api) {
+				if (host->has_ui && !port->old_api) {
 					char buf[sizeof(ControlChange) + sizeof(LV2_Atom)];
 					ControlChange* ev = (ControlChange*)buf;
 					ev->index    = p;
