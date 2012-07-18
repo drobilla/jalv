@@ -411,7 +411,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 			mins[i] *= jalv->sample_rate;
 			maxs[i] *= jalv->sample_rate;
 		}
-		
+
 		/* Get scale points */
 		LilvScalePoints* sp     = lilv_port_get_scale_points(jalv->plugin, port);
 		GHashTable*      points = NULL;
