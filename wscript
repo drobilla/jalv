@@ -46,6 +46,8 @@ def configure(conf):
                       atleast_version='0.120.0', mandatory=True)
     autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
                       atleast_version='2.18.0', mandatory=False)
+    autowaf.check_pkg(conf, 'gtk+-3.0', uselib_store='GTK3',
+                      atleast_version='3.0.0', mandatory=False)
     autowaf.check_pkg(conf, 'gtkmm-2.4', uselib_store='GTKMM2',
                       atleast_version='2.20.0', mandatory=False)
     autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
@@ -66,6 +68,8 @@ def configure(conf):
 
     autowaf.display_msg(conf, "Gtk 2.0 support",
                         conf.is_defined('HAVE_GTK2'))
+    autowaf.display_msg(conf, "Gtk 3.0 support",
+                        conf.is_defined('HAVE_GTK3'))
     autowaf.display_msg(conf, "Gtkmm 2.0 support",
                         conf.is_defined('HAVE_GTKMM2'))
     autowaf.display_msg(conf, "Qt 4.0 support",
@@ -86,15 +90,25 @@ def build(bld):
               install_path = '${BINDIR}')
     autowaf.use_lib(bld, obj, libs)
 
-    # Gtk version
+    # Gtk2 version
     if bld.is_defined('HAVE_GTK2'):
         obj = bld(features     = 'c cprogram',
-                  source       = source + ' src/jalv_gtk2.c',
+                  source       = source + ' src/jalv_gtk.c',
                   target       = 'jalv.gtk',
                   includes     = ['.', 'src'],
                   lib          = ['pthread', 'm'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' GTK2')
+
+    # Gtk3 version
+    if bld.is_defined('HAVE_GTK3'):
+        obj = bld(features     = 'c cprogram',
+                  source       = source + ' src/jalv_gtk.c',
+                  target       = 'jalv.gtk3',
+                  includes     = ['.', 'src'],
+                  lib          = ['pthread', 'm'],
+                  install_path = '${BINDIR}')
+        autowaf.use_lib(bld, obj, libs + ' GTK3')
 
     # Gtkmm version
     if bld.is_defined('HAVE_GTKMM2'):

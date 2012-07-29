@@ -22,6 +22,40 @@
 
 #include "jalv_internal.h"
 
+static GtkWidget*
+new_box(gboolean horizontal, gint spacing)
+{
+	#if GTK_MAJOR_VERSION == 3
+	return gtk_box_new(
+		horizontal ? GTK_ORIENTATION_HORIZONTAL : GTK_ORIENTATION_VERTICAL,
+		spacing);
+	#else
+	return (horizontal
+	        ? gtk_hbox_new(FALSE, spacing)
+	        : gtk_vbox_new(FALSE, spacing));
+	#endif
+}
+
+static GtkWidget*
+new_hscale(gdouble min, gdouble max, gdouble step)
+{
+	#if GTK_MAJOR_VERSION == 3
+	return gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, min, max, step);
+	#else
+	return gtk_hscale_new_with_range(min, max, step);
+	#endif
+}
+
+static void
+size_request(GtkWidget* widget, GtkRequisition* req)
+{
+	#if GTK_MAJOR_VERSION == 3
+	gtk_widget_get_preferred_size(widget, NULL, req);
+	#else
+	gtk_widget_size_request(widget, req);
+	#endif
+}
+
 static void
 on_window_destroy(GtkWidget* widget,
                   gpointer   data)
@@ -63,8 +97,15 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 LilvNode*
 jalv_native_ui_type(Jalv* jalv)
 {
+#if GTK_MAJOR_VERSION == 2
 	return lilv_new_uri(jalv->world,
 	                    "http://lv2plug.in/ns/extensions/ui#GtkUI");
+#elif GTK_MAJOR_VERSION == 3 
+	return lilv_new_uri(jalv->world,
+	                    "http://lv2plug.in/ns/extensions/ui#Gtk3UI");
+#else
+	return NULL;
+#endif
 }
 
 static void
@@ -135,7 +176,7 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 	free(dot_lv2);
 
 	GtkWidget* content   = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	GtkBox*    box       = GTK_BOX(gtk_hbox_new(FALSE, 8));
+	GtkBox*    box       = GTK_BOX(new_box(true, 8));
 	GtkWidget* uri_label = gtk_label_new("URI (Optional):");
 	GtkWidget* uri_entry = gtk_entry_new();
 
@@ -342,7 +383,7 @@ make_log_slider(struct Port* port, GHashTable* points,
 	float      lmin   = logf(min);
 	float      lmax   = logf(max);
 	float      ldft   = logf(deft);
-	GtkWidget* slider = gtk_hscale_new_with_range(lmin, lmax, 0.001);
+	GtkWidget* slider = new_hscale(lmin, lmax, 0.001);
 	gtk_scale_set_digits(GTK_SCALE(slider), 6);
 	gtk_range_set_value(GTK_RANGE(slider), ldft);
 	g_signal_connect(G_OBJECT(slider),
@@ -358,7 +399,7 @@ make_slider(struct Port* port, GHashTable* points,
             bool is_int, float min, float max, float deft)
 {
 	const double step   = is_int ? 1.0 : ((max - min) / 100.0);
-	GtkWidget*   slider = gtk_hscale_new_with_range(min, max, step);
+	GtkWidget*   slider = new_hscale(min, max, step);
 	gtk_range_set_value(GTK_RANGE(slider), deft);
 	if (points) {
 		g_signal_connect(G_OBJECT(slider),
@@ -516,7 +557,7 @@ jalv_open_ui(Jalv*         jalv,
 	gtk_window_set_title(GTK_WINDOW(window), lilv_node_as_string(name));
 	lilv_node_free(name);
 
-	GtkWidget* vbox      = gtk_vbox_new(FALSE, 0);
+	GtkWidget* vbox      = new_box(false, 0);
 	GtkWidget* menu_bar  = gtk_menu_bar_new();
 	GtkWidget* file      = gtk_menu_item_new_with_mnemonic("_File");
 	GtkWidget* file_menu = gtk_menu_new();
@@ -576,8 +617,8 @@ jalv_open_ui(Jalv*         jalv,
 		gtk_widget_show_all(vbox);
 
 		GtkRequisition controls_size, box_size;
-		gtk_widget_size_request(GTK_WIDGET(controls), &controls_size);
-		gtk_widget_size_request(GTK_WIDGET(vbox), &box_size);
+		size_request(GTK_WIDGET(controls), &controls_size);
+		size_request(GTK_WIDGET(vbox), &box_size);
 
 		gtk_window_set_default_size(
 			GTK_WINDOW(window),
