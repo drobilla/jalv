@@ -29,11 +29,10 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 	return 0;
 }
 
-LilvNode*
+const char*
 jalv_native_ui_type(Jalv* jalv)
 {
-	return lilv_new_uri(jalv->world,
-	                    "http://lv2plug.in/ns/extensions/ui#GtkUI");
+	return "http://lv2plug.in/ns/extensions/ui#GtkUI";
 }
 
 int
@@ -59,13 +58,17 @@ jalv_ui_port_event(Jalv*       jalv,
 }
 
 int
-jalv_open_ui(Jalv*         jalv,
-             SuilInstance* instance)
+jalv_open_ui(Jalv* jalv)
 {
 	Gtk::Window* window = new Gtk::Window();
 
-	if (instance) {
-		GtkWidget*   widget   = (GtkWidget*)suil_instance_get_widget(instance);
+	if (jalv->ui) {
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), NULL);
+	}
+
+	if (jalv->ui_instance) {
+		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(
+			jalv->ui_instance);
 		Gtk::Widget* widgetmm = Glib::wrap(widget);
 		window->add(*Gtk::manage(widgetmm));
 		widgetmm->show_all();

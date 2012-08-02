@@ -86,15 +86,14 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 	return 0;
 }
 
-LilvNode*
+const char*
 jalv_native_ui_type(Jalv* jalv)
 {
 	return NULL;
 }
 
 int
-jalv_open_ui(Jalv*         jalv,
-             SuilInstance* instance)
+jalv_open_ui(Jalv* jalv)
 {
 #ifdef JALV_JACK_SESSION
 	printf("\nPress Ctrl-C to quit: ");

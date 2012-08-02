@@ -32,11 +32,10 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 	return 0;
 }
 
-LilvNode*
+const char*
 jalv_native_ui_type(Jalv* jalv)
 {
-	return lilv_new_uri(jalv->world,
-	                    "http://lv2plug.in/ns/extensions/ui#Qt4UI");
+	return "http://lv2plug.in/ns/extensions/ui#Qt4UI";
 }
 
 int
@@ -73,11 +72,14 @@ private:
 };
 
 int
-jalv_open_ui(Jalv*         jalv,
-             SuilInstance* instance)
+jalv_open_ui(Jalv* jalv)
 {
-	if (instance) {
-		QWidget* widget = (QWidget*)suil_instance_get_widget(instance);
+	if (jalv->ui) {
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), NULL);
+	}
+
+	if (jalv->ui_instance) {
+		QWidget* widget = (QWidget*)suil_instance_get_widget(jalv->ui_instance);
 		widget->show();
 	} else {
 		QPushButton* button = new QPushButton("Close");

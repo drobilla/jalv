@@ -94,15 +94,13 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 	return !err;
 }
 
-LilvNode*
+const char*
 jalv_native_ui_type(Jalv* jalv)
 {
 #if GTK_MAJOR_VERSION == 2
-	return lilv_new_uri(jalv->world,
-	                    "http://lv2plug.in/ns/extensions/ui#GtkUI");
+	return "http://lv2plug.in/ns/extensions/ui#GtkUI";
 #elif GTK_MAJOR_VERSION == 3 
-	return lilv_new_uri(jalv->world,
-	                    "http://lv2plug.in/ns/extensions/ui#Gtk3UI");
+	return "http://lv2plug.in/ns/extensions/ui#Gtk3UI";
 #else
 	return NULL;
 #endif
@@ -544,8 +542,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 }
 
 int
-jalv_open_ui(Jalv*         jalv,
-             SuilInstance* instance)
+jalv_open_ui(Jalv* jalv)
 {
 	GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	jalv->window = window;
@@ -597,11 +594,20 @@ jalv_open_ui(Jalv*         jalv,
 	g_signal_connect(G_OBJECT(save_preset), "activate",
 	                 G_CALLBACK(on_save_preset_activate), jalv);
 
-	if (instance && !jalv->opts.generic_ui) {
-		GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);
-		GtkWidget* widget    = (GtkWidget*)suil_instance_get_widget(instance);
+	/* Create/show alignment to contain UI (whether custom or generic) */
+	GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);
+	gtk_box_pack_start(GTK_BOX(vbox), alignment, TRUE, TRUE, 0);
+	gtk_widget_show(alignment);
 
-		gtk_box_pack_start(GTK_BOX(vbox), alignment, TRUE, TRUE, 0);
+	/* Attempt to instantiate custom UI if necessary */
+	if (jalv->ui && !jalv->opts.generic_ui) {
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), alignment);
+	}
+
+	if (jalv->ui_instance) {
+		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(
+			jalv->ui_instance);
+
 		gtk_container_add(GTK_CONTAINER(alignment), widget);
 		gtk_window_set_resizable(GTK_WINDOW(window), jalv_ui_is_resizable(jalv));
 		gtk_widget_show_all(vbox);
@@ -613,7 +619,7 @@ jalv_open_ui(Jalv*         jalv,
 		gtk_scrolled_window_set_policy(
 			GTK_SCROLLED_WINDOW(scroll_win),
 			GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-		gtk_box_pack_start(GTK_BOX(vbox), scroll_win, TRUE, TRUE, 0);
+		gtk_container_add(GTK_CONTAINER(alignment), scroll_win);
 		gtk_widget_show_all(vbox);
 
 		GtkRequisition controls_size, box_size;

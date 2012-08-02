@@ -107,17 +107,15 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
 static LV2_URI_Map_Feature uri_map = { NULL, &uri_to_id };
 
 static LV2_Feature uri_map_feature   = { NS_EXT "uri-map", &uri_map };
-static LV2_Feature map_feature       = { NS_EXT "urid#map", NULL };
-static LV2_Feature unmap_feature     = { NS_EXT "urid#unmap", NULL };
-static LV2_Feature instance_feature  = { NS_EXT "instance-access", NULL };
+static LV2_Feature map_feature       = { LV2_URID__map, NULL };
+static LV2_Feature unmap_feature     = { LV2_URID__unmap, NULL };
 static LV2_Feature make_path_feature = { LV2_STATE__makePath, NULL };
 static LV2_Feature schedule_feature  = { LV2_WORKER__schedule, NULL };
 static LV2_Feature log_feature       = { LV2_LOG__log, NULL };
 static LV2_Feature buf_size_feature  = { LV2_BUF_SIZE__access, NULL };
 
-const LV2_Feature* features[10] = {
+const LV2_Feature* features[9] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
-	&instance_feature,
 	&make_path_feature,
 	&schedule_feature,
 	&log_feature,
@@ -572,6 +570,48 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 }
 #endif /* JALV_JACK_SESSION */
 
+void
+jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
+{
+	jalv->ui_host = suil_host_new(jalv_ui_write, NULL, NULL, NULL);
+
+	const LV2_Feature parent_feature = {
+		LV2_UI__parent, parent
+	};
+	const LV2_Feature instance_feature = {
+		NS_EXT "instance-access", lilv_instance_get_handle(jalv->instance)
+	};
+	const LV2_Feature* ui_features[] = {
+		&uri_map_feature, &map_feature, &unmap_feature,
+		&instance_feature,
+		&log_feature,
+		&parent_feature,
+		NULL
+	};
+
+	jalv->ui_instance = suil_instance_new(
+		jalv->ui_host,
+		&jalv,
+		native_ui_type,
+		lilv_node_as_uri(lilv_plugin_get_uri(jalv->plugin)),
+		lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)),
+		lilv_node_as_uri(jalv->ui_type),
+		lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(jalv->ui))),
+		lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(jalv->ui))),
+		ui_features);
+
+	/* Set initial control values on UI */
+	if (jalv->ui_instance) {
+		for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+			if (jalv->ports[i].type == TYPE_CONTROL) {
+				suil_instance_port_event(jalv->ui_instance, i,
+				                         sizeof(float), 0,
+				                         &jalv->ports[i].control);
+			}
+		}
+	}
+}
+
 bool
 jalv_ui_is_resizable(Jalv* jalv)
 {
@@ -852,15 +892,16 @@ main(int argc, char** argv)
 	}
 
 	/* Get a plugin UI */
-	LilvNode*       native_ui_type = jalv_native_ui_type(&jalv);
-	const LilvNode* ui_type        = NULL;
-	jalv.ui = NULL;
-	if (!jalv.opts.generic_ui && native_ui_type) {
+	const char* native_ui_type_uri = jalv_native_ui_type(&jalv);
+	if (!jalv.opts.generic_ui && native_ui_type_uri) {
+		const LilvNode* native_ui_type = lilv_new_uri(jalv.world, native_ui_type_uri);
 		jalv.uis = lilv_plugin_get_uis(jalv.plugin);
 		LILV_FOREACH(uis, u, jalv.uis) {
 			const LilvUI* this_ui = lilv_uis_get(jalv.uis, u);
-			if (lilv_ui_is_supported(
-				    this_ui, suil_ui_supported, native_ui_type, &ui_type)) {
+			if (lilv_ui_is_supported(this_ui,
+			                         suil_ui_supported,
+			                         native_ui_type,
+			                         &jalv.ui_type)) {
 				// TODO: Multiple UI support
 				jalv.ui = this_ui;
 				break;
@@ -973,9 +1014,6 @@ main(int argc, char** argv)
 		jalv_apply_state(&jalv, state);
 	}
 
-	/* Set instance for instance-access extension */
-	instance_feature.data = lilv_instance_get_handle(jalv.instance);
-
 	/* Set Jack callbacks */
 	jack_set_process_callback(jalv.jack_client,
 	                          &jack_process_cb, (void*)(&jalv));
@@ -999,39 +1037,8 @@ main(int argc, char** argv)
 	jalv.sample_rate = jack_get_sample_rate(jalv.jack_client);
 	jalv.play_state  = JALV_RUNNING;
 
-	SuilHost* ui_host = NULL;
-	if (jalv.ui) {
-		/* Instantiate UI */
-		ui_host = suil_host_new(jalv_ui_write, NULL, NULL, NULL);
-
-		jalv.has_ui = true;
-		jalv.ui_instance = suil_instance_new(
-			ui_host,
-			&jalv,
-			lilv_node_as_uri(native_ui_type),
-			lilv_node_as_uri(lilv_plugin_get_uri(jalv.plugin)),
-			lilv_node_as_uri(lilv_ui_get_uri(jalv.ui)),
-			lilv_node_as_uri(ui_type),
-			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(jalv.ui))),
-			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(jalv.ui))),
-			features);
-
-		if (!jalv.ui_instance) {
-			die("Failed to instantiate plugin.\n");
-		}
-
-		/* Set initial control values for UI */
-		for (uint32_t i = 0; i < jalv.num_ports; ++i) {
-			if (jalv.ports[i].type == TYPE_CONTROL) {
-				suil_instance_port_event(jalv.ui_instance, i,
-				                         sizeof(float), 0,
-				                         &jalv.ports[i].control);
-			}
-		}
-	}
-
 	/* Run UI (or prompt at console) */
-	jalv_open_ui(&jalv, jalv.ui_instance);
+	jalv_open_ui(&jalv);
 
 	/* Wait for finish signal from UI or signal handler */
 	zix_sem_wait(&exit_sem);
@@ -1060,12 +1067,11 @@ main(int argc, char** argv)
 	free(jalv.ports);
 	jack_ringbuffer_free(jalv.ui_events);
 	jack_ringbuffer_free(jalv.plugin_events);
-	lilv_node_free(native_ui_type);
 	for (LilvNode** n = (LilvNode**)&jalv.nodes; *n; ++n) {
 		lilv_node_free(*n);
 	}
 	symap_free(jalv.symap);
-	suil_host_free(ui_host);
+	suil_host_free(jalv.ui_host);
 	sratom_free(jalv.sratom);
 	lilv_uis_free(jalv.uis);
 	lilv_world_free(world);

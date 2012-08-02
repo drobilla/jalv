@@ -7,6 +7,7 @@ jalv (9999) unstable;
   * Notify plugins of Jack transport changes by sending events (an atom:Blank
     with properties from the LV2 time extension)
   * Add Gtk3 UI
+  * Port to Windows
 
  -- David Robillard <d@drobilla.net>
 

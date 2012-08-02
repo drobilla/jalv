@@ -160,7 +160,9 @@ typedef struct {
 	const LilvPlugin*  plugin;         ///< Plugin class (RDF data)
 	LilvUIs*           uis;            ///< All plugin UIs (RDF data)
 	const LilvUI*      ui;             ///< Plugin UI (RDF data)
+	const LilvNode*    ui_type;        ///< Plugin UI type (unwrapped)
 	LilvInstance*      instance;       ///< Plugin instance (shared library)
+	SuilHost*          ui_host;        ///< Plugin UI host support
 	SuilInstance*      ui_instance;    ///< Plugin UI instance (shared library)
 	void*              window;         ///< Window (if applicable)
 	struct Port*       ports;          ///< Port array of size num_ports
@@ -188,12 +190,16 @@ jalv_create_ports(Jalv* jalv);
 struct Port*
 jalv_port_by_symbol(Jalv* jalv, const char* sym);
 
-LilvNode*
+const char*
 jalv_native_ui_type(Jalv* jalv);
 
 int
-jalv_open_ui(Jalv*         jalv,
-             SuilInstance* instance);
+jalv_open_ui(Jalv* jalv);
+
+void
+jalv_ui_instantiate(Jalv*       jalv,
+                    const char* native_ui_type,
+                    void*       parent);
 
 bool
 jalv_ui_is_resizable(Jalv* jalv);
