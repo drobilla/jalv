@@ -139,13 +139,13 @@ die(const char* msg)
    (e.g. buffers) is done later in expose_port().
 */
 void
-create_port(Jalv*    host,
+create_port(Jalv*    jalv,
             uint32_t port_index,
             float    default_value)
 {
-	struct Port* const port = &host->ports[port_index];
+	struct Port* const port = &jalv->ports[port_index];
 
-	port->lilv_port = lilv_plugin_get_port_by_index(host->plugin, port_index);
+	port->lilv_port = lilv_plugin_get_port_by_index(jalv->plugin, port_index);
 	port->jack_port = NULL;
 	port->evbuf     = NULL;
 	port->index     = port_index;
@@ -153,36 +153,36 @@ create_port(Jalv*    host,
 	port->flow      = FLOW_UNKNOWN;
 
 	/* Get the port symbol for console printing */
-	const LilvNode* symbol = lilv_port_get_symbol(host->plugin,
+	const LilvNode* symbol = lilv_port_get_symbol(jalv->plugin,
 	                                              port->lilv_port);
 
-	const bool optional = lilv_port_has_property(host->plugin,
+	const bool optional = lilv_port_has_property(jalv->plugin,
 	                                             port->lilv_port,
-	                                             host->nodes.lv2_connectionOptional);
+	                                             jalv->nodes.lv2_connectionOptional);
 
 	/* Set the port flow (input or output) */
-	if (lilv_port_is_a(host->plugin, port->lilv_port, host->nodes.lv2_InputPort)) {
+	if (lilv_port_is_a(jalv->plugin, port->lilv_port, jalv->nodes.lv2_InputPort)) {
 		port->flow = FLOW_INPUT;
-	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
-	                          host->nodes.lv2_OutputPort)) {
+	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
+	                          jalv->nodes.lv2_OutputPort)) {
 		port->flow = FLOW_OUTPUT;
 	} else if (!optional) {
 		die("Mandatory port has unknown type (neither input nor output)");
 	}
 
 	/* Set control values */
-	if (lilv_port_is_a(host->plugin, port->lilv_port, host->nodes.lv2_ControlPort)) {
+	if (lilv_port_is_a(jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
 		port->type    = TYPE_CONTROL;
 		port->control = isnan(default_value) ? 0.0 : default_value;
-	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
-	                          host->nodes.lv2_AudioPort)) {
+	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
+	                          jalv->nodes.lv2_AudioPort)) {
 		port->type = TYPE_AUDIO;
-	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
-	                          host->nodes.ev_EventPort)) {
+	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
+	                          jalv->nodes.ev_EventPort)) {
 		port->type = TYPE_EVENT;
 		port->old_api = true;
-	} else if (lilv_port_is_a(host->plugin, port->lilv_port,
-	                          host->nodes.atom_AtomPort)) {
+	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
+	                          jalv->nodes.atom_AtomPort)) {
 		port->type = TYPE_EVENT;
 		port->old_api = false;
 	} else if (!optional) {
@@ -190,8 +190,8 @@ create_port(Jalv*    host,
 	}
 
 	const size_t sym_len = strlen(lilv_node_as_string(symbol));
-	if (sym_len > host->longest_sym) {
-		host->longest_sym = sym_len;
+	if (sym_len > jalv->longest_sym) {
+		jalv->longest_sym = sym_len;
 	}
 }
 
@@ -265,19 +265,19 @@ jalv_port_by_symbol(Jalv* jalv, const char* sym)
    Expose a port to Jack (if applicable) and connect it to its buffer.
 */
 void
-activate_port(Jalv*    host,
+activate_port(Jalv*    jalv,
               uint32_t port_index)
 {
-	struct Port* const port = &host->ports[port_index];
+	struct Port* const port = &jalv->ports[port_index];
 
 	/* Get the port symbol for console printing */
-	const LilvNode* symbol = lilv_port_get_symbol(host->plugin,
+	const LilvNode* symbol = lilv_port_get_symbol(jalv->plugin,
 	                                              port->lilv_port);
 	const char* symbol_str = lilv_node_as_string(symbol);
 
 	/* Connect unsupported ports to NULL (known to be optional by this point) */
 	if (port->flow == FLOW_UNKNOWN || port->type == TYPE_UNKNOWN) {
-		lilv_instance_connect_port(host->instance, port_index, NULL);
+		lilv_instance_connect_port(jalv->instance, port_index, NULL);
 		return;
 	}
 
@@ -289,18 +289,18 @@ activate_port(Jalv*    host,
 	/* Connect the port based on its type */
 	switch (port->type) {
 	case TYPE_CONTROL:
-		printf("%-*s = %f\n", host->longest_sym, symbol_str,
-		       host->ports[port_index].control);
-		lilv_instance_connect_port(host->instance, port_index, &port->control);
+		printf("%-*s = %f\n", jalv->longest_sym, symbol_str,
+		       jalv->ports[port_index].control);
+		lilv_instance_connect_port(jalv->instance, port_index, &port->control);
 		break;
 	case TYPE_AUDIO:
 		port->jack_port = jack_port_register(
-			host->jack_client, symbol_str,
+			jalv->jack_client, symbol_str,
 			JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
 		break;
 	case TYPE_EVENT:
 		port->jack_port = jack_port_register(
-			host->jack_client, symbol_str,
+			jalv->jack_client, symbol_str,
 			JACK_DEFAULT_MIDI_TYPE, jack_flags, 0);
 		break;
 	default:
@@ -312,14 +312,14 @@ activate_port(Jalv*    host,
 int
 jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 {
-	Jalv* const host = (Jalv*)data;
-	host->block_length = nframes;
-	host->buf_size_set = true;
+	Jalv* const jalv = (Jalv*)data;
+	jalv->block_length = nframes;
+	jalv->buf_size_set = true;
 #ifdef jack_port_type_get_buffer_size
-	host->midi_buf_size = jack_port_type_get_buffer_size(
-		host->jack_client, JACK_DEFAULT_MIDI_TYPE);
+	jalv->midi_buf_size = jack_port_type_get_buffer_size(
+		jalv->jack_client, JACK_DEFAULT_MIDI_TYPE);
 #endif
-	jalv_allocate_port_buffers(host);
+	jalv_allocate_port_buffers(jalv);
 	return 0;
 }
 
@@ -327,46 +327,46 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 REALTIME int
 jack_process_cb(jack_nframes_t nframes, void* data)
 {
-	Jalv* const host = (Jalv*)data;
+	Jalv* const jalv = (Jalv*)data;
 
 	/* Get Jack transport position */
 	jack_position_t pos;
-	const bool rolling = (jack_transport_query(host->jack_client, &pos)
+	const bool rolling = (jack_transport_query(jalv->jack_client, &pos)
 	                      == JackTransportRolling);
 
 	/* If transport state is not as expected, then something has changed */
-	const bool xport_changed = (rolling != host->rolling ||
-	                            pos.frame != host->position);
+	const bool xport_changed = (rolling != jalv->rolling ||
+	                            pos.frame != jalv->position);
 
 	uint8_t   pos_buf[256];
 	LV2_Atom* lv2_pos = (LV2_Atom*)pos_buf;
 	if (xport_changed) {
 		/* Build an LV2 position object to report change to plugin */
-		lv2_atom_forge_set_buffer(&host->forge, pos_buf, sizeof(pos_buf));
-		LV2_Atom_Forge*      forge = &host->forge;
+		lv2_atom_forge_set_buffer(&jalv->forge, pos_buf, sizeof(pos_buf));
+		LV2_Atom_Forge*      forge = &jalv->forge;
 		LV2_Atom_Forge_Frame frame;
-		lv2_atom_forge_blank(forge, &frame, 1, host->urids.time_Position);
-		lv2_atom_forge_property_head(forge, host->urids.time_frame, 0);
+		lv2_atom_forge_blank(forge, &frame, 1, jalv->urids.time_Position);
+		lv2_atom_forge_property_head(forge, jalv->urids.time_frame, 0);
 		lv2_atom_forge_long(forge, pos.frame);
-		lv2_atom_forge_property_head(forge, host->urids.time_speed, 0);
+		lv2_atom_forge_property_head(forge, jalv->urids.time_speed, 0);
 		lv2_atom_forge_float(forge, rolling ? 1.0 : 0.0);
 		if (pos.valid & JackPositionBBT) {
-			lv2_atom_forge_property_head(forge, host->urids.time_barBeat, 0);
+			lv2_atom_forge_property_head(forge, jalv->urids.time_barBeat, 0);
 			lv2_atom_forge_float(
 				forge, pos.beat - 1 + (pos.tick / pos.ticks_per_beat));
-			lv2_atom_forge_property_head(forge, host->urids.time_bar, 0);
+			lv2_atom_forge_property_head(forge, jalv->urids.time_bar, 0);
 			lv2_atom_forge_float(forge, pos.bar - 1);
-			lv2_atom_forge_property_head(forge, host->urids.time_beatUnit, 0);
+			lv2_atom_forge_property_head(forge, jalv->urids.time_beatUnit, 0);
 			lv2_atom_forge_float(forge, pos.beat_type);
-			lv2_atom_forge_property_head(forge, host->urids.time_beatsPerBar, 0);
+			lv2_atom_forge_property_head(forge, jalv->urids.time_beatsPerBar, 0);
 			lv2_atom_forge_float(forge, pos.beats_per_bar);
-			lv2_atom_forge_property_head(forge, host->urids.time_beatsPerMinute, 0);
+			lv2_atom_forge_property_head(forge, jalv->urids.time_beatsPerMinute, 0);
 			lv2_atom_forge_float(forge, pos.beats_per_minute);
 		}
 
-		if (host->opts.dump) {
+		if (jalv->opts.dump) {
 			char* str = sratom_to_turtle(
-				host->sratom, &host->unmap, "time:", NULL, NULL,
+				jalv->sratom, &jalv->unmap, "time:", NULL, NULL,
 				lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
 			printf("\n## Position\n%s\n", str);
 			free(str);
@@ -374,20 +374,20 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	}
 
 	/* Update transport state to expected values for next cycle */
-	host->position = rolling ? pos.frame + nframes : pos.frame;
-	host->rolling  = rolling;
+	jalv->position = rolling ? pos.frame + nframes : pos.frame;
+	jalv->rolling  = rolling;
 
-	switch (host->play_state) {
+	switch (jalv->play_state) {
 	case JALV_PAUSE_REQUESTED:
-		host->play_state = JALV_PAUSED;
-		zix_sem_post(&host->paused);
+		jalv->play_state = JALV_PAUSED;
+		zix_sem_post(&jalv->paused);
 		break;
 	case JALV_PAUSED:
-		for (uint32_t p = 0; p < host->num_ports; ++p) {
-			jack_port_t* jport = host->ports[p].jack_port;
-			if (jport && host->ports[p].flow == FLOW_OUTPUT) {
+		for (uint32_t p = 0; p < jalv->num_ports; ++p) {
+			jack_port_t* jport = jalv->ports[p].jack_port;
+			if (jport && jalv->ports[p].flow == FLOW_OUTPUT) {
 				void* buf = jack_port_get_buffer(jport, nframes);
-				if (host->ports[p].type == TYPE_EVENT) {
+				if (jalv->ports[p].type == TYPE_EVENT) {
 					jack_midi_clear_buffer(buf);
 				} else {
 					memset(buf, '\0', nframes * sizeof(float));
@@ -400,15 +400,15 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	}
 
 	/* Prepare port buffers */
-	for (uint32_t p = 0; p < host->num_ports; ++p) {
-		struct Port* port = &host->ports[p];
+	for (uint32_t p = 0; p < jalv->num_ports; ++p) {
+		struct Port* port = &jalv->ports[p];
 		if (!port->jack_port)
 			continue;
 
 		if (port->type == TYPE_AUDIO) {
 			/* Connect plugin port directly to Jack port buffer */
 			lilv_instance_connect_port(
-				host->instance, p,
+				jalv->instance, p,
 				jack_port_get_buffer(port->jack_port, nframes));
 
 		} else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
@@ -429,7 +429,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				jack_midi_event_get(&ev, buf, i);
 				lv2_evbuf_write(&iter,
 				                ev.time, 0,
-				                host->midi_event_id,
+				                jalv->midi_event_id,
 				                ev.size, ev.buffer);
 			}
 		} else if (port->type == TYPE_EVENT) {
@@ -439,22 +439,22 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	}
 
 	/* Read and apply control change events from UI */
-	if (host->has_ui) {
+	if (jalv->has_ui) {
 		ControlChange ev;
-		const size_t  space = jack_ringbuffer_read_space(host->ui_events);
+		const size_t  space = jack_ringbuffer_read_space(jalv->ui_events);
 		for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
-			jack_ringbuffer_read(host->ui_events, (char*)&ev, sizeof(ev));
+			jack_ringbuffer_read(jalv->ui_events, (char*)&ev, sizeof(ev));
 			char body[ev.size];
-			if (jack_ringbuffer_read(host->ui_events, body, ev.size) != ev.size) {
+			if (jack_ringbuffer_read(jalv->ui_events, body, ev.size) != ev.size) {
 				fprintf(stderr, "error: Error reading from UI ring buffer\n");
 				break;
 			}
-			assert(ev.index < host->num_ports);
-			struct Port* const port = &host->ports[ev.index];
+			assert(ev.index < jalv->num_ports);
+			struct Port* const port = &jalv->ports[ev.index];
 			if (ev.protocol == 0) {
 				assert(ev.size == sizeof(float));
 				port->control = *(float*)body;
-			} else if (ev.protocol == host->urids.atom_eventTransfer) {
+			} else if (ev.protocol == jalv->urids.atom_eventTransfer) {
 				LV2_Evbuf_Iterator    i    = lv2_evbuf_end(port->evbuf);
 				const LV2_Atom* const atom = (const LV2_Atom*)body;
 				lv2_evbuf_write(&i, nframes, 0,
@@ -467,28 +467,28 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	}
 
 	/* Run plugin for this cycle */
-	lilv_instance_run(host->instance, nframes);
+	lilv_instance_run(jalv->instance, nframes);
 
 	/* Process any replies from the worker. */
-	jalv_worker_emit_responses(host, &host->worker);
+	jalv_worker_emit_responses(jalv, &jalv->worker);
 
 	/* Notify the plugin the run() cycle is finished */
-	if (host->worker.iface && host->worker.iface->end_run) {
-		host->worker.iface->end_run(host->instance->lv2_handle);
+	if (jalv->worker.iface && jalv->worker.iface->end_run) {
+		jalv->worker.iface->end_run(jalv->instance->lv2_handle);
 	}
 
 	/* Check if it's time to send updates to the UI */
-	host->event_delta_t += nframes;
+	jalv->event_delta_t += nframes;
 	bool           send_ui_updates = false;
-	jack_nframes_t update_frames   = host->sample_rate / host->ui_update_hz;
-	if (host->has_ui && (host->event_delta_t > update_frames)) {
+	jack_nframes_t update_frames   = jalv->sample_rate / jalv->ui_update_hz;
+	if (jalv->has_ui && (jalv->event_delta_t > update_frames)) {
 		send_ui_updates = true;
-		host->event_delta_t = 0;
+		jalv->event_delta_t = 0;
 	}
 
 	/* Deliver MIDI output and UI events */
-	for (uint32_t p = 0; p < host->num_ports; ++p) {
-		struct Port* const port = &host->ports[p];
+	for (uint32_t p = 0; p < jalv->num_ports; ++p) {
+		struct Port* const port = &jalv->ports[p];
 		if (port->jack_port && port->flow == FLOW_OUTPUT
 		    && port->type == TYPE_EVENT) {
 			void* buf = jack_port_get_buffer(port->jack_port, nframes);
@@ -500,28 +500,28 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				uint32_t frames, subframes, type, size;
 				uint8_t* data;
 				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &data);
-				if (type == host->midi_event_id) {
+				if (type == jalv->midi_event_id) {
 					jack_midi_event_write(buf, frames, data, size);
 				}
 
 				/* TODO: Be more disciminate about what to send */
-				if (host->has_ui && !port->old_api) {
+				if (jalv->has_ui && !port->old_api) {
 					char buf[sizeof(ControlChange) + sizeof(LV2_Atom)];
 					ControlChange* ev = (ControlChange*)buf;
 					ev->index    = p;
-					ev->protocol = host->urids.atom_eventTransfer;
+					ev->protocol = jalv->urids.atom_eventTransfer;
 					ev->size     = sizeof(LV2_Atom) + size;
 					LV2_Atom* atom = (LV2_Atom*)ev->body;
 					atom->type = type;
 					atom->size = size;
-					if (jack_ringbuffer_write_space(host->plugin_events)
+					if (jack_ringbuffer_write_space(jalv->plugin_events)
 					    < sizeof(buf) + size) {
 						fprintf(stderr, "Plugin => UI buffer overflow!\n");
 						break;
 					}
-					jack_ringbuffer_write(host->plugin_events, buf, sizeof(buf));
+					jack_ringbuffer_write(jalv->plugin_events, buf, sizeof(buf));
 					/* TODO: race, ensure reader handles this correctly */
-					jack_ringbuffer_write(host->plugin_events, (void*)data, size);
+					jack_ringbuffer_write(jalv->plugin_events, (void*)data, size);
 				}
 			}
 		} else if (send_ui_updates
@@ -533,7 +533,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			ev->protocol = 0;
 			ev->size     = sizeof(float);
 			*(float*)ev->body = port->control;
-			if (jack_ringbuffer_write(host->plugin_events, buf, sizeof(buf))
+			if (jack_ringbuffer_write(jalv->plugin_events, buf, sizeof(buf))
 			    < sizeof(buf)) {
 				fprintf(stderr, "Plugin => UI buffer overflow!\n");
 			}
@@ -547,27 +547,27 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 void
 jack_session_cb(jack_session_event_t* event, void* arg)
 {
-	Jalv* host = (Jalv*)arg;
+	Jalv* const jalv = (Jalv*)arg;
 
 	#define MAX_CMD_LEN 256
 	event->command_line = malloc(MAX_CMD_LEN);
 	snprintf(event->command_line, MAX_CMD_LEN, "%s -u %s -l '%s'",
-	         host->prog_name,
+	         jalv->prog_name,
 	         event->client_uuid,
 	         event->session_dir);
 
 	switch (event->type) {
 	case JackSessionSave:
 	case JackSessionSaveTemplate:
-		jalv_save(host, event->session_dir);
+		jalv_save(jalv, event->session_dir);
 		break;
 	case JackSessionSaveAndQuit:
-		jalv_save(host, event->session_dir);
+		jalv_save(jalv, event->session_dir);
 		zix_sem_post(&exit_sem);
 		break;
 	}
 
-	jack_session_reply(host->jack_client, event);
+	jack_session_reply(jalv->jack_client, event);
 	jack_session_event_free(event);
 }
 #endif /* JALV_JACK_SESSION */
@@ -603,30 +603,30 @@ jalv_ui_write(SuilController controller,
               uint32_t       protocol,
               const void*    buffer)
 {
-	Jalv* host = (Jalv*)controller;
-	if (!host->has_ui) {
+	Jalv* const jalv = (Jalv*)controller;
+	if (!jalv->has_ui) {
 		return;
 	}
 
-	if (protocol != 0 && protocol != host->urids.atom_eventTransfer) {
+	if (protocol != 0 && protocol != jalv->urids.atom_eventTransfer) {
 		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
-		        protocol, symap_unmap(host->symap, protocol));
+		        protocol, symap_unmap(jalv->symap, protocol));
 		return;
 	}
 
-	if (port_index >= host->num_ports) {
+	if (port_index >= jalv->num_ports) {
 		fprintf(stderr, "UI write to out of range port index %d\n",
 		        port_index);
 		return;
 	}
 
-	if (host->opts.dump && protocol == host->urids.atom_eventTransfer) {
+	if (jalv->opts.dump && protocol == jalv->urids.atom_eventTransfer) {
 		SerdNode s = serd_node_from_string(SERD_BLANK, USTR("msg"));
 		SerdNode p = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
 
 		const LV2_Atom* atom = (const LV2_Atom*)buffer;
 		char*           str  = sratom_to_turtle(
-			host->sratom, &host->unmap, "jalv:", &s, &p,
+			jalv->sratom, &jalv->unmap, "jalv:", &s, &p,
 			atom->type, atom->size, LV2_ATOM_BODY(atom));
 		printf("\n## UI => Plugin (%u bytes) ##\n%s\n", atom->size, str);
 		free(str);
@@ -638,35 +638,35 @@ jalv_ui_write(SuilController controller,
 	ev->protocol = protocol;
 	ev->size     = buffer_size;
 	memcpy(ev->body, buffer, buffer_size);
-	jack_ringbuffer_write(host->ui_events, buf, sizeof(buf));
+	jack_ringbuffer_write(jalv->ui_events, buf, sizeof(buf));
 }
 
 bool
-jalv_emit_ui_events(Jalv* host)
+jalv_emit_ui_events(Jalv* jalv)
 {
 	ControlChange ev;
-	const size_t  space = jack_ringbuffer_read_space(host->plugin_events);
+	const size_t  space = jack_ringbuffer_read_space(jalv->plugin_events);
 	for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
-		jack_ringbuffer_read(host->plugin_events, (char*)&ev, sizeof(ev));
+		jack_ringbuffer_read(jalv->plugin_events, (char*)&ev, sizeof(ev));
 		char buf[ev.size];
-		jack_ringbuffer_read(host->plugin_events, buf, ev.size);
+		jack_ringbuffer_read(jalv->plugin_events, buf, ev.size);
 
-		if (host->opts.dump && ev.protocol == host->urids.atom_eventTransfer) {
+		if (jalv->opts.dump && ev.protocol == jalv->urids.atom_eventTransfer) {
 			SerdNode  s    = serd_node_from_string(SERD_BLANK, USTR("msg"));
 			SerdNode  p    = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
 			LV2_Atom* atom = (LV2_Atom*)buf;
 			char*     str  = sratom_to_turtle(
-				host->sratom, &host->unmap, "jalv:", &s, &p,
+				jalv->sratom, &jalv->unmap, "jalv:", &s, &p,
 				atom->type, atom->size, LV2_ATOM_BODY(atom));
 			printf("\n## Plugin => UI (%u bytes) ##\n%s\n", atom->size, str);
 			free(str);
 		}
 
-		if (host->ui_instance) {
-			suil_instance_port_event(host->ui_instance, ev.index,
+		if (jalv->ui_instance) {
+			suil_instance_port_event(jalv->ui_instance, ev.index,
 			                         ev.size, ev.protocol, buf);
 		} else {
-			jalv_ui_port_event(host, ev.index, ev.size, ev.protocol, buf);
+			jalv_ui_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
 		}
 	}
 
@@ -716,78 +716,78 @@ signal_handler(int ignored)
 int
 main(int argc, char** argv)
 {
-	Jalv host;
-	memset(&host, '\0', sizeof(Jalv));
-	host.prog_name     = argv[0];
-	host.block_length  = 4096;  // Should be set by jack_buffer_size_cb
-	host.midi_buf_size = 1024;  // Should be set by jack_buffer_size_cb
-	host.play_state    = JALV_PAUSED;
+	Jalv jalv;
+	memset(&jalv, '\0', sizeof(Jalv));
+	jalv.prog_name     = argv[0];
+	jalv.block_length  = 4096;  // Should be set by jack_buffer_size_cb
+	jalv.midi_buf_size = 1024;  // Should be set by jack_buffer_size_cb
+	jalv.play_state    = JALV_PAUSED;
 
-	if (jalv_init(&argc, &argv, &host.opts)) {
+	if (jalv_init(&argc, &argv, &jalv.opts)) {
 		return EXIT_FAILURE;
 	}
 
-	if (host.opts.uuid) {
-		printf("UUID: %s\n", host.opts.uuid);
+	if (jalv.opts.uuid) {
+		printf("UUID: %s\n", jalv.opts.uuid);
 	}
 
-	host.symap = symap_new();
-	uri_map.callback_data = &host;
+	jalv.symap = symap_new();
+	uri_map.callback_data = &jalv;
 
-	host.map.handle  = &host;
-	host.map.map     = map_uri;
-	map_feature.data = &host.map;
+	jalv.map.handle  = &jalv;
+	jalv.map.map     = map_uri;
+	map_feature.data = &jalv.map;
 
-	host.unmap.handle  = &host;
-	host.unmap.unmap   = unmap_uri;
-	unmap_feature.data = &host.unmap;
+	jalv.unmap.handle  = &jalv;
+	jalv.unmap.unmap   = unmap_uri;
+	unmap_feature.data = &jalv.unmap;
 
-	lv2_atom_forge_init(&host.forge, &host.map);
+	lv2_atom_forge_init(&jalv.forge, &jalv.map);
 
-	host.sratom = sratom_new(&host.map);
+	jalv.sratom = sratom_new(&jalv.map);
 
-	host.midi_event_id = uri_to_id(
-		&host, "http://lv2plug.in/ns/ext/event", LV2_MIDI__MidiEvent);
+	jalv.midi_event_id = uri_to_id(
+		&jalv, "http://lv2plug.in/ns/ext/event", LV2_MIDI__MidiEvent);
 
-	host.urids.atom_eventTransfer  = symap_map(host.symap, LV2_ATOM__eventTransfer);
-	host.urids.log_Trace           = symap_map(host.symap, LV2_LOG__Trace);
-	host.urids.midi_MidiEvent      = symap_map(host.symap, LV2_MIDI__MidiEvent);
-	host.urids.time_Position       = symap_map(host.symap, LV2_TIME__Position);
-	host.urids.time_bar            = symap_map(host.symap, LV2_TIME__bar);
-	host.urids.time_barBeat        = symap_map(host.symap, LV2_TIME__barBeat);
-	host.urids.time_beatUnit       = symap_map(host.symap, LV2_TIME__beatUnit);
-	host.urids.time_beatsPerBar    = symap_map(host.symap, LV2_TIME__beatsPerBar);
-	host.urids.time_beatsPerMinute = symap_map(host.symap, LV2_TIME__beatsPerMinute);
-	host.urids.time_frame          = symap_map(host.symap, LV2_TIME__frame);
-	host.urids.time_speed          = symap_map(host.symap, LV2_TIME__speed);
+	jalv.urids.atom_eventTransfer  = symap_map(jalv.symap, LV2_ATOM__eventTransfer);
+	jalv.urids.log_Trace           = symap_map(jalv.symap, LV2_LOG__Trace);
+	jalv.urids.midi_MidiEvent      = symap_map(jalv.symap, LV2_MIDI__MidiEvent);
+	jalv.urids.time_Position       = symap_map(jalv.symap, LV2_TIME__Position);
+	jalv.urids.time_bar            = symap_map(jalv.symap, LV2_TIME__bar);
+	jalv.urids.time_barBeat        = symap_map(jalv.symap, LV2_TIME__barBeat);
+	jalv.urids.time_beatUnit       = symap_map(jalv.symap, LV2_TIME__beatUnit);
+	jalv.urids.time_beatsPerBar    = symap_map(jalv.symap, LV2_TIME__beatsPerBar);
+	jalv.urids.time_beatsPerMinute = symap_map(jalv.symap, LV2_TIME__beatsPerMinute);
+	jalv.urids.time_frame          = symap_map(jalv.symap, LV2_TIME__frame);
+	jalv.urids.time_speed          = symap_map(jalv.symap, LV2_TIME__speed);
 
 #ifdef _WIN32
-	host.temp_dir = jalv_strdup("jalvXXXXXX");
-	_mktemp(host.temp_dir);
+	jalv.temp_dir = jalv_strdup("jalvXXXXXX");
+	_mktemp(jalv.temp_dir);
 #else
 	char* template = jalv_strdup("/tmp/jalv-XXXXXX");
-	host.temp_dir = jalv_strjoin(mkdtemp(template), "/");
+	jalv.temp_dir = jalv_strjoin(mkdtemp(template), "/");
 	free(template);
 #endif
 
-	LV2_State_Make_Path make_path = { &host, jalv_make_path };
+	LV2_State_Make_Path make_path = { &jalv, jalv_make_path };
 	make_path_feature.data = &make_path;
 
-	LV2_Worker_Schedule schedule = { &host, jalv_worker_schedule };
+	LV2_Worker_Schedule schedule = { &jalv, jalv_worker_schedule };
 	schedule_feature.data = &schedule;
 
-	LV2_Log_Log log = { &host, jalv_printf, jalv_vprintf };
+	LV2_Log_Log log = { &jalv, jalv_printf, jalv_vprintf };
 	log_feature.data = &log;
 
-	LV2_Buf_Size_Access access = { &host, sizeof(LV2_Buf_Size_Access),
+	LV2_Buf_Size_Access access = { &jalv, sizeof(LV2_Buf_Size_Access),
 	                               jalv_get_sample_count, jalv_get_buf_size };
 	buf_size_feature.data = &access;
 
 	zix_sem_init(&exit_sem, 0);
-	host.done = &exit_sem;
+	jalv.done = &exit_sem;
 
-	zix_sem_init(&host.paused, 0);
-	zix_sem_init(&host.worker.sem, 0);
+	zix_sem_init(&jalv.paused, 0);
+	zix_sem_init(&jalv.worker.sem, 0);
 
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
@@ -795,42 +795,42 @@ main(int argc, char** argv)
 	/* Find all installed plugins */
 	LilvWorld* world = lilv_world_new();
 	lilv_world_load_all(world);
-	host.world = world;
+	jalv.world = world;
 	const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
 
 	/* Cache URIs for concepts we'll use */
-	host.nodes.atom_AtomPort          = lilv_new_uri(world, LV2_ATOM__AtomPort);
-	host.nodes.atom_Chunk             = lilv_new_uri(world, LV2_ATOM__Chunk);
-	host.nodes.atom_Sequence          = lilv_new_uri(world, LV2_ATOM__Sequence);
-	host.nodes.ev_EventPort           = lilv_new_uri(world, LV2_EVENT__EventPort);
-	host.nodes.lv2_AudioPort          = lilv_new_uri(world, LV2_CORE__AudioPort);
-	host.nodes.lv2_ControlPort        = lilv_new_uri(world, LV2_CORE__ControlPort);
-	host.nodes.lv2_InputPort          = lilv_new_uri(world, LV2_CORE__InputPort);
-	host.nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);
-	host.nodes.lv2_connectionOptional = lilv_new_uri(world, LV2_CORE__connectionOptional);
-	host.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
-	host.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
-	host.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
-	host.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
-	host.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
-	host.nodes.end                    = NULL;
+	jalv.nodes.atom_AtomPort          = lilv_new_uri(world, LV2_ATOM__AtomPort);
+	jalv.nodes.atom_Chunk             = lilv_new_uri(world, LV2_ATOM__Chunk);
+	jalv.nodes.atom_Sequence          = lilv_new_uri(world, LV2_ATOM__Sequence);
+	jalv.nodes.ev_EventPort           = lilv_new_uri(world, LV2_EVENT__EventPort);
+	jalv.nodes.lv2_AudioPort          = lilv_new_uri(world, LV2_CORE__AudioPort);
+	jalv.nodes.lv2_ControlPort        = lilv_new_uri(world, LV2_CORE__ControlPort);
+	jalv.nodes.lv2_InputPort          = lilv_new_uri(world, LV2_CORE__InputPort);
+	jalv.nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);
+	jalv.nodes.lv2_connectionOptional = lilv_new_uri(world, LV2_CORE__connectionOptional);
+	jalv.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
+	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
+	jalv.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
+	jalv.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
+	jalv.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
+	jalv.nodes.end                    = NULL;
 
 	/* Get plugin URI from loaded state or command line */
 	LilvState* state      = NULL;
 	LilvNode*  plugin_uri = NULL;
-	if (host.opts.load) {
+	if (jalv.opts.load) {
 		struct stat info;
-		stat(host.opts.load, &info);
+		stat(jalv.opts.load, &info);
 		if (S_ISDIR(info.st_mode)) {
-			char* path = jalv_strjoin(host.opts.load, "/state.ttl");
-			state = lilv_state_new_from_file(host.world, &host.map, NULL, path);
+			char* path = jalv_strjoin(jalv.opts.load, "/state.ttl");
+			state = lilv_state_new_from_file(jalv.world, &jalv.map, NULL, path);
 			free(path);
 		} else {
-			state = lilv_state_new_from_file(host.world, &host.map, NULL,
-			                                 host.opts.load);
+			state = lilv_state_new_from_file(jalv.world, &jalv.map, NULL,
+			                                 jalv.opts.load);
 		}
 		if (!state) {
-			fprintf(stderr, "Failed to load state from %s\n", host.opts.load);
+			fprintf(stderr, "Failed to load state from %s\n", jalv.opts.load);
 			return EXIT_FAILURE;
 		}
 		plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
@@ -843,44 +843,44 @@ main(int argc, char** argv)
 
 	/* Find plugin */
 	printf("Plugin:       %s\n", lilv_node_as_string(plugin_uri));
-	host.plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
+	jalv.plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
 	lilv_node_free(plugin_uri);
-	if (!host.plugin) {
+	if (!jalv.plugin) {
 		fprintf(stderr, "Failed to find plugin\n");
 		lilv_world_free(world);
 		return EXIT_FAILURE;
 	}
 
 	/* Get a plugin UI */
-	LilvNode*       native_ui_type = jalv_native_ui_type(&host);
+	LilvNode*       native_ui_type = jalv_native_ui_type(&jalv);
 	const LilvNode* ui_type        = NULL;
-	host.ui = NULL;
-	if (!host.opts.generic_ui && native_ui_type) {
-		host.uis = lilv_plugin_get_uis(host.plugin);
-		LILV_FOREACH(uis, u, host.uis) {
-			const LilvUI* this_ui = lilv_uis_get(host.uis, u);
+	jalv.ui = NULL;
+	if (!jalv.opts.generic_ui && native_ui_type) {
+		jalv.uis = lilv_plugin_get_uis(jalv.plugin);
+		LILV_FOREACH(uis, u, jalv.uis) {
+			const LilvUI* this_ui = lilv_uis_get(jalv.uis, u);
 			if (lilv_ui_is_supported(
 				    this_ui, suil_ui_supported, native_ui_type, &ui_type)) {
 				// TODO: Multiple UI support
-				host.ui = this_ui;
+				jalv.ui = this_ui;
 				break;
 			}
 		}
 	}
 
 	/* Create ringbuffers for UI if necessary */
-	if (host.ui) {
+	if (jalv.ui) {
 		fprintf(stderr, "UI:           %s\n",
-		        lilv_node_as_uri(lilv_ui_get_uri(host.ui)));
+		        lilv_node_as_uri(lilv_ui_get_uri(jalv.ui)));
 	} else {
 		fprintf(stderr, "No appropriate UI found\n");
 	}
 
-	/* Create port structures (host.ports) */
-	jalv_create_ports(&host);
+	/* Create port structures (jalv.ports) */
+	jalv_create_ports(&jalv);
 
 	/* Get the plugin's name */
-	LilvNode*   name     = lilv_plugin_get_name(host.plugin);
+	LilvNode*   name     = lilv_plugin_get_name(jalv.plugin);
 	const char* name_str = lilv_node_as_string(name);
 
 	/* Truncate plugin name to suit JACK (if necessary) */
@@ -895,185 +895,185 @@ main(int argc, char** argv)
 	/* Connect to JACK */
 	printf("JACK Name:    %s\n", jack_name);
 #ifdef JALV_JACK_SESSION
-	if (host.opts.uuid) {
-		host.jack_client = jack_client_open(jack_name, JackSessionID, NULL,
-		                                    host.opts.uuid);
+	if (jalv.opts.uuid) {
+		jalv.jack_client = jack_client_open(jack_name, JackSessionID, NULL,
+		                                    jalv.opts.uuid);
 	}
 #endif
 
-	if (!host.jack_client) {
-		host.jack_client = jack_client_open(jack_name, JackNullOption, NULL);
+	if (!jalv.jack_client) {
+		jalv.jack_client = jack_client_open(jack_name, JackNullOption, NULL);
 	}
 
 	free(jack_name);
 	lilv_node_free(name);
 
-	if (!host.jack_client)
+	if (!jalv.jack_client)
 		die("Failed to connect to JACK.\n");
 
-	host.block_length = jack_get_buffer_size(host.jack_client);
+	jalv.block_length = jack_get_buffer_size(jalv.jack_client);
 #ifdef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
-	host.midi_buf_size = jack_port_type_get_buffer_size(
-		host.jack_client, JACK_DEFAULT_MIDI_TYPE);
+	jalv.midi_buf_size = jack_port_type_get_buffer_size(
+		jalv.jack_client, JACK_DEFAULT_MIDI_TYPE);
 #else
-	host.midi_buf_size = 4096;
+	jalv.midi_buf_size = 4096;
 	fprintf(stderr, "warning: No jack_port_type_get_buffer_size.\n");
 #endif
-	printf("MIDI buffers: %zu bytes\n", host.midi_buf_size);
+	printf("MIDI buffers: %zu bytes\n", jalv.midi_buf_size);
 
-	if (host.opts.buffer_size == 0) {
+	if (jalv.opts.buffer_size == 0) {
 		/* The UI ring is fed by plugin output ports (usually one), and the UI
 		   updates roughly once per cycle.  The ring size is a few times the
 		   size of the MIDI output to give the UI a chance to keep up.  The UI
 		   should be able to keep up with 4 cycles, and tests show this works
 		   for me, but this value might need increasing to avoid overflows.
 		*/
-		host.opts.buffer_size = host.midi_buf_size * 4;
+		jalv.opts.buffer_size = jalv.midi_buf_size * 4;
 	}
 
 	/* Calculate theoretical UI update frequency. */
-	host.sample_rate  = jack_get_sample_rate(host.jack_client);
-	host.ui_update_hz = (double)host.sample_rate / host.midi_buf_size * 2.0;
+	jalv.sample_rate  = jack_get_sample_rate(jalv.jack_client);
+	jalv.ui_update_hz = (double)jalv.sample_rate / jalv.midi_buf_size * 2.0;
 
 	/* The UI can only go so fast, clamp to reasonable limits */
-	host.ui_update_hz     = MIN(60, host.ui_update_hz);
-	host.opts.buffer_size = MAX(4096, host.opts.buffer_size);
-	fprintf(stderr, "Comm buffers: %d bytes\n", host.opts.buffer_size);
-	fprintf(stderr, "Update rate:  %d Hz\n", host.ui_update_hz);
+	jalv.ui_update_hz     = MIN(60, jalv.ui_update_hz);
+	jalv.opts.buffer_size = MAX(4096, jalv.opts.buffer_size);
+	fprintf(stderr, "Comm buffers: %d bytes\n", jalv.opts.buffer_size);
+	fprintf(stderr, "Update rate:  %d Hz\n", jalv.ui_update_hz);
 
 	/* Create Plugin <=> UI communication buffers */
-	host.ui_events     = jack_ringbuffer_create(host.opts.buffer_size);
-	host.plugin_events = jack_ringbuffer_create(host.opts.buffer_size);
-	jack_ringbuffer_mlock(host.ui_events);
-	jack_ringbuffer_mlock(host.plugin_events);
+	jalv.ui_events     = jack_ringbuffer_create(jalv.opts.buffer_size);
+	jalv.plugin_events = jack_ringbuffer_create(jalv.opts.buffer_size);
+	jack_ringbuffer_mlock(jalv.ui_events);
+	jack_ringbuffer_mlock(jalv.plugin_events);
 
 	/* Instantiate the plugin */
-	host.instance = lilv_plugin_instantiate(
-		host.plugin, host.sample_rate, features);
-	if (!host.instance) {
+	jalv.instance = lilv_plugin_instantiate(
+		jalv.plugin, jalv.sample_rate, features);
+	if (!jalv.instance) {
 		die("Failed to instantiate plugin.\n");
 	}
 
 	fprintf(stderr, "\n");
-	if (!host.buf_size_set) {
-		jalv_allocate_port_buffers(&host);
+	if (!jalv.buf_size_set) {
+		jalv_allocate_port_buffers(&jalv);
 	}
 
 	/* Create thread and ringbuffers for worker if necessary */
-	if (lilv_plugin_has_feature(host.plugin, host.nodes.work_schedule)
-	    && lilv_plugin_has_extension_data(host.plugin, host.nodes.work_interface)) {
+	if (lilv_plugin_has_feature(jalv.plugin, jalv.nodes.work_schedule)
+	    && lilv_plugin_has_extension_data(jalv.plugin, jalv.nodes.work_interface)) {
 		jalv_worker_init(
-			&host, &host.worker,
+			&jalv, &jalv.worker,
 			(LV2_Worker_Interface*)lilv_instance_get_extension_data(
-				host.instance, LV2_WORKER__interface));
+				jalv.instance, LV2_WORKER__interface));
 	}
 
 	/* Apply loaded state to plugin instance if necessary */
 	if (state) {
-		jalv_apply_state(&host, state);
+		jalv_apply_state(&jalv, state);
 	}
 
 	/* Set instance for instance-access extension */
-	instance_feature.data = lilv_instance_get_handle(host.instance);
+	instance_feature.data = lilv_instance_get_handle(jalv.instance);
 
 	/* Set Jack callbacks */
-	jack_set_process_callback(host.jack_client,
-	                          &jack_process_cb, (void*)(&host));
-	jack_set_buffer_size_callback(host.jack_client,
-	                              &jack_buffer_size_cb, (void*)(&host));
+	jack_set_process_callback(jalv.jack_client,
+	                          &jack_process_cb, (void*)(&jalv));
+	jack_set_buffer_size_callback(jalv.jack_client,
+	                              &jack_buffer_size_cb, (void*)(&jalv));
 #ifdef JALV_JACK_SESSION
-	jack_set_session_callback(host.jack_client,
-	                          &jack_session_cb, (void*)(&host));
+	jack_set_session_callback(jalv.jack_client,
+	                          &jack_session_cb, (void*)(&jalv));
 #endif
 
 	/* Create Jack ports and connect plugin ports to buffers */
-	for (uint32_t i = 0; i < host.num_ports; ++i) {
-		activate_port(&host, i);
+	for (uint32_t i = 0; i < jalv.num_ports; ++i) {
+		activate_port(&jalv, i);
 	}
 
 	/* Activate plugin */
-	lilv_instance_activate(host.instance);
+	lilv_instance_activate(jalv.instance);
 
 	/* Activate Jack */
-	jack_activate(host.jack_client);
-	host.sample_rate = jack_get_sample_rate(host.jack_client);
-	host.play_state  = JALV_RUNNING;
+	jack_activate(jalv.jack_client);
+	jalv.sample_rate = jack_get_sample_rate(jalv.jack_client);
+	jalv.play_state  = JALV_RUNNING;
 
 	SuilHost* ui_host = NULL;
-	if (host.ui) {
+	if (jalv.ui) {
 		/* Instantiate UI */
 		ui_host = suil_host_new(jalv_ui_write, NULL, NULL, NULL);
 
-		host.has_ui = true;
-		host.ui_instance = suil_instance_new(
+		jalv.has_ui = true;
+		jalv.ui_instance = suil_instance_new(
 			ui_host,
-			&host,
+			&jalv,
 			lilv_node_as_uri(native_ui_type),
-			lilv_node_as_uri(lilv_plugin_get_uri(host.plugin)),
-			lilv_node_as_uri(lilv_ui_get_uri(host.ui)),
+			lilv_node_as_uri(lilv_plugin_get_uri(jalv.plugin)),
+			lilv_node_as_uri(lilv_ui_get_uri(jalv.ui)),
 			lilv_node_as_uri(ui_type),
-			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(host.ui))),
-			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(host.ui))),
+			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(jalv.ui))),
+			lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(jalv.ui))),
 			features);
 
-		if (!host.ui_instance) {
+		if (!jalv.ui_instance) {
 			die("Failed to instantiate plugin.\n");
 		}
 
 		/* Set initial control values for UI */
-		for (uint32_t i = 0; i < host.num_ports; ++i) {
-			if (host.ports[i].type == TYPE_CONTROL) {
-				suil_instance_port_event(host.ui_instance, i,
+		for (uint32_t i = 0; i < jalv.num_ports; ++i) {
+			if (jalv.ports[i].type == TYPE_CONTROL) {
+				suil_instance_port_event(jalv.ui_instance, i,
 				                         sizeof(float), 0,
-				                         &host.ports[i].control);
+				                         &jalv.ports[i].control);
 			}
 		}
 	}
 
 	/* Run UI (or prompt at console) */
-	jalv_open_ui(&host, host.ui_instance);
+	jalv_open_ui(&jalv, jalv.ui_instance);
 
 	/* Wait for finish signal from UI or signal handler */
 	zix_sem_wait(&exit_sem);
-	host.exit = true;
+	jalv.exit = true;
 
 	fprintf(stderr, "Exiting...\n");
 
 	/* Terminate the worker */
-	jalv_worker_finish(&host.worker);
+	jalv_worker_finish(&jalv.worker);
 
 	/* Deactivate JACK */
-	jack_deactivate(host.jack_client);
-	for (uint32_t i = 0; i < host.num_ports; ++i) {
-		if (host.ports[i].evbuf) {
-			lv2_evbuf_free(host.ports[i].evbuf);
+	jack_deactivate(jalv.jack_client);
+	for (uint32_t i = 0; i < jalv.num_ports; ++i) {
+		if (jalv.ports[i].evbuf) {
+			lv2_evbuf_free(jalv.ports[i].evbuf);
 		}
 	}
-	jack_client_close(host.jack_client);
+	jack_client_close(jalv.jack_client);
 
 	/* Deactivate plugin */
-	suil_instance_free(host.ui_instance);
-	lilv_instance_deactivate(host.instance);
-	lilv_instance_free(host.instance);
+	suil_instance_free(jalv.ui_instance);
+	lilv_instance_deactivate(jalv.instance);
+	lilv_instance_free(jalv.instance);
 
 	/* Clean up */
-	free(host.ports);
-	jack_ringbuffer_free(host.ui_events);
-	jack_ringbuffer_free(host.plugin_events);
+	free(jalv.ports);
+	jack_ringbuffer_free(jalv.ui_events);
+	jack_ringbuffer_free(jalv.plugin_events);
 	lilv_node_free(native_ui_type);
-	for (LilvNode** n = (LilvNode**)&host.nodes; *n; ++n) {
+	for (LilvNode** n = (LilvNode**)&jalv.nodes; *n; ++n) {
 		lilv_node_free(*n);
 	}
-	symap_free(host.symap);
+	symap_free(jalv.symap);
 	suil_host_free(ui_host);
-	sratom_free(host.sratom);
-	lilv_uis_free(host.uis);
+	sratom_free(jalv.sratom);
+	lilv_uis_free(jalv.uis);
 	lilv_world_free(world);
 
 	zix_sem_destroy(&exit_sem);
 
-	remove(host.temp_dir);
-	free(host.temp_dir);
+	remove(jalv.temp_dir);
+	free(jalv.temp_dir);
 
 	return 0;
 }
