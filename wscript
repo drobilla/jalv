@@ -1,11 +1,7 @@
 #!/usr/bin/env python
-import os
-import sys
 import subprocess
-
 from waflib.extras import autowaf as autowaf
 import waflib.Options as Options
-import waflib.Logs as Logs
 
 # Version of this package (even if built as a child)
 JALV_VERSION = '1.0.0'
