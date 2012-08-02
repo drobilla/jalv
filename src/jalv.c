@@ -27,6 +27,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef _WIN32
+#    include <io.h>  /* for _mktemp */
+#endif
+
 #include "jalv_config.h"
 #include "jalv_internal.h"
 
@@ -757,9 +761,14 @@ main(int argc, char** argv)
 	host.urids.time_frame          = symap_map(host.symap, LV2_TIME__frame);
 	host.urids.time_speed          = symap_map(host.symap, LV2_TIME__speed);
 
+#ifdef _WIN32
+	host.temp_dir = jalv_strdup("jalvXXXXXX");
+	_mktemp(host.temp_dir);
+#else
 	char* template = jalv_strdup("/tmp/jalv-XXXXXX");
 	host.temp_dir = jalv_strjoin(mkdtemp(template), "/");
 	free(template);
+#endif
 
 	LV2_State_Make_Path make_path = { &host, jalv_make_path };
 	make_path_feature.data = &make_path;

@@ -20,6 +20,7 @@
 #ifdef __APPLE__
 #    include <mach/mach.h>
 #elif defined(_WIN32)
+#    include <limits.h>
 #    include <windows.h>
 #else
 #    include <semaphore.h>
