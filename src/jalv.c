@@ -19,16 +19,21 @@
 #include <assert.h>
 #include <math.h>
 #include <signal.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
+
+#ifndef __cplusplus
+#    include <stdbool.h>
+#endif
 
 #ifdef _WIN32
 #    include <io.h>  /* for _mktemp */
+#    define snprintf _snprintf
+#else
+#    include <sys/stat.h>
+#    include <sys/types.h>
+#    include <unistd.h>
 #endif
 
 #include "jalv_config.h"

@@ -29,6 +29,11 @@ def configure(conf):
     autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
 
+    if conf.env['MSVC_COMPILER']:
+        conf.env.append_unique('CFLAGS', ['-TP', '-MD'])
+    else:
+        conf.env.append_unique('CFLAGS', '-std=c99')
+
     autowaf.check_pkg(conf, 'lv2', atleast_version='1.0.5', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.14.0', mandatory=True)
@@ -57,7 +62,6 @@ def configure(conf):
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
 
-    conf.env.append_unique('CFLAGS', '-std=c99')
     autowaf.define(conf, 'JALV_VERSION', JALV_VERSION)
 
     conf.write_config_header('jalv_config.h', remove=False)
