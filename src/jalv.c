@@ -881,8 +881,10 @@ main(int argc, char** argv)
 		plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
 	} else if (argc > 1) {
 		plugin_uri = lilv_new_uri(world, argv[argc - 1]);
-	} else {
-		fprintf(stderr, "Missing plugin URI parameter\n");
+	}
+
+	if (!plugin_uri) {
+		fprintf(stderr, "Missing plugin URI, try lv2ls to list plugins\n");
 		return EXIT_FAILURE;
 	}
 
