@@ -596,7 +596,7 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 
 	jalv->ui_instance = suil_instance_new(
 		jalv->ui_host,
-		&jalv,
+		jalv,
 		native_ui_type,
 		lilv_node_as_uri(lilv_plugin_get_uri(jalv->plugin)),
 		lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)),

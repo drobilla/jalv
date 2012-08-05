@@ -546,6 +546,7 @@ jalv_open_ui(Jalv* jalv)
 {
 	GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	jalv->window = window;
+	jalv->has_ui = TRUE;
 
 	g_signal_connect(window, "destroy",
 	                 G_CALLBACK(on_window_destroy), jalv);
@@ -635,7 +636,6 @@ jalv_open_ui(Jalv* jalv)
 	g_timeout_add(1000 / jalv->ui_update_hz,
 	              (GSourceFunc)jalv_emit_ui_events, jalv);
 
-	jalv->has_ui = TRUE;
 	gtk_window_present(GTK_WINDOW(window));
 
 	gtk_main();
