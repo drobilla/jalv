@@ -27,12 +27,8 @@ def configure(conf):
     conf.load('compiler_cxx')
     conf.line_just = 52
     autowaf.configure(conf)
+    autowaf.set_c99_mode(conf)
     autowaf.display_header('Jalv Configuration')
-
-    if conf.env.MSVC_COMPILER:
-        conf.env.append_unique('CFLAGS', ['-TP', '-MD'])
-    else:
-        conf.env.append_unique('CFLAGS', '-std=c99')
 
     autowaf.check_pkg(conf, 'lv2', atleast_version='1.0.7', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
