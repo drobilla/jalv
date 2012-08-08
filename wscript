@@ -29,7 +29,7 @@ def configure(conf):
     autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
 
-    if conf.env['MSVC_COMPILER']:
+    if conf.env.MSVC_COMPILER:
         conf.env.append_unique('CFLAGS', ['-TP', '-MD'])
     else:
         conf.env.append_unique('CFLAGS', '-std=c99')
