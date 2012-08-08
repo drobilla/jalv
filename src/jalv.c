@@ -318,7 +318,7 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 	Jalv* const jalv = (Jalv*)data;
 	jalv->block_length = nframes;
 	jalv->buf_size_set = true;
-#ifdef jack_port_type_get_buffer_size
+#ifdef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
 	jalv->midi_buf_size = jack_port_type_get_buffer_size(
 		jalv->jack_client, JACK_DEFAULT_MIDI_TYPE);
 #endif
@@ -726,8 +726,7 @@ jalv_get_sample_count(LV2_Buf_Size_Access_Handle handle,
                       uint32_t*                  power_of)
 {
 	Jalv* jalv = (Jalv*)handle;
-	// TODO: Is this actually guaranteed with Jack2?
-	*min         = jalv->block_length;
+	*min         = jalv->block_length;  // FIXME: Not guaranteed by Jack API
 	*max         = jalv->block_length;
 	*multiple_of = 1;
 	*power_of    = 0;
@@ -739,17 +738,22 @@ jalv_get_sample_count(LV2_Buf_Size_Access_Handle handle,
 	return 0;
 }
 
-static size_t
+static LV2_Buf_Size_Status
 jalv_get_buf_size(LV2_Buf_Size_Access_Handle handle,
+                  uint32_t*                  buf_size,
                   LV2_URID                   type,
-                  LV2_URID                   subtype)
+                  uint32_t                   sample_count)
 {
 	Jalv* jalv = (Jalv*)handle;
 	if (!jalv->buf_size_set) {
 		fprintf(stderr, "Buffer size requested but it is not yet known.\n");
-		return 0;
 	}
-	return 0;
+	if (type == jalv->forge.Sequence) {
+		*buf_size = jalv->midi_buf_size;
+		return LV2_BUF_SIZE_SUCCESS;
+	}
+	*buf_size = 0;
+	return LV2_BUF_SIZE_ERR_BAD_TYPE;
 }
 
 static void
