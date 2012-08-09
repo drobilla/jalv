@@ -57,7 +57,7 @@ jalv_make_path(LV2_State_Make_Path_Handle handle,
 	return fullpath;
 }
 
-const void*
+static const void*
 get_port_value(const char* port_symbol,
                void*       user_data,
                uint32_t*   size,

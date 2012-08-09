@@ -56,7 +56,7 @@ struct SymapImpl {
 };
 
 Symap*
-symap_new()
+symap_new(void)
 {
 	Symap* map = (Symap*)malloc(sizeof(Symap));
 	map->symbols = NULL;

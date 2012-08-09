@@ -82,14 +82,14 @@
 
 ZixSem exit_sem;  /**< Exit semaphore */
 
-LV2_URID
+static LV2_URID
 map_uri(LV2_URID_Map_Handle handle,
         const char*         uri)
 {
 	return symap_map(((Jalv*)handle)->symap, uri);
 }
 
-const char*
+static const char*
 unmap_uri(LV2_URID_Unmap_Handle handle,
           LV2_URID              urid)
 {
@@ -99,7 +99,7 @@ unmap_uri(LV2_URID_Unmap_Handle handle,
 /**
    Map function for URI map extension.
 */
-uint32_t
+static uint32_t
 uri_to_id(LV2_URI_Map_Callback_Data callback_data,
           const char*               map,
           const char*               uri)
@@ -141,7 +141,7 @@ die(const char* msg)
    and Jack instantiation.  The remaining instance-specific setup
    (e.g. buffers) is done later in expose_port().
 */
-void
+static void
 create_port(Jalv*    jalv,
             uint32_t port_index,
             float    default_value)
@@ -220,7 +220,7 @@ jalv_create_ports(Jalv* jalv)
 /**
    Allocate port buffers (only necessary for MIDI).
 */
-void
+static void
 jalv_allocate_port_buffers(Jalv* jalv)
 {
 	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
@@ -267,7 +267,7 @@ jalv_port_by_symbol(Jalv* jalv, const char* sym)
 /**
    Expose a port to Jack (if applicable) and connect it to its buffer.
 */
-void
+static void
 activate_port(Jalv*    jalv,
               uint32_t port_index)
 {
@@ -312,7 +312,7 @@ activate_port(Jalv*    jalv,
 }
 
 /** Jack buffer size callback. */
-int
+static int
 jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 {
 	Jalv* const jalv = (Jalv*)data;
@@ -327,7 +327,7 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 }
 
 /** Jack process callback. */
-REALTIME int
+static REALTIME int
 jack_process_cb(jack_nframes_t nframes, void* data)
 {
 	Jalv* const jalv = (Jalv*)data;
@@ -458,9 +458,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				assert(ev.size == sizeof(float));
 				port->control = *(float*)body;
 			} else if (ev.protocol == jalv->urids.atom_eventTransfer) {
-				LV2_Evbuf_Iterator    i    = lv2_evbuf_end(port->evbuf);
+				LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
 				const LV2_Atom* const atom = (const LV2_Atom*)body;
-				lv2_evbuf_write(&i, nframes, 0,
+				lv2_evbuf_write(&e, nframes, 0,
 				                atom->type, atom->size, LV2_ATOM_BODY(atom));
 			} else {
 				fprintf(stderr, "error: Unknown control change protocol %d\n",
@@ -501,16 +501,16 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			     lv2_evbuf_is_valid(i);
 			     i = lv2_evbuf_next(i)) {
 				uint32_t frames, subframes, type, size;
-				uint8_t* data;
-				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &data);
+				uint8_t* body;
+				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 				if (type == jalv->midi_event_id) {
-					jack_midi_event_write(buf, frames, data, size);
+					jack_midi_event_write(buf, frames, body, size);
 				}
 
 				/* TODO: Be more disciminate about what to send */
 				if (jalv->has_ui && !port->old_api) {
-					char buf[sizeof(ControlChange) + sizeof(LV2_Atom)];
-					ControlChange* ev = (ControlChange*)buf;
+					char evbuf[sizeof(ControlChange) + sizeof(LV2_Atom)];
+					ControlChange* ev = (ControlChange*)evbuf;
 					ev->index    = p;
 					ev->protocol = jalv->urids.atom_eventTransfer;
 					ev->size     = sizeof(LV2_Atom) + size;
@@ -518,13 +518,13 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					atom->type = type;
 					atom->size = size;
 					if (jack_ringbuffer_write_space(jalv->plugin_events)
-					    < sizeof(buf) + size) {
+					    < sizeof(evbuf) + size) {
 						fprintf(stderr, "Plugin => UI buffer overflow!\n");
 						break;
 					}
-					jack_ringbuffer_write(jalv->plugin_events, buf, sizeof(buf));
+					jack_ringbuffer_write(jalv->plugin_events, evbuf, sizeof(evbuf));
 					/* TODO: race, ensure reader handles this correctly */
-					jack_ringbuffer_write(jalv->plugin_events, (void*)data, size);
+					jack_ringbuffer_write(jalv->plugin_events, (void*)body, size);
 				}
 			}
 		} else if (send_ui_updates
@@ -547,7 +547,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 }
 
 #ifdef JALV_JACK_SESSION
-void
+static void
 jack_session_cb(jack_session_event_t* event, void* arg)
 {
 	Jalv* const jalv = (Jalv*)arg;

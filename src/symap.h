@@ -36,7 +36,7 @@ typedef struct SymapImpl Symap;
    Create a new symbol map.
 */
 Symap*
-symap_new();
+symap_new(void);
 
 /**
    Free a symbol map.

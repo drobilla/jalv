@@ -141,7 +141,7 @@ typedef struct {
 	LilvNode* preset;
 } PresetRecord;
 
-char*
+static char*
 symbolify(const char* in)
 {
 	const size_t len = strlen(in);
@@ -458,8 +458,8 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 			points = g_hash_table_new(g_double_hash, g_double_equal);
 			gdouble* values = malloc(lilv_scale_points_size(sp) * sizeof(gdouble));
 			int      idx    = 0;
-			LILV_FOREACH(scale_points, i, sp) {
-				const LilvScalePoint* p = lilv_scale_points_get(sp, i);
+			LILV_FOREACH(scale_points, s, sp) {
+				const LilvScalePoint* p = lilv_scale_points_get(sp, s);
 				values[idx] = lilv_node_as_float(lilv_scale_point_get_value(p));
 				char* label = g_strdup(
 					lilv_node_as_string(lilv_scale_point_get_label(p)));
