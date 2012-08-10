@@ -81,7 +81,7 @@ static char*
 symap_strdup(const char* str)
 {
 	const size_t len  = strlen(str);
-	char*        copy = malloc(len + 1);
+	char*        copy = (char*)malloc(len + 1);
 	memcpy(copy, str, len + 1);
 	return copy;
 }
@@ -153,11 +153,11 @@ symap_map(Symap* map, const char* sym)
 	char* const    str = symap_strdup(sym);
 
 	/* Append new symbol to symbols array */
-	map->symbols = realloc(map->symbols, map->size * sizeof(str));
+	map->symbols = (char**)realloc(map->symbols, map->size * sizeof(str));
 	map->symbols[id - 1] = str;
 
 	/* Insert new index element into sorted index */
-	map->index = realloc(map->index, map->size * sizeof(uint32_t));
+	map->index = (uint32_t*)realloc(map->index, map->size * sizeof(uint32_t));
 	if (index < map->size - 1) {
 		memmove(map->index + index + 1,
 		        map->index + index,

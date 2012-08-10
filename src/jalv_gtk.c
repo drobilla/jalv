@@ -112,7 +112,7 @@ on_save_activate(GtkWidget* widget, void* ptr)
 	Jalv* jalv = (Jalv*)ptr;
 	GtkWidget* dialog = gtk_file_chooser_dialog_new(
 		"Save State",
-		jalv->window,
+		(GtkWindow*)jalv->window,
 		GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
 		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
@@ -145,7 +145,7 @@ static char*
 symbolify(const char* in)
 {
 	const size_t len = strlen(in);
-	char*        out = calloc(len + 1, 1);
+	char*        out = (char*)calloc(len + 1, 1);
 	for (size_t i = 0; i < len; ++i) {
 		if (g_ascii_isalnum(in[i])) {
 			out[i] = in[i];
@@ -163,7 +163,7 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 
 	GtkWidget* dialog = gtk_file_chooser_dialog_new(
 		"Save Preset",
-		jalv->window,
+		(GtkWindow*)jalv->window,
 		GTK_FILE_CHOOSER_ACTION_SAVE,
 		GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
 		GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
@@ -254,7 +254,7 @@ jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    protocol,
                    const void* buffer)
 {
-	GtkWidget* widget = jalv->ports[port_index].widget;
+	GtkWidget* widget = (GtkWidget*)jalv->ports[port_index].widget;
 	if (!widget) {
 		return;
 	}
@@ -325,7 +325,7 @@ toggle_changed(GtkToggleButton* button, gpointer data)
 static gchar*
 scale_format(GtkScale* scale, gdouble value, gpointer user_data)
 {
-	gpointer hval = g_hash_table_lookup(user_data, &value);
+	gpointer hval = g_hash_table_lookup((GHashTable*)user_data, &value);
 	return hval ? g_strdup(hval) :
 		g_strdup_printf("%0.*f", gtk_scale_get_digits(scale), value);
 }
@@ -432,9 +432,9 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	LilvNode*  lv2_log        = lilv_new_uri(jalv->world, LV2_PORT_PROPS__logarithmic);
 	LilvNode*  rdfs_comment   = lilv_new_uri(jalv->world, LILV_NS_RDFS "comment");
 	GtkWidget* port_table     = gtk_table_new(jalv->num_ports, 2, false);
-	float*     defaults       = calloc(jalv->num_ports, sizeof(float));
-	float*     mins           = calloc(jalv->num_ports, sizeof(float));
-	float*     maxs           = calloc(jalv->num_ports, sizeof(float));
+	float*     defaults       = (float*)calloc(jalv->num_ports, sizeof(float));
+	float*     mins           = (float*)calloc(jalv->num_ports, sizeof(float));
+	float*     maxs           = (float*)calloc(jalv->num_ports, sizeof(float));
 	int        num_controls   = 0;
 	lilv_plugin_get_port_ranges_float(jalv->plugin, mins, maxs, defaults);
 	for (unsigned i = 0; i < jalv->num_ports; i++) {
@@ -456,8 +456,9 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 		GHashTable*      points = NULL;
 		if (sp) {
 			points = g_hash_table_new(g_double_hash, g_double_equal);
-			gdouble* values = malloc(lilv_scale_points_size(sp) * sizeof(gdouble));
 			int      idx    = 0;
+			gdouble* values = (gdouble*)malloc(
+				lilv_scale_points_size(sp) * sizeof(gdouble));
 			LILV_FOREACH(scale_points, s, sp) {
 				const LilvScalePoint* p = lilv_scale_points_get(sp, s);
 				values[idx] = lilv_node_as_float(lilv_scale_point_get_value(p));

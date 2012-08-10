@@ -205,9 +205,9 @@ void
 jalv_create_ports(Jalv* jalv)
 {
 	jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
-	jalv->ports     = calloc((size_t)jalv->num_ports, sizeof(struct Port));
-	float* default_values = calloc(lilv_plugin_get_num_ports(jalv->plugin),
-	                               sizeof(float));
+	jalv->ports     = (struct Port*)calloc(jalv->num_ports, sizeof(struct Port));
+	float* default_values = (float*)calloc(
+		lilv_plugin_get_num_ports(jalv->plugin), sizeof(float));
 	lilv_plugin_get_port_ranges_float(jalv->plugin, NULL, NULL, default_values);
 
 	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
@@ -814,9 +814,9 @@ main(int argc, char** argv)
 	jalv.temp_dir = jalv_strdup("jalvXXXXXX");
 	_mktemp(jalv.temp_dir);
 #else
-	char* template = jalv_strdup("/tmp/jalv-XXXXXX");
-	jalv.temp_dir = jalv_strjoin(mkdtemp(template), "/");
-	free(template);
+	char* templ = jalv_strdup("/tmp/jalv-XXXXXX");
+	jalv.temp_dir = jalv_strjoin(mkdtemp(templ), "/");
+	free(templ);
 #endif
 
 	LV2_State_Make_Path make_path = { &jalv, jalv_make_path };
@@ -938,7 +938,7 @@ main(int argc, char** argv)
 	/* Truncate plugin name to suit JACK (if necessary) */
 	char* jack_name = NULL;
 	if (strlen(name_str) >= (unsigned)jack_client_name_size() - 1) {
-		jack_name = calloc(jack_client_name_size(), 1);
+		jack_name = (char*)calloc(jack_client_name_size(), 1);
 		strncpy(jack_name, name_str, jack_client_name_size() - 1);
 	} else {
 		jack_name = jalv_strdup(name_str);
