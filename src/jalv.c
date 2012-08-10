@@ -176,7 +176,7 @@ create_port(Jalv*    jalv,
 	/* Set control values */
 	if (lilv_port_is_a(jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
 		port->type    = TYPE_CONTROL;
-		port->control = isnan(default_value) ? 0.0 : default_value;
+		port->control = isnan(default_value) ? 0.0f : default_value;
 	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
 	                          jalv->nodes.lv2_AudioPort)) {
 		port->type = TYPE_AUDIO;
