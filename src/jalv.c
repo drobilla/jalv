@@ -48,6 +48,8 @@
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
 #include "lv2/lv2plug.in/ns/ext/event/event.h"
+#include "lv2/lv2plug.in/ns/ext/options/options.h"
+#include "lv2/lv2plug.in/ns/ext/parameters/parameters.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
@@ -118,13 +120,15 @@ static LV2_Feature make_path_feature = { LV2_STATE__makePath, NULL };
 static LV2_Feature schedule_feature  = { LV2_WORKER__schedule, NULL };
 static LV2_Feature log_feature       = { LV2_LOG__log, NULL };
 static LV2_Feature buf_size_feature  = { LV2_BUF_SIZE__access, NULL };
+static LV2_Feature options_feature   = { LV2_OPTIONS__options, NULL };
 
-const LV2_Feature* features[9] = {
+const LV2_Feature* features[10] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
 	&make_path_feature,
 	&schedule_feature,
 	&log_feature,
 	&buf_size_feature,
+	&options_feature,
 	NULL
 };
 
@@ -591,6 +595,7 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 		&instance_feature,
 		&log_feature,
 		&parent_feature,
+		&options_feature,
 		NULL
 	};
 
@@ -798,6 +803,8 @@ main(int argc, char** argv)
 	jalv.midi_event_id = uri_to_id(
 		&jalv, "http://lv2plug.in/ns/ext/event", LV2_MIDI__MidiEvent);
 
+	jalv.urids.atom_Float          = symap_map(jalv.symap, LV2_ATOM__Float);
+	jalv.urids.param_sampleRate    = symap_map(jalv.symap, LV2_PARAMETERS__sampleRate);
 	jalv.urids.atom_eventTransfer  = symap_map(jalv.symap, LV2_ATOM__eventTransfer);
 	jalv.urids.log_Trace           = symap_map(jalv.symap, LV2_LOG__Trace);
 	jalv.urids.midi_MidiEvent      = symap_map(jalv.symap, LV2_MIDI__MidiEvent);
@@ -963,6 +970,7 @@ main(int argc, char** argv)
 	if (!jalv.jack_client)
 		die("Failed to connect to JACK.\n");
 
+	jalv.sample_rate  = jack_get_sample_rate(jalv.jack_client);
 	jalv.block_length = jack_get_buffer_size(jalv.jack_client);
 #ifdef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
 	jalv.midi_buf_size = jack_port_type_get_buffer_size(
@@ -983,8 +991,16 @@ main(int argc, char** argv)
 		jalv.opts.buffer_size = jalv.midi_buf_size * 4;
 	}
 
+	/* Initialize options to pass to plugin */
+	const LV2_Atom_Float sample_rate_option =
+		{ { sizeof(float), jalv.urids.atom_Float }, jalv.sample_rate };
+	LV2_Options_Option options[] = {
+		{ jalv.urids.param_sampleRate, &sample_rate_option.atom },
+		{ 0, NULL } };
+	
+	options_feature.data = &options;
+
 	/* Calculate theoretical UI update frequency. */
-	jalv.sample_rate  = jack_get_sample_rate(jalv.jack_client);
 	jalv.ui_update_hz = (double)jalv.sample_rate / jalv.midi_buf_size * 2.0;
 
 	/* The UI can only go so fast, clamp to reasonable limits */
