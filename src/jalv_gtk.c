@@ -584,6 +584,7 @@ jalv_open_ui(Jalv* jalv)
 
 	jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
 
+	gtk_window_set_role(GTK_WINDOW(window), "plugin_ui");
 	gtk_container_add(GTK_CONTAINER(window), vbox);
 	gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
 
