@@ -345,7 +345,7 @@ dcmp(gconstpointer a, gconstpointer b)
 }
 
 static GtkWidget*
-make_combo(struct Port* port, GHashTable* points, int deft)
+make_combo(struct Port* port, GHashTable* points)
 {
 	GList*        list       = g_hash_table_get_keys(points);
 	GtkListStore* list_store = gtk_list_store_new(
@@ -361,7 +361,7 @@ make_combo(struct Port* port, GHashTable* points, int deft)
 	g_list_free(list);
 
 	GtkWidget* combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(list_store));
-	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), deft);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), lrintf(port->control));
 	g_object_unref(list_store);
 
 	GtkCellRenderer* cell = gtk_cell_renderer_text_new();
@@ -375,12 +375,11 @@ make_combo(struct Port* port, GHashTable* points, int deft)
 }
 
 static GtkWidget*
-make_log_slider(struct Port* port, GHashTable* points,
-                float min, float max, float deft)
+make_log_slider(struct Port* port, GHashTable* points, float min, float max)
 {
 	float      lmin   = logf(min);
 	float      lmax   = logf(max);
-	float      ldft   = logf(deft);
+	float      ldft   = logf(port->control);
 	GtkWidget* slider = new_hscale(lmin, lmax, 0.001);
 	gtk_scale_set_digits(GTK_SCALE(slider), 6);
 	gtk_range_set_value(GTK_RANGE(slider), ldft);
@@ -394,11 +393,11 @@ make_log_slider(struct Port* port, GHashTable* points,
 
 static GtkWidget*
 make_slider(struct Port* port, GHashTable* points,
-            bool is_int, float min, float max, float deft)
+            bool is_int, float min, float max)
 {
 	const double step   = is_int ? 1.0 : ((max - min) / 100.0);
 	GtkWidget*   slider = new_hscale(min, max, step);
-	gtk_range_set_value(GTK_RANGE(slider), deft);
+	gtk_range_set_value(GTK_RANGE(slider), port->control);
 	if (points) {
 		g_signal_connect(G_OBJECT(slider),
 		                 "format-value", G_CALLBACK(scale_format), points);
@@ -411,10 +410,10 @@ make_slider(struct Port* port, GHashTable* points,
 }
 
 static GtkWidget*
-make_toggle(struct Port* port, float deft)
+make_toggle(struct Port* port)
 {
 	GtkWidget* check = gtk_check_button_new();
-	if (deft) {
+	if (port->control) {
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check), TRUE);
 	}
 	g_signal_connect(G_OBJECT(check),
@@ -432,11 +431,10 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	LilvNode*  lv2_log        = lilv_new_uri(jalv->world, LV2_PORT_PROPS__logarithmic);
 	LilvNode*  rdfs_comment   = lilv_new_uri(jalv->world, LILV_NS_RDFS "comment");
 	GtkWidget* port_table     = gtk_table_new(jalv->num_ports, 2, false);
-	float*     defaults       = (float*)calloc(jalv->num_ports, sizeof(float));
 	float*     mins           = (float*)calloc(jalv->num_ports, sizeof(float));
 	float*     maxs           = (float*)calloc(jalv->num_ports, sizeof(float));
 	int        num_controls   = 0;
-	lilv_plugin_get_port_ranges_float(jalv->plugin, mins, maxs, defaults);
+	lilv_plugin_get_port_ranges_float(jalv->plugin, mins, maxs, NULL);
 	for (unsigned i = 0; i < jalv->num_ports; i++) {
 		if (jalv->ports[i].type != TYPE_CONTROL) {
 			continue;
@@ -475,18 +473,18 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 		bool       is_integer = lilv_port_has_property(
 			jalv->plugin, port, lv2_integer);
 		if (lilv_port_has_property(jalv->plugin, port, lv2_toggled)) {
-			control = make_toggle(&jalv->ports[i], defaults[i]);
+			control = make_toggle(&jalv->ports[i]);
 		} else if (lilv_port_has_property(jalv->plugin, port, lv2_enum)
 		           || (is_integer && points &&
 		               (g_hash_table_size(points)
 		                == (unsigned)(maxs[i] - mins[i] + 1)))) {
-			control = make_combo(&jalv->ports[i], points, defaults[i]);
+			control = make_combo(&jalv->ports[i], points);
 		} else if (lilv_port_has_property(jalv->plugin, port, lv2_log)) {
 			control = make_log_slider(&jalv->ports[i], points,
-			                          mins[i], maxs[i], defaults[i]);
+			                          mins[i], maxs[i]);
 		} else {
 			control = make_slider(&jalv->ports[i], points, is_integer,
-			                      mins[i], maxs[i], defaults[i]);
+			                      mins[i], maxs[i]);
 		}
 		jalv->ports[i].widget = control;
 
@@ -517,7 +515,6 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 		lilv_node_free(name);
 	}
 
-	free(defaults);
 	free(mins);
 	free(maxs);
 	lilv_node_free(lv2_sampleRate);
