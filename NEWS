@@ -8,6 +8,7 @@ jalv (9999) unstable;
     with properties from the LV2 time extension)
   * Add Gtk3 UI
   * Port to Windows
+  * Fix Jack Session support
 
  -- David Robillard <d@drobilla.net>
 
