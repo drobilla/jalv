@@ -96,4 +96,10 @@ jalv_open_ui(Jalv* jalv)
 	return ret;
 }
 
+int
+jalv_close_ui(Jalv* jalv)
+{
+	app->quit();
+}
+
 }  // extern "C"

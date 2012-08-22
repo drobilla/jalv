@@ -569,7 +569,7 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 		break;
 	case JackSessionSaveAndQuit:
 		jalv_save(jalv, event->session_dir);
-		zix_sem_post(&exit_sem);
+		jalv_close_ui(jalv);
 		break;
 	}
 

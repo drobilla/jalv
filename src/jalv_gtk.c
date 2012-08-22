@@ -641,3 +641,10 @@ jalv_open_ui(Jalv* jalv)
 	zix_sem_post(jalv->done);
 	return 0;
 }
+
+int
+jalv_close_ui(Jalv* jalv)
+{
+	gtk_main_quit();
+	return 0;
+}

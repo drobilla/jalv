@@ -91,3 +91,10 @@ jalv_open_ui(Jalv* jalv)
 
 	return 0;
 }
+
+int
+jalv_close_ui(Jalv* jalv)
+{
+	Gtk::Main::quit();
+	return 0;
+}

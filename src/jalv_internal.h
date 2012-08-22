@@ -198,6 +198,9 @@ jalv_native_ui_type(Jalv* jalv);
 int
 jalv_open_ui(Jalv* jalv);
 
+int
+jalv_close_ui(Jalv* jalv);
+
 void
 jalv_ui_instantiate(Jalv*       jalv,
                     const char* native_ui_type,
