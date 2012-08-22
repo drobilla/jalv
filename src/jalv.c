@@ -560,8 +560,7 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 	event->command_line = malloc(MAX_CMD_LEN);
 	snprintf(event->command_line, MAX_CMD_LEN, "%s -u %s -l \"${SESSION_DIR}\"",
 	         jalv->prog_name,
-	         event->client_uuid,
-	         event->session_dir);
+	         event->client_uuid);
 
 	switch (event->type) {
 	case JackSessionSave:
@@ -654,9 +653,6 @@ jalv_ui_write(SuilController controller,
               const void*    buffer)
 {
 	Jalv* const jalv = (Jalv*)controller;
-	if (!jalv->has_ui) {
-		return;
-	}
 
 	if (protocol != 0 && protocol != jalv->urids.atom_eventTransfer) {
 		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",

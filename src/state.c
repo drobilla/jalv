@@ -147,11 +147,16 @@ set_port_value(const char* port_symbol,
 		return;
 	}
 
-	// Send value to plugin
-	jalv_ui_write(jalv, port->index, sizeof(fvalue), 0, &fvalue);
+	if (jalv->play_state != JALV_RUNNING) {
+		// Set value on port struct directly
+		port->control = fvalue;
+	} else {
+		// Send value to running plugin
+		jalv_ui_write(jalv, port->index, sizeof(fvalue), 0, &fvalue);
+	}
 
-	// Update UI
 	if (jalv->has_ui) {
+		// Update UI
 		char buf[sizeof(ControlChange) + sizeof(fvalue)];
 		ControlChange* ev = (ControlChange*)buf;
 		ev->index    = port->index;
