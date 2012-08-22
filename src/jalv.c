@@ -558,7 +558,7 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 
 	#define MAX_CMD_LEN 256
 	event->command_line = malloc(MAX_CMD_LEN);
-	snprintf(event->command_line, MAX_CMD_LEN, "%s -u %s -l '%s'",
+	snprintf(event->command_line, MAX_CMD_LEN, "%s -u %s -l \"${SESSION_DIR}\"",
 	         jalv->prog_name,
 	         event->client_uuid,
 	         event->session_dir);
