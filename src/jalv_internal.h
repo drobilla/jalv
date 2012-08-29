@@ -92,7 +92,10 @@ typedef struct {
 
 typedef struct {
 	LV2_URID atom_Float;
+	LV2_URID atom_Int;
 	LV2_URID atom_eventTransfer;
+	LV2_URID bufsz_maxBlockLength;
+	LV2_URID bufsz_minBlockLength;
 	LV2_URID log_Trace;
 	LV2_URID midi_MidiEvent;
 	LV2_URID param_sampleRate;

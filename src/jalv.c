@@ -799,19 +799,22 @@ main(int argc, char** argv)
 	jalv.midi_event_id = uri_to_id(
 		&jalv, "http://lv2plug.in/ns/ext/event", LV2_MIDI__MidiEvent);
 
-	jalv.urids.atom_Float          = symap_map(jalv.symap, LV2_ATOM__Float);
-	jalv.urids.param_sampleRate    = symap_map(jalv.symap, LV2_PARAMETERS__sampleRate);
-	jalv.urids.atom_eventTransfer  = symap_map(jalv.symap, LV2_ATOM__eventTransfer);
-	jalv.urids.log_Trace           = symap_map(jalv.symap, LV2_LOG__Trace);
-	jalv.urids.midi_MidiEvent      = symap_map(jalv.symap, LV2_MIDI__MidiEvent);
-	jalv.urids.time_Position       = symap_map(jalv.symap, LV2_TIME__Position);
-	jalv.urids.time_bar            = symap_map(jalv.symap, LV2_TIME__bar);
-	jalv.urids.time_barBeat        = symap_map(jalv.symap, LV2_TIME__barBeat);
-	jalv.urids.time_beatUnit       = symap_map(jalv.symap, LV2_TIME__beatUnit);
-	jalv.urids.time_beatsPerBar    = symap_map(jalv.symap, LV2_TIME__beatsPerBar);
-	jalv.urids.time_beatsPerMinute = symap_map(jalv.symap, LV2_TIME__beatsPerMinute);
-	jalv.urids.time_frame          = symap_map(jalv.symap, LV2_TIME__frame);
-	jalv.urids.time_speed          = symap_map(jalv.symap, LV2_TIME__speed);
+	jalv.urids.atom_Float           = symap_map(jalv.symap, LV2_ATOM__Float);
+	jalv.urids.atom_Int             = symap_map(jalv.symap, LV2_ATOM__Int);
+	jalv.urids.atom_eventTransfer   = symap_map(jalv.symap, LV2_ATOM__eventTransfer);
+	jalv.urids.bufsz_maxBlockLength = symap_map(jalv.symap, LV2_BUF_SIZE__maxBlockLength);
+	jalv.urids.bufsz_minBlockLength = symap_map(jalv.symap, LV2_BUF_SIZE__minBlockLength);
+	jalv.urids.log_Trace            = symap_map(jalv.symap, LV2_LOG__Trace);
+	jalv.urids.midi_MidiEvent       = symap_map(jalv.symap, LV2_MIDI__MidiEvent);
+	jalv.urids.param_sampleRate     = symap_map(jalv.symap, LV2_PARAMETERS__sampleRate);
+	jalv.urids.time_Position        = symap_map(jalv.symap, LV2_TIME__Position);
+	jalv.urids.time_bar             = symap_map(jalv.symap, LV2_TIME__bar);
+	jalv.urids.time_barBeat         = symap_map(jalv.symap, LV2_TIME__barBeat);
+	jalv.urids.time_beatUnit        = symap_map(jalv.symap, LV2_TIME__beatUnit);
+	jalv.urids.time_beatsPerBar     = symap_map(jalv.symap, LV2_TIME__beatsPerBar);
+	jalv.urids.time_beatsPerMinute  = symap_map(jalv.symap, LV2_TIME__beatsPerMinute);
+	jalv.urids.time_frame           = symap_map(jalv.symap, LV2_TIME__frame);
+	jalv.urids.time_speed           = symap_map(jalv.symap, LV2_TIME__speed);
 
 #ifdef _WIN32
 	jalv.temp_dir = jalv_strdup("jalvXXXXXX");
@@ -987,11 +990,18 @@ main(int argc, char** argv)
 		jalv.opts.buffer_size = jalv.midi_buf_size * 4;
 	}
 
+	printf("Block length: %u frames\n", jalv.block_length);
 	/* Initialize options to pass to plugin */
 	const LV2_Atom_Float sample_rate_option =
 		{ { sizeof(float), jalv.urids.atom_Float }, jalv.sample_rate };
+	const LV2_Atom_Int min_length_option =
+		{ { sizeof(float), jalv.urids.atom_Int }, jalv.block_length };
+	const LV2_Atom_Int max_length_option =
+		{ { sizeof(float), jalv.urids.atom_Int }, jalv.block_length };
 	LV2_Options_Option options[] = {
 		{ jalv.urids.param_sampleRate, &sample_rate_option.atom },
+		{ jalv.urids.bufsz_minBlockLength, &min_length_option.atom },
+		{ jalv.urids.bufsz_maxBlockLength, &max_length_option.atom },
 		{ 0, NULL } };
 	
 	options_feature.data = &options;
