@@ -119,15 +119,13 @@ static LV2_Feature unmap_feature     = { LV2_URID__unmap, NULL };
 static LV2_Feature make_path_feature = { LV2_STATE__makePath, NULL };
 static LV2_Feature schedule_feature  = { LV2_WORKER__schedule, NULL };
 static LV2_Feature log_feature       = { LV2_LOG__log, NULL };
-static LV2_Feature buf_size_feature  = { LV2_BUF_SIZE__access, NULL };
 static LV2_Feature options_feature   = { LV2_OPTIONS__options, NULL };
 
-const LV2_Feature* features[10] = {
+const LV2_Feature* features[9] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
 	&make_path_feature,
 	&schedule_feature,
 	&log_feature,
-	&buf_size_feature,
 	&options_feature,
 	NULL
 };
@@ -719,44 +717,6 @@ jalv_emit_ui_events(Jalv* jalv)
 	return true;
 }
 
-static LV2_Buf_Size_Status
-jalv_get_sample_count(LV2_Buf_Size_Access_Handle handle,
-                      uint32_t*                  min,
-                      uint32_t*                  max,
-                      uint32_t*                  multiple_of,
-                      uint32_t*                  power_of)
-{
-	Jalv* jalv = (Jalv*)handle;
-	*min         = jalv->block_length;  // FIXME: Not guaranteed by Jack API
-	*max         = jalv->block_length;
-	*multiple_of = 1;
-	*power_of    = 0;
-	if (!(jalv->block_length & (jalv->block_length - 1))) {
-		// Block length is a power of 2
-		*power_of    = 2;
-		*multiple_of = 2;
-	}
-	return 0;
-}
-
-static LV2_Buf_Size_Status
-jalv_get_buf_size(LV2_Buf_Size_Access_Handle handle,
-                  uint32_t*                  buf_size,
-                  LV2_URID                   type,
-                  uint32_t                   sample_count)
-{
-	Jalv* jalv = (Jalv*)handle;
-	if (!jalv->buf_size_set) {
-		fprintf(stderr, "Buffer size requested but it is not yet known.\n");
-	}
-	if (type == jalv->forge.Sequence) {
-		*buf_size = jalv->midi_buf_size;
-		return LV2_BUF_SIZE_SUCCESS;
-	}
-	*buf_size = 0;
-	return LV2_BUF_SIZE_ERR_BAD_TYPE;
-}
-
 static void
 signal_handler(int ignored)
 {
@@ -804,6 +764,7 @@ main(int argc, char** argv)
 	jalv.urids.atom_eventTransfer   = symap_map(jalv.symap, LV2_ATOM__eventTransfer);
 	jalv.urids.bufsz_maxBlockLength = symap_map(jalv.symap, LV2_BUF_SIZE__maxBlockLength);
 	jalv.urids.bufsz_minBlockLength = symap_map(jalv.symap, LV2_BUF_SIZE__minBlockLength);
+	jalv.urids.bufsz_sequenceSize   = symap_map(jalv.symap, LV2_BUF_SIZE__sequenceSize);
 	jalv.urids.log_Trace            = symap_map(jalv.symap, LV2_LOG__Trace);
 	jalv.urids.midi_MidiEvent       = symap_map(jalv.symap, LV2_MIDI__MidiEvent);
 	jalv.urids.param_sampleRate     = symap_map(jalv.symap, LV2_PARAMETERS__sampleRate);
@@ -833,10 +794,6 @@ main(int argc, char** argv)
 
 	LV2_Log_Log log = { &jalv, jalv_printf, jalv_vprintf };
 	log_feature.data = &log;
-
-	LV2_Buf_Size_Access access = { &jalv, sizeof(LV2_Buf_Size_Access),
-	                               jalv_get_sample_count, jalv_get_buf_size };
-	buf_size_feature.data = &access;
 
 	zix_sem_init(&exit_sem, 0);
 	jalv.done = &exit_sem;
@@ -998,10 +955,13 @@ main(int argc, char** argv)
 		{ { sizeof(float), jalv.urids.atom_Int }, jalv.block_length };
 	const LV2_Atom_Int max_length_option =
 		{ { sizeof(float), jalv.urids.atom_Int }, jalv.block_length };
+	const LV2_Atom_Int seq_size_option =
+		{ { sizeof(float), jalv.urids.atom_Int }, jalv.midi_buf_size };
 	LV2_Options_Option options[] = {
 		{ jalv.urids.param_sampleRate, &sample_rate_option.atom },
 		{ jalv.urids.bufsz_minBlockLength, &min_length_option.atom },
 		{ jalv.urids.bufsz_maxBlockLength, &max_length_option.atom },
+		{ jalv.urids.bufsz_sequenceSize, &seq_size_option.atom },
 		{ 0, NULL } };
 	
 	options_feature.data = &options;
