@@ -100,6 +100,7 @@ int
 jalv_close_ui(Jalv* jalv)
 {
 	app->quit();
+	return 0;
 }
 
 }  // extern "C"
