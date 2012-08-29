@@ -935,6 +935,7 @@ main(int argc, char** argv)
 	jalv.midi_buf_size = 4096;
 	fprintf(stderr, "warning: No jack_port_type_get_buffer_size.\n");
 #endif
+	printf("Block length: %u frames\n", jalv.block_length);
 	printf("MIDI buffers: %zu bytes\n", jalv.midi_buf_size);
 
 	if (jalv.opts.buffer_size == 0) {
@@ -947,22 +948,18 @@ main(int argc, char** argv)
 		jalv.opts.buffer_size = jalv.midi_buf_size * 4;
 	}
 
-	printf("Block length: %u frames\n", jalv.block_length);
-	/* Initialize options to pass to plugin */
-	const LV2_Atom_Float sample_rate_option =
-		{ { sizeof(float), jalv.urids.atom_Float }, jalv.sample_rate };
-	const LV2_Atom_Int min_length_option =
-		{ { sizeof(float), jalv.urids.atom_Int }, jalv.block_length };
-	const LV2_Atom_Int max_length_option =
-		{ { sizeof(float), jalv.urids.atom_Int }, jalv.block_length };
-	const LV2_Atom_Int seq_size_option =
-		{ { sizeof(float), jalv.urids.atom_Int }, jalv.midi_buf_size };
-	LV2_Options_Option options[] = {
-		{ jalv.urids.param_sampleRate, &sample_rate_option.atom },
-		{ jalv.urids.bufsz_minBlockLength, &min_length_option.atom },
-		{ jalv.urids.bufsz_maxBlockLength, &max_length_option.atom },
-		{ jalv.urids.bufsz_sequenceSize, &seq_size_option.atom },
-		{ 0, NULL } };
+	/* Build options array to pass to plugin */
+	const LV2_Options_Option options[] = {
+		{ jalv.urids.param_sampleRate, sizeof(float), jalv.urids.atom_Float,
+		  &jalv.sample_rate },
+		{ jalv.urids.bufsz_minBlockLength, sizeof(int32_t), jalv.urids.atom_Int,
+		  &jalv.block_length },
+		{ jalv.urids.bufsz_maxBlockLength, sizeof(int32_t), jalv.urids.atom_Int,
+		  &jalv.block_length },
+		{ jalv.urids.bufsz_sequenceSize, sizeof(int32_t), jalv.urids.atom_Int,
+		  &jalv.midi_buf_size },
+		{ 0, 0, 0, NULL }
+	};
 	
 	options_feature.data = &options;
 
