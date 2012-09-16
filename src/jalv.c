@@ -950,15 +950,15 @@ main(int argc, char** argv)
 
 	/* Build options array to pass to plugin */
 	const LV2_Options_Option options[] = {
-		{ jalv.urids.param_sampleRate, sizeof(float), jalv.urids.atom_Float,
-		  &jalv.sample_rate },
-		{ jalv.urids.bufsz_minBlockLength, sizeof(int32_t), jalv.urids.atom_Int,
-		  &jalv.block_length },
-		{ jalv.urids.bufsz_maxBlockLength, sizeof(int32_t), jalv.urids.atom_Int,
-		  &jalv.block_length },
-		{ jalv.urids.bufsz_sequenceSize, sizeof(int32_t), jalv.urids.atom_Int,
-		  &jalv.midi_buf_size },
-		{ 0, 0, 0, NULL }
+		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.param_sampleRate,
+		  sizeof(float), jalv.urids.atom_Float, &jalv.sample_rate },
+		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_minBlockLength,
+		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.block_length },
+		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_maxBlockLength,
+		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.block_length },
+		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_sequenceSize,
+		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.midi_buf_size },
+		{ LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL }
 	};
 	
 	options_feature.data = &options;
