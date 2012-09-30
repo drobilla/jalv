@@ -121,14 +121,35 @@ static LV2_Feature schedule_feature  = { LV2_WORKER__schedule, NULL };
 static LV2_Feature log_feature       = { LV2_LOG__log, NULL };
 static LV2_Feature options_feature   = { LV2_OPTIONS__options, NULL };
 
-const LV2_Feature* features[9] = {
+/** These features have no data */
+static LV2_Feature buf_size_features[3] = {
+	{ LV2_BUF_SIZE__powerOf2BlockLength, NULL },
+	{ LV2_BUF_SIZE__fixedBlockLength, NULL },
+	{ LV2_BUF_SIZE__boundedBlockLength, NULL } };
+
+const LV2_Feature* features[12] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
 	&make_path_feature,
 	&schedule_feature,
 	&log_feature,
 	&options_feature,
+	&buf_size_features[0],
+	&buf_size_features[1],
+	&buf_size_features[2],
 	NULL
 };
+
+/** Return true iff Jalv supports the given feature. */
+static bool
+feature_is_supported(const char* uri)
+{
+	for (const LV2_Feature*const* f = features; *f; ++f) {
+		if (!strcmp(uri, (*f)->URI)) {
+			return true;
+		}
+	}
+	return false;
+}
 
 /** Abort and exit on error */
 static void
@@ -863,6 +884,17 @@ main(int argc, char** argv)
 		fprintf(stderr, "Failed to find plugin\n");
 		lilv_world_free(world);
 		return EXIT_FAILURE;
+	}
+
+	/* Check that any required features are supported */
+	LilvNodes* req_feats = lilv_plugin_get_required_features(jalv.plugin);
+	LILV_FOREACH(nodes, f, req_feats) {
+		const char* uri = lilv_node_as_uri(lilv_nodes_get(req_feats, f));
+		if (!feature_is_supported(uri)) {
+			fprintf(stderr, "Feature %s is not supported\n", uri);
+			lilv_world_free(world);
+			return EXIT_FAILURE;
+		}
 	}
 
 	/* Get a plugin UI */

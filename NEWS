@@ -6,6 +6,8 @@ jalv (9999) unstable;
   * Tolerate loading presets with port values that aren't xsd:decimal
   * Notify plugins of Jack transport changes by sending events (an atom:Blank
     with properties from the LV2 time extension)
+  * Refuse to instantiate plugins which require unsupported features
+  * Support LV2 buf-size extension (with all features)
   * Add Gtk3 UI
   * Port to Windows
   * Fix Jack Session support
