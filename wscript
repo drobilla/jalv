@@ -4,7 +4,7 @@ from waflib.extras import autowaf as autowaf
 import waflib.Options as Options
 
 # Version of this package (even if built as a child)
-JALV_VERSION = '1.0.0'
+JALV_VERSION = '1.2.0'
 
 # Variables for 'waf dist'
 APPNAME = 'jalv'
@@ -34,7 +34,7 @@ def configure(conf):
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.14.0', mandatory=True)
     autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',
-                      atleast_version='0.4.5', mandatory=True)
+                      atleast_version='0.5.0', mandatory=True)
     autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
                       atleast_version='0.6.0', mandatory=True)
     autowaf.check_pkg(conf, 'sratom-0', uselib_store='SRATOM',

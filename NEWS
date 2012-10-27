@@ -1,4 +1,4 @@
-jalv (9999) unstable;
+jalv (1.2.0) stable;
 
   * Tune UI update rate and ring size based on JACK rate and MIDI buffer size
     to handle the handle the maximum message rate the plugin can send.
@@ -9,10 +9,10 @@ jalv (9999) unstable;
   * Refuse to instantiate plugins which require unsupported features
   * Support LV2 buf-size extension (with all features)
   * Add Gtk3 UI
-  * Port to Windows
+  * Port to MinGW
   * Fix Jack Session support
 
- -- David Robillard <d@drobilla.net>
+ -- David Robillard <d@drobilla.net>  Sun, 14 Oct 2012 18:38:53 -0400
 
 jalv (1.0.0) stable;
 
