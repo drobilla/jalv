@@ -17,8 +17,9 @@
 #include "jalv_internal.h"
 
 #include <QApplication>
-#include <QPushButton>
 #include <QMainWindow>
+#include <QMenuBar>
+#include <QPushButton>
 #include <QTimer>
 
 static QApplication* app = NULL;
@@ -74,19 +75,29 @@ private:
 int
 jalv_open_ui(Jalv* jalv)
 {
+	QMainWindow* win         = new QMainWindow();
+	QMenu*       file_menu   = win->menuBar()->addMenu("&File");
+	QAction*     quit_action = new QAction("&Quit", win);
+
+	QObject::connect(quit_action, SIGNAL(triggered()), win, SLOT(close()));
+	quit_action->setShortcuts(QKeySequence::Quit);
+	quit_action->setStatusTip("Quit Jalv");
+	file_menu->addAction(quit_action);
+
 	if (jalv->ui) {
-		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), NULL);
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), win);
 	}
 
 	if (jalv->ui_instance) {
 		QWidget* widget = (QWidget*)suil_instance_get_widget(jalv->ui_instance);
-		widget->show();
+		win->setCentralWidget(widget);
 	} else {
 		QPushButton* button = new QPushButton("Close");
-		button->show();
+		win->setCentralWidget(button);
 		QObject::connect(button, SIGNAL(clicked()), app, SLOT(quit()));
 	}
 	app->connect(app, SIGNAL(lastWindowClosed()), app, SLOT(quit()));
+	win->show();
 
 	Timer* timer = new Timer(jalv);
 	timer->start(1000 / jalv->ui_update_hz);
