@@ -181,6 +181,7 @@ typedef struct {
 	jack_nframes_t     event_delta_t;  ///< Frames since last update sent to UI
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
 	jack_nframes_t     position;       ///< Transport position in frames
+	float              bpm;            ///< Transport tempo in beats per minute
 	bool               rolling;        ///< Transport speed (0=stop, 1=play)
 	bool               buf_size_set;   ///< True iff buffer size callback fired
 	bool               exit;           ///< True iff execution is finished

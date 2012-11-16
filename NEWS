@@ -1,8 +1,9 @@
 jalv (1.2.1) unstable;
 
+  * Send new time information to plugin when Jack tempo changes
   * Add menu bar and pass parent widget in Qt version for true UI embedding
 
- -- David Robillard <d@drobilla.net>  Tue, 13 Nov 2012 22:02:45 -0500
+ -- David Robillard <d@drobilla.net>  Thu, 15 Nov 2012 20:16:15 -0500
 
 jalv (1.2.0) stable;
 

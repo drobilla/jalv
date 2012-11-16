@@ -362,7 +362,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 	/* If transport state is not as expected, then something has changed */
 	const bool xport_changed = (rolling != jalv->rolling ||
-	                            pos.frame != jalv->position);
+	                            pos.frame != jalv->position ||
+	                            pos.beats_per_minute != jalv->bpm);
 
 	uint8_t   pos_buf[256];
 	LV2_Atom* lv2_pos = (LV2_Atom*)pos_buf;
@@ -401,6 +402,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 	/* Update transport state to expected values for next cycle */
 	jalv->position = rolling ? pos.frame + nframes : pos.frame;
+	jalv->bpm      = pos.beats_per_minute;
 	jalv->rolling  = rolling;
 
 	switch (jalv->play_state) {
@@ -753,6 +755,7 @@ main(int argc, char** argv)
 	jalv.block_length  = 4096;  // Should be set by jack_buffer_size_cb
 	jalv.midi_buf_size = 1024;  // Should be set by jack_buffer_size_cb
 	jalv.play_state    = JALV_PAUSED;
+	jalv.bpm           = 120.0f;
 
 	if (jalv_init(&argc, &argv, &jalv.opts)) {
 		return EXIT_FAILURE;
