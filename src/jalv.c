@@ -88,14 +88,22 @@ static LV2_URID
 map_uri(LV2_URID_Map_Handle handle,
         const char*         uri)
 {
-	return symap_map(((Jalv*)handle)->symap, uri);
+	Jalv* jalv = (Jalv*)handle;
+	zix_sem_wait(&jalv->symap_lock);
+	const LV2_URID id = symap_map(jalv->symap, uri);
+	zix_sem_post(&jalv->symap_lock);
+	return id;
 }
 
 static const char*
 unmap_uri(LV2_URID_Unmap_Handle handle,
           LV2_URID              urid)
 {
-	return symap_unmap(((Jalv*)handle)->symap, urid);
+	Jalv* jalv = (Jalv*)handle;
+	zix_sem_wait(&jalv->symap_lock);
+	const char* uri = symap_unmap(jalv->symap, urid);
+	zix_sem_post(&jalv->symap_lock);
+	return uri;
 }
 
 /**
@@ -106,7 +114,11 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
           const char*               map,
           const char*               uri)
 {
-	return symap_map(((Jalv*)callback_data)->symap, uri);
+	Jalv* jalv = (Jalv*)callback_data;
+	zix_sem_wait(&jalv->symap_lock);
+	const LV2_URID id = symap_map(jalv->symap, uri);
+	zix_sem_post(&jalv->symap_lock);
+	return id;
 }
 
 #define NS_EXT "http://lv2plug.in/ns/ext/"
@@ -677,7 +689,7 @@ jalv_ui_write(SuilController controller,
 
 	if (protocol != 0 && protocol != jalv->urids.atom_eventTransfer) {
 		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
-		        protocol, symap_unmap(jalv->symap, protocol));
+		        protocol, unmap_uri(jalv, protocol));
 		return;
 	}
 
@@ -766,6 +778,7 @@ main(int argc, char** argv)
 	}
 
 	jalv.symap = symap_new();
+	zix_sem_init(&jalv.symap_lock, 1);
 	uri_map.callback_data = &jalv;
 
 	jalv.map.handle  = &jalv;
@@ -1096,6 +1109,7 @@ main(int argc, char** argv)
 		lilv_node_free(*n);
 	}
 	symap_free(jalv.symap);
+	zix_sem_destroy(&jalv.symap_lock);
 	suil_host_free(jalv.ui_host);
 	sratom_free(jalv.sratom);
 	lilv_uis_free(jalv.uis);

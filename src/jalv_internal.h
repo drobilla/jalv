@@ -153,7 +153,8 @@ typedef struct {
 	LV2_URID_Map       map;            ///< URI => Int map
 	LV2_URID_Unmap     unmap;          ///< Int => URI map
 	Sratom*            sratom;         ///< Atom serialiser
-	Symap*             symap;          ///< Symbol (URI) map
+	Symap*             symap;          ///< URI map
+	ZixSem             symap_lock;     ///< Lock for URI map
 	jack_client_t*     jack_client;    ///< Jack client
 	jack_ringbuffer_t* ui_events;      ///< Port events from UI
 	jack_ringbuffer_t* plugin_events;  ///< Port events from plugin

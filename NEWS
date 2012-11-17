@@ -1,6 +1,7 @@
 jalv (1.2.1) unstable;
 
-  * Send new time information to plugin when Jack tempo changes
+  * Send time information to plugin when Jack tempo changes
+  * Make URI map thread-safe, fixing occasional crashes for plugins with UIs
   * Add menu bar and pass parent widget in Qt version for true UI embedding
 
  -- David Robillard <d@drobilla.net>  Thu, 15 Nov 2012 20:16:15 -0500
