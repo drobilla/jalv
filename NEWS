@@ -3,8 +3,9 @@ jalv (1.2.1) unstable;
   * Send time information to plugin when Jack tempo changes
   * Make URI map thread-safe, fixing occasional crashes for plugins with UIs
   * Add menu bar and pass parent widget in Qt version for true UI embedding
+  * Update to waf 1.7.8 and autowaf r90
 
- -- David Robillard <d@drobilla.net>  Thu, 15 Nov 2012 20:16:15 -0500
+ -- David Robillard <d@drobilla.net>  Sat, 22 Dec 2012 20:17:35 -0500
 
 jalv (1.2.0) stable;
 
