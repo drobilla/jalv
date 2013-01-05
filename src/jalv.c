@@ -394,9 +394,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			lv2_atom_forge_float(
 				forge, pos.beat - 1 + (pos.tick / pos.ticks_per_beat));
 			lv2_atom_forge_property_head(forge, jalv->urids.time_bar, 0);
-			lv2_atom_forge_float(forge, pos.bar - 1);
+			lv2_atom_forge_long(forge, pos.bar - 1);
 			lv2_atom_forge_property_head(forge, jalv->urids.time_beatUnit, 0);
-			lv2_atom_forge_float(forge, pos.beat_type);
+			lv2_atom_forge_int(forge, pos.beat_type);
 			lv2_atom_forge_property_head(forge, jalv->urids.time_beatsPerBar, 0);
 			lv2_atom_forge_float(forge, pos.beats_per_bar);
 			lv2_atom_forge_property_head(forge, jalv->urids.time_beatsPerMinute, 0);
