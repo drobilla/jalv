@@ -50,6 +50,7 @@
 #include "lv2/lv2plug.in/ns/ext/event/event.h"
 #include "lv2/lv2plug.in/ns/ext/options/options.h"
 #include "lv2/lv2plug.in/ns/ext/parameters/parameters.h"
+#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
@@ -194,9 +195,8 @@ create_port(Jalv*    jalv,
 	const LilvNode* symbol = lilv_port_get_symbol(jalv->plugin,
 	                                              port->lilv_port);
 
-	const bool optional = lilv_port_has_property(jalv->plugin,
-	                                             port->lilv_port,
-	                                             jalv->nodes.lv2_connectionOptional);
+	const bool optional = lilv_port_has_property(
+		jalv->plugin, port->lilv_port, jalv->nodes.lv2_connectionOptional);
 
 	/* Set the port flow (input or output) */
 	if (lilv_port_is_a(jalv->plugin, port->lilv_port, jalv->nodes.lv2_InputPort)) {
@@ -247,6 +247,12 @@ jalv_create_ports(Jalv* jalv)
 
 	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
 		create_port(jalv, i, default_values[i]);
+	}
+
+	const LilvPort* control_input = lilv_plugin_get_port_by_designation(
+		jalv->plugin, jalv->nodes.lv2_InputPort, jalv->nodes.lv2_control);
+	if (control_input) {
+		jalv->control_in = lilv_port_get_index(jalv->plugin, control_input);
 	}
 
 	free(default_values);
@@ -805,6 +811,9 @@ main(int argc, char** argv)
 	jalv.urids.log_Trace            = symap_map(jalv.symap, LV2_LOG__Trace);
 	jalv.urids.midi_MidiEvent       = symap_map(jalv.symap, LV2_MIDI__MidiEvent);
 	jalv.urids.param_sampleRate     = symap_map(jalv.symap, LV2_PARAMETERS__sampleRate);
+	jalv.urids.patch_Set            = symap_map(jalv.symap, LV2_PATCH__Set);
+	jalv.urids.patch_property       = symap_map(jalv.symap, LV2_PATCH__property);
+	jalv.urids.patch_value          = symap_map(jalv.symap, LV2_PATCH__value);
 	jalv.urids.time_Position        = symap_map(jalv.symap, LV2_TIME__Position);
 	jalv.urids.time_bar             = symap_map(jalv.symap, LV2_TIME__bar);
 	jalv.urids.time_barBeat         = symap_map(jalv.symap, LV2_TIME__barBeat);
@@ -857,6 +866,7 @@ main(int argc, char** argv)
 	jalv.nodes.lv2_InputPort          = lilv_new_uri(world, LV2_CORE__InputPort);
 	jalv.nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);
 	jalv.nodes.lv2_connectionOptional = lilv_new_uri(world, LV2_CORE__connectionOptional);
+	jalv.nodes.lv2_control            = lilv_new_uri(world, LV2_CORE__control);
 	jalv.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
 	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
 	jalv.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");

@@ -100,6 +100,9 @@ typedef struct {
 	LV2_URID log_Trace;
 	LV2_URID midi_MidiEvent;
 	LV2_URID param_sampleRate;
+	LV2_URID patch_Set;
+	LV2_URID patch_property;
+	LV2_URID patch_value;
 	LV2_URID time_Position;
 	LV2_URID time_bar;
 	LV2_URID time_barBeat;
@@ -120,6 +123,7 @@ typedef struct {
 	LilvNode* lv2_InputPort;
 	LilvNode* lv2_OutputPort;
 	LilvNode* lv2_connectionOptional;
+	LilvNode* lv2_control;
 	LilvNode* midi_MidiEvent;
 	LilvNode* pset_Preset;
 	LilvNode* rdfs_label;
@@ -175,6 +179,7 @@ typedef struct {
 	struct Port*       ports;          ///< Port array of size num_ports
 	uint32_t           block_length;   ///< Jack buffer size (block length)
 	size_t             midi_buf_size;  ///< Size of MIDI port buffers
+	uint32_t           control_in;     ///< Index of control input port
 	uint32_t           num_ports;      ///< Size of the two following arrays:
 	uint32_t           longest_sym;    ///< Longest port symbol
 	uint32_t           ui_update_hz;   ///< Frequency of UI updates

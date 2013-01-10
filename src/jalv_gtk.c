@@ -18,9 +18,15 @@
 
 #include <gtk/gtk.h>
 
+#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
 
 #include "jalv_internal.h"
+
+typedef struct {
+	Jalv*     jalv;
+	LilvNode* property;
+} PropertyRecord;
 
 static GtkWidget*
 new_box(gboolean horizontal, gint spacing)
@@ -322,6 +328,36 @@ toggle_changed(GtkToggleButton* button, gpointer data)
 	return FALSE;
 }
 
+static void
+file_changed(GtkFileChooserButton* widget,
+             gpointer              data)
+{
+	PropertyRecord* record   = (PropertyRecord*)data;
+	Jalv*           jalv     = record->jalv;
+	const char*     property = lilv_node_as_uri(record->property);
+	const char*     filename = gtk_file_chooser_get_filename(
+		GTK_FILE_CHOOSER(widget));
+
+	// Copy forge since it is used by process thread
+	LV2_Atom_Forge       forge = jalv->forge;
+	LV2_Atom_Forge_Frame frame;
+	uint8_t              buf[1024];
+	lv2_atom_forge_set_buffer(&forge, buf, sizeof(buf));
+
+	lv2_atom_forge_blank(&forge, &frame, 1, jalv->urids.patch_Set);
+	lv2_atom_forge_property_head(&forge, jalv->urids.patch_property, 0);
+	lv2_atom_forge_urid(&forge, jalv->map.map(jalv, property));
+	lv2_atom_forge_property_head(&forge, jalv->urids.patch_value, 0);
+	lv2_atom_forge_path(&forge, filename, strlen(filename));
+
+	const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);
+	jalv_ui_write(jalv,
+	              jalv->control_in,
+	              lv2_atom_total_size(atom),
+	              jalv->urids.atom_eventTransfer,
+	              atom);
+}
+
 static gchar*
 scale_format(GtkScale* scale, gdouble value, gpointer user_data)
 {
@@ -422,13 +458,48 @@ make_toggle(struct Port* port)
 }
 
 static GtkWidget*
+make_file_chooser(Jalv* jalv, const LilvNode* property)
+{
+	GtkWidget* button = gtk_file_chooser_button_new(
+		lilv_node_as_uri(property), GTK_FILE_CHOOSER_ACTION_OPEN);
+	PropertyRecord* record = (PropertyRecord*)malloc(sizeof(PropertyRecord));
+	record->jalv     = jalv;
+	record->property = lilv_node_duplicate(property);
+	g_signal_connect(
+		G_OBJECT(button), "file-set", G_CALLBACK(file_changed), record);
+	return button;
+}
+
+static void
+add_control_row(GtkWidget*  table,
+                int         row,
+                const char* name,
+                GtkWidget*  control)
+{
+	GtkWidget* label  = gtk_label_new(NULL);
+	gchar*     markup = g_markup_printf_escaped(
+		"<span font_weight=\"bold\">%s:</span>", name);
+	gtk_label_set_markup(GTK_LABEL(label), markup);
+	g_free(markup);
+	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+	gtk_table_attach(GTK_TABLE(table),
+	                 label,
+	                 0, 1, row, row + 1,
+	                 GTK_FILL, GTK_FILL | GTK_EXPAND, 15, 15);
+	gtk_table_attach(GTK_TABLE(table), control,
+	                 1, 2, row, row + 1,
+	                 GTK_FILL | GTK_EXPAND, 0, 0, 0);
+}
+
+static GtkWidget*
 build_control_widget(Jalv* jalv, GtkWidget* window)
 {
-	LilvNode*  lv2_sampleRate = lilv_new_uri(jalv->world, LV2_CORE__sampleRate);
-	LilvNode*  lv2_integer    = lilv_new_uri(jalv->world, LV2_CORE__integer);
-	LilvNode*  lv2_toggled    = lilv_new_uri(jalv->world, LV2_CORE__toggled);
 	LilvNode*  lv2_enum       = lilv_new_uri(jalv->world, LV2_CORE__enumeration);
+	LilvNode*  lv2_integer    = lilv_new_uri(jalv->world, LV2_CORE__integer);
 	LilvNode*  lv2_log        = lilv_new_uri(jalv->world, LV2_PORT_PROPS__logarithmic);
+	LilvNode*  lv2_sampleRate = lilv_new_uri(jalv->world, LV2_CORE__sampleRate);
+	LilvNode*  lv2_toggled    = lilv_new_uri(jalv->world, LV2_CORE__toggled);
+	LilvNode*  patch_writable = lilv_new_uri(jalv->world, LV2_PATCH__writable);
 	LilvNode*  rdfs_comment   = lilv_new_uri(jalv->world, LILV_NS_RDFS "comment");
 	GtkWidget* port_table     = gtk_table_new(jalv->num_ports, 2, false);
 	float*     mins           = (float*)calloc(jalv->num_ports, sizeof(float));
@@ -497,31 +568,38 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 		}
 		lilv_nodes_free(comments);
 
-		/* Add control table row */
-		GtkWidget* label  = gtk_label_new(NULL);
-		gchar*     markup = g_markup_printf_escaped(
-			"<span font_weight=\"bold\">%s:</span>",
-			lilv_node_as_string(name));
-		gtk_label_set_markup(GTK_LABEL(label), markup);
-		g_free(markup);
-		gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
-		gtk_table_attach(GTK_TABLE(port_table),
-		                 label,
-		                 0, 1, i, i + 1,
-		                 GTK_FILL, GTK_FILL | GTK_EXPAND, 15, 15);
-		gtk_table_attach(GTK_TABLE(port_table), control,
-		                 1, 2, i, i + 1,
-		                 GTK_FILL | GTK_EXPAND, 0, 0, 0);
+		add_control_row(port_table, i, lilv_node_as_string(name), control);
+
 		lilv_node_free(name);
 	}
 
+	LilvNodes* properties = lilv_world_find_nodes(
+		jalv->world,
+		lilv_plugin_get_uri(jalv->plugin),
+		patch_writable,
+		NULL);
+	LILV_FOREACH(nodes, p, properties) {
+		const LilvNode* property = lilv_nodes_get(properties, p);
+		LilvNode*       label    = lilv_nodes_get_first(
+			lilv_world_find_nodes(
+				jalv->world, property, jalv->nodes.rdfs_label, NULL));
+
+		GtkWidget* control = make_file_chooser(jalv, property);
+		add_control_row(
+			port_table, num_controls++,
+			label ? lilv_node_as_string(label) : lilv_node_as_uri(property),
+			control);
+	}
+	lilv_nodes_free(properties);
+
 	free(mins);
 	free(maxs);
+	lilv_node_free(rdfs_comment);
+	lilv_node_free(patch_writable);
+	lilv_node_free(lv2_toggled);
 	lilv_node_free(lv2_sampleRate);
 	lilv_node_free(lv2_integer);
-	lilv_node_free(lv2_toggled);
 	lilv_node_free(lv2_enum);
-	lilv_node_free(rdfs_comment);
 
 	if (num_controls > 0) {
 		gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
