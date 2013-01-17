@@ -922,6 +922,7 @@ main(int argc, char** argv)
 			return EXIT_FAILURE;
 		}
 	}
+	lilv_nodes_free(req_feats);
 
 	/* Get a plugin UI */
 	const char* native_ui_type_uri = jalv_native_ui_type(&jalv);
