@@ -732,11 +732,18 @@ jalv_emit_ui_events(Jalv* jalv)
 	ControlChange ev;
 	const size_t  space = jack_ringbuffer_read_space(jalv->plugin_events);
 	for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
+		// Read event header to get the size
 		jack_ringbuffer_read(jalv->plugin_events, (char*)&ev, sizeof(ev));
-		char buf[ev.size];
+
+		// Resize read buffer if necessary
+		jalv->ui_event_buf = realloc(jalv->ui_event_buf, ev.size);
+		void* const buf = jalv->ui_event_buf;
+
+		// Read event body
 		jack_ringbuffer_read(jalv->plugin_events, buf, ev.size);
 
 		if (jalv->opts.dump && ev.protocol == jalv->urids.atom_eventTransfer) {
+			// Dump event in Turtle to the console
 			SerdNode  s    = serd_node_from_string(SERD_BLANK, USTR("msg"));
 			SerdNode  p    = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
 			LV2_Atom* atom = (LV2_Atom*)buf;
@@ -1130,6 +1137,7 @@ main(int argc, char** argv)
 
 	remove(jalv.temp_dir);
 	free(jalv.temp_dir);
+	free(jalv.ui_event_buf);
 
 	return 0;
 }

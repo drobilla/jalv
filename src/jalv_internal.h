@@ -162,6 +162,7 @@ typedef struct {
 	jack_client_t*     jack_client;    ///< Jack client
 	jack_ringbuffer_t* ui_events;      ///< Port events from UI
 	jack_ringbuffer_t* plugin_events;  ///< Port events from plugin
+	void*              ui_event_buf;   ///< Buffer for reading UI port events
 	JalvWorker         worker;         ///< Worker thread implementation
 	ZixSem*            done;           ///< Exit semaphore
 	ZixSem             paused;         ///< Paused signal from process thread
