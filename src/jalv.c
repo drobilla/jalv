@@ -52,6 +52,7 @@
 #include "lv2/lv2plug.in/ns/ext/parameters/parameters.h"
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
+#include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
@@ -133,6 +134,7 @@ static LV2_Feature make_path_feature = { LV2_STATE__makePath, NULL };
 static LV2_Feature schedule_feature  = { LV2_WORKER__schedule, NULL };
 static LV2_Feature log_feature       = { LV2_LOG__log, NULL };
 static LV2_Feature options_feature   = { LV2_OPTIONS__options, NULL };
+static LV2_Feature def_state_feature = { LV2_STATE__loadDefaultState, NULL };
 
 /** These features have no data */
 static LV2_Feature buf_size_features[3] = {
@@ -140,12 +142,13 @@ static LV2_Feature buf_size_features[3] = {
 	{ LV2_BUF_SIZE__fixedBlockLength, NULL },
 	{ LV2_BUF_SIZE__boundedBlockLength, NULL } };
 
-const LV2_Feature* features[12] = {
+const LV2_Feature* features[13] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
 	&make_path_feature,
 	&schedule_feature,
 	&log_feature,
 	&options_feature,
+	&def_state_feature,
 	&buf_size_features[0],
 	&buf_size_features[1],
 	&buf_size_features[2],
@@ -877,6 +880,7 @@ main(int argc, char** argv)
 	jalv.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
 	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
 	jalv.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
+	jalv.nodes.state_state            = lilv_new_uri(world, LV2_STATE__state);
 	jalv.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
 	jalv.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
 	jalv.nodes.end                    = NULL;
@@ -930,6 +934,12 @@ main(int argc, char** argv)
 		}
 	}
 	lilv_nodes_free(req_feats);
+
+	if (!state) {
+		/* Not restoring state, load the plugin as a preset to get default */
+		state = lilv_state_new_from_world(
+			jalv.world, &jalv.map, lilv_plugin_get_uri(jalv.plugin));
+	}
 
 	/* Get a plugin UI */
 	const char* native_ui_type_uri = jalv_native_ui_type(&jalv);
