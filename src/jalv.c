@@ -880,7 +880,6 @@ main(int argc, char** argv)
 	jalv.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
 	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
 	jalv.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
-	jalv.nodes.state_state            = lilv_new_uri(world, LV2_STATE__state);
 	jalv.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
 	jalv.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
 	jalv.nodes.end                    = NULL;

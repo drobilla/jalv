@@ -127,7 +127,6 @@ typedef struct {
 	LilvNode* midi_MidiEvent;
 	LilvNode* pset_Preset;
 	LilvNode* rdfs_label;
-	LilvNode* state_state;
 	LilvNode* work_interface;
 	LilvNode* work_schedule;
 	LilvNode* end;  ///< NULL terminator for easy freeing of entire structure
