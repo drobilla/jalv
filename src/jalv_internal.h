@@ -124,7 +124,9 @@ typedef struct {
 	LilvNode* lv2_OutputPort;
 	LilvNode* lv2_connectionOptional;
 	LilvNode* lv2_control;
+	LilvNode* lv2_name;
 	LilvNode* midi_MidiEvent;
+	LilvNode* pg_group;
 	LilvNode* pset_Preset;
 	LilvNode* rdfs_label;
 	LilvNode* work_interface;

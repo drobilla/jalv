@@ -1,12 +1,15 @@
 jalv (1.2.1) unstable;
 
   * Send time information to plugin when Jack tempo changes
+  * Group controls under headings if port group information is available
+  * Add spinbuttons for precisely setting control values
+  * Use a more efficient dense layout for controls
   * Make URI map thread-safe, fixing occasional crashes for plugins with UIs
   * Add menu bar and pass parent widget in Qt version for true UI embedding
   * Support state:loadDefaultState
   * Update to waf 1.7.8 and autowaf r90
 
- -- David Robillard <d@drobilla.net>  Sat, 26 Jan 2013 16:18:18 -0500
+ -- David Robillard <d@drobilla.net>  Sun, 10 Feb 2013 21:32:39 -0500
 
 jalv (1.2.0) stable;
 

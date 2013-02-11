@@ -51,6 +51,7 @@
 #include "lv2/lv2plug.in/ns/ext/options/options.h"
 #include "lv2/lv2plug.in/ns/ext/parameters/parameters.h"
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
+#include "lv2/lv2plug.in/ns/ext/port-groups/port-groups.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
@@ -877,7 +878,9 @@ main(int argc, char** argv)
 	jalv.nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);
 	jalv.nodes.lv2_connectionOptional = lilv_new_uri(world, LV2_CORE__connectionOptional);
 	jalv.nodes.lv2_control            = lilv_new_uri(world, LV2_CORE__control);
+	jalv.nodes.lv2_name               = lilv_new_uri(world, LV2_CORE__name);
 	jalv.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
+	jalv.nodes.pg_group               = lilv_new_uri(world, LV2_PORT_GROUPS__group);
 	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
 	jalv.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
 	jalv.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
