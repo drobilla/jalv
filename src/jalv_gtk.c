@@ -801,6 +801,7 @@ jalv_open_ui(Jalv* jalv)
 		gtk_container_add(GTK_CONTAINER(alignment), widget);
 		gtk_window_set_resizable(GTK_WINDOW(window), jalv_ui_is_resizable(jalv));
 		gtk_widget_show_all(vbox);
+		gtk_widget_grab_focus(widget);
 	} else {
 		GtkWidget* controls   = build_control_widget(jalv, window);
 		GtkWidget* scroll_win = gtk_scrolled_window_new(NULL, NULL);
