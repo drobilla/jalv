@@ -1,4 +1,4 @@
-jalv (1.2.1) unstable;
+jalv (1.4.0) stable;
 
   * Send time information to plugin when Jack tempo changes
   * Group controls under headings if port group information is available
@@ -9,7 +9,7 @@ jalv (1.2.1) unstable;
   * Support state:loadDefaultState
   * Update to waf 1.7.8 and autowaf r90
 
- -- David Robillard <d@drobilla.net>  Sun, 10 Feb 2013 21:32:39 -0500
+ -- David Robillard <d@drobilla.net>  Fri, 22 Feb 2013 22:35:22 -0500
 
 jalv (1.2.0) stable;
 
