@@ -34,11 +34,13 @@ def configure(conf):
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.15.1', mandatory=True)
     autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',
-                      atleast_version='0.5.0', mandatory=True)
+                      atleast_version='0.14.0', mandatory=True)
+    autowaf.check_pkg(conf, 'sord-0', uselib_store='SORD',
+                      atleast_version='0.12.0', mandatory=True)
     autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
                       atleast_version='0.6.0', mandatory=True)
     autowaf.check_pkg(conf, 'sratom-0', uselib_store='SRATOM',
-                      atleast_version='0.2.0', mandatory=True)
+                      atleast_version='0.4.0', mandatory=True)
     autowaf.check_pkg(conf, 'jack', uselib_store='JACK',
                       atleast_version='0.120.0', mandatory=True)
     autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
@@ -73,7 +75,7 @@ def configure(conf):
     print('')
 
 def build(bld):
-    libs = 'LILV SUIL JACK SERD SRATOM LV2'
+    libs = 'LILV SUIL JACK SERD SORD SRATOM LV2'
 
     source = 'src/jalv.c src/symap.c src/state.c src/lv2_evbuf.c src/worker.c src/log.c'
 
