@@ -56,7 +56,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 	int a = 1;
 	for (; a < *argc && (*argv)[a][0] == '-'; ++a) {
 		if ((*argv)[a][1] == 'h') {
-			return print_usage((*argv)[0], false);
+			return print_usage((*argv)[0], true);
 		} else if ((*argv)[a][1] == 'u') {
 			if (++a == *argc) {
 				fprintf(stderr, "Missing argument for -u\n");
