@@ -1041,8 +1041,14 @@ main(int argc, char** argv)
 	
 	options_feature.data = &options;
 
-	/* Calculate theoretical UI update frequency. */
-	jalv.ui_update_hz = (double)jalv.sample_rate / jalv.midi_buf_size * 2.0;
+	if (!jalv.opts.update_rate) {
+		/* Calculate theoretical UI update frequency. */
+		jalv.ui_update_hz = (double)jalv.sample_rate / jalv.midi_buf_size * 2.0;
+		jalv.ui_update_hz = MAX(25, jalv.ui_update_hz);
+	} else {
+		jalv.ui_update_hz = jalv.opts.update_rate;
+		jalv.ui_update_hz = MAX(1, jalv.ui_update_hz);
+	}
 
 	/* The UI can only go so fast, clamp to reasonable limits */
 	jalv.ui_update_hz     = MIN(60, jalv.ui_update_hz);

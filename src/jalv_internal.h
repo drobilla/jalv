@@ -86,6 +86,7 @@ typedef struct {
 	char*    uuid;
 	char*    load;
 	uint32_t buffer_size;
+	uint32_t update_rate;
 	bool     dump;
 	bool     generic_ui;
 } JalvOptions;

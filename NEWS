@@ -1,6 +1,7 @@
 jalv (1.4.1) unstable;
 
   * Fix crash when running "jalv" with bad command line arguments
+  * Add command-line option to control UI update frequency
 
  -- David Robillard <d@drobilla.net>  Sun, 24 Mar 2013 18:18:08 -0400
 

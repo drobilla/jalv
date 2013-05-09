@@ -91,6 +91,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "Use Jalv generic UI and not the plugin UI", NULL},
 		{ "buffer-size", 'b', 0, G_OPTION_ARG_INT, &opts->buffer_size,
 		  "Buffer size for plugin <=> UI communication", "SIZE"},
+		{ "update-frequency", 'r', 0, G_OPTION_ARG_INT, &opts->update_rate,
+		  "UI update frequency", NULL},
 		{ 0, 0, 0, 0, 0, 0, 0 } };
 	GError* error = NULL;
 	const int err = gtk_init_with_args(
