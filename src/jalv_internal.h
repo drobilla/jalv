@@ -86,7 +86,7 @@ typedef struct {
 	char*    uuid;
 	char*    load;
 	uint32_t buffer_size;
-	uint32_t update_rate;
+	double   update_rate;
 	bool     dump;
 	bool     generic_ui;
 } JalvOptions;
@@ -112,6 +112,7 @@ typedef struct {
 	LV2_URID time_beatsPerMinute;
 	LV2_URID time_frame;
 	LV2_URID time_speed;
+	LV2_URID ui_updateRate;
 } JalvURIDs;
 
 typedef struct {
@@ -186,7 +187,7 @@ typedef struct {
 	uint32_t           control_in;     ///< Index of control input port
 	uint32_t           num_ports;      ///< Size of the two following arrays:
 	uint32_t           longest_sym;    ///< Longest port symbol
-	uint32_t           ui_update_hz;   ///< Frequency of UI updates
+	float              ui_update_hz;   ///< Frequency of UI updates
 	jack_nframes_t     sample_rate;    ///< Sample rate
 	jack_nframes_t     event_delta_t;  ///< Frames since last update sent to UI
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context

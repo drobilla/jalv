@@ -833,6 +833,7 @@ main(int argc, char** argv)
 	jalv.urids.time_beatsPerMinute  = symap_map(jalv.symap, LV2_TIME__beatsPerMinute);
 	jalv.urids.time_frame           = symap_map(jalv.symap, LV2_TIME__frame);
 	jalv.urids.time_speed           = symap_map(jalv.symap, LV2_TIME__speed);
+	jalv.urids.ui_updateRate        = symap_map(jalv.symap, LV2_UI__updateRate);
 
 #ifdef _WIN32
 	jalv.temp_dir = jalv_strdup("jalvXXXXXX");
@@ -1026,6 +1027,22 @@ main(int argc, char** argv)
 		jalv.opts.buffer_size = jalv.midi_buf_size * 4;
 	}
 
+	if (jalv.opts.update_rate == 0.0) {
+		/* Calculate a reasonable UI update frequency. */
+		jalv.ui_update_hz = (float)jalv.sample_rate / jalv.midi_buf_size * 2.0f;
+		jalv.ui_update_hz = MAX(25.0f, jalv.ui_update_hz);
+	} else {
+		/* Use user-specified UI update rate. */
+		jalv.ui_update_hz = jalv.opts.update_rate;
+		jalv.ui_update_hz = MAX(1.0f, jalv.ui_update_hz);
+	}
+
+	/* The UI can only go so fast, clamp to reasonable limits */
+	jalv.ui_update_hz     = MIN(60, jalv.ui_update_hz);
+	jalv.opts.buffer_size = MAX(4096, jalv.opts.buffer_size);
+	fprintf(stderr, "Comm buffers: %d bytes\n", jalv.opts.buffer_size);
+	fprintf(stderr, "Update rate:  %.01f Hz\n", jalv.ui_update_hz);
+
 	/* Build options array to pass to plugin */
 	const LV2_Options_Option options[] = {
 		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.param_sampleRate,
@@ -1036,25 +1053,12 @@ main(int argc, char** argv)
 		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.block_length },
 		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_sequenceSize,
 		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.midi_buf_size },
+		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.ui_updateRate,
+		  sizeof(float), jalv.urids.atom_Float, &jalv.ui_update_hz },
 		{ LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL }
 	};
 	
 	options_feature.data = &options;
-
-	if (!jalv.opts.update_rate) {
-		/* Calculate theoretical UI update frequency. */
-		jalv.ui_update_hz = (double)jalv.sample_rate / jalv.midi_buf_size * 2.0;
-		jalv.ui_update_hz = MAX(25, jalv.ui_update_hz);
-	} else {
-		jalv.ui_update_hz = jalv.opts.update_rate;
-		jalv.ui_update_hz = MAX(1, jalv.ui_update_hz);
-	}
-
-	/* The UI can only go so fast, clamp to reasonable limits */
-	jalv.ui_update_hz     = MIN(60, jalv.ui_update_hz);
-	jalv.opts.buffer_size = MAX(4096, jalv.opts.buffer_size);
-	fprintf(stderr, "Comm buffers: %d bytes\n", jalv.opts.buffer_size);
-	fprintf(stderr, "Update rate:  %d Hz\n", jalv.ui_update_hz);
 
 	/* Create Plugin <=> UI communication buffers */
 	jalv.ui_events     = jack_ringbuffer_create(jalv.opts.buffer_size);
