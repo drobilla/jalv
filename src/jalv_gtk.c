@@ -420,18 +420,22 @@ make_combo(struct Port* port, GHashTable* points)
 	GList*        list       = g_hash_table_get_keys(points);
 	GtkListStore* list_store = gtk_list_store_new(
 		2, G_TYPE_DOUBLE, G_TYPE_STRING);
-	for (GList* cur = g_list_sort(list, dcmp); cur; cur = cur->next) {
+	gint active = -1, count = 0;
+	for (GList* cur = g_list_sort(list, dcmp); cur; cur = cur->next, ++count) {
 		GtkTreeIter iter;
 		gtk_list_store_append(list_store, &iter);
 		gtk_list_store_set(list_store, &iter,
 		                   0, *(double*)cur->data,
 		                   1, g_hash_table_lookup(points, cur->data),
 		                   -1);
+		if (fabs(port->control - *(double*)cur->data) < FLT_EPSILON) {
+			active = count;
+		}
 	}
 	g_list_free(list);
 
 	GtkWidget* combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(list_store));
-	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), lrintf(port->control));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), active);
 	g_object_unref(list_store);
 
 	GtkCellRenderer* cell = gtk_cell_renderer_text_new();
