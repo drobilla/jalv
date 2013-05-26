@@ -405,6 +405,14 @@ dcmp(gconstpointer a, gconstpointer b)
 	return y < z ? -1 : z < y ? 1 : 0;
 }
 
+static gint
+drcmp(gconstpointer a, gconstpointer b)
+{
+	double y = *(double*)a;
+	double z = *(double*)b;
+	return y < z ? 1 : z < y ? -1 : 0;
+}
+
 static Controller*
 make_controller(GtkSpinButton* spin, GtkWidget* control)
 {
@@ -449,12 +457,11 @@ make_combo(struct Port* port, GHashTable* points)
 }
 
 static void
-add_mark(void* key, void* value, void* scale)
+add_mark(gdouble key, const gchar* value, void* scale)
 {
 	gchar* str = g_markup_printf_escaped("<span font_size=\"small\">%s</span>",
-	                                     (const char*)value);
-	gtk_scale_add_mark(GTK_SCALE(scale), *(double*)key, GTK_POS_TOP, str);
-	g_free(str);
+	                                     value);
+	gtk_scale_add_mark(GTK_SCALE(scale), key, GTK_POS_TOP, str);
 }
 
 static Controller*
@@ -490,7 +497,12 @@ make_slider(struct Port* port, GHashTable* points,
 	gtk_range_set_value(GTK_RANGE(scale), port->control);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin), port->control);
 	if (points) {
-		g_hash_table_foreach(points, add_mark, scale);
+		GList* list = g_hash_table_get_keys(points);
+		for (GList* cur = g_list_sort(list, drcmp); cur; cur = cur->next) {
+			add_mark(*(gdouble*)cur->data,
+			         g_hash_table_lookup(points, cur->data),
+			         scale);
+		}
 	}
 
 	g_signal_connect(
