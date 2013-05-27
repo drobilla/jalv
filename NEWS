@@ -2,11 +2,12 @@ jalv (1.4.1) unstable;
 
   * Fix crash when running "jalv" with bad command line arguments
   * Add command-line option to control UI update frequency
+  * Support rsz:minimumSize for atom and event ports
   * Fix default setting for non-sequential enumeration ports
     (patch from Robin Gareus)
   * Work around Gtk bug for labels on sliders (patch from Robin Gareus)
 
- -- David Robillard <d@drobilla.net>  Sun, 26 May 2013 15:36:05 -0400
+ -- David Robillard <d@drobilla.net>  Sun, 26 May 2013 21:25:21 -0400
 
 jalv (1.4.0) stable;
 

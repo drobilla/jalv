@@ -179,7 +179,7 @@ die(const char* msg)
 /**
    Create a port structure from data description.  This is called before plugin
    and Jack instantiation.  The remaining instance-specific setup
-   (e.g. buffers) is done later in expose_port().
+   (e.g. buffers) is done later in activate_port().
 */
 static void
 create_port(Jalv*    jalv,
@@ -191,6 +191,7 @@ create_port(Jalv*    jalv,
 	port->lilv_port = lilv_plugin_get_port_by_index(jalv->plugin, port_index);
 	port->jack_port = NULL;
 	port->evbuf     = NULL;
+	port->buf_size  = 0;
 	port->index     = port_index;
 	port->control   = 0.0f;
 	port->flow      = FLOW_UNKNOWN;
@@ -230,6 +231,13 @@ create_port(Jalv*    jalv,
 	} else if (!optional) {
 		die("Mandatory port has unknown data type");
 	}
+
+	LilvNode* min_size = lilv_port_get(
+		jalv->plugin, port->lilv_port, jalv->nodes.rsz_minimumSize);
+	if (min_size && lilv_node_is_int(min_size)) {
+		port->buf_size = lilv_node_as_int(min_size);
+	}
+	lilv_node_free(min_size);
 
 	const size_t sym_len = strlen(lilv_node_as_string(symbol));
 	if (sym_len > jalv->longest_sym) {
@@ -273,8 +281,11 @@ jalv_allocate_port_buffers(Jalv* jalv)
 		switch (port->type) {
 		case TYPE_EVENT:
 			lv2_evbuf_free(port->evbuf);
+			const size_t buf_size = (port->buf_size > 0)
+				? port->buf_size
+				: jalv->midi_buf_size;
 			port->evbuf = lv2_evbuf_new(
-				jalv->midi_buf_size,
+				buf_size,
 				port->old_api ? LV2_EVBUF_EVENT : LV2_EVBUF_ATOM,
 				jalv->map.map(jalv->map.handle,
 				              lilv_node_as_string(jalv->nodes.atom_Chunk)),
@@ -884,6 +895,7 @@ main(int argc, char** argv)
 	jalv.nodes.pg_group               = lilv_new_uri(world, LV2_PORT_GROUPS__group);
 	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
 	jalv.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
+	jalv.nodes.rsz_minimumSize        = lilv_new_uri(world, LV2_RESIZE_PORT__minimumSize);
 	jalv.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
 	jalv.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
 	jalv.nodes.end                    = NULL;

@@ -31,6 +31,7 @@
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/log/log.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
+#include "lv2/lv2plug.in/ns/ext/resize-port/resize-port.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/worker/worker.h"
@@ -67,6 +68,7 @@ struct Port {
 	jack_port_t*    jack_port;  ///< For audio/MIDI ports, otherwise NULL
 	LV2_Evbuf*      evbuf;      ///< For MIDI ports, otherwise NULL
 	void*           widget;     ///< Control widget, if applicable
+	size_t          buf_size;   ///< Custom buffer size, or 0
 	uint32_t        index;      ///< Port index
 	float           control;    ///< For control ports, otherwise 0.0f
 	bool            old_api;    ///< True for event, false for atom
@@ -131,6 +133,7 @@ typedef struct {
 	LilvNode* pg_group;
 	LilvNode* pset_Preset;
 	LilvNode* rdfs_label;
+	LilvNode* rsz_minimumSize;
 	LilvNode* work_interface;
 	LilvNode* work_schedule;
 	LilvNode* end;  ///< NULL terminator for easy freeing of entire structure
