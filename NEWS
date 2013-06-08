@@ -2,6 +2,7 @@ jalv (1.4.1) unstable;
 
   * Fix crash when running "jalv" with bad command line arguments
   * Fix potential crash with UIs and debug printing
+  * Nicer printing of atom messages with -d
   * Add command-line option to control UI update frequency
   * Support rsz:minimumSize for atom and event ports
   * Fix default setting for non-sequential enumeration ports

@@ -721,12 +721,9 @@ jalv_ui_write(SuilController controller,
 	}
 
 	if (jalv->opts.dump && protocol == jalv->urids.atom_eventTransfer) {
-		SerdNode s = serd_node_from_string(SERD_BLANK, USTR("msg"));
-		SerdNode p = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
-
 		const LV2_Atom* atom = (const LV2_Atom*)buffer;
 		char*           str  = sratom_to_turtle(
-			jalv->sratom, &jalv->unmap, "jalv:", &s, &p,
+			jalv->sratom, &jalv->unmap, "jalv:", NULL, NULL,
 			atom->type, atom->size, LV2_ATOM_BODY(atom));
 		printf("\n## UI => Plugin (%u bytes) ##\n%s\n", atom->size, str);
 		free(str);
@@ -761,11 +758,9 @@ jalv_emit_ui_events(Jalv* jalv)
 
 		if (jalv->opts.dump && ev.protocol == jalv->urids.atom_eventTransfer) {
 			// Dump event in Turtle to the console
-			SerdNode  s    = serd_node_from_string(SERD_BLANK, USTR("msg"));
-			SerdNode  p    = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
 			LV2_Atom* atom = (LV2_Atom*)buf;
 			char*     str  = sratom_to_turtle(
-				jalv->ui_sratom, &jalv->unmap, "jalv:", &s, &p,
+				jalv->ui_sratom, &jalv->unmap, "jalv:", NULL, NULL,
 				atom->type, atom->size, LV2_ATOM_BODY(atom));
 			printf("\n## Plugin => UI (%u bytes) ##\n%s\n", atom->size, str);
 			free(str);
