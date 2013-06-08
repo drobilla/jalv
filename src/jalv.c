@@ -85,6 +85,13 @@
 #    define REALTIME
 #endif
 
+/* Size factor for UI ring buffers.  The ring size is a few times the size of
+   an event output to give the UI a chance to keep up.  Experiments with Ingen,
+   which can highly saturate its event output, led me to this value.  It
+   really ought to be enough for anybody(TM).
+*/
+#define N_BUFFER_CYCLES 16
+
 ZixSem exit_sem;  /**< Exit semaphore */
 
 static LV2_URID
@@ -236,6 +243,8 @@ create_port(Jalv*    jalv,
 		jalv->plugin, port->lilv_port, jalv->nodes.rsz_minimumSize);
 	if (min_size && lilv_node_is_int(min_size)) {
 		port->buf_size = lilv_node_as_int(min_size);
+		jalv->opts.buffer_size = MAX(
+			jalv->opts.buffer_size, port->buf_size * N_BUFFER_CYCLES);
 	}
 	lilv_node_free(min_size);
 
@@ -1034,7 +1043,7 @@ main(int argc, char** argv)
 		   should be able to keep up with 4 cycles, and tests show this works
 		   for me, but this value might need increasing to avoid overflows.
 		*/
-		jalv.opts.buffer_size = jalv.midi_buf_size * 4;
+		jalv.opts.buffer_size = jalv.midi_buf_size * N_BUFFER_CYCLES;
 	}
 
 	if (jalv.opts.update_rate == 0.0) {
