@@ -746,7 +746,9 @@ jalv_emit_ui_events(Jalv* jalv)
 {
 	ControlChange ev;
 	const size_t  space = jack_ringbuffer_read_space(jalv->plugin_events);
-	for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
+	for (size_t i = 0;
+	     i + sizeof(ev) + sizeof(float) <= space;
+	     i += sizeof(ev) + ev.size) {
 		// Read event header to get the size
 		jack_ringbuffer_read(jalv->plugin_events, (char*)&ev, sizeof(ev));
 
