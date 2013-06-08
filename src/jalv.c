@@ -763,7 +763,7 @@ jalv_emit_ui_events(Jalv* jalv)
 			SerdNode  p    = serd_node_from_string(SERD_URI, USTR(NS_RDF "value"));
 			LV2_Atom* atom = (LV2_Atom*)buf;
 			char*     str  = sratom_to_turtle(
-				jalv->sratom, &jalv->unmap, "jalv:", &s, &p,
+				jalv->ui_sratom, &jalv->unmap, "jalv:", &s, &p,
 				atom->type, atom->size, LV2_ATOM_BODY(atom));
 			printf("\n## Plugin => UI (%u bytes) ##\n%s\n", atom->size, str);
 			free(str);
@@ -819,7 +819,8 @@ main(int argc, char** argv)
 
 	lv2_atom_forge_init(&jalv.forge, &jalv.map);
 
-	jalv.sratom = sratom_new(&jalv.map);
+	jalv.sratom    = sratom_new(&jalv.map);
+	jalv.ui_sratom = sratom_new(&jalv.map);
 
 	jalv.midi_event_id = uri_to_id(
 		&jalv, "http://lv2plug.in/ns/ext/event", LV2_MIDI__MidiEvent);
@@ -1164,6 +1165,7 @@ main(int argc, char** argv)
 	zix_sem_destroy(&jalv.symap_lock);
 	suil_host_free(jalv.ui_host);
 	sratom_free(jalv.sratom);
+	sratom_free(jalv.ui_sratom);
 	lilv_uis_free(jalv.uis);
 	lilv_world_free(world);
 

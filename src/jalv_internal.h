@@ -164,6 +164,7 @@ typedef struct {
 	LV2_URID_Map       map;            ///< URI => Int map
 	LV2_URID_Unmap     unmap;          ///< Int => URI map
 	Sratom*            sratom;         ///< Atom serialiser
+	Sratom*            ui_sratom;      ///< Atom serialiser for UI thread
 	Symap*             symap;          ///< URI map
 	ZixSem             symap_lock;     ///< Lock for URI map
 	jack_client_t*     jack_client;    ///< Jack client
