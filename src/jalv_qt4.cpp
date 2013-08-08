@@ -83,6 +83,7 @@ jalv_open_ui(Jalv* jalv)
 	quit_action->setShortcuts(QKeySequence::Quit);
 	quit_action->setStatusTip("Quit Jalv");
 	file_menu->addAction(quit_action);
+	jalv->has_ui = TRUE;
 
 	if (jalv->ui) {
 		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), win);
