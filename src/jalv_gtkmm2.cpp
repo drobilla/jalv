@@ -61,6 +61,7 @@ int
 jalv_open_ui(Jalv* jalv)
 {
 	Gtk::Window* window = new Gtk::Window();
+	jalv->has_ui = true;
 
 	if (jalv->ui) {
 		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), NULL);
