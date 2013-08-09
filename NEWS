@@ -1,4 +1,4 @@
-jalv (1.4.1) unstable;
+jalv (1.4.2) stable;
 
   * Fix crash when running "jalv" with bad command line arguments
   * Fix potential crash with UIs and debug printing
@@ -9,8 +9,9 @@ jalv (1.4.1) unstable;
   * Fix default setting for non-sequential enumeration ports
     (patch from Robin Gareus)
   * Work around Gtk bug for labels on sliders (patch from Robin Gareus)
+  * Upgrade to waf 1.7.11
 
- -- David Robillard <d@drobilla.net>  Thu, 08 Aug 2013 15:44:21 -0400
+ -- David Robillard <d@drobilla.net>  Fri, 09 Aug 2013 10:40:20 -0400
 
 jalv (1.4.0) stable;
 
