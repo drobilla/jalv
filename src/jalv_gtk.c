@@ -87,6 +87,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "Load state from save directory", "DIR" },
 		{ "dump", 'd', 0, G_OPTION_ARG_NONE, &opts->dump,
 		  "Dump plugin <=> UI communication", NULL },
+		{ "show-hidden", 's', 0, G_OPTION_ARG_NONE, &opts->show_hidden,
+		  "Show controls for ports with notOnGUI property on generic UI", NULL },
 		{ "generic-ui", 'g', 0, G_OPTION_ARG_NONE, &opts->generic_ui,
 		  "Use Jalv generic UI and not the plugin UI", NULL},
 		{ "buffer-size", 'b', 0, G_OPTION_ARG_INT, &opts->buffer_size,
@@ -608,6 +610,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	LilvNode*   lv2_toggled     = lilv_new_uri(world, LV2_CORE__toggled);
 	LilvNode*   patch_writable  = lilv_new_uri(world, LV2_PATCH__writable);
 	LilvNode*   rdfs_comment    = lilv_new_uri(world, LILV_NS_RDFS "comment");
+	LilvNode*   pprop_notOnGUI  = lilv_new_uri(world, LV2_PORT_PROPS__notOnGUI);
 	GtkWidget*  port_table      = gtk_table_new(jalv->num_ports, 3, false);
 
 	/* Get the min and max of all ports (or NaN if unavailable) */
@@ -629,6 +632,12 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	int       n_rows     = 0;
 	for (unsigned i = 0; i < control_ports->len; ++i) {
 		const LilvPort* port  = g_array_index(control_ports, LilvPort*, i);
+
+		if (!jalv->opts.show_hidden &&
+		    lilv_port_has_property(plugin, port, pprop_notOnGUI)) {
+			continue;
+		}
+
 		uint32_t        index = lilv_port_get_index(plugin, port);
 		LilvNode*       name  = lilv_port_get_name(plugin, port);
 
@@ -729,6 +738,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	lilv_node_free(lv2_sampleRate);
 	lilv_node_free(lv2_integer);
 	lilv_node_free(lv2_enumeration);
+	lilv_node_free(pprop_notOnGUI);
 	lilv_node_free(logarithmic);
 
 	if (n_rows > 0) {

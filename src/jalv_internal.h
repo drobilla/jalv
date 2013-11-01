@@ -85,12 +85,13 @@ typedef struct {
 } ControlChange;
 
 typedef struct {
-	char*    uuid;
-	char*    load;
-	uint32_t buffer_size;
-	double   update_rate;
-	bool     dump;
-	bool     generic_ui;
+	char*    uuid;         ///< Session UUID
+	char*    load;         ///< Path for state to load
+	uint32_t buffer_size;  ///< Plugin<=>UI communication buffer size
+	double   update_rate;  ///< UI update rate in Hz
+	int      dump;         ///< Dump communication iff true
+	int      generic_ui;   ///< Use generic UI iff true
+	int      show_hidden;  ///< Show controls for notOnGUI ports
 } JalvOptions;
 
 typedef struct {
