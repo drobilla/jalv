@@ -237,6 +237,9 @@ jalv_ui_write(SuilController controller,
               uint32_t       protocol,
               const void*    buffer);
 
+uint32_t
+jalv_ui_port_index(SuilController controller, const char* port_symbol);
+
 void
 jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    port_index,

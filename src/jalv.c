@@ -644,7 +644,7 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 {
-	jalv->ui_host = suil_host_new(jalv_ui_write, NULL, NULL, NULL);
+	jalv->ui_host = suil_host_new(jalv_ui_write, jalv_ui_port_index, NULL, NULL);
 
 	const LV2_Feature parent_feature = {
 		LV2_UI__parent, parent
@@ -745,6 +745,15 @@ jalv_ui_write(SuilController controller,
 	ev->size     = buffer_size;
 	memcpy(ev->body, buffer, buffer_size);
 	jack_ringbuffer_write(jalv->ui_events, buf, sizeof(buf));
+}
+
+uint32_t
+jalv_ui_port_index(SuilController controller, const char* symbol)
+{
+	Jalv* const  jalv = (Jalv*)controller;
+	struct Port* port = jalv_port_by_symbol(jalv, symbol);
+
+	return port ? port->index : LV2UI_INVALID_PORT_INDEX;
 }
 
 bool
