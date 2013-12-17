@@ -134,13 +134,13 @@ set_port_value(const char* port_symbol,
 
 	float fvalue;
 	if (type == jalv->forge.Float) {
-		fvalue = *(float*)value;
+		fvalue = *(const float*)value;
 	} else if (type == jalv->forge.Double) {
-		fvalue = *(double*)value;
+		fvalue = *(const double*)value;
 	} else if (type == jalv->forge.Int) {
-		fvalue = *(int32_t*)value;
+		fvalue = *(const int32_t*)value;
 	} else if (type == jalv->forge.Long) {
-		fvalue = *(int64_t*)value;
+		fvalue = *(const int64_t*)value;
 	} else {
 		fprintf(stderr, "error: Preset `%s' value has bad type <%s>\n",
 		        port_symbol, jalv->unmap.unmap(jalv->unmap.handle, type));
