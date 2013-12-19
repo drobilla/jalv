@@ -89,6 +89,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "Dump plugin <=> UI communication", NULL },
 		{ "show-hidden", 's', 0, G_OPTION_ARG_NONE, &opts->show_hidden,
 		  "Show controls for ports with notOnGUI property on generic UI", NULL },
+		{ "no-menu", 'n', 0, G_OPTION_ARG_NONE, &opts->no_menu,
+		  "Do not show Jalv menu on window", NULL },
 		{ "generic-ui", 'g', 0, G_OPTION_ARG_NONE, &opts->generic_ui,
 		  "Use Jalv generic UI and not the plugin UI", NULL},
 		{ "buffer-size", 'b', 0, G_OPTION_ARG_INT, &opts->buffer_size,
@@ -757,21 +759,9 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	}
 }
 
-int
-jalv_open_ui(Jalv* jalv)
+static void
+build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
 {
-	GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	jalv->window = window;
-	jalv->has_ui = TRUE;
-
-	g_signal_connect(window, "destroy",
-	                 G_CALLBACK(on_window_destroy), jalv);
-
-	LilvNode* name = lilv_plugin_get_name(jalv->plugin);
-	gtk_window_set_title(GTK_WINDOW(window), lilv_node_as_string(name));
-	lilv_node_free(name);
-
-	GtkWidget* vbox      = new_box(false, 0);
 	GtkWidget* menu_bar  = gtk_menu_bar_new();
 	GtkWidget* file      = gtk_menu_item_new_with_mnemonic("_File");
 	GtkWidget* file_menu = gtk_menu_new();
@@ -799,10 +789,6 @@ jalv_open_ui(Jalv* jalv)
 
 	jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
 
-	gtk_window_set_role(GTK_WINDOW(window), "plugin_ui");
-	gtk_container_add(GTK_CONTAINER(window), vbox);
-	gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
-
 	g_signal_connect(G_OBJECT(quit), "activate",
 	                 G_CALLBACK(on_quit_activate), window);
 
@@ -811,6 +797,31 @@ jalv_open_ui(Jalv* jalv)
 
 	g_signal_connect(G_OBJECT(save_preset), "activate",
 	                 G_CALLBACK(on_save_preset_activate), jalv);
+
+	gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
+}
+
+int
+jalv_open_ui(Jalv* jalv)
+{
+	GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	jalv->window = window;
+	jalv->has_ui = TRUE;
+
+	g_signal_connect(window, "destroy",
+	                 G_CALLBACK(on_window_destroy), jalv);
+
+	LilvNode* name = lilv_plugin_get_name(jalv->plugin);
+	gtk_window_set_title(GTK_WINDOW(window), lilv_node_as_string(name));
+	lilv_node_free(name);
+
+	GtkWidget* vbox = new_box(false, 0);
+	gtk_window_set_role(GTK_WINDOW(window), "plugin_ui");
+	gtk_container_add(GTK_CONTAINER(window), vbox);
+
+	if (!jalv->opts.no_menu) {
+		build_menu(jalv, window, vbox);
+	}
 
 	/* Create/show alignment to contain UI (whether custom or generic) */
 	GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);

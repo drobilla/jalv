@@ -92,6 +92,7 @@ typedef struct {
 	int      dump;         ///< Dump communication iff true
 	int      generic_ui;   ///< Use generic UI iff true
 	int      show_hidden;  ///< Show controls for notOnGUI ports
+	int      no_menu;      ///< Hide menu iff true
 } JalvOptions;
 
 typedef struct {

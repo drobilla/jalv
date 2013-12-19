@@ -4,8 +4,9 @@ jalv (1.4.3) unstable;
     (based on patch from Robin Gareus)
   * Support ui:portMap feature to allow UIs to avoid hard-coded port indices
     (useful for compatibility and separately distributed UIs)
+  * Add --no-menu option for jalv.gtk
 
- -- David Robillard <d@drobilla.net>  Fri, 01 Nov 2013 18:20:19 -0400
+ -- David Robillard <d@drobilla.net>  Wed, 18 Dec 2013 22:54:27 -0500
 
 jalv (1.4.2) stable;
 
