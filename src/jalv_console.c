@@ -53,7 +53,11 @@ jalv_ui_port_event(Jalv*       jalv,
 int
 jalv_init(int* argc, char*** argv, JalvOptions* opts)
 {
-	int a = 1;
+	opts->controls    = malloc(sizeof(char*));
+	opts->controls[0] = NULL;
+
+	int n_controls = 0;
+	int a          = 1;
 	for (; a < *argc && (*argv)[a][0] == '-'; ++a) {
 		if ((*argv)[a][1] == 'h') {
 			return print_usage((*argv)[0], true);
@@ -75,6 +79,15 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 				return 1;
 			}
 			opts->buffer_size = atoi((*argv)[a]);
+		} else if ((*argv)[a][1] == 'c') {
+			if (++a == *argc) {
+				fprintf(stderr, "Missing argument for -c\n");
+				return 1;
+			}
+			opts->controls = realloc(opts->controls,
+			                         (++n_controls + 1) * sizeof(char*));
+			opts->controls[n_controls - 1] = (*argv)[a];
+			opts->controls[n_controls]     = NULL;
 		} else if ((*argv)[a][1] == 'd') {
 			opts->dump = true;
 		} else {

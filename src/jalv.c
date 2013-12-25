@@ -795,6 +795,26 @@ jalv_emit_ui_events(Jalv* jalv)
 	return true;
 }
 
+static bool
+jalv_apply_control_arg(Jalv* jalv, const char* s)
+{
+	char  sym[256];
+	float val = 0.0f;
+	if (sscanf(s, "%[^=]=%f", sym, &val) != 2) {
+		fprintf(stderr, "warning: Ignoring invalid value `%s'\n", s);
+		return false;
+	}
+	
+	struct Port* port = jalv_port_by_symbol(jalv, sym);
+	if (!port) {
+		fprintf(stderr, "warning: Ignoring value for unknown port `%s'\n", sym);
+		return false;
+	}
+
+	port->control = val;
+	return true;
+}
+
 static void
 signal_handler(int ignored)
 {
@@ -1118,6 +1138,10 @@ main(int argc, char** argv)
 	/* Apply loaded state to plugin instance if necessary */
 	if (state) {
 		jalv_apply_state(&jalv, state);
+	}
+
+	for (char** c = jalv.opts.controls; *c; ++c) {
+		jalv_apply_control_arg(&jalv, *c);
 	}
 
 	/* Set Jack callbacks */
