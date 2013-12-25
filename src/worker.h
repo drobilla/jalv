@@ -19,9 +19,9 @@
 #include "jalv_internal.h"
 
 void
-jalv_worker_init(Jalv*                 jalv,
-                 JalvWorker*           worker,
-                 LV2_Worker_Interface* iface);
+jalv_worker_init(Jalv*                       jalv,
+                 JalvWorker*                 worker,
+                 const LV2_Worker_Interface* iface);
 
 void
 jalv_worker_finish(JalvWorker* worker);

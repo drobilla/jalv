@@ -527,8 +527,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			} else if (ev.protocol == jalv->urids.atom_eventTransfer) {
 				LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
 				const LV2_Atom* const atom = (const LV2_Atom*)body;
-				lv2_evbuf_write(&e, nframes, 0,
-				                atom->type, atom->size, LV2_ATOM_BODY(atom));
+				lv2_evbuf_write(&e, nframes, 0, atom->type, atom->size,
+				                LV2_ATOM_BODY_CONST(atom));
 			} else {
 				fprintf(stderr, "error: Unknown control change protocol %d\n",
 				        ev.protocol);
@@ -733,7 +733,7 @@ jalv_ui_write(SuilController controller,
 		const LV2_Atom* atom = (const LV2_Atom*)buffer;
 		char*           str  = sratom_to_turtle(
 			jalv->sratom, &jalv->unmap, "jalv:", NULL, NULL,
-			atom->type, atom->size, LV2_ATOM_BODY(atom));
+			atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
 		printf("\n## UI => Plugin (%u bytes) ##\n%s\n", atom->size, str);
 		free(str);
 	}
@@ -1111,7 +1111,7 @@ main(int argc, char** argv)
 	    && lilv_plugin_has_extension_data(jalv.plugin, jalv.nodes.work_interface)) {
 		jalv_worker_init(
 			&jalv, &jalv.worker,
-			(LV2_Worker_Interface*)lilv_instance_get_extension_data(
+			(const LV2_Worker_Interface*)lilv_instance_get_extension_data(
 				jalv.instance, LV2_WORKER__interface));
 	}
 

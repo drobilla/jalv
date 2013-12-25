@@ -278,7 +278,7 @@ jalv_ui_port_event(Jalv*       jalv,
 
 	if (controller->spin) {
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(controller->spin),
-		                          *(float*)buffer);
+		                          *(const float*)buffer);
 	}
 
 	GtkWidget* widget = controller->control;
@@ -291,7 +291,7 @@ jalv_ui_port_event(Jalv*       jalv,
 			gtk_tree_model_get_value(model, &i, 0, &value);
 			const double v = g_value_get_double(&value);
 			g_value_unset(&value);
-			if (fabs(v - *(float*)buffer) < FLT_EPSILON) {
+			if (fabs(v - *(const float*)buffer) < FLT_EPSILON) {
 				gtk_combo_box_set_active_iter(GTK_COMBO_BOX(widget), &i);
 				return;
 			}
@@ -299,9 +299,9 @@ jalv_ui_port_event(Jalv*       jalv,
 		}
 	} else if (GTK_IS_TOGGLE_BUTTON(widget)) {
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget),
-		                             *(float*)buffer > 0.0f);
+		                             *(const float*)buffer > 0.0f);
 	} else if (GTK_IS_RANGE(widget)) {
-		gtk_range_set_value(GTK_RANGE(widget), *(float*)buffer); 
+		gtk_range_set_value(GTK_RANGE(widget), *(const float*)buffer); 
 	} else {
 		fprintf(stderr, "Unknown widget type for port %d\n", port_index);
 	}
@@ -404,16 +404,16 @@ file_changed(GtkFileChooserButton* widget,
 static gint
 dcmp(gconstpointer a, gconstpointer b)
 {
-	double y = *(double*)a;
-	double z = *(double*)b;
+	double y = *(const double*)a;
+	double z = *(const double*)b;
 	return y < z ? -1 : z < y ? 1 : 0;
 }
 
 static gint
 drcmp(gconstpointer a, gconstpointer b)
 {
-	double y = *(double*)a;
-	double z = *(double*)b;
+	double y = *(const double*)a;
+	double z = *(const double*)b;
 	return y < z ? 1 : z < y ? -1 : 0;
 }
 

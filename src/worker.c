@@ -59,7 +59,9 @@ worker_func(void* data)
 }
 
 void
-jalv_worker_init(Jalv* jalv, JalvWorker* worker, LV2_Worker_Interface* iface)
+jalv_worker_init(Jalv*                       jalv,
+                 JalvWorker*                 worker,
+                 const LV2_Worker_Interface* iface)
 {
 	worker->iface = iface;
 	zix_thread_create(&worker->thread, 4096, worker_func, jalv);
