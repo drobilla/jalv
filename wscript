@@ -23,9 +23,9 @@ def options(opt):
                    help="Do not build JACK session support")
 
 def configure(conf):
+    conf.line_just = 52
     conf.load('compiler_c')
     conf.load('compiler_cxx')
-    conf.line_just = 52
     autowaf.configure(conf)
     autowaf.set_c99_mode(conf)
     autowaf.display_header('Jalv Configuration')
