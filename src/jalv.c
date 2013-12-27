@@ -1140,8 +1140,10 @@ main(int argc, char** argv)
 		jalv_apply_state(&jalv, state);
 	}
 
-	for (char** c = jalv.opts.controls; *c; ++c) {
-		jalv_apply_control_arg(&jalv, *c);
+	if (jalv.opts.controls) {
+		for (char** c = jalv.opts.controls; *c; ++c) {
+			jalv_apply_control_arg(&jalv, *c);
+		}
 	}
 
 	/* Set Jack callbacks */
