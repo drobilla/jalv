@@ -367,9 +367,12 @@ activate_port(Jalv*    jalv,
 			JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
 		break;
 	case TYPE_EVENT:
-		port->jack_port = jack_port_register(
-			jalv->jack_client, symbol_str,
-			JACK_DEFAULT_MIDI_TYPE, jack_flags, 0);
+		if (lilv_port_supports_event(
+			    jalv->plugin, port->lilv_port, jalv->nodes.midi_MidiEvent)) {
+			port->jack_port = jack_port_register(
+				jalv->jack_client, symbol_str,
+				JACK_DEFAULT_MIDI_TYPE, jack_flags, 0);
+		}
 		break;
 	default:
 		break;
@@ -472,10 +475,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	/* Prepare port buffers */
 	for (uint32_t p = 0; p < jalv->num_ports; ++p) {
 		struct Port* port = &jalv->ports[p];
-		if (!port->jack_port)
-			continue;
-
-		if (port->type == TYPE_AUDIO) {
+		if (port->type == TYPE_AUDIO && port->jack_port) {
 			/* Connect plugin port directly to Jack port buffer */
 			lilv_instance_connect_port(
 				jalv->instance, p,
@@ -492,15 +492,17 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
 			}
 
-			/* Write Jack MIDI input */
-			void* buf = jack_port_get_buffer(port->jack_port, nframes);
-			for (uint32_t i = 0; i < jack_midi_get_event_count(buf); ++i) {
-				jack_midi_event_t ev;
-				jack_midi_event_get(&ev, buf, i);
-				lv2_evbuf_write(&iter,
-				                ev.time, 0,
-				                jalv->midi_event_id,
-				                ev.size, ev.buffer);
+			if (port->jack_port) {
+				/* Write Jack MIDI input */
+				void* buf = jack_port_get_buffer(port->jack_port, nframes);
+				for (uint32_t i = 0; i < jack_midi_get_event_count(buf); ++i) {
+					jack_midi_event_t ev;
+					jack_midi_event_get(&ev, buf, i);
+					lv2_evbuf_write(&iter,
+					                ev.time, 0,
+					                jalv->midi_event_id,
+					                ev.size, ev.buffer);
+				}
 			}
 		} else if (port->type == TYPE_EVENT) {
 			/* Clear event output for plugin to write to */
@@ -559,10 +561,12 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	/* Deliver MIDI output and UI events */
 	for (uint32_t p = 0; p < jalv->num_ports; ++p) {
 		struct Port* const port = &jalv->ports[p];
-		if (port->jack_port && port->flow == FLOW_OUTPUT
-		    && port->type == TYPE_EVENT) {
-			void* buf = jack_port_get_buffer(port->jack_port, nframes);
-			jack_midi_clear_buffer(buf);
+		if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
+			void* buf = NULL;
+			if (port->jack_port) {
+				jack_port_get_buffer(port->jack_port, nframes);
+				jack_midi_clear_buffer(buf);
+			}
 
 			for (LV2_Evbuf_Iterator i = lv2_evbuf_begin(port->evbuf);
 			     lv2_evbuf_is_valid(i);
@@ -570,7 +574,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				uint32_t frames, subframes, type, size;
 				uint8_t* body;
 				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
-				if (type == jalv->midi_event_id) {
+				if (buf && type == jalv->midi_event_id) {
 					jack_midi_event_write(buf, frames, body, size);
 				}
 
