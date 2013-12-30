@@ -6,3 +6,6 @@ Original GTK2 Generic Plugin UI:
 
 Various UI improvements:
 	Robin Gareus <robin@gareus.org>
+
+Preset menu support for Qt:
+	Timo Westkämper <timo.westkamper@gmail.com>

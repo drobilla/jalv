@@ -7,8 +7,9 @@ jalv (1.4.3) unstable;
     (based on patch from Robin Gareus)
   * Support ui:portMap feature to allow UIs to avoid hard-coded port indices
     (useful for compatibility and separately distributed UIs)
+  * Preset menu support for Qt (patch from Timo Westkämper)
 
- -- David Robillard <d@drobilla.net>  Fri, 27 Dec 2013 21:03:33 -0500
+ -- David Robillard <d@drobilla.net>  Mon, 30 Dec 2013 12:55:47 -0500
 
 jalv (1.4.2) stable;
 
