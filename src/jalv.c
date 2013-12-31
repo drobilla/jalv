@@ -564,7 +564,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 		if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
 			void* buf = NULL;
 			if (port->jack_port) {
-				jack_port_get_buffer(port->jack_port, nframes);
+				buf = jack_port_get_buffer(port->jack_port, nframes);
 				jack_midi_clear_buffer(buf);
 			}
 
