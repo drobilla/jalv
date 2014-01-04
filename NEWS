@@ -1,4 +1,4 @@
-jalv (1.4.3) unstable;
+jalv (1.4.4) stable;
 
   * Add -c option for setting controls from the command line
   * Add --no-menu option for jalv.gtk
@@ -9,7 +9,7 @@ jalv (1.4.3) unstable;
     (useful for compatibility and separately distributed UIs)
   * Preset menu support for Qt (patch from Timo Westkämper)
 
- -- David Robillard <d@drobilla.net>  Mon, 30 Dec 2013 12:55:47 -0500
+ -- David Robillard <d@drobilla.net>  Sat, 04 Jan 2014 16:11:45 -0500
 
 jalv (1.4.2) stable;
 
