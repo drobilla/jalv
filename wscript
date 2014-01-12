@@ -4,7 +4,7 @@ from waflib.extras import autowaf as autowaf
 import waflib.Options as Options
 
 # Version of this package (even if built as a child)
-JALV_VERSION = '1.4.4'
+JALV_VERSION = '1.4.5'
 
 # Variables for 'waf dist'
 APPNAME = 'jalv'

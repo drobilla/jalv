@@ -1,3 +1,9 @@
+jalv (1.4.5) unstable;
+
+  * Show newly saved presets in the preset menu
+
+ -- David Robillard <d@drobilla.net>  Sun, 12 Jan 2014 14:53:36 -0500
+
 jalv (1.4.4) stable;
 
   * Add -c option for setting controls from the command line
