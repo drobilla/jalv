@@ -21,6 +21,9 @@ def options(opt):
     opt.add_option('--no-jack-session', action='store_true', default=False,
                    dest='no_jack_session',
                    help="Do not build JACK session support")
+    opt.add_option('--no-qt', action='store_true', default=False,
+                   dest='no_qt',
+                   help="Do not build Qt GUI")
 
 def configure(conf):
     conf.line_just = 52
@@ -49,8 +52,11 @@ def configure(conf):
                       atleast_version='3.0.0', mandatory=False)
     autowaf.check_pkg(conf, 'gtkmm-2.4', uselib_store='GTKMM2',
                       atleast_version='2.20.0', mandatory=False)
-    autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
-                      atleast_version='4.0.0', mandatory=False)
+    if not Options.options.no_qt:
+        autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
+                          atleast_version='4.0.0', mandatory=False)
+        if conf.is_defined('HAVE_QT4'):
+            conf.find_program('moc')
 
     conf.check(function_name='jack_port_type_get_buffer_size',
                header_name='jack/jack.h',
@@ -120,6 +126,9 @@ def build(bld):
 
     # Qt version
     if bld.is_defined('HAVE_QT4'):
+        obj = bld(rule = '${MOC} ${SRC} > ${TGT}',
+                  source = 'src/jalv_qt4.cpp',
+                  target = 'jalv_qt4_meta.hpp')
         obj = bld(features     = 'c cxx cxxprogram',
                   source       = source + ' src/jalv_qt4.cpp',
                   target       = 'jalv.qt',

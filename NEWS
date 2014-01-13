@@ -1,8 +1,9 @@
 jalv (1.4.5) unstable;
 
   * Show newly saved presets in the preset menu
+  * Generate Qt moc nonsense at build time for broader compatibility
 
- -- David Robillard <d@drobilla.net>  Sun, 12 Jan 2014 14:53:36 -0500
+ -- David Robillard <d@drobilla.net>  Sun, 12 Jan 2014 18:50:11 -0500
 
 jalv (1.4.4) stable;
 
