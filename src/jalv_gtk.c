@@ -405,10 +405,10 @@ file_changed(GtkFileChooserButton* widget,
 	uint8_t              buf[1024];
 	lv2_atom_forge_set_buffer(&forge, buf, sizeof(buf));
 
-	lv2_atom_forge_blank(&forge, &frame, 1, jalv->urids.patch_Set);
-	lv2_atom_forge_property_head(&forge, jalv->urids.patch_property, 0);
+	lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Set);
+	lv2_atom_forge_key(&forge, jalv->urids.patch_property);
 	lv2_atom_forge_urid(&forge, jalv->map.map(jalv, property));
-	lv2_atom_forge_property_head(&forge, jalv->urids.patch_value, 0);
+	lv2_atom_forge_key(&forge, jalv->urids.patch_value);
 	lv2_atom_forge_path(&forge, filename, strlen(filename));
 
 	const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);

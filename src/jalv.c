@@ -417,22 +417,22 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 		lv2_atom_forge_set_buffer(&jalv->forge, pos_buf, sizeof(pos_buf));
 		LV2_Atom_Forge*      forge = &jalv->forge;
 		LV2_Atom_Forge_Frame frame;
-		lv2_atom_forge_blank(forge, &frame, 1, jalv->urids.time_Position);
-		lv2_atom_forge_property_head(forge, jalv->urids.time_frame, 0);
+		lv2_atom_forge_object(forge, &frame, 0, jalv->urids.time_Position);
+		lv2_atom_forge_key(forge, jalv->urids.time_frame);
 		lv2_atom_forge_long(forge, pos.frame);
-		lv2_atom_forge_property_head(forge, jalv->urids.time_speed, 0);
+		lv2_atom_forge_key(forge, jalv->urids.time_speed);
 		lv2_atom_forge_float(forge, rolling ? 1.0 : 0.0);
 		if (pos.valid & JackPositionBBT) {
-			lv2_atom_forge_property_head(forge, jalv->urids.time_barBeat, 0);
+			lv2_atom_forge_key(forge, jalv->urids.time_barBeat);
 			lv2_atom_forge_float(
 				forge, pos.beat - 1 + (pos.tick / pos.ticks_per_beat));
-			lv2_atom_forge_property_head(forge, jalv->urids.time_bar, 0);
+			lv2_atom_forge_key(forge, jalv->urids.time_bar);
 			lv2_atom_forge_long(forge, pos.bar - 1);
-			lv2_atom_forge_property_head(forge, jalv->urids.time_beatUnit, 0);
+			lv2_atom_forge_key(forge, jalv->urids.time_beatUnit);
 			lv2_atom_forge_int(forge, pos.beat_type);
-			lv2_atom_forge_property_head(forge, jalv->urids.time_beatsPerBar, 0);
+			lv2_atom_forge_key(forge, jalv->urids.time_beatsPerBar);
 			lv2_atom_forge_float(forge, pos.beats_per_bar);
-			lv2_atom_forge_property_head(forge, jalv->urids.time_beatsPerMinute, 0);
+			lv2_atom_forge_key(forge, jalv->urids.time_beatsPerMinute);
 			lv2_atom_forge_float(forge, pos.beats_per_minute);
 		}
 
