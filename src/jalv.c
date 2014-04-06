@@ -44,6 +44,9 @@
 #ifdef JALV_JACK_SESSION
 #    include <jack/session.h>
 #endif
+#ifdef HAVE_JACK_METADATA
+#    include <jack/metadata.h>
+#endif
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
@@ -203,10 +206,6 @@ create_port(Jalv*    jalv,
 	port->control   = 0.0f;
 	port->flow      = FLOW_UNKNOWN;
 
-	/* Get the port symbol for console printing */
-	const LilvNode* symbol = lilv_port_get_symbol(jalv->plugin,
-	                                              port->lilv_port);
-
 	const bool optional = lilv_port_has_property(
 		jalv->plugin, port->lilv_port, jalv->nodes.lv2_connectionOptional);
 
@@ -248,9 +247,11 @@ create_port(Jalv*    jalv,
 	}
 	lilv_node_free(min_size);
 
-	const size_t sym_len = strlen(lilv_node_as_string(symbol));
-	if (sym_len > jalv->longest_sym) {
-		jalv->longest_sym = sym_len;
+	/* Update longest symbol for aligned console printing */
+	const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
+	const size_t    len = strlen(lilv_node_as_string(sym));
+	if (len > jalv->longest_sym) {
+		jalv->longest_sym = len;
 	}
 }
 
@@ -338,10 +339,7 @@ activate_port(Jalv*    jalv,
 {
 	struct Port* const port = &jalv->ports[port_index];
 
-	/* Get the port symbol for console printing */
-	const LilvNode* symbol = lilv_port_get_symbol(jalv->plugin,
-	                                              port->lilv_port);
-	const char* symbol_str = lilv_node_as_string(symbol);
+	const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
 
 	/* Connect unsupported ports to NULL (known to be optional by this point) */
 	if (port->flow == FLOW_UNKNOWN || port->type == TYPE_UNKNOWN) {
@@ -357,26 +355,36 @@ activate_port(Jalv*    jalv,
 	/* Connect the port based on its type */
 	switch (port->type) {
 	case TYPE_CONTROL:
-		printf("%-*s = %f\n", jalv->longest_sym, symbol_str,
+		printf("%-*s = %f\n", jalv->longest_sym, lilv_node_as_string(sym),
 		       jalv->ports[port_index].control);
 		lilv_instance_connect_port(jalv->instance, port_index, &port->control);
 		break;
 	case TYPE_AUDIO:
 		port->jack_port = jack_port_register(
-			jalv->jack_client, symbol_str,
+			jalv->jack_client, lilv_node_as_string(sym),
 			JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
 		break;
 	case TYPE_EVENT:
 		if (lilv_port_supports_event(
 			    jalv->plugin, port->lilv_port, jalv->nodes.midi_MidiEvent)) {
 			port->jack_port = jack_port_register(
-				jalv->jack_client, symbol_str,
+				jalv->jack_client, lilv_node_as_string(sym),
 				JACK_DEFAULT_MIDI_TYPE, jack_flags, 0);
 		}
 		break;
 	default:
 		break;
 	}
+
+#ifdef HAVE_JACK_METADATA
+	if (port->jack_port) {
+		LilvNode* name = lilv_port_get_name(jalv->plugin, port->lilv_port);
+		jack_set_property(
+			jalv->jack_client, jack_port_uuid(port->jack_port),
+			JACK_METADATA_PRETTY_NAME, lilv_node_as_string(name), NULL);
+		lilv_node_free(name);
+	}
+#endif
 }
 
 /** Jack buffer size callback. */

@@ -61,6 +61,13 @@ def configure(conf):
     conf.check(function_name='jack_port_type_get_buffer_size',
                header_name='jack/jack.h',
                define_name='HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE',
+               uselib='JACK',
+               mandatory=False)
+
+    conf.check(function_name='jack_set_property',
+               header_name='jack/metadata.h',
+               define_name='HAVE_JACK_METADATA',
+               uselib='JACK',
                mandatory=False)
 
     if not Options.options.no_jack_session:
@@ -70,6 +77,8 @@ def configure(conf):
 
     conf.write_config_header('jalv_config.h', remove=False)
 
+    autowaf.display_msg(conf, "Jack metadata support",
+                        conf.is_defined('HAVE_JACK_METADATA'))
     autowaf.display_msg(conf, "Gtk 2.0 support",
                         conf.is_defined('HAVE_GTK2'))
     autowaf.display_msg(conf, "Gtk 3.0 support",
