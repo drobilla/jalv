@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2012 David Robillard <http://drobilla.net>
+  Copyright 2007-2014 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -50,6 +50,7 @@
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
+#include "lv2/lv2plug.in/ns/ext/data-access/data-access.h"
 #include "lv2/lv2plug.in/ns/ext/event/event.h"
 #include "lv2/lv2plug.in/ns/ext/options/options.h"
 #include "lv2/lv2plug.in/ns/ext/parameters/parameters.h"
@@ -137,6 +138,8 @@ uri_to_id(LV2_URI_Map_Callback_Data callback_data,
 #define NS_EXT "http://lv2plug.in/ns/ext/"
 
 static LV2_URI_Map_Feature uri_map = { NULL, &uri_to_id };
+
+static LV2_Extension_Data_Feature ext_data = { NULL };
 
 static LV2_Feature uri_map_feature   = { NS_EXT "uri-map", &uri_map };
 static LV2_Feature map_feature       = { LV2_URID__map, NULL };
@@ -664,9 +667,13 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 	const LV2_Feature instance_feature = {
 		NS_EXT "instance-access", lilv_instance_get_handle(jalv->instance)
 	};
+	const LV2_Feature data_feature = {
+		LV2_DATA_ACCESS_URI, &ext_data
+	};
 	const LV2_Feature* ui_features[] = {
 		&uri_map_feature, &map_feature, &unmap_feature,
 		&instance_feature,
+		&data_feature,
 		&log_feature,
 		&parent_feature,
 		&options_feature,
@@ -1132,6 +1139,8 @@ main(int argc, char** argv)
 	if (!jalv.instance) {
 		die("Failed to instantiate plugin.\n");
 	}
+
+	ext_data.data_access = lilv_instance_get_descriptor(jalv.instance)->extension_data;
 
 	fprintf(stderr, "\n");
 	if (!jalv.buf_size_set) {
