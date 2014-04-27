@@ -1013,9 +1013,9 @@ main(int argc, char** argv)
 
 	/* Get a plugin UI */
 	const char* native_ui_type_uri = jalv_native_ui_type(&jalv);
+	jalv.uis = lilv_plugin_get_uis(jalv.plugin);
 	if (!jalv.opts.generic_ui && native_ui_type_uri) {
 		const LilvNode* native_ui_type = lilv_new_uri(jalv.world, native_ui_type_uri);
-		jalv.uis = lilv_plugin_get_uis(jalv.plugin);
 		LILV_FOREACH(uis, u, jalv.uis) {
 			const LilvUI* this_ui = lilv_uis_get(jalv.uis, u);
 			if (lilv_ui_is_supported(this_ui,
@@ -1027,6 +1027,8 @@ main(int argc, char** argv)
 				break;
 			}
 		}
+	} else if (!jalv.opts.generic_ui && jalv.opts.show_ui) {
+		jalv.ui = lilv_uis_get(jalv.uis, lilv_uis_begin(jalv.uis));
 	}
 
 	/* Create ringbuffers for UI if necessary */
