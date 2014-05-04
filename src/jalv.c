@@ -173,6 +173,9 @@ const LV2_Feature* features[13] = {
 static bool
 feature_is_supported(const char* uri)
 {
+	if (!strcmp(uri, "http://lv2plug.in/ns/lv2core#isLive")) {
+		return true;
+	}
 	for (const LV2_Feature*const* f = features; *f; ++f) {
 		if (!strcmp(uri, (*f)->URI)) {
 			return true;
