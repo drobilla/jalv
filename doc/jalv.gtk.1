@@ -13,6 +13,14 @@
 Print the command line options.
 
 .TP
+\fB\-c\fR
+Print control output changes to stdout.
+
+.TP
+\fB\-c SYM=VAL\fR
+Set control value (e.g. "vol=1.4").
+
+.TP
 \fB\-u UUID\fR, \fB\-\-uuid UUID\fR
 UUID for Jack session restoration.
 
@@ -25,8 +33,12 @@ Load state from state directory.
 Dump plugin <=> UI communication.
 
 .TP
+\fB\-b SIZE\fR
+Buffer size for plugin <=> UI communication.
+
+.TP
 \fB\-g\fR, \fB\-\-generic\-ui\fR
-Use Jalv generic UI and not the plugin UI
+Use Jalv generic UI and not the plugin UI.
 
 .SH SEE ALSO
 .BR jalv(1),

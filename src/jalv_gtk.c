@@ -98,7 +98,9 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		{ "update-frequency", 'r', 0, G_OPTION_ARG_DOUBLE, &opts->update_rate,
 		  "UI update frequency", NULL},
 		{ "control", 'c', 0, G_OPTION_ARG_STRING_ARRAY, &opts->controls,
-		  "UI update frequency", NULL},
+		  "Set control value (e.g. \"vol=1.4\")", NULL},
+		{ "print-controls", 'p', 0, G_OPTION_ARG_NONE, &opts->print_controls,
+		  "Print control output changes to stdout", NULL},
 		{ 0, 0, 0, 0, 0, 0, 0 } };
 	GError* error = NULL;
 	const int err = gtk_init_with_args(

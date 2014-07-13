@@ -6,8 +6,10 @@ jalv (1.4.5) unstable;
   * Set port pretty names via new Jack metadata API
   * Add support for data-access extension (based on patch by Filipe Coelho)
   * Support new UI show/hide interface in console version
+  * Add option to print control output changes to stdout
+  * Update man pages and console jalv help output for new options
 
- -- David Robillard <d@drobilla.net>  Sat, 26 Apr 2014 20:33:45 -0400
+ -- David Robillard <d@drobilla.net>  Sun, 13 Jul 2014 17:21:51 -0400
 
 jalv (1.4.4) stable;
 

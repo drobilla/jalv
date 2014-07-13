@@ -33,7 +33,8 @@ print_usage(const char* name, bool error)
 	fprintf(os, "Usage: %s [OPTION...] PLUGIN_URI\n", name);
 	fprintf(os, "Run an LV2 plugin as a Jack application.\n");
 	fprintf(os, "  -h           Display this help and exit\n");
-	fprintf(os, "  -s           Show non-embedded UI if possible\n");
+	fprintf(os, "  -p           Print control output changes to stdout\n");
+	fprintf(os, "  -c SYM=VAL   Set control value (e.g. \"vol=1.4\")\n");
 	fprintf(os, "  -u UUID      UUID for Jack session restoration\n");
 	fprintf(os, "  -l DIR       Load state from save directory\n");
 	fprintf(os, "  -d DIR       Dump plugin <=> UI communication\n");
@@ -69,6 +70,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 			return print_usage((*argv)[0], true);
 		} else if ((*argv)[a][1] == 's') {
 			opts->show_ui = true;
+		} else if ((*argv)[a][1] == 'p') {
+			opts->print_controls = true;
 		} else if ((*argv)[a][1] == 'u') {
 			if (++a == *argc) {
 				fprintf(stderr, "Missing argument for -u\n");

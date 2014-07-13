@@ -336,6 +336,13 @@ jalv_port_by_symbol(Jalv* jalv, const char* sym)
 	return NULL;
 }
 
+static void
+print_control_value(Jalv* jalv, const struct Port* port, float value)
+{
+	const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
+	printf("%-*s = %f\n", jalv->longest_sym, lilv_node_as_string(sym), value);
+}
+
 /**
    Expose a port to Jack (if applicable) and connect it to its buffer.
 */
@@ -361,8 +368,7 @@ activate_port(Jalv*    jalv,
 	/* Connect the port based on its type */
 	switch (port->type) {
 	case TYPE_CONTROL:
-		printf("%-*s = %f\n", jalv->longest_sym, lilv_node_as_string(sym),
-		       jalv->ports[port_index].control);
+		print_control_value(jalv, port, port->control);
 		lilv_instance_connect_port(jalv->instance, port_index, &port->control);
 		break;
 	case TYPE_AUDIO:
@@ -811,6 +817,10 @@ jalv_emit_ui_events(Jalv* jalv)
 			                         ev.size, ev.protocol, buf);
 		} else {
 			jalv_ui_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
+		}
+
+		if (ev.protocol == 0 && jalv->opts.print_controls) {
+			print_control_value(jalv, &jalv->ports[ev.index], *(float*)buf);
 		}
 	}
 
