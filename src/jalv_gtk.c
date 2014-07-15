@@ -257,9 +257,16 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 
 		jalv_save_preset(jalv, dir, (strlen(uri) ? uri : NULL), basename, file);
 
-		// Load preset so it is now known to LilvWorld
 		SerdNode  sdir = serd_node_new_file_uri((const uint8_t*)dir, 0, 0, 0);
 		LilvNode* ldir = lilv_new_uri(jalv->world, (const char*)sdir.buf);
+
+		// Unload all presets and any old information from this bundle
+		jalv_unload_presets(jalv);
+		printf("Unload bundle %s\n", lilv_node_as_string(ldir));
+		lilv_world_unload_bundle(jalv->world, ldir);
+
+		// Load preset so it is now known to LilvWorld
+		printf("Load bundle %s\n", lilv_node_as_string(ldir));
 		lilv_world_load_bundle(jalv->world, ldir);
 		serd_node_free(&sdir);
 		lilv_node_free(ldir);

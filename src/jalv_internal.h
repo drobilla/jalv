@@ -266,6 +266,9 @@ int
 jalv_load_presets(Jalv* jalv, PresetSink sink, void* data);
 
 int
+jalv_unload_presets(Jalv* jalv);
+
+int
 jalv_apply_preset(Jalv* jalv, const LilvNode* preset);
 
 int
