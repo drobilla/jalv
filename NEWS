@@ -1,4 +1,4 @@
-jalv (1.4.5) unstable;
+jalv (1.4.6) stable;
 
   * Show newly saved presets in the preset menu
   * Generate Qt moc nonsense at build time for broader compatibility
@@ -9,8 +9,9 @@ jalv (1.4.5) unstable;
   * Add option to print control output changes to stdout
   * Support saving the same preset several times
   * Update man pages and console jalv help output for new options
+  * Upgrade to waf 1.7.16
 
- -- David Robillard <d@drobilla.net>  Tue, 15 Jul 2014 15:15:17 -0400
+ -- David Robillard <d@drobilla.net>  Fri, 08 Aug 2014 18:30:28 -0400
 
 jalv (1.4.4) stable;
 
