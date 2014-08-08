@@ -929,8 +929,8 @@ main(int argc, char** argv)
 	LV2_Worker_Schedule schedule = { &jalv, jalv_worker_schedule };
 	schedule_feature.data = &schedule;
 
-	LV2_Log_Log log = { &jalv, jalv_printf, jalv_vprintf };
-	log_feature.data = &log;
+	LV2_Log_Log llog = { &jalv, jalv_printf, jalv_vprintf };
+	log_feature.data = &llog;
 
 	zix_sem_init(&exit_sem, 0);
 	jalv.done = &exit_sem;
