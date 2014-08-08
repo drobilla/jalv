@@ -1,5 +1,5 @@
 /*
-  Copyright 2008-2012 David Robillard <http://drobilla.net>
+  Copyright 2008-2014 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -100,7 +100,7 @@ void*
 lv2_evbuf_get_buffer(LV2_Evbuf* evbuf);
 
 /**
-   Return an iterator to the start of @p buf.
+   Return an iterator to the start of `buf`.
 */
 LV2_Evbuf_Iterator
 lv2_evbuf_begin(LV2_Evbuf* evbuf);
@@ -112,26 +112,26 @@ LV2_Evbuf_Iterator
 lv2_evbuf_end(LV2_Evbuf* evbuf);
 
 /**
-   Check if @p iter is valid.
-   @return True if @p iter is valid, otherwise false (past end of buffer)
+   Check if `iter` is valid.
+   @return True if `iter` is valid, otherwise false (past end of buffer)
 */
 bool
 lv2_evbuf_is_valid(LV2_Evbuf_Iterator iter);
 
 /**
-   Advance @p iter forward one event.
-   @p iter must be valid.
-   @return True if @p iter is valid, otherwise false (reached end of buffer)
+   Advance `iter` forward one event.
+   `iter` must be valid.
+   @return True if `iter` is valid, otherwise false (reached end of buffer)
 */
 LV2_Evbuf_Iterator
 lv2_evbuf_next(LV2_Evbuf_Iterator iter);
 
 /**
    Dereference an event iterator (i.e. get the event currently pointed to).
-   @p iter must be valid.
-   @p type Set to the type of the event.
-   @p size Set to the size of the event.
-   @p data Set to the contents of the event.
+   `iter` must be valid.
+   `type` Set to the type of the event.
+   `size` Set to the size of the event.
+   `data` Set to the contents of the event.
    @return True on success.
 */
 bool
@@ -143,8 +143,8 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
               uint8_t**          data);
 
 /**
-   Write an event at @p iter.
-   The event (if any) pointed to by @p iter will be overwritten, and @p iter
+   Write an event at `iter`.
+   The event (if any) pointed to by `iter` will be overwritten, and `iter`
    incremented to point to the following event (i.e. several calls to this
    function can be done in sequence without twiddling iter in-between).
    @return True if event was written, otherwise false (buffer is full).
