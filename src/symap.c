@@ -1,5 +1,5 @@
 /*
-  Copyright 2011-2012 David Robillard <http://drobilla.net>
+  Copyright 2011-2014 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -45,12 +45,12 @@ struct SymapImpl {
 	char** symbols;
 
 	/**
-	   Array of IDs, sorted by corresponding string in @ref symbols.
+	   Array of IDs, sorted by corresponding string in `symbols`.
 	*/
 	uint32_t* index;
 
 	/**
-	   Number of symbols (number of items in @ref symbols and @ref index).
+	   Number of symbols (number of items in `symbols` and `index`).
 	*/
 	uint32_t size;
 };
@@ -87,8 +87,8 @@ symap_strdup(const char* str)
 }
 
 /**
-   Return the index into map->index (not the ID) corresponding to @c sym,
-   or the index where a new entry for @c sym should be inserted.
+   Return the index into map->index (not the ID) corresponding to `sym`,
+   or the index where a new entry for `sym` should be inserted.
 */
 static uint32_t
 symap_search(const Symap* map, const char* sym, bool* exact)

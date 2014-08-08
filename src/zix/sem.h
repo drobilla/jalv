@@ -59,13 +59,13 @@ extern "C" {
 typedef struct ZixSemImpl ZixSem;
 
 /**
-   Create and initialize @c sem to @c initial.
+   Create and initialize `sem` to `initial`.
 */
 static inline ZixStatus
 zix_sem_init(ZixSem* sem, unsigned initial);
 
 /**
-   Destroy @c sem.
+   Destroy `sem`.
 */
 static inline void
 zix_sem_destroy(ZixSem* sem);

@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 David Robillard <http://drobilla.net>
+  Copyright 2012-2014 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -46,9 +46,9 @@ typedef pthread_t ZixThread;
 #endif
 
 /**
-   Initialize @c thread to a new thread.
+   Initialize `thread` to a new thread.
 
-   The thread will immediately be launched, calling @c function with @c arg
+   The thread will immediately be launched, calling `function` with `arg`
    as the only parameter.
 */
 static inline ZixStatus
@@ -58,7 +58,7 @@ zix_thread_create(ZixThread* thread,
                   void*      arg);
 
 /**
-   Join @c thread (block until @c thread exits).
+   Join `thread` (block until `thread` exits).
 */
 static inline ZixStatus
 zix_thread_join(ZixThread thread, void** retval);

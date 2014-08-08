@@ -100,13 +100,13 @@ void*
 lv2_evbuf_get_buffer(LV2_Evbuf* evbuf);
 
 /**
-   Return an iterator to the start of `buf`.
+   Return an iterator to the start of `evbuf`.
 */
 LV2_Evbuf_Iterator
 lv2_evbuf_begin(LV2_Evbuf* evbuf);
 
 /**
-   Return an iterator to the end of @a buf.
+   Return an iterator to the end of `evbuf`.
 */
 LV2_Evbuf_Iterator
 lv2_evbuf_end(LV2_Evbuf* evbuf);
