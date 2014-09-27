@@ -414,6 +414,15 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 	return 0;
 }
 
+/** Jack shutdown callback. */
+static void
+jack_shutdown_cb(void* data)
+{
+	Jalv* const jalv = (Jalv*)data;
+	jalv_close_ui(jalv);
+	zix_sem_post(jalv->done);
+}
+
 /** Jack process callback. */
 static REALTIME int
 jack_process_cb(jack_nframes_t nframes, void* data)
@@ -1187,6 +1196,8 @@ main(int argc, char** argv)
 	                          &jack_process_cb, (void*)(&jalv));
 	jack_set_buffer_size_callback(jalv.jack_client,
 	                              &jack_buffer_size_cb, (void*)(&jalv));
+	jack_on_shutdown(jalv.jack_client,
+	                 &jack_shutdown_cb, (void*)(&jalv));
 #ifdef JALV_JACK_SESSION
 	jack_set_session_callback(jalv.jack_client,
 	                          &jack_session_cb, (void*)(&jalv));
