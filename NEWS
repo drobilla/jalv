@@ -1,8 +1,9 @@
 jalv (1.4.7) unstable;
 
-  * Exit on jack shutdown
+  * Exit on jack shutdown (Patch from Robin Gareus)
+  * Fix semaphore try_wait on windows (Patch from Robin Gareus)
 
- -- David Robillard <d@drobilla.net>  Fri, 26 Sep 2014 22:36:07 -0400
+ -- David Robillard <d@drobilla.net>  Sun, 28 Sep 2014 13:13:02 -0400
 
 jalv (1.4.6) stable;
 
