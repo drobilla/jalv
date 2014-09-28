@@ -36,8 +36,13 @@
 #    else
 #        define ZIX_API ZIX_LIB_IMPORT
 #    endif
+#    define ZIX_PRIVATE static
+#elif defined(ZIX_INLINE)
+#    define ZIX_API     static inline
+#    define ZIX_PRIVATE static inline
 #else
 #    define ZIX_API
+#    define ZIX_PRIVATE static
 #endif
 /** @endcond */
 
@@ -57,6 +62,28 @@ typedef enum {
 	ZIX_STATUS_BAD_PERMS,
 } ZixStatus;
 
+static inline const char*
+zix_strerror(const ZixStatus status)
+{
+	switch (status) {
+	case ZIX_STATUS_SUCCESS:
+		return "Success";
+	case ZIX_STATUS_ERROR:
+		return "Unknown error";
+	case ZIX_STATUS_NO_MEM:
+		return "Out of memory";
+	case ZIX_STATUS_NOT_FOUND:
+		return "Not found";
+	case ZIX_STATUS_EXISTS:
+		return "Exists";
+	case ZIX_STATUS_BAD_ARG:
+		return "Bad argument";
+	case ZIX_STATUS_BAD_PERMS:
+		return "Bad permissions";
+	}
+	return "Unknown error";
+}
+	
 /**
    Function for comparing two elements.
 */
