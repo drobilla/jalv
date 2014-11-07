@@ -56,7 +56,8 @@ def configure(conf):
         autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
                           atleast_version='4.0.0', mandatory=False)
         if conf.is_defined('HAVE_QT4'):
-            conf.find_program('moc')
+            if not conf.find_program('moc-qt4', var='MOC', mandatory=False):
+                conf.find_program('moc')
 
     conf.check(function_name='jack_port_type_get_buffer_size',
                header_name='jack/jack.h',
