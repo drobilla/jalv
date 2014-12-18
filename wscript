@@ -55,7 +55,7 @@ def configure(conf):
     if not Options.options.no_qt:
         autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
                           atleast_version='4.0.0', mandatory=False)
-        if conf.is_defined('HAVE_QT4'):
+        if conf.env.HAVE_QT4:
             if not conf.find_program('moc-qt4', var='MOC', mandatory=False):
                 conf.find_program('moc')
 
@@ -80,14 +80,10 @@ def configure(conf):
 
     autowaf.display_msg(conf, "Jack metadata support",
                         conf.is_defined('HAVE_JACK_METADATA'))
-    autowaf.display_msg(conf, "Gtk 2.0 support",
-                        conf.is_defined('HAVE_GTK2'))
-    autowaf.display_msg(conf, "Gtk 3.0 support",
-                        conf.is_defined('HAVE_GTK3'))
-    autowaf.display_msg(conf, "Gtkmm 2.0 support",
-                        conf.is_defined('HAVE_GTKMM2'))
-    autowaf.display_msg(conf, "Qt 4.0 support",
-                        conf.is_defined('HAVE_QT4'))
+    autowaf.display_msg(conf, "Gtk 2.0 support", bool(conf.env.HAVE_GTK2))
+    autowaf.display_msg(conf, "Gtk 3.0 support", bool(conf.env.HAVE_GTK3))
+    autowaf.display_msg(conf, "Gtkmm 2.0 support", bool(conf.env.HAVE_GTKMM2))
+    autowaf.display_msg(conf, "Qt 4.0 support", bool(conf.env.HAVE_QT4))
     print('')
 
 def build(bld):
@@ -105,7 +101,7 @@ def build(bld):
     autowaf.use_lib(bld, obj, libs)
 
     # Gtk2 version
-    if bld.is_defined('HAVE_GTK2'):
+    if bld.env.HAVE_GTK2:
         obj = bld(features     = 'c cprogram',
                   source       = source + ' src/jalv_gtk.c',
                   target       = 'jalv.gtk',
@@ -115,7 +111,7 @@ def build(bld):
         autowaf.use_lib(bld, obj, libs + ' GTK2')
 
     # Gtk3 version
-    if bld.is_defined('HAVE_GTK3'):
+    if bld.env.HAVE_GTK3:
         obj = bld(features     = 'c cprogram',
                   source       = source + ' src/jalv_gtk.c',
                   target       = 'jalv.gtk3',
@@ -125,7 +121,7 @@ def build(bld):
         autowaf.use_lib(bld, obj, libs + ' GTK3')
 
     # Gtkmm version
-    if bld.is_defined('HAVE_GTKMM2'):
+    if bld.env.HAVE_GTKMM2:
         obj = bld(features     = 'c cxx cxxprogram',
                   source       = source + ' src/jalv_gtkmm2.cpp',
                   target       = 'jalv.gtkmm',
@@ -135,7 +131,7 @@ def build(bld):
         autowaf.use_lib(bld, obj, libs + ' GTKMM2')
 
     # Qt version
-    if bld.is_defined('HAVE_QT4'):
+    if bld.env.HAVE_QT4:
         obj = bld(rule = '${MOC} ${SRC} > ${TGT}',
                   source = 'src/jalv_qt4.cpp',
                   target = 'jalv_qt4_meta.hpp')
