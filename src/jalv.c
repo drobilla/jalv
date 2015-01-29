@@ -698,6 +698,11 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 		NULL
 	};
 
+	const char* bundle_uri  = lilv_node_as_uri(lilv_ui_get_bundle_uri(jalv->ui));
+	const char* binary_uri  = lilv_node_as_uri(lilv_ui_get_binary_uri(jalv->ui));
+	char*       bundle_path = lilv_file_uri_parse(bundle_uri, NULL);
+	char*       binary_path = lilv_file_uri_parse(binary_uri, NULL);
+
 	jalv->ui_instance = suil_instance_new(
 		jalv->ui_host,
 		jalv,
@@ -705,9 +710,12 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 		lilv_node_as_uri(lilv_plugin_get_uri(jalv->plugin)),
 		lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)),
 		lilv_node_as_uri(jalv->ui_type),
-		lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_bundle_uri(jalv->ui))),
-		lilv_uri_to_path(lilv_node_as_uri(lilv_ui_get_binary_uri(jalv->ui))),
+		bundle_path,
+		binary_path,
 		ui_features);
+
+	free(binary_path);
+	free(bundle_path);
 
 	/* Set initial control values on UI */
 	if (jalv->ui_instance) {
