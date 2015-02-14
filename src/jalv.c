@@ -590,6 +590,15 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	/* Deliver MIDI output and UI events */
 	for (uint32_t p = 0; p < jalv->num_ports; ++p) {
 		struct Port* const port = &jalv->ports[p];
+		if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
+		    lilv_port_has_property(jalv->plugin, port->lilv_port,
+		                           jalv->nodes.lv2_reportsLatency)) {
+			if (jalv->plugin_latency != port->control) {
+				jalv->plugin_latency = port->control;
+				jack_recompute_total_latencies(jalv->jack_client);
+			}
+		}
+
 		if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
 			void* buf = NULL;
 			if (port->jack_port) {
@@ -644,6 +653,45 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	}
 
 	return 0;
+}
+
+/** Calculate latency assuming all ports depend on each other. */
+static void
+jack_latency_cb(jack_latency_callback_mode_t mode, void* data)
+{
+	Jalv* const         jalv = (Jalv*)data;
+	const enum PortFlow flow = ((mode == JackCaptureLatency)
+	                            ? FLOW_INPUT : FLOW_OUTPUT);
+
+	/* First calculate the min/max latency of all feeding ports */
+	uint32_t             ports_found = 0;
+	jack_latency_range_t range       = { UINT32_MAX, 0 };
+	for (uint32_t p = 0; p < jalv->num_ports; ++p) {
+		struct Port* port = &jalv->ports[p];
+		if (port->jack_port && port->flow == flow) {
+			jack_latency_range_t r;
+			jack_port_get_latency_range(port->jack_port, mode, &r);
+			if (r.min < range.min) { range.min = r.min; }
+			if (r.max > range.max) { range.max = r.max; }
+			++ports_found;
+		}
+	}
+
+	if (ports_found == 0) {
+		range.min = 0;
+	}
+
+	/* Add the plugin's own latency */
+	range.min += jalv->plugin_latency;
+	range.max += jalv->plugin_latency;
+
+	/* Tell Jack about it */
+	for (uint32_t p = 0; p < jalv->num_ports; ++p) {
+		struct Port* port = &jalv->ports[p];
+		if (port->jack_port && port->flow == flow) {
+			jack_port_set_latency_range(port->jack_port, mode, &range);
+		}
+	}
 }
 
 #ifdef JALV_JACK_SESSION
@@ -976,6 +1024,7 @@ main(int argc, char** argv)
 	jalv.nodes.lv2_connectionOptional = lilv_new_uri(world, LV2_CORE__connectionOptional);
 	jalv.nodes.lv2_control            = lilv_new_uri(world, LV2_CORE__control);
 	jalv.nodes.lv2_name               = lilv_new_uri(world, LV2_CORE__name);
+	jalv.nodes.lv2_reportsLatency     = lilv_new_uri(world, LV2_CORE__reportsLatency);
 	jalv.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
 	jalv.nodes.pg_group               = lilv_new_uri(world, LV2_PORT_GROUPS__group);
 	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
@@ -1206,6 +1255,8 @@ main(int argc, char** argv)
 	                              &jack_buffer_size_cb, (void*)(&jalv));
 	jack_on_shutdown(jalv.jack_client,
 	                 &jack_shutdown_cb, (void*)(&jalv));
+	jack_set_latency_callback(jalv.jack_client,
+	                          &jack_latency_cb, (void*)(&jalv));
 #ifdef JALV_JACK_SESSION
 	jack_set_session_callback(jalv.jack_client,
 	                          &jack_session_cb, (void*)(&jalv));

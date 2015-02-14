@@ -134,6 +134,7 @@ typedef struct {
 	LilvNode* lv2_connectionOptional;
 	LilvNode* lv2_control;
 	LilvNode* lv2_name;
+	LilvNode* lv2_reportsLatency;
 	LilvNode* midi_MidiEvent;
 	LilvNode* pg_group;
 	LilvNode* pset_Preset;
@@ -196,6 +197,7 @@ typedef struct {
 	uint32_t           control_in;     ///< Index of control input port
 	uint32_t           num_ports;      ///< Size of the two following arrays:
 	uint32_t           longest_sym;    ///< Longest port symbol
+	uint32_t           plugin_latency; ///< Latency reported by plugin (if any)
 	float              ui_update_hz;   ///< Frequency of UI updates
 	jack_nframes_t     sample_rate;    ///< Sample rate
 	jack_nframes_t     event_delta_t;  ///< Frames since last update sent to UI
