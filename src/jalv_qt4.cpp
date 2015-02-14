@@ -90,7 +90,7 @@ public:
 	explicit Timer(Jalv* jalv) : _jalv(jalv) {}
 
 	void timerEvent(QTimerEvent* e) {
-		jalv_emit_ui_events(_jalv);
+		jalv_update(_jalv);
 	}
 
 private:

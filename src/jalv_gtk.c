@@ -889,8 +889,7 @@ jalv_open_ui(Jalv* jalv)
 			box_size.height + controls_size.height);
 	}
 
-	g_timeout_add(1000 / jalv->ui_update_hz,
-	              (GSourceFunc)jalv_emit_ui_events, jalv);
+	g_timeout_add(1000 / jalv->ui_update_hz, (GSourceFunc)jalv_update, jalv);
 
 	gtk_window_present(GTK_WINDOW(window));
 

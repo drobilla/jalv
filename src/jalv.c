@@ -850,25 +850,32 @@ jalv_ui_port_index(SuilController controller, const char* symbol)
 }
 
 bool
-jalv_emit_ui_events(Jalv* jalv)
+jalv_update(Jalv* jalv)
 {
+	/* Check quit flag and close if set. */
+	if (zix_sem_try_wait(&exit_sem)) {
+		jalv_close_ui(jalv);
+		return false;
+	}
+
+	/* Emit UI events. */
 	ControlChange ev;
 	const size_t  space = jack_ringbuffer_read_space(jalv->plugin_events);
 	for (size_t i = 0;
 	     i + sizeof(ev) + sizeof(float) <= space;
 	     i += sizeof(ev) + ev.size) {
-		// Read event header to get the size
+		/* Read event header to get the size */
 		jack_ringbuffer_read(jalv->plugin_events, (char*)&ev, sizeof(ev));
 
-		// Resize read buffer if necessary
+		/* Resize read buffer if necessary */
 		jalv->ui_event_buf = realloc(jalv->ui_event_buf, ev.size);
 		void* const buf = jalv->ui_event_buf;
 
-		// Read event body
+		/* Read event body */
 		jack_ringbuffer_read(jalv->plugin_events, buf, ev.size);
 
 		if (jalv->opts.dump && ev.protocol == jalv->urids.atom_eventTransfer) {
-			// Dump event in Turtle to the console
+			/* Dump event in Turtle to the console */
 			LV2_Atom* atom = (LV2_Atom*)buf;
 			char*     str  = sratom_to_turtle(
 				jalv->ui_sratom, &jalv->unmap, "jalv:", NULL, NULL,
@@ -924,8 +931,8 @@ main(int argc, char** argv)
 	Jalv jalv;
 	memset(&jalv, '\0', sizeof(Jalv));
 	jalv.prog_name     = argv[0];
-	jalv.block_length  = 4096;  // Should be set by jack_buffer_size_cb
-	jalv.midi_buf_size = 1024;  // Should be set by jack_buffer_size_cb
+	jalv.block_length  = 4096;  /* Should be set by jack_buffer_size_cb */
+	jalv.midi_buf_size = 1024;  /* Should be set by jack_buffer_size_cb */
 	jalv.play_state    = JALV_PAUSED;
 	jalv.bpm           = 120.0f;
 
@@ -1101,7 +1108,7 @@ main(int argc, char** argv)
 			                         suil_ui_supported,
 			                         native_ui_type,
 			                         &jalv.ui_type)) {
-				// TODO: Multiple UI support
+				/* TODO: Multiple UI support */
 				jalv.ui = this_ui;
 				break;
 			}

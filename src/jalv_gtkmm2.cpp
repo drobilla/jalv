@@ -75,7 +75,7 @@ jalv_open_ui(Jalv* jalv)
 		widgetmm->show_all();
 
 		g_timeout_add(1000 / jalv->ui_update_hz,
-		              (GSourceFunc)jalv_emit_ui_events, jalv);
+		              (GSourceFunc)jalv_update, jalv);
 	} else {
 		Gtk::Button* button = Gtk::manage(new Gtk::Button("Close"));
 		window->add(*Gtk::manage(button));

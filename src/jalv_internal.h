@@ -254,7 +254,7 @@ jalv_ui_port_event(Jalv*       jalv,
                    const void* buffer);
 
 bool
-jalv_emit_ui_events(Jalv* jalv);
+jalv_update(Jalv* jalv);
 
 int
 jalv_ui_resize(Jalv* jalv, int width, int height);
