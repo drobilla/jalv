@@ -908,7 +908,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
 		fprintf(stderr, "warning: Ignoring invalid value `%s'\n", s);
 		return false;
 	}
-	
+
 	struct Port* port = jalv_port_by_symbol(jalv, sym);
 	if (!port) {
 		fprintf(stderr, "warning: Ignoring value for unknown port `%s'\n", sym);
@@ -1212,7 +1212,7 @@ main(int argc, char** argv)
 		  sizeof(float), jalv.urids.atom_Float, &jalv.ui_update_hz },
 		{ LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL }
 	};
-	
+
 	options_feature.data = &options;
 
 	/* Create Plugin <=> UI communication buffers */

@@ -120,7 +120,7 @@ jalv_native_ui_type(Jalv* jalv)
 {
 #if GTK_MAJOR_VERSION == 2
 	return "http://lv2plug.in/ns/extensions/ui#GtkUI";
-#elif GTK_MAJOR_VERSION == 3 
+#elif GTK_MAJOR_VERSION == 3
 	return "http://lv2plug.in/ns/extensions/ui#Gtk3UI";
 #else
 	return NULL;
@@ -328,7 +328,7 @@ jalv_ui_port_event(Jalv*       jalv,
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget),
 		                             *(const float*)buffer > 0.0f);
 	} else if (GTK_IS_RANGE(widget)) {
-		gtk_range_set_value(GTK_RANGE(widget), *(const float*)buffer); 
+		gtk_range_set_value(GTK_RANGE(widget), *(const float*)buffer);
 	} else {
 		fprintf(stderr, "Unknown widget type for port %d\n", port_index);
 	}
