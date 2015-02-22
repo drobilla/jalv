@@ -1,12 +1,13 @@
 jalv (1.4.7) unstable;
 
+  * Set Jack port order metadata
   * Exit on Jack shutdown (Patch from Robin Gareus)
   * Report Jack latency (Patch from Robin Gareus)
   * Exit GUI versions on interrupt
   * Fix semaphore correctness issues
   * Use moc-qt4 if present for systems with multiple Qt versions
 
- -- David Robillard <d@drobilla.net>  Fri, 13 Feb 2015 21:04:32 -0500
+ -- David Robillard <d@drobilla.net>  Sat, 21 Feb 2015 23:26:19 -0500
 
 jalv (1.4.6) stable;
 

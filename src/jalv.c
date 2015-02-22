@@ -390,10 +390,18 @@ activate_port(Jalv*    jalv,
 
 #ifdef HAVE_JACK_METADATA
 	if (port->jack_port) {
+		// Set port order to index
+		char index_str[16];
+		snprintf(index_str, sizeof(index_str), "%d", port_index);
+		jack_set_property(jalv->jack_client, jack_port_uuid(port->jack_port),
+		                  "http://jackaudio.org/metadata/order", index_str,
+		                  "http://www.w3.org/2001/XMLSchema#integer");
+
+		// Set port pretty name to label
 		LilvNode* name = lilv_port_get_name(jalv->plugin, port->lilv_port);
-		jack_set_property(
-			jalv->jack_client, jack_port_uuid(port->jack_port),
-			JACK_METADATA_PRETTY_NAME, lilv_node_as_string(name), NULL);
+		jack_set_property(jalv->jack_client, jack_port_uuid(port->jack_port),
+		                  JACK_METADATA_PRETTY_NAME, lilv_node_as_string(name),
+		                  "http://www.w3.org/2001/XMLSchema#string");
 		lilv_node_free(name);
 	}
 #endif
