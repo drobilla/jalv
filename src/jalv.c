@@ -401,7 +401,7 @@ activate_port(Jalv*    jalv,
 		LilvNode* name = lilv_port_get_name(jalv->plugin, port->lilv_port);
 		jack_set_property(jalv->jack_client, jack_port_uuid(port->jack_port),
 		                  JACK_METADATA_PRETTY_NAME, lilv_node_as_string(name),
-		                  "http://www.w3.org/2001/XMLSchema#string");
+		                  "text/plain");
 		lilv_node_free(name);
 	}
 #endif
