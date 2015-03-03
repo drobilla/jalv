@@ -607,14 +607,14 @@ add_control_row(GtkWidget*  table,
 static int
 port_group_cmp(const void* p1, const void* p2, void* data)
 {
-	Jalv*              jalv  = (Jalv*)data;
-	const struct Port* port1 = (const struct Port*)p1;
-	const struct Port* port2 = (const struct Port*)p2;
+	Jalv*           jalv  = (Jalv*)data;
+	const LilvPort* port1 = *(const LilvPort**)p1;
+	const LilvPort* port2 = *(const LilvPort**)p2;
 
 	LilvNode* group1 = lilv_port_get(
-		jalv->plugin, port1->lilv_port, jalv->nodes.pg_group);
+		jalv->plugin, port1, jalv->nodes.pg_group);
 	LilvNode* group2 = lilv_port_get(
-		jalv->plugin, port2->lilv_port, jalv->nodes.pg_group);
+		jalv->plugin, port2, jalv->nodes.pg_group);
 
 	const int cmp = (group1 && group2)
 		? strcmp(lilv_node_as_string(group1), lilv_node_as_string(group2))
@@ -648,10 +648,10 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	lilv_plugin_get_port_ranges_float(plugin, mins, maxs, NULL);
 
 	/* Make an array of control port pointers and sort it by group */
-	GArray* control_ports = g_array_new(FALSE, TRUE, sizeof(struct Port*));
+	GArray* control_ports = g_array_new(FALSE, TRUE, sizeof(LilvPort*));
 	for (unsigned i = 0; i < jalv->num_ports; ++i) {
 		if (jalv->ports[i].type == TYPE_CONTROL) {
-			g_array_append_vals(control_ports, &jalv->ports[i], 1);
+			g_array_append_vals(control_ports, &jalv->ports[i].lilv_port, 1);
 		}
 	}
 	g_array_sort_with_data(control_ports, port_group_cmp, jalv);
@@ -660,16 +660,14 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	LilvNode* last_group = NULL;
 	int       n_rows     = 0;
 	for (unsigned i = 0; i < control_ports->len; ++i) {
-		const LilvPort* port  = g_array_index(control_ports, LilvPort*, i);
-
+		const LilvPort* port = g_array_index(control_ports, LilvPort*, i);
 		if (!jalv->opts.show_hidden &&
 		    lilv_port_has_property(plugin, port, pprop_notOnGUI)) {
 			continue;
 		}
 
-		uint32_t        index = lilv_port_get_index(plugin, port);
-		LilvNode*       name  = lilv_port_get_name(plugin, port);
-
+		uint32_t  index = lilv_port_get_index(plugin, port);
+		LilvNode* name  = lilv_port_get_name(plugin, port);
 		LilvNode* group = lilv_port_get(plugin, port, jalv->nodes.pg_group);
 		if (group && !lilv_node_equals(group, last_group)) {
 			/* Group has changed, add a heading row here */
