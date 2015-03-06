@@ -116,6 +116,30 @@ jalv_native_ui_type(Jalv* jalv)
 	return NULL;
 }
 
+static void
+jalv_process_command(Jalv* jalv, const char* cmd)
+{
+	char  sym[64];
+	float value;
+	if (sscanf(cmd, "%[a-zA-Z0-9] = %f", sym, &value) == 2) {
+		struct Port* port = NULL;
+		for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+			struct Port* p = &jalv->ports[i];
+			const LilvNode* s = lilv_port_get_symbol(jalv->plugin, p->lilv_port);
+			if (!strcmp(lilv_node_as_string(s), sym)) {
+				port = p;
+				break;
+			}
+		}
+		if (port) {
+			port->control = value;
+			printf("%-*s = %f\n", jalv->longest_sym, sym, value);
+		} else {
+			fprintf(stderr, "error: no port `%s'\n", sym);
+		}
+	}
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {
@@ -142,10 +166,22 @@ jalv_open_ui(Jalv* jalv)
 
 		show_iface->hide(suil_instance_get_handle(jalv->ui_instance));
 
-		// Caller waits on the done sem, so increment it again to exit
-		zix_sem_post(jalv->done);
-	}
+	} else {
+		// Primitive command prompt for setting control values
+		while (!zix_sem_try_wait(jalv->done)) {
+			char line[128];
+			printf("> ");
+			if (fgets(line, sizeof(line), stdin)) {
+				jalv_process_command(jalv, line);
+			} else {
+				break;
+			}
+		}
+	}		
 
+	// Caller waits on the done sem, so increment it again to exit
+	zix_sem_post(jalv->done);
+	
 	return 0;
 }
 
