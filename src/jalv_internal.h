@@ -138,6 +138,7 @@ typedef struct {
 	LilvNode* midi_MidiEvent;
 	LilvNode* pg_group;
 	LilvNode* pset_Preset;
+	LilvNode* pset_bank;
 	LilvNode* rdfs_label;
 	LilvNode* rsz_minimumSize;
 	LilvNode* work_interface;
@@ -184,6 +185,7 @@ typedef struct {
 	char*              temp_dir;       ///< Temporary plugin state directory
 	char*              save_dir;       ///< Plugin save directory
 	const LilvPlugin*  plugin;         ///< Plugin class (RDF data)
+	LilvState*         preset;         ///< Current preset
 	LilvUIs*           uis;            ///< All plugin UIs (RDF data)
 	const LilvUI*      ui;             ///< Plugin UI (RDF data)
 	const LilvNode*    ui_type;        ///< Plugin UI type (unwrapped)
@@ -272,6 +274,9 @@ jalv_unload_presets(Jalv* jalv);
 
 int
 jalv_apply_preset(Jalv* jalv, const LilvNode* preset);
+
+int
+jalv_delete_current_preset(Jalv* jalv);
 
 int
 jalv_save_preset(Jalv*       jalv,

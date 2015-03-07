@@ -1043,6 +1043,7 @@ main(int argc, char** argv)
 	jalv.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
 	jalv.nodes.pg_group               = lilv_new_uri(world, LV2_PORT_GROUPS__group);
 	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
+	jalv.nodes.pset_bank              = lilv_new_uri(world, LV2_PRESETS__bank);
 	jalv.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
 	jalv.nodes.rsz_minimumSize        = lilv_new_uri(world, LV2_RESIZE_PORT__minimumSize);
 	jalv.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);

@@ -49,12 +49,7 @@ jalv_make_path(LV2_State_Make_Path_Handle handle,
 	Jalv* jalv = (Jalv*)handle;
 
 	// Create in save directory if saving, otherwise use temp directory
-	const char* dir = (jalv->save_dir) ? jalv->save_dir : jalv->temp_dir;
-
-	char* fullpath = jalv_strjoin(dir, path);
-	fprintf(stderr, "MAKE PATH `%s' => `%s'\n", path, fullpath);
-
-	return fullpath;
+	return jalv_strjoin(jalv->save_dir ? jalv->save_dir : jalv->temp_dir, path);
 }
 
 static const void*
@@ -203,10 +198,9 @@ jalv_apply_state(Jalv* jalv, LilvState* state)
 int
 jalv_apply_preset(Jalv* jalv, const LilvNode* preset)
 {
-	LilvState* state = lilv_state_new_from_world(
-		jalv->world, &jalv->map, preset);
-	jalv_apply_state(jalv, state);
-	lilv_state_free(state);
+	lilv_state_free(jalv->preset);
+	jalv->preset = lilv_state_new_from_world(jalv->world, &jalv->map, preset);
+	jalv_apply_state(jalv, jalv->preset);
 	return 0;
 }
 
@@ -230,7 +224,21 @@ jalv_save_preset(Jalv*       jalv,
 	int ret = lilv_state_save(
 		jalv->world, &jalv->map, &jalv->unmap, state, uri, dir, filename);
 
-	lilv_state_free(state);
+	lilv_state_free(jalv->preset);
+	jalv->preset = state;
 
 	return ret;
+}
+
+int
+jalv_delete_current_preset(Jalv* jalv)
+{
+	if (!jalv->preset) {
+		return 1;
+	}
+
+	lilv_state_delete(jalv->world, jalv->preset);
+	lilv_state_free(jalv->preset);
+	jalv->preset = NULL;
+	return 0;
 }

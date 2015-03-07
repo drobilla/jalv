@@ -1,5 +1,6 @@
 jalv (1.4.7) unstable;
 
+  * Improve preset support
   * Set Jack port order metadata
   * Add command prompt to console version for changing controls
   * Exit on Jack shutdown (Patch from Robin Gareus)
@@ -8,7 +9,7 @@ jalv (1.4.7) unstable;
   * Fix semaphore correctness issues
   * Use moc-qt4 if present for systems with multiple Qt versions
 
- -- David Robillard <d@drobilla.net>  Thu, 05 Mar 2015 23:18:11 -0500
+ -- David Robillard <d@drobilla.net>  Sat, 07 Mar 2015 03:44:18 -0500
 
 jalv (1.4.6) stable;
 
