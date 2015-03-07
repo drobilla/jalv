@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2014 David Robillard <http://drobilla.net>
+  Copyright 2007-2015 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -137,8 +137,8 @@ on_save_activate(GtkWidget* widget, void* ptr)
 		"Save State",
 		(GtkWindow*)jalv->window,
 		GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
-		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-		GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+		"_Cancel", GTK_RESPONSE_CANCEL,
+		"_Save", GTK_RESPONSE_ACCEPT,
 		NULL);
 
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
@@ -188,7 +188,7 @@ on_preset_activate(GtkWidget* widget, gpointer data)
 		if (active_preset_item) {
 			gtk_check_menu_item_set_active(active_preset_item, FALSE);
 		}
-		
+
 		active_preset_item = GTK_CHECK_MENU_ITEM(widget);
 		gtk_check_menu_item_set_active(active_preset_item, TRUE);
 	}
@@ -277,7 +277,7 @@ add_preset_to_menu(Jalv*           jalv,
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), TRUE);
 		active_preset_item = GTK_CHECK_MENU_ITEM(item);
 	}
-		
+
 	LilvNode* bank = lilv_world_get(
 		jalv->world, node, jalv->nodes.pset_bank, NULL);
 
@@ -343,8 +343,8 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 		"Save Preset",
 		(GtkWindow*)jalv->window,
 		GTK_FILE_CHOOSER_ACTION_SAVE,
-		GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
-		GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+		"_Cancel", GTK_RESPONSE_REJECT,
+		"_Save", GTK_RESPONSE_ACCEPT,
 		NULL);
 
 	char* dot_lv2 = g_build_filename(g_get_home_dir(), ".lv2", NULL);
@@ -408,8 +408,8 @@ on_delete_preset_activate(GtkWidget* widget, void* ptr)
 		"Delete Preset?",
 		(GtkWindow*)jalv->window,
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-		GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
-		GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
+		"_Cancel", GTK_RESPONSE_REJECT,
+		"_OK", GTK_RESPONSE_ACCEPT,
 		NULL);
 
 	char* msg = g_strdup_printf("Delete preset \"%s\" from the file system?",
@@ -418,7 +418,7 @@ on_delete_preset_activate(GtkWidget* widget, void* ptr)
 	GtkWidget* content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 	GtkWidget* text    = gtk_label_new(msg);
 	gtk_box_pack_start(GTK_BOX(content), text, TRUE, TRUE, 4);
-		
+
 	gtk_widget_show_all(dialog);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
 		jalv_delete_current_preset(jalv);
