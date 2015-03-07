@@ -351,26 +351,39 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), dot_lv2);
 	free(dot_lv2);
 
-	GtkWidget* content   = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	GtkBox*    box       = GTK_BOX(new_box(true, 8));
-	GtkWidget* uri_label = gtk_label_new("URI (Optional):");
-	GtkWidget* uri_entry = gtk_entry_new();
+	GtkWidget* content    = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	GtkBox*    box        = GTK_BOX(new_box(true, 8));
+	GtkWidget* uri_label  = gtk_label_new("URI (Optional):");
+	GtkWidget* uri_entry  = gtk_entry_new();
+	GtkWidget* add_prefix = gtk_check_button_new_with_mnemonic(
+		"_Prefix plugin name");
 
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(add_prefix), TRUE);
 	gtk_box_pack_start(box, uri_label, FALSE, TRUE, 2);
 	gtk_box_pack_start(box, uri_entry, TRUE, TRUE, 2);
 	gtk_box_pack_start(GTK_BOX(content), GTK_WIDGET(box), FALSE, FALSE, 6);
+	gtk_box_pack_start(GTK_BOX(content), add_prefix, FALSE, FALSE, 6);
 
 	gtk_widget_show_all(GTK_WIDGET(dialog));
 	gtk_entry_set_activates_default(GTK_ENTRY(uri_entry), TRUE);
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-		const char* path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-		const char* uri  = gtk_entry_get_text(GTK_ENTRY(uri_entry));
+		const char* path   = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+		const char* uri    = gtk_entry_get_text(GTK_ENTRY(uri_entry));
+		const char* prefix = "";
+		const char* sep    = "";
+		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(add_prefix))) {
+			LilvNode* plug_name = lilv_plugin_get_name(jalv->plugin);
+			prefix = lilv_node_as_string(plug_name);
+			sep    = "_";
+			lilv_node_free(plug_name);
+		}
 
 		char* dirname  = g_path_get_dirname(path);
 		char* basename = g_path_get_basename(path);
 		char* sym      = symbolify(basename);
-		char* bundle   = g_strjoin(NULL, sym, ".lv2/", NULL);
+		char* sprefix  = symbolify(prefix);
+		char* bundle   = g_strjoin(NULL, sprefix, sep, sym, ".preset.lv2/", NULL);
 		char* file     = g_strjoin(NULL, sym, ".ttl", NULL);
 		char* dir      = g_build_filename(dirname, bundle, NULL);
 
