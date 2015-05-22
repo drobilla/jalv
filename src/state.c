@@ -237,6 +237,7 @@ jalv_delete_current_preset(Jalv* jalv)
 		return 1;
 	}
 
+	lilv_world_unload_resource(jalv->world, lilv_state_get_uri(jalv->preset));
 	lilv_state_delete(jalv->world, jalv->preset);
 	lilv_state_free(jalv->preset);
 	jalv->preset = NULL;
