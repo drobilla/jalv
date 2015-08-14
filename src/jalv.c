@@ -770,8 +770,8 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 		binary_path,
 		ui_features);
 
-	free(binary_path);
-	free(bundle_path);
+	lilv_free(binary_path);
+	lilv_free(bundle_path);
 
 	/* Set initial control values on UI */
 	if (jalv->ui_instance) {
