@@ -87,6 +87,7 @@ typedef struct {
 typedef struct {
 	char*    uuid;              ///< Session UUID
 	char*    load;              ///< Path for state to load
+	char*    preset;            ///< URI of preset to load
 	char**   controls;          ///< Control values
 	uint32_t buffer_size;       ///< Plugin <= >UI communication buffer size
 	double   update_rate;       ///< UI update rate in Hz

@@ -97,6 +97,10 @@ jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
 	LILV_FOREACH(nodes, i, presets) {
 		const LilvNode* preset = lilv_nodes_get(presets, i);
 		lilv_world_load_resource(jalv->world, preset);
+		if (!sink) {
+			continue;
+		}
+
 		LilvNodes* labels = lilv_world_find_nodes(
 			jalv->world, preset, jalv->nodes.rdfs_label, NULL);
 		if (labels) {

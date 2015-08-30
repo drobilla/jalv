@@ -87,6 +87,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "UUID for Jack session restoration", "UUID" },
 		{ "load", 'l', 0, G_OPTION_ARG_STRING, &opts->load,
 		  "Load state from save directory", "DIR" },
+		{ "preset", 'p', 0, G_OPTION_ARG_STRING, &opts->preset,
+		  "Load state from preset", "URI" },
 		{ "dump", 'd', 0, G_OPTION_ARG_NONE, &opts->dump,
 		  "Dump plugin <=> UI communication", NULL },
 		{ "show-hidden", 's', 0, G_OPTION_ARG_NONE, &opts->show_hidden,
@@ -180,6 +182,22 @@ symbolify(const char* in)
 }
 
 static void
+set_window_title(Jalv* jalv)
+{
+	LilvNode*   name   = lilv_plugin_get_name(jalv->plugin);
+	const char* plugin = lilv_node_as_string(name);
+	if (jalv->preset) {
+		const char* preset_label = lilv_state_get_label(jalv->preset);
+		char* title = g_strdup_printf("%s - %s", plugin, preset_label);
+		gtk_window_set_title(GTK_WINDOW(jalv->window), title);
+		free(title);
+	} else {
+		gtk_window_set_title(GTK_WINDOW(jalv->window), plugin);
+	}
+	lilv_node_free(name);
+}
+
+static void
 on_preset_activate(GtkWidget* widget, gpointer data)
 {
 	if (GTK_CHECK_MENU_ITEM(widget) != active_preset_item) {
@@ -191,6 +209,7 @@ on_preset_activate(GtkWidget* widget, gpointer data)
 
 		active_preset_item = GTK_CHECK_MENU_ITEM(widget);
 		gtk_check_menu_item_set_active(active_preset_item, TRUE);
+		set_window_title(record->jalv);
 	}
 }
 
@@ -395,8 +414,9 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 		lilv_world_load_bundle(jalv->world, ldir);
 		lilv_node_free(ldir);
 
-		// Rebuild preset menu
+		// Rebuild preset menu and update window title
 		rebuild_preset_menu(jalv, GTK_CONTAINER(gtk_widget_get_parent(widget)));
+		set_window_title(jalv);
 
 		g_free(dir);
 		g_free(file);
@@ -437,6 +457,10 @@ on_delete_preset_activate(GtkWidget* widget, void* ptr)
 		jalv_delete_current_preset(jalv);
 		rebuild_preset_menu(jalv, GTK_CONTAINER(gtk_widget_get_parent(widget)));
 	}
+
+	lilv_state_free(jalv->preset);
+	jalv->preset = NULL;
+	set_window_title(jalv);
 
 	g_free(msg);
 	gtk_widget_destroy(text);
@@ -999,9 +1023,7 @@ jalv_open_ui(Jalv* jalv)
 	g_signal_connect(window, "destroy",
 	                 G_CALLBACK(on_window_destroy), jalv);
 
-	LilvNode* name = lilv_plugin_get_name(jalv->plugin);
-	gtk_window_set_title(GTK_WINDOW(window), lilv_node_as_string(name));
-	lilv_node_free(name);
+	set_window_title(jalv);
 
 	GtkWidget* vbox = new_box(false, 0);
 	gtk_window_set_role(GTK_WINDOW(window), "plugin_ui");
