@@ -22,7 +22,26 @@
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
 
-#include <QtGui>
+#include <qglobal.h>
+
+#if QT_VERSION >= 0x050000
+#    include <QAction>
+#    include <QApplication>
+#    include <QDial>
+#    include <QGroupBox>
+#    include <QLabel>
+#    include <QLayout>
+#    include <QMainWindow>
+#    include <QMenu>
+#    include <QMenuBar>
+#    include <QScrollArea>
+#    include <QStyle>
+#    include <QTimer>
+#    include <QWidget>
+#    include <QWindow>
+#else
+#    include <QtGui>
+#endif
 
 #define CONTROL_WIDTH 150
 #define DIAL_STEPS    10000
@@ -296,7 +315,11 @@ private:
 	std::map<float, const char*> scaleMap;
 };
 
-#include "jalv_qt4_meta.hpp"
+#if QT_VERSION >= 0x050000
+#    include "jalv_qt5_meta.hpp"
+#else
+#    include "jalv_qt4_meta.hpp"
+#endif
 
 extern "C" {
 
@@ -312,7 +335,11 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 const char*
 jalv_native_ui_type(Jalv* jalv)
 {
+#if QT_VERSION >= 0x050000
+	return "http://lv2plug.in/ns/extensions/ui#Qt5UI";
+#else
 	return "http://lv2plug.in/ns/extensions/ui#Qt4UI";
+#endif
 }
 
 int
@@ -658,7 +685,7 @@ jalv_open_ui(Jalv* jalv)
 	quit_action->setShortcuts(QKeySequence::Quit);
 	quit_action->setStatusTip("Quit Jalv");
 	file_menu->addAction(quit_action);
-	jalv->has_ui = TRUE;
+	jalv->has_ui = true;
 
 	jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
 

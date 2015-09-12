@@ -24,6 +24,10 @@ def options(opt):
     opt.add_option('--no-qt', action='store_true', default=False,
                    dest='no_qt',
                    help="Do not build Qt GUI")
+    opt.add_option('--no-qt4', action='store_true', dest='no_qt4',
+                   help='Do not build support for Qt4')
+    opt.add_option('--no-qt5', action='store_true', dest='no_qt5',
+                   help='Do not build support for Qt5')
 
 def configure(conf):
     conf.line_just = 52
@@ -53,11 +57,17 @@ def configure(conf):
     autowaf.check_pkg(conf, 'gtkmm-2.4', uselib_store='GTKMM2',
                       atleast_version='2.20.0', mandatory=False)
     if not Options.options.no_qt:
-        autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
-                          atleast_version='4.0.0', mandatory=False)
-        if conf.env.HAVE_QT4:
-            if not conf.find_program('moc-qt4', var='MOC', mandatory=False):
-                conf.find_program('moc')
+        if not Options.options.no_qt4:
+            autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
+                              atleast_version='4.0.0', mandatory=False)
+            if conf.env.HAVE_QT4:
+                if not conf.find_program('moc-qt4', var='MOC4', mandatory=False):
+                    conf.find_program('moc', var='MOC4')
+
+        if not Options.options.no_qt5:
+            autowaf.check_pkg(conf, 'Qt5Widgets', uselib_store='QT5',
+                              atleast_version='5.1.0', mandatory=False)
+            conf.find_program('moc', var='MOC5')
 
     conf.check(function_name='jack_port_type_get_buffer_size',
                header_name='jack/jack.h',
@@ -84,6 +94,7 @@ def configure(conf):
     autowaf.display_msg(conf, "Gtk 3.0 support", bool(conf.env.HAVE_GTK3))
     autowaf.display_msg(conf, "Gtkmm 2.0 support", bool(conf.env.HAVE_GTKMM2))
     autowaf.display_msg(conf, "Qt 4.0 support", bool(conf.env.HAVE_QT4))
+    autowaf.display_msg(conf, "Qt 5.0 support", bool(conf.env.HAVE_QT5))
     print('')
 
 def build(bld):
@@ -130,18 +141,32 @@ def build(bld):
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' GTKMM2')
 
-    # Qt version
+    # Qt4 version
     if bld.env.HAVE_QT4:
-        obj = bld(rule = '${MOC} ${SRC} > ${TGT}',
-                  source = 'src/jalv_qt4.cpp',
+        obj = bld(rule = '${MOC4} ${SRC} > ${TGT}',
+                  source = 'src/jalv_qt.cpp',
                   target = 'jalv_qt4_meta.hpp')
         obj = bld(features     = 'c cxx cxxprogram',
-                  source       = source + ' src/jalv_qt4.cpp',
-                  target       = 'jalv.qt',
+                  source       = source + ' src/jalv_qt.cpp',
+                  target       = 'jalv.qt4',
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' QT4')
+
+    # Qt5 version
+    if bld.env.HAVE_QT5:
+        obj = bld(rule = '${MOC5} ${SRC} > ${TGT}',
+                  source = 'src/jalv_qt.cpp',
+                  target = 'jalv_qt5_meta.hpp')
+        obj = bld(features     = 'c cxx cxxprogram',
+                  source       = source + ' src/jalv_qt.cpp',
+                  target       = 'jalv.qt5',
+                  includes     = ['.', 'src'],
+                  lib          = ['pthread'],
+                  install_path = '${BINDIR}',
+                  cxxflags     = ['-fPIC'])
+        autowaf.use_lib(bld, obj, libs + ' QT5')
 
     # Man pages
     bld.install_files('${MANDIR}/man1', bld.path.ant_glob('doc/*.1'))
