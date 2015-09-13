@@ -67,7 +67,9 @@ def configure(conf):
         if not Options.options.no_qt5:
             autowaf.check_pkg(conf, 'Qt5Widgets', uselib_store='QT5',
                               atleast_version='5.1.0', mandatory=False)
-            conf.find_program('moc', var='MOC5')
+            if conf.env.HAVE_QT5:
+                if not conf.find_program('moc-qt5', var='MOC5', mandatory=False):
+                    conf.find_program('moc', var='MOC5')
 
     conf.check(function_name='jack_port_type_get_buffer_size',
                header_name='jack/jack.h',
