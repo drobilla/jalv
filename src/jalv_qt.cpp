@@ -714,6 +714,15 @@ jalv_open_ui(Jalv* jalv)
 	app->connect(app, SIGNAL(lastWindowClosed()), app, SLOT(quit()));
 
 	win->show();
+	if (jalv->ui_instance && !jalv_ui_is_resizable(jalv)) {
+		widget->setMinimumSize(widget->width(), widget->height());
+		widget->setMaximumSize(widget->width(), widget->height());
+		win->adjustSize();
+		win->setFixedSize(win->width(), win->height());
+	} else {
+		win->resize(widget->width(),
+		            widget->height() + win->menuBar()->height());
+	}
 
 	Timer* timer = new Timer(jalv);
 	timer->start(1000 / jalv->ui_update_hz);
