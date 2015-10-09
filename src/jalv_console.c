@@ -39,6 +39,8 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -l DIR       Load state from save directory\n");
 	fprintf(os, "  -d DIR       Dump plugin <=> UI communication\n");
 	fprintf(os, "  -b SIZE      Buffer size for plugin <=> UI communication\n");
+	fprintf(os, "  -n NAME      JACK client name\n");
+	fprintf(os, "  -x           Exact JACK client name (exit if taken)\n");
 	return error ? 1 : 0;
 }
 
@@ -101,6 +103,15 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 			opts->controls[n_controls]     = NULL;
 		} else if ((*argv)[a][1] == 'd') {
 			opts->dump = true;
+		} else if ((*argv)[a][1] == 'n') {
+			if (++a == *argc) {
+				fprintf(stderr, "Missing argument for -n\n");
+				return 1;
+			}
+			free(opts->name);
+			opts->name = jalv_strdup((*argv)[a]);
+		} else if ((*argv)[a][1] == 'x') {
+			opts->name_exact = 1;
 		} else {
 			fprintf(stderr, "Unknown option %s\n", (*argv)[a]);
 			return print_usage((*argv)[0], true);

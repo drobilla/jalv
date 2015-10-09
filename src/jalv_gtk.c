@@ -105,6 +105,10 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "Set control value (e.g. \"vol=1.4\")", NULL},
 		{ "print-controls", 'p', 0, G_OPTION_ARG_NONE, &opts->print_controls,
 		  "Print control output changes to stdout", NULL},
+		{ "jack-name", 'n', 0, G_OPTION_ARG_STRING, &opts->name,
+		  "JACK client name", NULL},
+		{ "exact-jack-name", 'x', 0, G_OPTION_ARG_NONE, &opts->name_exact,
+		  "Exact JACK client name (exit if taken)", NULL },
 		{ 0, 0, 0, 0, 0, 0, 0 } };
 	GError* error = NULL;
 	const int err = gtk_init_with_args(
