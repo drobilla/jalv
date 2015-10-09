@@ -21,13 +21,19 @@ def options(opt):
     opt.add_option('--no-jack-session', action='store_true', default=False,
                    dest='no_jack_session',
                    help="Do not build JACK session support")
-    opt.add_option('--no-qt', action='store_true', default=False,
-                   dest='no_qt',
+    opt.add_option('--no-gtk', action='store_true', default=False,
+                   dest='no_gtk',
+                   help="Do not build Gtk GUI")
+    opt.add_option('--no-gtk2', action='store_true', dest='no_gtk2',
+                   help='Do not build Gtk2 GUI')
+    opt.add_option('--no-gtk3', action='store_true', dest='no_gtk3',
+                   help='Do not build Gtk3 GUI')
+    opt.add_option('--no-qt', action='store_true', default=False, dest='no_qt',
                    help="Do not build Qt GUI")
     opt.add_option('--no-qt4', action='store_true', dest='no_qt4',
-                   help='Do not build support for Qt4')
+                   help='Do not build Qt4 GUI')
     opt.add_option('--no-qt5', action='store_true', dest='no_qt5',
-                   help='Do not build support for Qt5')
+                   help='Do not build Qt5 GUI')
 
 def configure(conf):
     conf.line_just = 52
@@ -50,12 +56,17 @@ def configure(conf):
                       atleast_version='0.4.0', mandatory=True)
     autowaf.check_pkg(conf, 'jack', uselib_store='JACK',
                       atleast_version='0.120.0', mandatory=True)
-    autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
-                      atleast_version='2.18.0', mandatory=False)
-    autowaf.check_pkg(conf, 'gtk+-3.0', uselib_store='GTK3',
-                      atleast_version='3.0.0', mandatory=False)
-    autowaf.check_pkg(conf, 'gtkmm-2.4', uselib_store='GTKMM2',
-                      atleast_version='2.20.0', mandatory=False)
+
+    if not Options.options.no_gtk:
+        if not Options.options.no_gtk2:
+            autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
+                              atleast_version='2.18.0', mandatory=False)
+            autowaf.check_pkg(conf, 'gtkmm-2.4', uselib_store='GTKMM2',
+                              atleast_version='2.20.0', mandatory=False)
+        if not Options.options.no_gtk3:
+            autowaf.check_pkg(conf, 'gtk+-3.0', uselib_store='GTK3',
+                              atleast_version='3.0.0', mandatory=False)
+
     if not Options.options.no_qt:
         if not Options.options.no_qt4:
             autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
