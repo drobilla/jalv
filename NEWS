@@ -1,7 +1,7 @@
 jalv (1.4.7) unstable;
 
   * Improve preset support
-  * Support numeric plugin properties (event-based control)
+  * Support numeric and string plugin properties (event-based control)
   * Add generic Qt control UI from Amadeus Folego
   * Set Jack port order metadata
   * Allow Jack client name to be set from command line (thanks Adam Avramov)

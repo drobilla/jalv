@@ -45,7 +45,7 @@ typedef struct {
 	uint32_t    index;           ///< Iff type == PORT
 	Controller* widget;          ///< Control Widget
 	GHashTable* points;          ///< Scale points
-	LilvNode*   value_type;      ///< Type of control value
+	LV2_URID    value_type;      ///< Type of control value
 	LilvNode*   min;             ///< Minimum value
 	LilvNode*   max;             ///< Maximum value
 	LilvNode*   def;             ///< Default value
@@ -91,9 +91,13 @@ new_port_control(Jalv* jalv, uint32_t index)
 }
 
 static bool
-has_range(Jalv* jalv, const LilvNode* subject, const LilvNode* range)
+has_range(Jalv* jalv, const LilvNode* subject, const char* range_uri)
 {
-	return lilv_world_ask(jalv->world, subject, jalv->nodes.rdfs_range, range);
+	LilvNode*  range  = lilv_new_uri(jalv->world, range_uri);
+	const bool result = lilv_world_ask(
+		jalv->world, subject, jalv->nodes.rdfs_range, range);
+	lilv_node_free(range);
+	return result;
 }
 
 static ControlID*
@@ -108,11 +112,23 @@ new_property_control(Jalv* jalv, const LilvNode* property)
 	id->max = lilv_world_get(jalv->world, property, jalv->nodes.lv2_maximum, NULL);
 	id->def = lilv_world_get(jalv->world, property, jalv->nodes.lv2_default, NULL);
 
-	if (has_range(jalv, property, jalv->nodes.atom_Path)) {
-		id->value_type = jalv->nodes.atom_Path;
-	} else if (has_range(jalv, property, jalv->nodes.atom_Float)) {
-		id->value_type = jalv->nodes.atom_Float;
-	} else {
+	const char* const types[] = {
+		LV2_ATOM__Int, LV2_ATOM__Long, LV2_ATOM__Float, LV2_ATOM__Double,
+		LV2_ATOM__Bool, LV2_ATOM__String, LV2_ATOM__Path, NULL
+	};
+
+	for (const char*const* t = types; *t; ++t) {
+		if (has_range(jalv, property, *t)) {
+			id->value_type = jalv->map.map(jalv, *t);
+			break;
+		}
+	}
+
+	id->is_toggle  = (id->value_type == jalv->forge.Bool);
+	id->is_integer = (id->value_type == jalv->forge.Int ||
+	                  id->value_type == jalv->forge.Long);
+
+	if (!id->value_type) {
 		fprintf(stderr, "Unknown value type for property <%s>\n",
 		        lilv_node_as_string(property));
 	}
@@ -638,7 +654,21 @@ set_control(const ControlID* control,
 static void
 set_float_control(const ControlID* control, float value)
 {
-	set_control(control, sizeof(float), control->jalv->forge.Float, &value);
+	if (control->value_type == control->jalv->forge.Int) {
+		const int32_t ival = lrint(value);
+		set_control(control, sizeof(ival), control->jalv->forge.Int, &ival);
+	} else if (control->value_type == control->jalv->forge.Long) {
+		const int64_t lval = lrint(value);
+		set_control(control, sizeof(lval), control->jalv->forge.Long, &lval);
+	} else if (control->value_type == control->jalv->forge.Float) {
+		set_control(control, sizeof(value), control->jalv->forge.Float, &value);
+	} else if (control->value_type == control->jalv->forge.Double) {
+		const double dval = value;
+		set_control(control, sizeof(dval), control->jalv->forge.Double, &dval);
+	} else if (control->value_type == control->jalv->forge.Bool) {
+		const int32_t ival = value;
+		set_control(control, sizeof(ival), control->jalv->forge.Bool, &ival);
+	}
 }
 
 static gboolean
@@ -709,6 +739,15 @@ toggle_changed(GtkToggleButton* button, gpointer data)
 }
 
 static void
+string_changed(GtkEntry* widget, gpointer data)
+{
+	ControlID*  control = (ControlID*)data;
+	const char* string  = gtk_entry_get_text(widget);
+
+	set_control(control, strlen(string), control->jalv->forge.String, string);
+}
+
+static void
 file_changed(GtkFileChooserButton* widget,
              gpointer              data)
 {
@@ -773,8 +812,8 @@ make_combo(ControlID* record, float value)
 	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), cell, TRUE);
 	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), cell, "text", 1, NULL);
 
-	g_signal_connect(G_OBJECT(combo),
-	                 "changed", G_CALLBACK(combo_changed), record);
+	g_signal_connect(G_OBJECT(combo), "changed",
+	                 G_CALLBACK(combo_changed), record);
 
 	return new_controller(NULL, combo);
 }
@@ -802,10 +841,10 @@ make_log_slider(ControlID* record, float value)
 	gtk_range_set_value(GTK_RANGE(scale), ldft);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin), value);
 
-	g_signal_connect(
-		G_OBJECT(scale), "value-changed", G_CALLBACK(log_scale_changed), record);
-	g_signal_connect(
-		G_OBJECT(spin), "value-changed", G_CALLBACK(log_spin_changed), record);
+	g_signal_connect(G_OBJECT(scale), "value-changed",
+	                 G_CALLBACK(log_scale_changed), record);
+	g_signal_connect(G_OBJECT(spin), "value-changed",
+	                 G_CALLBACK(log_spin_changed), record);
 
 	return new_controller(GTK_SPIN_BUTTON(spin), scale);
 }
@@ -817,7 +856,11 @@ make_slider(ControlID* record, float value)
 	const float  max   = lilv_node_is_float(record->max) ? lilv_node_as_float(record->max) : 1.0f;
 	const double step  = record->is_integer ? 1.0 : ((max - min) / 100.0);
 	GtkWidget*   scale = new_hscale(min, max, step);
-	GtkWidget*   spin  = gtk_spin_button_new_with_range(min, max, 0.000001);
+	GtkWidget*   spin  = gtk_spin_button_new_with_range(min, max, step);
+
+	if (record->is_integer) {
+		gtk_scale_set_digits(GTK_SCALE(scale), 0);
+	}
 
 	gtk_scale_set_draw_value(GTK_SCALE(scale), FALSE);
 	gtk_range_set_value(GTK_RANGE(scale), value);
@@ -831,10 +874,10 @@ make_slider(ControlID* record, float value)
 		}
 	}
 
-	g_signal_connect(
-		G_OBJECT(scale), "value-changed", G_CALLBACK(scale_changed), record);
-	g_signal_connect(
-		G_OBJECT(spin), "value-changed", G_CALLBACK(spin_changed), record);
+	g_signal_connect(G_OBJECT(scale), "value-changed",
+	                 G_CALLBACK(scale_changed), record);
+	g_signal_connect(G_OBJECT(spin), "value-changed",
+	                 G_CALLBACK(spin_changed), record);
 
 	return new_controller(GTK_SPIN_BUTTON(spin), scale);
 }
@@ -846,9 +889,18 @@ make_toggle(ControlID* record, float value)
 	if (value) {
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check), TRUE);
 	}
-	g_signal_connect(G_OBJECT(check),
-	                 "toggled", G_CALLBACK(toggle_changed), record);
+	g_signal_connect(G_OBJECT(check), "toggled",
+	                 G_CALLBACK(toggle_changed), record);
 	return new_controller(NULL, check);
+}
+
+static Controller*
+make_entry(ControlID* control)
+{
+	GtkWidget* entry = gtk_entry_new();
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(string_changed), control);
+	return new_controller(NULL, entry);
 }
 
 static Controller*
@@ -856,8 +908,8 @@ make_file_chooser(ControlID* record)
 {
 	GtkWidget* button = gtk_file_chooser_button_new(
 		lilv_node_as_uri(record->property), GTK_FILE_CHOOSER_ACTION_OPEN);
-	g_signal_connect(
-		G_OBJECT(button), "file-set", G_CALLBACK(file_changed), record);
+	g_signal_connect(G_OBJECT(button), "file-set",
+	                 G_CALLBACK(file_changed), record);
 	return new_controller(NULL, button);
 }
 
@@ -1035,13 +1087,17 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 
 		Controller* controller = NULL;
 		ControlID*  record     = new_property_control(jalv, property);
-		if (lilv_world_ask(world, property, jalv->nodes.rdfs_range, jalv->nodes.atom_Path)) {
-			controller = make_file_chooser(record);
-		} else if (lilv_world_ask(world, property, jalv->nodes.rdfs_range, jalv->nodes.atom_Float)) {
-			const float def = lilv_node_is_float(record->def) ? lilv_node_as_float(record->def) : 0.0f;
-			controller = make_slider(record, def);
-		} else {
+		if (!record->value_type) {
 			fprintf(stderr, "Unknown property range, no control shown\n");
+		} else if (record->value_type == jalv->forge.String) {
+			controller = make_entry(record);
+		} else if (record->value_type == jalv->forge.Path) {
+			controller = make_file_chooser(record);
+		} else {
+			controller = make_controller(record,
+			                             (lilv_node_is_float(record->def)
+			                              ? lilv_node_as_float(record->def)
+			                              : 0.0f));
 		}
 
 		record->widget = controller;
@@ -1066,8 +1122,8 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	} else {
 		gtk_widget_destroy(port_table);
 		GtkWidget* button = gtk_button_new_with_label("Close");
-		g_signal_connect_swapped(
-			button, "clicked", G_CALLBACK(gtk_widget_destroy), window);
+		g_signal_connect_swapped(button, "clicked",
+		                         G_CALLBACK(gtk_widget_destroy), window);
 		gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 		return button;
 	}
