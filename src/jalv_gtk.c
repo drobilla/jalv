@@ -176,6 +176,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "Load state from preset", "URI" },
 		{ "dump", 'd', 0, G_OPTION_ARG_NONE, &opts->dump,
 		  "Dump plugin <=> UI communication", NULL },
+		{ "trace", 't', 0, G_OPTION_ARG_NONE, &opts->trace,
+		  "Print trace messages from plugin", NULL },
 		{ "show-hidden", 's', 0, G_OPTION_ARG_NONE, &opts->show_hidden,
 		  "Show controls for ports with notOnGUI property on generic UI", NULL },
 		{ "no-menu", 'n', 0, G_OPTION_ARG_NONE, &opts->no_menu,

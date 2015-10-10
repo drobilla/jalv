@@ -36,7 +36,7 @@ jalv_vprintf(LV2_Log_Handle handle,
 {
 	// TODO: Lock
 	Jalv* jalv = (Jalv*)handle;
-	if (type == jalv->urids.log_Trace && !jalv->opts.dump) {
+	if (type == jalv->urids.log_Trace && !jalv->opts.trace) {
 		return 0;
 	}
 	return vfprintf(stderr, fmt, ap);

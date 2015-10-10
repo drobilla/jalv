@@ -94,6 +94,7 @@ typedef struct {
 	uint32_t buffer_size;       ///< Plugin <= >UI communication buffer size
 	double   update_rate;       ///< UI update rate in Hz
 	int      dump;              ///< Dump communication iff true
+	int      trace;             ///< Print trace log iff true
 	int      generic_ui;        ///< Use generic UI iff true
 	int      show_hidden;       ///< Show controls for notOnGUI ports
 	int      no_menu;           ///< Hide menu iff true

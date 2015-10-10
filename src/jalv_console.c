@@ -37,7 +37,8 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -c SYM=VAL   Set control value (e.g. \"vol=1.4\")\n");
 	fprintf(os, "  -u UUID      UUID for Jack session restoration\n");
 	fprintf(os, "  -l DIR       Load state from save directory\n");
-	fprintf(os, "  -d DIR       Dump plugin <=> UI communication\n");
+	fprintf(os, "  -d           Dump plugin <=> UI communication\n");
+	fprintf(os, "  -t           Print trace messages from plugin\n");
 	fprintf(os, "  -b SIZE      Buffer size for plugin <=> UI communication\n");
 	fprintf(os, "  -n NAME      JACK client name\n");
 	fprintf(os, "  -x           Exact JACK client name (exit if taken)\n");
@@ -103,6 +104,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 			opts->controls[n_controls]     = NULL;
 		} else if ((*argv)[a][1] == 'd') {
 			opts->dump = true;
+		} else if ((*argv)[a][1] == 't') {
+			opts->trace = true;
 		} else if ((*argv)[a][1] == 'n') {
 			if (++a == *argc) {
 				fprintf(stderr, "Missing argument for -n\n");

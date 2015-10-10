@@ -1,4 +1,4 @@
-.TH JALV 1 "19 Apr 2012"
+.TH JALV 1 "10 Oct 2015"
 
 .SH NAME
 .B jalv \- Run an LV2 plugin as a JACK application (console version).
@@ -9,7 +9,7 @@
 .SH OPTIONS
 
 .TP
-\fB\-h\fR, \fB\-\-help\fR
+\fB\-h\fR
 Print the command line options.
 
 .TP
@@ -21,16 +21,20 @@ Print control output changes to stdout.
 Set control value (e.g. "vol=1.4").
 
 .TP
-\fB\-u UUID\fR, \fB\-\-uuid UUID\fR
+\fB\-u UUID\fR
 UUID for Jack session restoration.
 
 .TP
-\fB\-l DIR\fR, \fB\-\-load DIR\fR
+\fB\-l DIR\fR
 Load state from state directory.
 
 .TP
-\fB\-d\fR, \fB\-\-dump\fR
+\fB\-d\fR
 Dump plugin <=> UI communication.
+
+.TP
+\fB\-t\fR
+Print trace messages from plugin
 
 .TP
 \fB\-b SIZE\fR
