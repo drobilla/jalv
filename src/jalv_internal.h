@@ -128,6 +128,8 @@ typedef struct {
 typedef struct {
 	LilvNode* atom_AtomPort;
 	LilvNode* atom_Chunk;
+	LilvNode* atom_Float;
+	LilvNode* atom_Path;
 	LilvNode* atom_Sequence;
 	LilvNode* ev_EventPort;
 	LilvNode* lv2_AudioPort;
@@ -136,13 +138,23 @@ typedef struct {
 	LilvNode* lv2_OutputPort;
 	LilvNode* lv2_connectionOptional;
 	LilvNode* lv2_control;
+	LilvNode* lv2_default;
+	LilvNode* lv2_enumeration;
+	LilvNode* lv2_integer;
+	LilvNode* lv2_maximum;
+	LilvNode* lv2_minimum;
 	LilvNode* lv2_name;
 	LilvNode* lv2_reportsLatency;
+	LilvNode* lv2_sampleRate;
+	LilvNode* lv2_toggled;
 	LilvNode* midi_MidiEvent;
 	LilvNode* pg_group;
+	LilvNode* pprops_logarithmic;
 	LilvNode* pset_Preset;
 	LilvNode* pset_bank;
+	LilvNode* rdfs_comment;
 	LilvNode* rdfs_label;
+	LilvNode* rdfs_range;
 	LilvNode* rsz_minimumSize;
 	LilvNode* work_interface;
 	LilvNode* work_schedule;

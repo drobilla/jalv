@@ -25,15 +25,100 @@
 
 static GtkCheckMenuItem* active_preset_item = NULL;
 
-typedef struct {
-	Jalv*     jalv;
-	LilvNode* property;
-} PropertyRecord;
-
+/** Widget for a control. */
 typedef struct {
 	GtkSpinButton* spin;
 	GtkWidget*     control;
 } Controller;
+
+/** Type of plugin control. */
+typedef enum {
+	PORT,     ///< Control port
+	PROPERTY  ///< Property (set via atom message)
+} ControlType;
+
+/** Plugin control. */
+typedef struct {
+	Jalv*       jalv;
+	ControlType type;
+	LilvNode*   property;        ///< Iff type == PROPERTY
+	uint32_t    index;           ///< Iff type == PORT
+	Controller* widget;          ///< Control Widget
+	GHashTable* points;          ///< Scale points
+	LilvNode*   value_type;      ///< Type of control value
+	LilvNode*   min;             ///< Minimum value
+	LilvNode*   max;             ///< Maximum value
+	LilvNode*   def;             ///< Default value
+	bool        is_toggle;       ///< Boolean (0 and 1 only)
+	bool        is_integer;      ///< Integer values only
+	bool        is_enumeration;  ///< Point values only
+	bool        is_logarithmic;  ///< Logarithmic scale
+} ControlID;
+
+static ControlID*
+new_port_control(Jalv* jalv, uint32_t index)
+{
+	struct Port*      port  = &jalv->ports[index];
+	const LilvPort*   lport = port->lilv_port;
+	const LilvPlugin* plug  = jalv->plugin;
+	const JalvNodes*  nodes = &jalv->nodes;
+
+	ControlID* id = (ControlID*)calloc(1, sizeof(ControlID));
+	id->jalv           = jalv;
+	id->type           = PORT;
+	id->index          = index;
+	id->is_toggle      = lilv_port_has_property(plug, lport, nodes->lv2_toggled);
+	id->is_integer     = lilv_port_has_property(plug, lport, nodes->lv2_integer);
+	id->is_enumeration = lilv_port_has_property(plug, lport, nodes->lv2_enumeration);
+	id->is_logarithmic = lilv_port_has_property(plug, lport, nodes->pprops_logarithmic);
+
+	lilv_port_get_range(plug, lport, &id->def, &id->min, &id->max);
+	if (lilv_port_has_property(plug, lport, jalv->nodes.lv2_sampleRate)) {
+		/* Adjust range for lv2:sampleRate controls */
+		if (lilv_node_is_float(id->min)) {
+			const float min = lilv_node_as_float(id->min) * jalv->sample_rate;
+			lilv_node_free(id->min);
+			id->min = lilv_new_float(jalv->world, min);
+		}
+		if (lilv_node_is_float(id->max)) {
+			const float max = lilv_node_as_float(id->max) * jalv->sample_rate;
+			lilv_node_free(id->max);
+			id->max = lilv_new_float(jalv->world, max);
+		}
+	}
+
+	return id;
+}
+
+static bool
+has_range(Jalv* jalv, const LilvNode* subject, const LilvNode* range)
+{
+	return lilv_world_ask(jalv->world, subject, jalv->nodes.rdfs_range, range);
+}
+
+static ControlID*
+new_property_control(Jalv* jalv, const LilvNode* property)
+{
+	ControlID* id = (ControlID*)calloc(1, sizeof(ControlID));
+	id->jalv     = jalv;
+	id->type     = PROPERTY;
+	id->property = lilv_node_duplicate(property);
+
+	id->min = lilv_world_get(jalv->world, property, jalv->nodes.lv2_minimum, NULL);
+	id->max = lilv_world_get(jalv->world, property, jalv->nodes.lv2_maximum, NULL);
+	id->def = lilv_world_get(jalv->world, property, jalv->nodes.lv2_default, NULL);
+
+	if (has_range(jalv, property, jalv->nodes.atom_Path)) {
+		id->value_type = jalv->nodes.atom_Path;
+	} else if (has_range(jalv, property, jalv->nodes.atom_Float)) {
+		id->value_type = jalv->nodes.atom_Float;
+	} else {
+		fprintf(stderr, "Unknown value type for property <%s>\n",
+		        lilv_node_as_string(property));
+	}
+
+	return id;
+}
 
 static GtkWidget*
 new_box(gboolean horizontal, gint spacing)
@@ -514,49 +599,91 @@ jalv_ui_port_event(Jalv*       jalv,
 	}
 }
 
+static void
+set_control(const ControlID* control,
+            uint32_t         size,
+            LV2_URID         type,
+            const void*      body)
+{
+	Jalv* jalv = control->jalv;
+	if (control->type == PORT && type == jalv->forge.Float) {
+		struct Port* port = &control->jalv->ports[control->index];
+		port->control = *(float*)body;
+	} else if (control->type == PROPERTY) {
+		// Copy forge since it is used by process thread
+		LV2_Atom_Forge       forge = jalv->forge;
+		LV2_Atom_Forge_Frame frame;
+		uint8_t              buf[1024];
+		lv2_atom_forge_set_buffer(&forge, buf, sizeof(buf));
+
+		lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Set);
+		lv2_atom_forge_key(&forge, jalv->urids.patch_property);
+		lv2_atom_forge_urid(
+			&forge, jalv->map.map(jalv, lilv_node_as_uri(control->property)));
+		lv2_atom_forge_key(&forge, jalv->urids.patch_value);
+		lv2_atom_forge_atom(&forge, size, type);
+		lv2_atom_forge_write(&forge, body, size);
+
+		const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);
+		jalv_ui_write(jalv,
+		              jalv->control_in,
+		              lv2_atom_total_size(atom),
+		              jalv->urids.atom_eventTransfer,
+		              atom);
+	}
+}
+
+static void
+set_float_control(const ControlID* control, float value)
+{
+	set_control(control, sizeof(float), control->jalv->forge.Float, &value);
+}
+
 static gboolean
 scale_changed(GtkRange* range, gpointer data)
 {
-	struct Port* port = (struct Port*)data;
-	port->control = gtk_range_get_value(range);
-	gtk_spin_button_set_value(
-		GTK_SPIN_BUTTON(((Controller*)port->widget)->spin), port->control);
+	const ControlID* control = (const ControlID*)data;
+	const double     value   = gtk_range_get_value(range);
+	set_float_control(control, value);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(control->widget->spin), value);
 	return FALSE;
 }
 
 static gboolean
 spin_changed(GtkSpinButton* spin, gpointer data)
 {
-	struct Port* port = (struct Port*)data;
-	port->control = gtk_spin_button_get_value(spin);
-	gtk_range_set_value(
-		GTK_RANGE(((Controller*)port->widget)->control), port->control);
+	const ControlID* control = (const ControlID*)data;
+	const double     value   = gtk_spin_button_get_value(spin);
+	set_float_control(control, value);
+	gtk_range_set_value(GTK_RANGE(control->widget->control), value);
 	return FALSE;
 }
 
 static gboolean
 log_scale_changed(GtkRange* range, gpointer data)
 {
-	struct Port* port = (struct Port*)data;
-	port->control = expf(gtk_range_get_value(range));
-	gtk_spin_button_set_value(
-		GTK_SPIN_BUTTON(((Controller*)port->widget)->spin), port->control);
+	const ControlID* control = (const ControlID*)data;
+	const double     value   = expf(gtk_range_get_value(range));
+	set_float_control(control, value);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(control->widget->control), value);
 	return FALSE;
 }
 
 static gboolean
 log_spin_changed(GtkSpinButton* spin, gpointer data)
 {
-	struct Port* port = (struct Port*)data;
-	port->control = gtk_spin_button_get_value(spin);
-	gtk_range_set_value(
-		GTK_RANGE(((Controller*)port->widget)->control), logf(port->control));
+	const ControlID* control = (const ControlID*)data;
+	const double     value   = gtk_spin_button_get_value(spin);
+	set_float_control(control, value);
+	gtk_range_set_value(GTK_RANGE(control->widget->control), logf(value));
 	return FALSE;
 }
 
 static void
 combo_changed(GtkComboBox* box, gpointer data)
 {
+	const ControlID* control = (const ControlID*)data;
+
 	GtkTreeIter iter;
 	if (gtk_combo_box_get_active_iter(box, &iter)) {
 		GtkTreeModel* model = gtk_combo_box_get_model(box);
@@ -566,15 +693,16 @@ combo_changed(GtkComboBox* box, gpointer data)
 		const double v = g_value_get_double(&value);
 		g_value_unset(&value);
 
-		((struct Port*)data)->control = v;
+		set_float_control(control, v);
 	}
 }
 
 static gboolean
 toggle_changed(GtkToggleButton* button, gpointer data)
 {
-	float fval = gtk_toggle_button_get_active(button) ? 1.0f : 0.0f;
-	((struct Port*)data)->control = fval;
+	const ControlID* control = (const ControlID*)data;
+	const float      value   = gtk_toggle_button_get_active(button) ? 1.0f : 0.0f;
+	set_float_control(control, value);
 	return FALSE;
 }
 
@@ -582,30 +710,12 @@ static void
 file_changed(GtkFileChooserButton* widget,
              gpointer              data)
 {
-	PropertyRecord* record   = (PropertyRecord*)data;
-	Jalv*           jalv     = record->jalv;
-	const char*     property = lilv_node_as_uri(record->property);
-	const char*     filename = gtk_file_chooser_get_filename(
+	ControlID*  record   = (ControlID*)data;
+	Jalv*       jalv     = record->jalv;
+	const char* filename = gtk_file_chooser_get_filename(
 		GTK_FILE_CHOOSER(widget));
 
-	// Copy forge since it is used by process thread
-	LV2_Atom_Forge       forge = jalv->forge;
-	LV2_Atom_Forge_Frame frame;
-	uint8_t              buf[1024];
-	lv2_atom_forge_set_buffer(&forge, buf, sizeof(buf));
-
-	lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Set);
-	lv2_atom_forge_key(&forge, jalv->urids.patch_property);
-	lv2_atom_forge_urid(&forge, jalv->map.map(jalv, property));
-	lv2_atom_forge_key(&forge, jalv->urids.patch_value);
-	lv2_atom_forge_path(&forge, filename, strlen(filename));
-
-	const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);
-	jalv_ui_write(jalv,
-	              jalv->control_in,
-	              lv2_atom_total_size(atom),
-	              jalv->urids.atom_eventTransfer,
-	              atom);
+	set_control(record, strlen(filename), jalv->forge.Path, filename);
 }
 
 static gint
@@ -625,7 +735,7 @@ drcmp(gconstpointer a, gconstpointer b)
 }
 
 static Controller*
-make_controller(GtkSpinButton* spin, GtkWidget* control)
+new_controller(GtkSpinButton* spin, GtkWidget* control)
 {
 	Controller* controller = (Controller*)malloc(sizeof(Controller));
 	controller->spin    = spin;
@@ -634,9 +744,9 @@ make_controller(GtkSpinButton* spin, GtkWidget* control)
 }
 
 static Controller*
-make_combo(struct Port* port, GHashTable* points)
+make_combo(ControlID* record, float value)
 {
-	GList*        list       = g_hash_table_get_keys(points);
+	GList*        list       = g_hash_table_get_keys(record->points);
 	GtkListStore* list_store = gtk_list_store_new(
 		2, G_TYPE_DOUBLE, G_TYPE_STRING);
 	gint active = -1, count = 0;
@@ -645,9 +755,9 @@ make_combo(struct Port* port, GHashTable* points)
 		gtk_list_store_append(list_store, &iter);
 		gtk_list_store_set(list_store, &iter,
 		                   0, *(double*)cur->data,
-		                   1, g_hash_table_lookup(points, cur->data),
+		                   1, g_hash_table_lookup(record->points, cur->data),
 		                   -1);
-		if (fabs(port->control - *(double*)cur->data) < FLT_EPSILON) {
+		if (fabs(value - *(double*)cur->data) < FLT_EPSILON) {
 			active = count;
 		}
 	}
@@ -662,9 +772,9 @@ make_combo(struct Port* port, GHashTable* points)
 	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), cell, "text", 1, NULL);
 
 	g_signal_connect(G_OBJECT(combo),
-	                 "changed", G_CALLBACK(combo_changed), port);
+	                 "changed", G_CALLBACK(combo_changed), record);
 
-	return make_controller(NULL, combo);
+	return new_controller(NULL, combo);
 }
 
 static void
@@ -676,77 +786,95 @@ add_mark(gdouble key, const gchar* value, void* scale)
 }
 
 static Controller*
-make_log_slider(struct Port* port, GHashTable* points, float min, float max)
+make_log_slider(ControlID* record, float value)
 {
-	float      lmin  = logf(min);
-	float      lmax  = logf(max);
-	float      ldft  = logf(port->control);
-	GtkWidget* scale = new_hscale(lmin, lmax, 0.001);
-	GtkWidget* spin  = gtk_spin_button_new_with_range(min, max, 0.000001);
+	const float min   = lilv_node_is_float(record->min) ? lilv_node_as_float(record->min) : 0.0f;
+	const float max   = lilv_node_is_float(record->max) ? lilv_node_as_float(record->max) : 1.0f;
+	const float lmin  = logf(min);
+	const float lmax  = logf(max);
+	const float ldft  = logf(value);
+	GtkWidget*  scale = new_hscale(lmin, lmax, 0.001);
+	GtkWidget*  spin  = gtk_spin_button_new_with_range(min, max, 0.000001);
 
 	gtk_scale_set_draw_value(GTK_SCALE(scale), FALSE);
 	gtk_range_set_value(GTK_RANGE(scale), ldft);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin), port->control);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin), value);
 
 	g_signal_connect(
-		G_OBJECT(scale), "value-changed", G_CALLBACK(log_scale_changed), port);
+		G_OBJECT(scale), "value-changed", G_CALLBACK(log_scale_changed), record);
 	g_signal_connect(
-		G_OBJECT(spin), "value-changed", G_CALLBACK(log_spin_changed), port);
+		G_OBJECT(spin), "value-changed", G_CALLBACK(log_spin_changed), record);
 
-	return make_controller(GTK_SPIN_BUTTON(spin), scale);
+	return new_controller(GTK_SPIN_BUTTON(spin), scale);
 }
 
 static Controller*
-make_slider(struct Port* port, GHashTable* points,
-            bool is_int, float min, float max)
+make_slider(ControlID* record, float value)
 {
-	const double step  = is_int ? 1.0 : ((max - min) / 100.0);
+	const float  min   = lilv_node_is_float(record->min) ? lilv_node_as_float(record->min) : 0.0f;
+	const float  max   = lilv_node_is_float(record->max) ? lilv_node_as_float(record->max) : 1.0f;
+	const double step  = record->is_integer ? 1.0 : ((max - min) / 100.0);
 	GtkWidget*   scale = new_hscale(min, max, step);
 	GtkWidget*   spin  = gtk_spin_button_new_with_range(min, max, 0.000001);
 
 	gtk_scale_set_draw_value(GTK_SCALE(scale), FALSE);
-	gtk_range_set_value(GTK_RANGE(scale), port->control);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin), port->control);
-	if (points) {
-		GList* list = g_hash_table_get_keys(points);
+	gtk_range_set_value(GTK_RANGE(scale), value);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin), value);
+	if (record->points) {
+		GList* list = g_hash_table_get_keys(record->points);
 		for (GList* cur = g_list_sort(list, drcmp); cur; cur = cur->next) {
 			add_mark(*(gdouble*)cur->data,
-			         g_hash_table_lookup(points, cur->data),
+			         g_hash_table_lookup(record->points, cur->data),
 			         scale);
 		}
 	}
 
 	g_signal_connect(
-		G_OBJECT(scale), "value-changed", G_CALLBACK(scale_changed), port);
+		G_OBJECT(scale), "value-changed", G_CALLBACK(scale_changed), record);
 	g_signal_connect(
-		G_OBJECT(spin), "value-changed", G_CALLBACK(spin_changed), port);
+		G_OBJECT(spin), "value-changed", G_CALLBACK(spin_changed), record);
 
-	return make_controller(GTK_SPIN_BUTTON(spin), scale);
+	return new_controller(GTK_SPIN_BUTTON(spin), scale);
 }
 
 static Controller*
-make_toggle(struct Port* port)
+make_toggle(ControlID* record, float value)
 {
 	GtkWidget* check = gtk_check_button_new();
-	if (port->control) {
+	if (value) {
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check), TRUE);
 	}
 	g_signal_connect(G_OBJECT(check),
-	                 "toggled", G_CALLBACK(toggle_changed), port);
-	return make_controller(NULL, check);
+	                 "toggled", G_CALLBACK(toggle_changed), record);
+	return new_controller(NULL, check);
 }
 
 static Controller*
-make_file_chooser(Jalv* jalv, const LilvNode* property)
+make_file_chooser(ControlID* record)
 {
 	GtkWidget* button = gtk_file_chooser_button_new(
-		lilv_node_as_uri(property), GTK_FILE_CHOOSER_ACTION_OPEN);
-	PropertyRecord* record = (PropertyRecord*)malloc(sizeof(PropertyRecord));
-	record->jalv     = jalv;
-	record->property = lilv_node_duplicate(property);
+		lilv_node_as_uri(record->property), GTK_FILE_CHOOSER_ACTION_OPEN);
 	g_signal_connect(
 		G_OBJECT(button), "file-set", G_CALLBACK(file_changed), record);
-	return make_controller(NULL, button);
+	return new_controller(NULL, button);
+}
+
+static Controller*
+make_controller(ControlID* control, float value)
+{
+	Controller* controller = NULL;
+
+	if (control->is_toggle) {
+		controller = make_toggle(control, value);
+	} else if (control->is_enumeration) {
+		controller = make_combo(control, value);
+	} else if (control->is_logarithmic) {
+		controller = make_log_slider(control, value);
+	} else {
+		controller = make_slider(control, value);
+	}
+
+	return controller;
 }
 
 static GtkWidget*
@@ -812,20 +940,9 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 	const LilvPlugin* plugin = jalv->plugin;
 	LilvWorld*        world  = jalv->world;
 
-	LilvNode*   lv2_enumeration = lilv_new_uri(world, LV2_CORE__enumeration);
-	LilvNode*   lv2_integer     = lilv_new_uri(world, LV2_CORE__integer);
-	LilvNode*   logarithmic     = lilv_new_uri(world, LV2_PORT_PROPS__logarithmic);
-	LilvNode*   lv2_sampleRate  = lilv_new_uri(world, LV2_CORE__sampleRate);
-	LilvNode*   lv2_toggled     = lilv_new_uri(world, LV2_CORE__toggled);
 	LilvNode*   patch_writable  = lilv_new_uri(world, LV2_PATCH__writable);
-	LilvNode*   rdfs_comment    = lilv_new_uri(world, LILV_NS_RDFS "comment");
 	LilvNode*   pprop_notOnGUI  = lilv_new_uri(world, LV2_PORT_PROPS__notOnGUI);
 	GtkWidget*  port_table      = gtk_table_new(jalv->num_ports, 3, false);
-
-	/* Get the min and max of all ports (or NaN if unavailable) */
-	float* mins = (float*)calloc(jalv->num_ports, sizeof(float));
-	float* maxs = (float*)calloc(jalv->num_ports, sizeof(float));
-	lilv_plugin_get_port_ranges_float(plugin, mins, maxs, NULL);
 
 	/* Make an array of control port pointers and sort it by group */
 	GArray* control_ports = g_array_new(FALSE, TRUE, sizeof(LilvPort*));
@@ -862,17 +979,12 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 		}
 		last_group = group;
 
-		if (lilv_port_has_property(plugin, port, lv2_sampleRate)) {
-			/* Adjust range for lv2:sampleRate controls */
-			mins[index] *= jalv->sample_rate;
-			maxs[index] *= jalv->sample_rate;
-		}
+		ControlID* control_id = new_port_control(jalv, index);
 
 		/* Get scale points */
-		LilvScalePoints* sp     = lilv_port_get_scale_points(plugin, port);
-		GHashTable*      points = NULL;
+		LilvScalePoints* sp = lilv_port_get_scale_points(plugin, port);
 		if (sp) {
-			points = g_hash_table_new(g_double_hash, g_double_equal);
+			control_id->points = g_hash_table_new(g_double_hash, g_double_equal);
 			int      idx    = 0;
 			gdouble* values = (gdouble*)malloc(
 				lilv_scale_points_size(sp) * sizeof(gdouble));
@@ -881,38 +993,28 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 				values[idx] = lilv_node_as_float(lilv_scale_point_get_value(p));
 				char* label = g_strdup(
 					lilv_node_as_string(lilv_scale_point_get_label(p)));
-				g_hash_table_insert(points, values + idx, label);
+				g_hash_table_insert(control_id->points, values + idx, label);
 				++idx;
 			}
 			lilv_scale_points_free(sp);
 		}
 
 		/* Make controller */
-		Controller* control = NULL;
-		if (lilv_port_has_property(plugin, port, lv2_toggled)) {
-			control = make_toggle(&jalv->ports[index]);
-		} else if (lilv_port_has_property(plugin, port, lv2_enumeration)) {
-			control = make_combo(&jalv->ports[index], points);
-		} else if (lilv_port_has_property(plugin, port, logarithmic)) {
-			control = make_log_slider(
-				&jalv->ports[index], points, mins[index], maxs[index]);
-		} else {
-			bool is_int = lilv_port_has_property(plugin, port, lv2_integer);
-			control = make_slider(
-				&jalv->ports[index], points, is_int, mins[index], maxs[index]);
-		}
-		jalv->ports[index].widget = control;
+		struct Port* jport      = &jalv->ports[index];
+		Controller*  controller = make_controller(control_id, jport->control);
+		control_id->widget = controller;
+		jport->widget      = controller;
 
 		/* Set tooltip text from comment, if available */
-		LilvNode* comment = lilv_port_get(plugin, port, rdfs_comment);
+		LilvNode* comment = lilv_port_get(plugin, port, jalv->nodes.rdfs_comment);
 		if (comment) {
-			gtk_widget_set_tooltip_text(control->control,
+			gtk_widget_set_tooltip_text(controller->control,
 			                            lilv_node_as_string(comment));
 		}
 		lilv_node_free(comment);
 
 		add_control_row(
-			port_table, n_rows++, lilv_node_as_string(name), control);
+			port_table, n_rows++, lilv_node_as_string(name), controller);
 
 		lilv_node_free(name);
 	}
@@ -929,24 +1031,29 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 			lilv_world_find_nodes(
 				world, property, jalv->nodes.rdfs_label, NULL));
 
-		Controller* controller = make_file_chooser(jalv, property);
-		add_control_row(
-			port_table, n_rows++,
-			label ? lilv_node_as_string(label) : lilv_node_as_uri(property),
-			controller);
+		Controller* controller = NULL;
+		ControlID*  record     = new_property_control(jalv, property);
+		if (lilv_world_ask(world, property, jalv->nodes.rdfs_range, jalv->nodes.atom_Path)) {
+			controller = make_file_chooser(record);
+		} else if (lilv_world_ask(world, property, jalv->nodes.rdfs_range, jalv->nodes.atom_Float)) {
+			const float def = lilv_node_is_float(record->def) ? lilv_node_as_float(record->def) : 0.0f;
+			controller = make_slider(record, def);
+		} else {
+			fprintf(stderr, "Unknown property range, no control shown\n");
+		}
+
+		record->widget = controller;
+		if (controller) {
+			add_control_row(
+				port_table, n_rows++,
+				label ? lilv_node_as_string(label) : lilv_node_as_uri(property),
+				controller);
+		}
 	}
 	lilv_nodes_free(properties);
 
-	free(mins);
-	free(maxs);
-	lilv_node_free(rdfs_comment);
 	lilv_node_free(patch_writable);
-	lilv_node_free(lv2_toggled);
-	lilv_node_free(lv2_sampleRate);
-	lilv_node_free(lv2_integer);
-	lilv_node_free(lv2_enumeration);
 	lilv_node_free(pprop_notOnGUI);
-	lilv_node_free(logarithmic);
 
 	if (n_rows > 0) {
 		gtk_window_set_resizable(GTK_WINDOW(window), TRUE);

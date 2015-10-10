@@ -56,6 +56,7 @@
 #include "lv2/lv2plug.in/ns/ext/parameters/parameters.h"
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/port-groups/port-groups.h"
+#include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
@@ -1030,6 +1031,8 @@ main(int argc, char** argv)
 	/* Cache URIs for concepts we'll use */
 	jalv.nodes.atom_AtomPort          = lilv_new_uri(world, LV2_ATOM__AtomPort);
 	jalv.nodes.atom_Chunk             = lilv_new_uri(world, LV2_ATOM__Chunk);
+	jalv.nodes.atom_Float             = lilv_new_uri(world, LV2_ATOM__Float);
+	jalv.nodes.atom_Path              = lilv_new_uri(world, LV2_ATOM__Path);
 	jalv.nodes.atom_Sequence          = lilv_new_uri(world, LV2_ATOM__Sequence);
 	jalv.nodes.ev_EventPort           = lilv_new_uri(world, LV2_EVENT__EventPort);
 	jalv.nodes.lv2_AudioPort          = lilv_new_uri(world, LV2_CORE__AudioPort);
@@ -1038,13 +1041,23 @@ main(int argc, char** argv)
 	jalv.nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);
 	jalv.nodes.lv2_connectionOptional = lilv_new_uri(world, LV2_CORE__connectionOptional);
 	jalv.nodes.lv2_control            = lilv_new_uri(world, LV2_CORE__control);
+	jalv.nodes.lv2_default            = lilv_new_uri(world, LV2_CORE__default);
+	jalv.nodes.lv2_enumeration        = lilv_new_uri(world, LV2_CORE__enumeration);
+	jalv.nodes.lv2_integer            = lilv_new_uri(world, LV2_CORE__integer);
+	jalv.nodes.lv2_maximum            = lilv_new_uri(world, LV2_CORE__maximum);
+	jalv.nodes.lv2_minimum            = lilv_new_uri(world, LV2_CORE__minimum);
 	jalv.nodes.lv2_name               = lilv_new_uri(world, LV2_CORE__name);
 	jalv.nodes.lv2_reportsLatency     = lilv_new_uri(world, LV2_CORE__reportsLatency);
+	jalv.nodes.lv2_sampleRate         = lilv_new_uri(world, LV2_CORE__sampleRate);
+	jalv.nodes.lv2_toggled            = lilv_new_uri(world, LV2_CORE__toggled);
 	jalv.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
 	jalv.nodes.pg_group               = lilv_new_uri(world, LV2_PORT_GROUPS__group);
+	jalv.nodes.pprops_logarithmic     = lilv_new_uri(world, LV2_PORT_PROPS__logarithmic);
 	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
 	jalv.nodes.pset_bank              = lilv_new_uri(world, LV2_PRESETS__bank);
+	jalv.nodes.rdfs_comment           = lilv_new_uri(world, LILV_NS_RDFS "comment");
 	jalv.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
+	jalv.nodes.rdfs_range             = lilv_new_uri(world, LILV_NS_RDFS "range");
 	jalv.nodes.rsz_minimumSize        = lilv_new_uri(world, LV2_RESIZE_PORT__minimumSize);
 	jalv.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
 	jalv.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
