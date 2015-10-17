@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2014 David Robillard <http://drobilla.net>
+  Copyright 2007-2015 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -13,9 +13,6 @@
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-
-#define _POSIX_C_SOURCE 200112L /* for fileno */
-#define _BSD_SOURCE 1 /* for lockf */
 
 #include <assert.h>
 #include <stdio.h>
