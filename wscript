@@ -94,6 +94,24 @@ def configure(conf):
                uselib='JACK',
                mandatory=False)
 
+    defines = ['_POSIX_SOURCE']
+
+    conf.check(function_name='isatty',
+               header_name='unistd.h',
+               defines=defines,
+               define_name='HAVE_ISATTY',
+               mandatory=False)
+
+    conf.check(function_name='fileno',
+               header_name='stdio.h',
+               defines=defines,
+               define_name='HAVE_FILENO',
+               mandatory=False)
+
+    if conf.is_defined('HAVE_ISATTY') and conf.is_defined('HAVE_FILENO'):
+        autowaf.define(conf, 'JALV_WITH_COLOR', 1)
+        conf.env.append_unique('CFLAGS', ['-D_POSIX_SOURCE'])
+
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
 
@@ -108,12 +126,13 @@ def configure(conf):
     autowaf.display_msg(conf, "Gtkmm 2.0 support", bool(conf.env.HAVE_GTKMM2))
     autowaf.display_msg(conf, "Qt 4.0 support", bool(conf.env.HAVE_QT4))
     autowaf.display_msg(conf, "Qt 5.0 support", bool(conf.env.HAVE_QT5))
+    autowaf.display_msg(conf, "Color output", bool(conf.env.JALV_WITH_COLOR))
     print('')
 
 def build(bld):
     libs = 'LILV SUIL JACK SERD SORD SRATOM LV2'
 
-    source = 'src/jalv.c src/symap.c src/state.c src/lv2_evbuf.c src/worker.c src/log.c'
+    source = 'src/jalv.c src/symap.c src/state.c src/lv2_evbuf.c src/worker.c src/log.c src/control.c'
 
     # Non-GUI version
     obj = bld(features     = 'c cprogram',

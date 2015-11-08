@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2014 David Robillard <http://drobilla.net>
+  Copyright 2007-2015 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -17,8 +17,12 @@
 #ifndef JALV_INTERNAL_H
 #define JALV_INTERNAL_H
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_ISATTY
+#    include <unistd.h>
+#endif
 
 #include <jack/jack.h>
 #include <jack/ringbuffer.h>
@@ -48,6 +52,8 @@
 extern "C" {
 #endif
 
+typedef struct Jalv Jalv;
+
 enum PortFlow {
 	FLOW_UNKNOWN,
 	FLOW_INPUT,
@@ -73,6 +79,58 @@ struct Port {
 	float           control;    ///< For control ports, otherwise 0.0f
 	bool            old_api;    ///< True for event, false for atom
 };
+
+/* Controls */
+
+/** Type of plugin control. */
+typedef enum {
+	PORT,     ///< Control port
+	PROPERTY  ///< Property (set via atom message)
+} ControlType;
+
+typedef struct {
+	float value;
+	char* label;
+} ScalePoint;
+
+/** Order scale points by value. */
+int scale_point_cmp(const ScalePoint* a, const ScalePoint* b);
+
+/** Plugin control. */
+typedef struct {
+	Jalv*       jalv;
+	ControlType type;
+	LV2_URID    property;        ///< Iff type == PROPERTY
+	uint32_t    index;           ///< Iff type == PORT
+	void*       widget;          ///< Control Widget
+	size_t      n_points;        ///< Number of scale points
+	ScalePoint* points;          ///< Scale points
+	LV2_URID    value_type;      ///< Type of control value
+	LilvNode*   min;             ///< Minimum value
+	LilvNode*   max;             ///< Maximum value
+	LilvNode*   def;             ///< Default value
+	bool        is_toggle;       ///< Boolean (0 and 1 only)
+	bool        is_integer;      ///< Integer values only
+	bool        is_enumeration;  ///< Point values only
+	bool        is_logarithmic;  ///< Logarithmic scale
+} ControlID;
+
+ControlID*
+new_port_control(Jalv* jalv, uint32_t index);
+
+ControlID*
+new_property_control(Jalv* jalv, const LilvNode* property);
+
+typedef struct {
+	size_t      n_controls;
+	ControlID** controls;
+} Controls;
+
+void
+add_control(Controls* controls, ControlID* control);
+
+ControlID*
+get_property_control(const Controls* controls, LV2_URID property);
 
 /**
    Control change event, sent through ring buffers for UI updates.
@@ -105,6 +163,9 @@ typedef struct {
 typedef struct {
 	LV2_URID atom_Float;
 	LV2_URID atom_Int;
+	LV2_URID atom_Object;
+	LV2_URID atom_Path;
+	LV2_URID atom_String;
 	LV2_URID atom_eventTransfer;
 	LV2_URID bufsz_maxBlockLength;
 	LV2_URID bufsz_minBlockLength;
@@ -112,6 +173,8 @@ typedef struct {
 	LV2_URID log_Trace;
 	LV2_URID midi_MidiEvent;
 	LV2_URID param_sampleRate;
+	LV2_URID patch_Get;
+	LV2_URID patch_Put;
 	LV2_URID patch_Set;
 	LV2_URID patch_property;
 	LV2_URID patch_value;
@@ -177,7 +240,7 @@ typedef struct {
 	const LV2_Worker_Interface* iface;      ///< Plugin worker interface
 } JalvWorker;
 
-typedef struct {
+struct Jalv {
 	JalvOptions        opts;           ///< Command-line options
 	JalvURIDs          urids;          ///< URIDs
 	JalvNodes          nodes;          ///< Nodes
@@ -210,6 +273,7 @@ typedef struct {
 	SuilInstance*      ui_instance;    ///< Plugin UI instance (shared library)
 	void*              window;         ///< Window (if applicable)
 	struct Port*       ports;          ///< Port array of size num_ports
+	Controls           controls;       ///< Available plugin controls
 	uint32_t           block_length;   ///< Jack buffer size (block length)
 	size_t             midi_buf_size;  ///< Size of MIDI port buffers
 	uint32_t           control_in;     ///< Index of control input port
@@ -226,7 +290,8 @@ typedef struct {
 	bool               buf_size_set;   ///< True iff buffer size callback fired
 	bool               exit;           ///< True iff execution is finished
 	bool               has_ui;         ///< True iff a control UI is present
-} Jalv;
+	bool               state_changed;  ///< Plugin state has changed
+};
 
 int
 jalv_init(int* argc, char*** argv, JalvOptions* opts);
@@ -354,6 +419,26 @@ jalv_vprintf(LV2_Log_Handle handle,
              LV2_URID       type,
              const char*    fmt,
              va_list        ap);
+
+static inline void
+jalv_ansi_start(FILE* stream, int color)
+{
+#ifdef HAVE_ISATTY
+	if (isatty(fileno(stream))) {
+		fprintf(stream, "\033[0;%dm\n", color);
+	}
+#endif
+}
+
+static inline void
+jalv_ansi_reset(FILE* stream)
+{
+#ifdef HAVE_ISATTY
+	if (isatty(fileno(stream))) {
+		fprintf(stream, "\033[0m\n");
+	}
+#endif
+}
 
 #ifdef __cplusplus
 }  // extern "C"

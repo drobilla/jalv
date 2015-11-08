@@ -190,6 +190,7 @@ jalv_apply_state(Jalv* jalv, LilvState* state)
 		lilv_state_restore(
 			state, jalv->instance, set_port_value, jalv, 0, NULL);
 
+		jalv->state_changed = true;
 		if (must_pause) {
 			jalv->play_state = JALV_RUNNING;
 		}

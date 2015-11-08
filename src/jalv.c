@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2014 David Robillard <http://drobilla.net>
+  Copyright 2007-2015 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -530,6 +530,19 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
 			}
 
+			if (jalv->state_changed) {
+				/* Plugin state has changed, request an update */
+				const LV2_Atom_Object get = {
+					{ jalv->urids.atom_Object, sizeof(LV2_Atom_Object) },
+					{ 0, jalv->urids.patch_Get } };
+
+				lv2_evbuf_write(
+					&iter, 0, 0,
+					get.atom.type, get.atom.size, LV2_ATOM_BODY(&get));
+
+				jalv->state_changed = false;
+			}
+
 			if (port->jack_port) {
 				/* Write Jack MIDI input */
 				void* buf = jack_port_get_buffer(port->jack_port, nframes);
@@ -836,7 +849,9 @@ jalv_ui_write(SuilController controller,
 		char*           str  = sratom_to_turtle(
 			jalv->sratom, &jalv->unmap, "jalv:", NULL, NULL,
 			atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
+		jalv_ansi_start(stdout, 36);
 		printf("\n## UI => Plugin (%u bytes) ##\n%s\n", atom->size, str);
+		jalv_ansi_reset(stdout);
 		free(str);
 	}
 
@@ -889,7 +904,9 @@ jalv_update(Jalv* jalv)
 			char*     str  = sratom_to_turtle(
 				jalv->ui_sratom, &jalv->unmap, "jalv:", NULL, NULL,
 				atom->type, atom->size, LV2_ATOM_BODY(atom));
+			jalv_ansi_start(stdout, 35);
 			printf("\n## Plugin => UI (%u bytes) ##\n%s\n", atom->size, str);
+			jalv_ansi_reset(stdout);
 			free(str);
 		}
 
@@ -975,6 +992,9 @@ main(int argc, char** argv)
 
 	jalv.urids.atom_Float           = symap_map(jalv.symap, LV2_ATOM__Float);
 	jalv.urids.atom_Int             = symap_map(jalv.symap, LV2_ATOM__Int);
+	jalv.urids.atom_Object          = symap_map(jalv.symap, LV2_ATOM__Object);
+	jalv.urids.atom_Path            = symap_map(jalv.symap, LV2_ATOM__Path);
+	jalv.urids.atom_String          = symap_map(jalv.symap, LV2_ATOM__String);
 	jalv.urids.atom_eventTransfer   = symap_map(jalv.symap, LV2_ATOM__eventTransfer);
 	jalv.urids.bufsz_maxBlockLength = symap_map(jalv.symap, LV2_BUF_SIZE__maxBlockLength);
 	jalv.urids.bufsz_minBlockLength = symap_map(jalv.symap, LV2_BUF_SIZE__minBlockLength);
@@ -982,6 +1002,8 @@ main(int argc, char** argv)
 	jalv.urids.log_Trace            = symap_map(jalv.symap, LV2_LOG__Trace);
 	jalv.urids.midi_MidiEvent       = symap_map(jalv.symap, LV2_MIDI__MidiEvent);
 	jalv.urids.param_sampleRate     = symap_map(jalv.symap, LV2_PARAMETERS__sampleRate);
+	jalv.urids.patch_Get            = symap_map(jalv.symap, LV2_PATCH__Get);
+	jalv.urids.patch_Put            = symap_map(jalv.symap, LV2_PATCH__Put);
 	jalv.urids.patch_Set            = symap_map(jalv.symap, LV2_PATCH__Set);
 	jalv.urids.patch_property       = symap_map(jalv.symap, LV2_PATCH__property);
 	jalv.urids.patch_value          = symap_map(jalv.symap, LV2_PATCH__value);
@@ -1159,7 +1181,7 @@ main(int argc, char** argv)
 		fprintf(stderr, "UI:           %s\n",
 		        lilv_node_as_uri(lilv_ui_get_uri(jalv.ui)));
 	} else {
-		fprintf(stderr, "No appropriate UI found\n");
+		fprintf(stderr, "UI:           None\n");
 	}
 
 	/* Create port structures (jalv.ports) */
