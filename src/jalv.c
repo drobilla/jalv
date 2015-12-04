@@ -74,8 +74,6 @@
 
 #define NS_RDF "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 
-#define USTR(str) ((const uint8_t*)str)
-
 #ifndef MIN
 #    define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif

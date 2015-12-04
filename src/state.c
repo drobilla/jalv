@@ -37,8 +37,6 @@
 #define NS_RDFS "http://www.w3.org/2000/01/rdf-schema#"
 #define NS_XSD  "http://www.w3.org/2001/XMLSchema#"
 
-#define USTR(s) ((const uint8_t*)s)
-
 char*
 jalv_make_path(LV2_State_Make_Path_Handle handle,
                const char*                path)
