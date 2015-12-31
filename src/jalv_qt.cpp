@@ -429,7 +429,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 		LILV_FOREACH(scale_points, s, sp) {
 			const LilvScalePoint* p   = lilv_scale_points_get(sp, s);
 			const LilvNode*       val = lilv_scale_point_get_value(p);
-			if (!lilv_node_is_float(val)) {
+			if (!lilv_node_is_float(val) && !lilv_node_is_int(val)) {
 				continue;
 			}
 

@@ -30,6 +30,15 @@ typedef struct {
 	GtkSpinButton* spin;
 	GtkWidget*     control;
 } Controller;
+static float
+get_float(const LilvNode* node, float fallback)
+{
+	if (lilv_node_is_float(node) || lilv_node_is_int(node)) {
+		return lilv_node_as_float(node);
+	}
+
+	return fallback;
+}
 
 static GtkWidget*
 new_box(gboolean horizontal, gint spacing)
@@ -791,8 +800,8 @@ make_combo(ControlID* record, float value)
 static Controller*
 make_log_slider(ControlID* record, float value)
 {
-	const float min   = lilv_node_is_float(record->min) ? lilv_node_as_float(record->min) : 0.0f;
-	const float max   = lilv_node_is_float(record->max) ? lilv_node_as_float(record->max) : 1.0f;
+	const float min   = get_float(record->min, 0.0f);
+	const float max   = get_float(record->max, 1.0f);
 	const float lmin  = logf(min);
 	const float lmax  = logf(max);
 	const float ldft  = logf(value);
@@ -814,8 +823,8 @@ make_log_slider(ControlID* record, float value)
 static Controller*
 make_slider(ControlID* record, float value)
 {
-	const float  min   = lilv_node_is_float(record->min) ? lilv_node_as_float(record->min) : 0.0f;
-	const float  max   = lilv_node_is_float(record->max) ? lilv_node_as_float(record->max) : 1.0f;
+	const float  min   = get_float(record->min, 0.0f);
+	const float  max   = get_float(record->max, 1.0f);
 	const double step  = record->is_integer ? 1.0 : ((max - min) / 100.0);
 	GtkWidget*   scale = new_hscale(min, max, step);
 	GtkWidget*   spin  = gtk_spin_button_new_with_range(min, max, step);
@@ -1009,7 +1018,8 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 			size_t np = 0;
 			LILV_FOREACH(scale_points, s, sp) {
 				const LilvScalePoint* p = lilv_scale_points_get(sp, s);
-				if (lilv_node_is_float(lilv_scale_point_get_value(p))) {
+				if (lilv_node_is_float(lilv_scale_point_get_value(p)) ||
+				    lilv_node_is_int(lilv_scale_point_get_value(p))) {
 					control_id->points[np].value = lilv_node_as_float(
 						lilv_scale_point_get_value(p));
 					control_id->points[np].label = g_strdup(
@@ -1068,10 +1078,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 		} else if (record->value_type == jalv->forge.Path) {
 			controller = make_file_chooser(record);
 		} else {
-			controller = make_controller(record,
-			                             (lilv_node_is_float(record->def)
-			                              ? lilv_node_as_float(record->def)
-			                              : 0.0f));
+			controller = make_controller(record, get_float(record->def, 0.0f));
 		}
 
 		record->widget = controller;

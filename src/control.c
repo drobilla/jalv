@@ -39,6 +39,9 @@ new_port_control(Jalv* jalv, uint32_t index)
 	id->jalv           = jalv;
 	id->type           = PORT;
 	id->index          = index;
+	id->min            = lilv_port_get(plug, lport, nodes->lv2_minimum);
+	id->max            = lilv_port_get(plug, lport, nodes->lv2_maximum);
+	id->def            = lilv_port_get(plug, lport, nodes->lv2_default);
 	id->is_toggle      = lilv_port_has_property(plug, lport, nodes->lv2_toggled);
 	id->is_integer     = lilv_port_has_property(plug, lport, nodes->lv2_integer);
 	id->is_enumeration = lilv_port_has_property(plug, lport, nodes->lv2_enumeration);
@@ -47,12 +50,12 @@ new_port_control(Jalv* jalv, uint32_t index)
 	lilv_port_get_range(plug, lport, &id->def, &id->min, &id->max);
 	if (lilv_port_has_property(plug, lport, jalv->nodes.lv2_sampleRate)) {
 		/* Adjust range for lv2:sampleRate controls */
-		if (lilv_node_is_float(id->min)) {
+		if (lilv_node_is_float(id->min) || lilv_node_is_int(id->min)) {
 			const float min = lilv_node_as_float(id->min) * jalv->sample_rate;
 			lilv_node_free(id->min);
 			id->min = lilv_new_float(jalv->world, min);
 		}
-		if (lilv_node_is_float(id->max)) {
+		if (lilv_node_is_float(id->max) || lilv_node_is_int(id->max)) {
 			const float max = lilv_node_as_float(id->max) * jalv->sample_rate;
 			lilv_node_free(id->max);
 			id->max = lilv_new_float(jalv->world, max);
