@@ -622,6 +622,25 @@ patch_set_get(Jalv*                  jalv,
 	return 0;
 }
 
+static int
+patch_put_get(Jalv*                   jalv,
+              const LV2_Atom_Object*  obj,
+              const LV2_Atom_Object** body)
+{
+	lv2_atom_object_get(obj,
+	                    jalv->urids.patch_body, (const LV2_Atom*)body,
+	                    0);
+	if (!*body) {
+		fprintf(stderr, "patch:Put message with no body\n");
+		return 1;
+	} else if (!lv2_atom_forge_is_object_type(&jalv->forge, (*body)->atom.type)) {
+		fprintf(stderr, "patch:Put body is not an object\n");
+		return 1;
+	}
+
+	return 0;
+}
+
 static void
 property_changed(Jalv* jalv, LV2_URID key, const LV2_Atom* value)
 {
@@ -663,8 +682,11 @@ jalv_ui_port_event(Jalv*       jalv,
 				property_changed(jalv, property->body, value);
 			}
 		} else if (obj->body.otype == jalv->urids.patch_Put) {
-			LV2_ATOM_OBJECT_FOREACH(obj, prop) {
-				property_changed(jalv, prop->key, &prop->value);
+			const LV2_Atom_Object* body = NULL;
+			if (!patch_put_get(jalv, obj, &body)) {
+				LV2_ATOM_OBJECT_FOREACH(body, prop) {
+					property_changed(jalv, prop->key, &prop->value);
+				}
 			}
 		} else {
 			printf("Unknown object type?\n");

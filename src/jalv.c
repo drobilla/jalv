@@ -1003,6 +1003,7 @@ main(int argc, char** argv)
 	jalv.urids.patch_Get            = symap_map(jalv.symap, LV2_PATCH__Get);
 	jalv.urids.patch_Put            = symap_map(jalv.symap, LV2_PATCH__Put);
 	jalv.urids.patch_Set            = symap_map(jalv.symap, LV2_PATCH__Set);
+	jalv.urids.patch_body           = symap_map(jalv.symap, LV2_PATCH__body);
 	jalv.urids.patch_property       = symap_map(jalv.symap, LV2_PATCH__property);
 	jalv.urids.patch_value          = symap_map(jalv.symap, LV2_PATCH__value);
 	jalv.urids.time_Position        = symap_map(jalv.symap, LV2_TIME__Position);
