@@ -64,7 +64,8 @@ enum PortType {
 	TYPE_UNKNOWN,
 	TYPE_CONTROL,
 	TYPE_AUDIO,
-	TYPE_EVENT
+	TYPE_EVENT,
+	TYPE_CV
 };
 
 struct Port {
@@ -198,6 +199,7 @@ typedef struct {
 	LilvNode* atom_Sequence;
 	LilvNode* ev_EventPort;
 	LilvNode* lv2_AudioPort;
+	LilvNode* lv2_CVPort;
 	LilvNode* lv2_ControlPort;
 	LilvNode* lv2_InputPort;
 	LilvNode* lv2_OutputPort;

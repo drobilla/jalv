@@ -231,6 +231,11 @@ create_port(Jalv*    jalv,
 	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
 	                          jalv->nodes.lv2_AudioPort)) {
 		port->type = TYPE_AUDIO;
+#ifdef HAVE_JACK_METADATA
+	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
+	                          jalv->nodes.lv2_CVPort)) {
+		port->type = TYPE_CV;
+#endif
 	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
 	                          jalv->nodes.ev_EventPort)) {
 		port->type = TYPE_EVENT;
@@ -375,6 +380,18 @@ activate_port(Jalv*    jalv,
 			jalv->jack_client, lilv_node_as_string(sym),
 			JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
 		break;
+#ifdef HAVE_JACK_METADATA
+	case TYPE_CV:
+		port->jack_port = jack_port_register(
+			jalv->jack_client, lilv_node_as_string(sym),
+			JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
+		if(port->jack_port) {
+			jack_set_property(jalv->jack_client, jack_port_uuid(port->jack_port),
+			                  "http://jackaudio.org/metadata/signal-type", "CV",
+			                  "text/plain");
+		}
+		break;
+#endif
 	case TYPE_EVENT:
 		if (lilv_port_supports_event(
 			    jalv->plugin, port->lilv_port, jalv->nodes.midi_MidiEvent)) {
@@ -516,7 +533,13 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			lilv_instance_connect_port(
 				jalv->instance, p,
 				jack_port_get_buffer(port->jack_port, nframes));
-
+#ifdef HAVE_JACK_METADATA
+		} else if (port->type == TYPE_CV && port->jack_port) {
+			/* Connect plugin port directly to Jack port buffer */
+			lilv_instance_connect_port(
+				jalv->instance, p,
+				jack_port_get_buffer(port->jack_port, nframes));
+#endif
 		} else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
 			lv2_evbuf_reset(port->evbuf, true);
 
@@ -1061,6 +1084,7 @@ main(int argc, char** argv)
 	jalv.nodes.atom_Sequence          = lilv_new_uri(world, LV2_ATOM__Sequence);
 	jalv.nodes.ev_EventPort           = lilv_new_uri(world, LV2_EVENT__EventPort);
 	jalv.nodes.lv2_AudioPort          = lilv_new_uri(world, LV2_CORE__AudioPort);
+	jalv.nodes.lv2_CVPort             = lilv_new_uri(world, LV2_CORE__CVPort);
 	jalv.nodes.lv2_ControlPort        = lilv_new_uri(world, LV2_CORE__ControlPort);
 	jalv.nodes.lv2_InputPort          = lilv_new_uri(world, LV2_CORE__InputPort);
 	jalv.nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);

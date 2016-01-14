@@ -1,5 +1,6 @@
 jalv (1.4.7) unstable;
 
+  * Support CV ports if Jack metadata is enabled (patch from Hanspeter Portner)
   * Improve preset support
   * Support numeric and string plugin properties (event-based control)
   * Update UI when internal plugin state is changed during preset load
@@ -9,14 +10,14 @@ jalv (1.4.7) unstable;
   * Add command prompt to console version for changing controls
   * Add option to enable plugin trace log messages
   * Colorize communication dump if output is a console
-  * Exit on Jack shutdown (Patch from Robin Gareus)
-  * Report Jack latency (Patch from Robin Gareus)
+  * Exit on Jack shutdown (patch from Robin Gareus)
+  * Report Jack latency (patch from Robin Gareus)
   * Exit GUI versions on interrupt
   * Fix semaphore correctness issues
   * Use moc-qt4 if present for systems with multiple Qt versions
   * Add Qt5 version
 
- -- David Robillard <d@drobilla.net>  Sat, 07 Nov 2015 20:25:59 -0500
+ -- David Robillard <d@drobilla.net>  Sat, 09 Jul 2016 20:38:45 -0400
 
 jalv (1.4.6) stable;
 
