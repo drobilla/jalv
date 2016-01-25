@@ -756,6 +756,9 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 	const LV2_Feature data_feature = {
 		LV2_DATA_ACCESS_URI, &ext_data
 	};
+	const LV2_Feature idle_feature = {
+		LV2_UI__idleInterface, NULL
+	};
 	const LV2_Feature* ui_features[] = {
 		&uri_map_feature, &map_feature, &unmap_feature,
 		&instance_feature,
@@ -763,6 +766,7 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 		&log_feature,
 		&parent_feature,
 		&options_feature,
+		&idle_feature,
 		NULL
 	};
 
