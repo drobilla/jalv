@@ -157,6 +157,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 int
 jalv_open_ui(Jalv* jalv)
 {
+	jalv->has_ui = true;
 	const LV2UI_Idle_Interface* idle_iface = NULL;
 	const LV2UI_Show_Interface* show_iface = NULL;
 	if (jalv->ui && jalv->opts.show_ui) {
@@ -172,6 +173,7 @@ jalv_open_ui(Jalv* jalv)
 
 		// Drive idle interface until interrupted
 		while (!zix_sem_try_wait(jalv->done)) {
+			jalv_update(jalv);
 			if (idle_iface->idle(suil_instance_get_handle(jalv->ui_instance))) {
 				break;
 			}
