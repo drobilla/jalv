@@ -83,7 +83,7 @@ zix_strerror(const ZixStatus status)
 	}
 	return "Unknown error";
 }
-	
+
 /**
    Function for comparing two elements.
 */

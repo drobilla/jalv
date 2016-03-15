@@ -191,11 +191,11 @@ jalv_open_ui(Jalv* jalv)
 				break;
 			}
 		}
-	}		
+	}
 
 	// Caller waits on the done sem, so increment it again to exit
 	zix_sem_post(jalv->done);
-	
+
 	return 0;
 }
 
