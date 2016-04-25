@@ -42,6 +42,7 @@ new_port_control(Jalv* jalv, uint32_t index)
 	id->min            = lilv_port_get(plug, lport, nodes->lv2_minimum);
 	id->max            = lilv_port_get(plug, lport, nodes->lv2_maximum);
 	id->def            = lilv_port_get(plug, lport, nodes->lv2_default);
+	id->value_type     = jalv->forge.Float;
 	id->is_toggle      = lilv_port_has_property(plug, lport, nodes->lv2_toggled);
 	id->is_integer     = lilv_port_has_property(plug, lport, nodes->lv2_integer);
 	id->is_enumeration = lilv_port_has_property(plug, lport, nodes->lv2_enumeration);

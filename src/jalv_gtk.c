@@ -788,7 +788,7 @@ new_controller(GtkSpinButton* spin, GtkWidget* control)
 }
 
 static Controller*
-make_combo(ControlID* record, float value)
+make_combo(ControlID* record, float value, bool writable)
 {
 	GtkListStore* list_store = gtk_list_store_new(
 		2, G_TYPE_FLOAT, G_TYPE_STRING);
@@ -810,18 +810,22 @@ make_combo(ControlID* record, float value)
 	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), active);
 	g_object_unref(list_store);
 
+	gtk_widget_set_sensitive(GTK_WIDGET(list_store), writable);
+
 	GtkCellRenderer* cell = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), cell, TRUE);
 	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), cell, "text", 1, NULL);
 
-	g_signal_connect(G_OBJECT(combo), "changed",
-	                 G_CALLBACK(combo_changed), record);
+	if (writable) {
+		g_signal_connect(G_OBJECT(combo), "changed",
+		                 G_CALLBACK(combo_changed), record);
+	}
 
 	return new_controller(NULL, combo);
 }
 
 static Controller*
-make_log_slider(ControlID* record, float value)
+make_log_slider(ControlID* record, float value, bool writable)
 {
 	const float min   = get_float(record->min, 0.0f);
 	const float max   = get_float(record->max, 1.0f);
@@ -831,26 +835,34 @@ make_log_slider(ControlID* record, float value)
 	GtkWidget*  scale = new_hscale(lmin, lmax, 0.001);
 	GtkWidget*  spin  = gtk_spin_button_new_with_range(min, max, 0.000001);
 
+	gtk_widget_set_sensitive(scale, writable);
+	gtk_widget_set_sensitive(spin, writable);
+
 	gtk_scale_set_draw_value(GTK_SCALE(scale), FALSE);
 	gtk_range_set_value(GTK_RANGE(scale), ldft);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin), value);
 
-	g_signal_connect(G_OBJECT(scale), "value-changed",
-	                 G_CALLBACK(log_scale_changed), record);
-	g_signal_connect(G_OBJECT(spin), "value-changed",
-	                 G_CALLBACK(log_spin_changed), record);
+	if (writable) {
+		g_signal_connect(G_OBJECT(scale), "value-changed",
+		                 G_CALLBACK(log_scale_changed), record);
+		g_signal_connect(G_OBJECT(spin), "value-changed",
+		                 G_CALLBACK(log_spin_changed), record);
+	}
 
 	return new_controller(GTK_SPIN_BUTTON(spin), scale);
 }
 
 static Controller*
-make_slider(ControlID* record, float value)
+make_slider(ControlID* record, float value, bool writable)
 {
 	const float  min   = get_float(record->min, 0.0f);
 	const float  max   = get_float(record->max, 1.0f);
 	const double step  = record->is_integer ? 1.0 : ((max - min) / 100.0);
 	GtkWidget*   scale = new_hscale(min, max, step);
 	GtkWidget*   spin  = gtk_spin_button_new_with_range(min, max, step);
+
+	gtk_widget_set_sensitive(scale, writable);
+	gtk_widget_set_sensitive(spin, writable);
 
 	if (record->is_integer) {
 		gtk_spin_button_set_digits(GTK_SPIN_BUTTON(spin), 0);
@@ -872,58 +884,79 @@ make_slider(ControlID* record, float value)
 		}
 	}
 
-	g_signal_connect(G_OBJECT(scale), "value-changed",
-	                 G_CALLBACK(scale_changed), record);
-	g_signal_connect(G_OBJECT(spin), "value-changed",
-	                 G_CALLBACK(spin_changed), record);
+	if (writable) {
+		g_signal_connect(G_OBJECT(scale), "value-changed",
+		                 G_CALLBACK(scale_changed), record);
+		g_signal_connect(G_OBJECT(spin), "value-changed",
+		                 G_CALLBACK(spin_changed), record);
+	}
 
 	return new_controller(GTK_SPIN_BUTTON(spin), scale);
 }
 
 static Controller*
-make_toggle(ControlID* record, float value)
+make_toggle(ControlID* record, float value, bool writable)
 {
 	GtkWidget* check = gtk_check_button_new();
+
+	gtk_widget_set_sensitive(check, writable);
+
 	if (value) {
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check), TRUE);
 	}
-	g_signal_connect(G_OBJECT(check), "toggled",
-	                 G_CALLBACK(toggle_changed), record);
+
+	if (writable) {
+		g_signal_connect(G_OBJECT(check), "toggled",
+		                 G_CALLBACK(toggle_changed), record);
+	}
+
 	return new_controller(NULL, check);
 }
 
 static Controller*
-make_entry(ControlID* control)
+make_entry(ControlID* control, bool writable)
 {
 	GtkWidget* entry = gtk_entry_new();
-	g_signal_connect(G_OBJECT(entry), "activate",
-	                 G_CALLBACK(string_changed), control);
+
+	gtk_widget_set_sensitive(entry, writable);
+
+	if (writable) {
+		g_signal_connect(G_OBJECT(entry), "activate",
+		                 G_CALLBACK(string_changed), control);
+	}
+
 	return new_controller(NULL, entry);
 }
 
 static Controller*
-make_file_chooser(ControlID* record)
+make_file_chooser(ControlID* record, bool writable)
 {
 	GtkWidget* button = gtk_file_chooser_button_new(
 		"Open File", GTK_FILE_CHOOSER_ACTION_OPEN);
-	g_signal_connect(G_OBJECT(button), "file-set",
-	                 G_CALLBACK(file_changed), record);
+
+	gtk_widget_set_sensitive(button, writable);
+
+	if (writable) {
+		g_signal_connect(G_OBJECT(button), "file-set",
+		                 G_CALLBACK(file_changed), record);
+	}
+
 	return new_controller(NULL, button);
 }
 
 static Controller*
-make_controller(ControlID* control, float value)
+make_controller(ControlID* control, float value, bool writable)
 {
 	Controller* controller = NULL;
 
 	if (control->is_toggle) {
-		controller = make_toggle(control, value);
+		controller = make_toggle(control, value, writable);
 	} else if (control->is_enumeration) {
-		controller = make_combo(control, value);
+		controller = make_combo(control, value, writable);
 	} else if (control->is_logarithmic) {
-		controller = make_log_slider(control, value);
+		controller = make_log_slider(control, value, writable);
 	} else {
-		controller = make_slider(control, value);
+		controller = make_slider(control, value, writable);
 	}
 
 	return controller;
@@ -986,15 +1019,73 @@ port_group_cmp(const void* p1, const void* p2, void* data)
 	return cmp;
 }
 
+static void
+build_property_widgets(Jalv*      jalv,
+                       GtkWidget* window,
+                       GtkWidget* port_table,
+                       int*       n_rows,
+                       bool       writable)
+{
+	const LilvPlugin* plugin         = jalv->plugin;
+	LilvWorld*        world          = jalv->world;
+	LilvNode*         patch_writable = lilv_new_uri(world, LV2_PATCH__writable);
+	LilvNode*         patch_readable = lilv_new_uri(world, LV2_PATCH__readable);
+
+	LilvNodes* properties = lilv_world_find_nodes(
+		world,
+		lilv_plugin_get_uri(plugin),
+		writable ? patch_writable : patch_readable,
+		NULL);
+	LILV_FOREACH(nodes, p, properties) {
+		const LilvNode* property = lilv_nodes_get(properties, p);
+
+		if (!writable && lilv_world_ask(world,
+		                                lilv_plugin_get_uri(plugin),
+		                                patch_writable,
+		                                property)) {
+			continue;  // Writable wridget has already been created, skip
+		}
+
+		LilvNode* label = lilv_nodes_get_first(
+			lilv_world_find_nodes(
+				world, property, jalv->nodes.rdfs_label, NULL));
+
+		Controller* controller = NULL;
+		ControlID*  record     = new_property_control(jalv, property);
+		if (!record->value_type) {
+			fprintf(stderr, "Unknown property range, no control shown\n");
+		} else if (record->value_type == jalv->forge.String) {
+			controller = make_entry(record, writable);
+		} else if (record->value_type == jalv->forge.Path) {
+			controller = make_file_chooser(record, writable);
+		} else {
+			const float val = get_float(record->def, 0.0f);
+			controller = make_controller(record, val, writable);
+		}
+
+		record->widget = controller;
+		if (controller) {
+			add_control(&jalv->controls, record);
+			add_control_row(
+				port_table, (*n_rows)++,
+				label ? lilv_node_as_string(label) : lilv_node_as_uri(property),
+				controller);
+		}
+	}
+	lilv_nodes_free(properties);
+
+	lilv_node_free(patch_readable);
+	lilv_node_free(patch_writable);
+}
+
 static GtkWidget*
 build_control_widget(Jalv* jalv, GtkWidget* window)
 {
 	const LilvPlugin* plugin = jalv->plugin;
 	LilvWorld*        world  = jalv->world;
 
-	LilvNode*   patch_writable  = lilv_new_uri(world, LV2_PATCH__writable);
-	LilvNode*   pprop_notOnGUI  = lilv_new_uri(world, LV2_PORT_PROPS__notOnGUI);
-	GtkWidget*  port_table      = gtk_table_new(jalv->num_ports, 3, false);
+	LilvNode*  pprop_notOnGUI = lilv_new_uri(world, LV2_PORT_PROPS__notOnGUI);
+	GtkWidget* port_table     = gtk_table_new(jalv->num_ports, 3, false);
 
 	/* Make an array of control port pointers and sort it by group */
 	GArray* control_ports = g_array_new(FALSE, TRUE, sizeof(LilvPort*));
@@ -1061,7 +1152,9 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 
 		/* Make controller */
 		struct Port* jport      = &jalv->ports[index];
-		Controller*  controller = make_controller(control_id, jport->control);
+		Controller*  controller = make_controller(
+			control_id, jport->control, jport->flow == FLOW_INPUT);
+
 		control_id->widget = controller;
 		jport->widget      = controller;
 
@@ -1080,42 +1173,10 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 		lilv_node_free(name);
 	}
 
-	/* Add controllers for writable properties (event-based controls) */
-	LilvNodes* properties = lilv_world_find_nodes(
-		world,
-		lilv_plugin_get_uri(plugin),
-		patch_writable,
-		NULL);
-	LILV_FOREACH(nodes, p, properties) {
-		const LilvNode* property = lilv_nodes_get(properties, p);
-		LilvNode*       label    = lilv_nodes_get_first(
-			lilv_world_find_nodes(
-				world, property, jalv->nodes.rdfs_label, NULL));
+	/* Add controllers for properties (event-based controls) */
+	build_property_widgets(jalv, window, port_table, &n_rows, true);
+	build_property_widgets(jalv, window, port_table, &n_rows, false);
 
-		Controller* controller = NULL;
-		ControlID*  record     = new_property_control(jalv, property);
-		if (!record->value_type) {
-			fprintf(stderr, "Unknown property range, no control shown\n");
-		} else if (record->value_type == jalv->forge.String) {
-			controller = make_entry(record);
-		} else if (record->value_type == jalv->forge.Path) {
-			controller = make_file_chooser(record);
-		} else {
-			controller = make_controller(record, get_float(record->def, 0.0f));
-		}
-
-		record->widget = controller;
-		if (controller) {
-			add_control(&jalv->controls, record);
-			add_control_row(
-				port_table, n_rows++,
-				label ? lilv_node_as_string(label) : lilv_node_as_uri(property),
-				controller);
-		}
-	}
-	lilv_nodes_free(properties);
-
-	lilv_node_free(patch_writable);
 	lilv_node_free(pprop_notOnGUI);
 
 	if (n_rows > 0) {
