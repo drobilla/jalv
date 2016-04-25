@@ -667,6 +667,7 @@ jalv_ui_port_event(Jalv*       jalv,
 		                buffer_size,
 		                jalv->forge.Float,
 		                buffer);
+		return;
 	} else if (protocol != jalv->urids.atom_eventTransfer) {
 		fprintf(stderr, "Unknown port event protocol\n");
 		return;
