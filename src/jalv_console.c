@@ -38,6 +38,7 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -u UUID      UUID for Jack session restoration\n");
 	fprintf(os, "  -l DIR       Load state from save directory\n");
 	fprintf(os, "  -d           Dump plugin <=> UI communication\n");
+	fprintf(os, "  -s           Show plugin UI if possible\n");
 	fprintf(os, "  -t           Print trace messages from plugin\n");
 	fprintf(os, "  -b SIZE      Buffer size for plugin <=> UI communication\n");
 	fprintf(os, "  -n NAME      JACK client name\n");

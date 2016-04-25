@@ -33,6 +33,12 @@ Load state from state directory.
 Dump plugin <=> UI communication.
 
 .TP
+\fB\-s\fR
+Show plugin UI if possible.
+
+This option only works when plugins provide a UI that is usable via the non-embeddable showHide interface.  For other, embeddable UIs, use jalv.gtk(1) or jalv.qt(1).
+
+.TP
 \fB\-t\fR
 Print trace messages from plugin
 
