@@ -531,7 +531,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			if (jalv->state_changed) {
 				/* Plugin state has changed, request an update */
 				const LV2_Atom_Object get = {
-					{ sizeof(LV2_Atom_Object), jalv->urids.atom_Object },
+					{ sizeof(LV2_Atom_Object_Body), jalv->urids.atom_Object },
 					{ 0, jalv->urids.patch_Get } };
 
 				lv2_evbuf_write(
