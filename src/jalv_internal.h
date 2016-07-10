@@ -316,6 +316,9 @@ jalv_port_by_symbol(Jalv* jalv, const char* sym);
 const char*
 jalv_native_ui_type(Jalv* jalv);
 
+bool
+jalv_discover_ui(Jalv* jalv);
+
 int
 jalv_open_ui(Jalv* jalv);
 

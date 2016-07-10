@@ -1262,12 +1262,17 @@ build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
 	gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
 }
 
+bool
+jalv_discover_ui(Jalv* jalv)
+{
+	return TRUE;
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {
 	GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	jalv->window = window;
-	jalv->has_ui = TRUE;
 
 	g_signal_connect(window, "destroy",
 	                 G_CALLBACK(on_window_destroy), jalv);

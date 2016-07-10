@@ -673,6 +673,12 @@ build_control_widget(Jalv* jalv)
 	return grid;
 }
 
+bool
+jalv_discover_ui(Jalv* jalv)
+{
+	return true;
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {
@@ -685,7 +691,6 @@ jalv_open_ui(Jalv* jalv)
 	quit_action->setShortcuts(QKeySequence::Quit);
 	quit_action->setStatusTip("Quit Jalv");
 	file_menu->addAction(quit_action);
-	jalv->has_ui = true;
 
 	jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
 

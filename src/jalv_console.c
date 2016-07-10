@@ -157,11 +157,15 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 	}
 }
 
+bool
+jalv_discover_ui(Jalv* jalv)
+{
+	return jalv->opts.show_ui;
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {
-	jalv->has_ui = jalv->opts.show_ui;
-
 	const LV2UI_Idle_Interface* idle_iface = NULL;
 	const LV2UI_Show_Interface* show_iface = NULL;
 	if (jalv->ui && jalv->opts.show_ui) {
