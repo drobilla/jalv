@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2015 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -24,12 +24,14 @@
 #include "jalv_internal.h"
 
 static GtkCheckMenuItem* active_preset_item = NULL;
+static bool              updating           = false;
 
 /** Widget for a control. */
 typedef struct {
 	GtkSpinButton* spin;
 	GtkWidget*     control;
 } Controller;
+
 static float
 get_float(const LilvNode* node, float fallback)
 {
@@ -488,7 +490,7 @@ set_control(const ControlID* control,
 	if (control->type == PORT && type == jalv->forge.Float) {
 		struct Port* port = &control->jalv->ports[control->index];
 		port->control = *(float*)body;
-	} else if (control->type == PROPERTY) {
+	} else if (!updating && control->type == PROPERTY) {
 		// Copy forge since it is used by process thread
 		LV2_Atom_Forge       forge = jalv->forge;
 		LV2_Atom_Forge_Frame frame;
@@ -509,6 +511,12 @@ set_control(const ControlID* control,
 		              jalv->urids.atom_eventTransfer,
 		              atom);
 	}
+}
+
+static bool
+differ_enough(float a, float b)
+{
+	return fabsf(a - b) >= FLT_EPSILON;
 }
 
 static void
@@ -532,7 +540,7 @@ set_float_control(const ControlID* control, float value)
 
 	Controller* controller = (Controller*)control->widget;
 	if (controller && controller->spin &&
-	    gtk_spin_button_get_value(controller->spin) != value) {
+	    differ_enough(gtk_spin_button_get_value(controller->spin), value)) {
 		gtk_spin_button_set_value(controller->spin, value);
 	}
 }
@@ -563,12 +571,6 @@ control_changed(Jalv*       jalv,
 	const double fvalue = get_atom_double(jalv, size, type, body);
 
 	if (!isnan(fvalue)) {
-		// Numeric control
-		if (controller->spin) {
-			gtk_spin_button_set_value(GTK_SPIN_BUTTON(controller->spin),
-			                          fvalue);
-		}
-
 		if (GTK_IS_COMBO_BOX(widget)) {
 			GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
 			GValue        value = { 0, { { 0 } } };
@@ -591,6 +593,12 @@ control_changed(Jalv*       jalv,
 			gtk_range_set_value(GTK_RANGE(widget), fvalue);
 		} else {
 			fprintf(stderr, "Unknown widget type for value\n");
+		}
+
+		if (controller->spin) {
+			// Update spinner for numeric control
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(controller->spin),
+			                          fvalue);
 		}
 	} else if (GTK_IS_ENTRY(widget) && type == jalv->urids.atom_String) {
 		gtk_entry_set_text(GTK_ENTRY(widget), (const char*)body);
@@ -675,6 +683,7 @@ jalv_ui_port_event(Jalv*       jalv,
 
 	const LV2_Atom* atom = (const LV2_Atom*)buffer;
 	if (lv2_atom_forge_is_object_type(&jalv->forge, atom->type)) {
+		updating = true;
 		const LV2_Atom_Object* obj = (const LV2_Atom_Object*)buffer;
 		if (obj->body.otype == jalv->urids.patch_Set) {
 			const LV2_Atom_URID* property = NULL;
@@ -692,6 +701,7 @@ jalv_ui_port_event(Jalv*       jalv,
 		} else {
 			printf("Unknown object type?\n");
 		}
+		updating = false;
 	}
 }
 
@@ -707,9 +717,11 @@ spin_changed(GtkSpinButton* spin, gpointer data)
 {
 	const ControlID* control    = (const ControlID*)data;
 	Controller*      controller = (Controller*)control->widget;
+	GtkRange*        range      = GTK_RANGE(controller->control);
 	const double     value      = gtk_spin_button_get_value(spin);
-	set_float_control(control, value);
-	gtk_range_set_value(GTK_RANGE(controller->control), value);
+	if (differ_enough(gtk_range_get_value(range), value)) {
+		gtk_range_set_value(range, value);
+	}
 	return FALSE;
 }
 
@@ -725,9 +737,11 @@ log_spin_changed(GtkSpinButton* spin, gpointer data)
 {
 	const ControlID* control    = (const ControlID*)data;
 	Controller*      controller = (Controller*)control->widget;
+	GtkRange*        range      = GTK_RANGE(controller->control);
 	const double     value      = gtk_spin_button_get_value(spin);
-	set_float_control(control, value);
-	gtk_range_set_value(GTK_RANGE(controller->control), logf(value));
+	if (differ_enough(gtk_range_get_value(range), logf(value))) {
+		gtk_range_set_value(range, logf(value));
+	}
 	return FALSE;
 }
 
