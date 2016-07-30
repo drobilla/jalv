@@ -8,8 +8,8 @@ jalv (1.4.7) unstable;
   * Set Jack port order metadata
   * Allow Jack client name to be set from command line (thanks Adam Avramov)
   * Add command prompt to console version for changing controls
-  * Add option to enable plugin trace log messages
-  * Colorize communication dump if output is a console
+  * Add option to print plugin trace messages
+  * Print colorful log if output is a terminal
   * Exit on Jack shutdown (patch from Robin Gareus)
   * Report Jack latency (patch from Robin Gareus)
   * Exit GUI versions on interrupt
@@ -17,7 +17,7 @@ jalv (1.4.7) unstable;
   * Use moc-qt4 if present for systems with multiple Qt versions
   * Add Qt5 version
 
- -- David Robillard <d@drobilla.net>  Sat, 09 Jul 2016 20:38:45 -0400
+ -- David Robillard <d@drobilla.net>  Sun, 31 Jul 2016 01:12:15 -0400
 
 jalv (1.4.6) stable;
 

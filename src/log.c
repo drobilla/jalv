@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2012 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -35,9 +35,26 @@ jalv_vprintf(LV2_Log_Handle handle,
              va_list        ap)
 {
 	// TODO: Lock
-	Jalv* jalv = (Jalv*)handle;
-	if (type == jalv->urids.log_Trace && !jalv->opts.trace) {
-		return 0;
+	Jalv* jalv  = (Jalv*)handle;
+	bool  fancy = true;
+	if (type == jalv->urids.log_Trace && jalv->opts.trace) {
+		jalv_ansi_start(stderr, 32);
+		fprintf(stderr, "trace: ");
+	} else if (type == jalv->urids.log_Error) {
+		jalv_ansi_start(stderr, 31);
+		fprintf(stderr, "error: ");
+	} else if (type == jalv->urids.log_Warning) {
+		jalv_ansi_start(stderr, 33);
+		fprintf(stderr, "warning: ");
+	} else {
+		fancy = false;
 	}
-	return vfprintf(stderr, fmt, ap);
+
+	const int st = vfprintf(stderr, fmt, ap);
+
+	if (fancy) {
+		jalv_ansi_reset(stderr);
+	}
+
+	return st;
 }

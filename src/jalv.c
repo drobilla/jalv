@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2015 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -73,6 +73,7 @@
 #include "worker.h"
 
 #define NS_RDF "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+#define NS_XSD "http://www.w3.org/2001/XMLSchema#"
 
 #ifndef MIN
 #    define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -493,7 +494,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			char* str = sratom_to_turtle(
 				jalv->sratom, &jalv->unmap, "time:", NULL, NULL,
 				lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
-			printf("\n## Position\n%s\n", str);
+			jalv_ansi_start(stderr, 36);
+			printf("\n## Position ##\n%s\n", str);
+			jalv_ansi_reset(stderr);
 			free(str);
 		}
 	}
@@ -1009,8 +1012,18 @@ main(int argc, char** argv)
 
 	lv2_atom_forge_init(&jalv.forge, &jalv.map);
 
+	jalv.env = serd_env_new(NULL);
+	serd_env_set_prefix_from_strings(
+		jalv.env, (const uint8_t*)"patch", (const uint8_t*)LV2_PATCH_PREFIX);
+	serd_env_set_prefix_from_strings(
+		jalv.env, (const uint8_t*)"time", (const uint8_t*)LV2_TIME_PREFIX);
+	serd_env_set_prefix_from_strings(
+		jalv.env, (const uint8_t*)"xsd", (const uint8_t*)NS_XSD);
+
 	jalv.sratom    = sratom_new(&jalv.map);
 	jalv.ui_sratom = sratom_new(&jalv.map);
+	sratom_set_env(jalv.sratom, jalv.env);
+	sratom_set_env(jalv.ui_sratom, jalv.env);
 
 	jalv.midi_event_id = uri_to_id(
 		&jalv, "http://lv2plug.in/ns/ext/event", LV2_MIDI__MidiEvent);
@@ -1024,7 +1037,9 @@ main(int argc, char** argv)
 	jalv.urids.bufsz_maxBlockLength = symap_map(jalv.symap, LV2_BUF_SIZE__maxBlockLength);
 	jalv.urids.bufsz_minBlockLength = symap_map(jalv.symap, LV2_BUF_SIZE__minBlockLength);
 	jalv.urids.bufsz_sequenceSize   = symap_map(jalv.symap, LV2_BUF_SIZE__sequenceSize);
+	jalv.urids.log_Error            = symap_map(jalv.symap, LV2_LOG__Error);
 	jalv.urids.log_Trace            = symap_map(jalv.symap, LV2_LOG__Trace);
+	jalv.urids.log_Warning          = symap_map(jalv.symap, LV2_LOG__Warning);
 	jalv.urids.midi_MidiEvent       = symap_map(jalv.symap, LV2_MIDI__MidiEvent);
 	jalv.urids.param_sampleRate     = symap_map(jalv.symap, LV2_PARAMETERS__sampleRate);
 	jalv.urids.patch_Get            = symap_map(jalv.symap, LV2_PATCH__Get);

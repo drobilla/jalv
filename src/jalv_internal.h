@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2015 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -171,7 +171,9 @@ typedef struct {
 	LV2_URID bufsz_maxBlockLength;
 	LV2_URID bufsz_minBlockLength;
 	LV2_URID bufsz_sequenceSize;
+	LV2_URID log_Error;
 	LV2_URID log_Trace;
+	LV2_URID log_Warning;
 	LV2_URID midi_MidiEvent;
 	LV2_URID param_sampleRate;
 	LV2_URID patch_Get;
@@ -252,6 +254,7 @@ struct Jalv {
 	LilvWorld*         world;          ///< Lilv World
 	LV2_URID_Map       map;            ///< URI => Int map
 	LV2_URID_Unmap     unmap;          ///< Int => URI map
+	SerdEnv*           env;            ///< Environment for RDF printing
 	Sratom*            sratom;         ///< Atom serialiser
 	Sratom*            ui_sratom;      ///< Atom serialiser for UI thread
 	Symap*             symap;          ///< URI map
@@ -423,14 +426,15 @@ jalv_vprintf(LV2_Log_Handle handle,
              const char*    fmt,
              va_list        ap);
 
-static inline void
+static inline bool
 jalv_ansi_start(FILE* stream, int color)
 {
 #ifdef HAVE_ISATTY
 	if (isatty(fileno(stream))) {
-		fprintf(stream, "\033[0;%dm\n", color);
+		return fprintf(stream, "\033[0;%dm", color);
 	}
 #endif
+	return 0;
 }
 
 static inline void
@@ -438,7 +442,7 @@ jalv_ansi_reset(FILE* stream)
 {
 #ifdef HAVE_ISATTY
 	if (isatty(fileno(stream))) {
-		fprintf(stream, "\033[0m\n");
+		fprintf(stream, "\033[0m");
 	}
 #endif
 }
