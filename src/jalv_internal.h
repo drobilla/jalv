@@ -448,6 +448,7 @@ jalv_ansi_reset(FILE* stream)
 #ifdef HAVE_ISATTY
 	if (isatty(fileno(stream))) {
 		fprintf(stream, "\033[0m");
+		fflush(stream);
 	}
 #endif
 }
