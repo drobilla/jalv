@@ -237,12 +237,14 @@ typedef enum {
 } JalvPlayState;
 
 typedef struct {
+	Jalv*                       jalv;       ///< Pointer back to Jalv
 	jack_ringbuffer_t*          requests;   ///< Requests to the worker
 	jack_ringbuffer_t*          responses;  ///< Responses from the worker
 	void*                       response;   ///< Worker response buffer
 	ZixSem                      sem;        ///< Worker semaphore
 	ZixThread                   thread;     ///< Worker thread
 	const LV2_Worker_Interface* iface;      ///< Plugin worker interface
+	bool                        threaded;   ///< Run work in another thread
 } JalvWorker;
 
 struct Jalv {
@@ -264,6 +266,7 @@ struct Jalv {
 	jack_ringbuffer_t* plugin_events;  ///< Port events from plugin
 	void*              ui_event_buf;   ///< Buffer for reading UI port events
 	JalvWorker         worker;         ///< Worker thread implementation
+	JalvWorker         state_worker;   ///< Synchronous worker for state restore
 	ZixSem*            done;           ///< Exit semaphore
 	ZixSem             paused;         ///< Paused signal from process thread
 	JalvPlayState      play_state;     ///< Current play state
@@ -296,7 +299,8 @@ struct Jalv {
 	bool               buf_size_set;   ///< True iff buffer size callback fired
 	bool               exit;           ///< True iff execution is finished
 	bool               has_ui;         ///< True iff a control UI is present
-	bool               state_changed;  ///< Plugin state has changed
+	bool               request_update; ///< True iff a plugin update is needed
+	bool               safe_restore;   ///< Plugin restore() is thread-safe
 };
 
 int

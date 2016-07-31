@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2015 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -36,6 +36,27 @@
 #define NS_RDF  "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 #define NS_RDFS "http://www.w3.org/2000/01/rdf-schema#"
 #define NS_XSD  "http://www.w3.org/2001/XMLSchema#"
+
+extern LV2_Feature uri_map_feature;
+extern LV2_Feature map_feature;
+extern LV2_Feature unmap_feature;
+extern LV2_Feature make_path_feature;
+extern LV2_Feature sched_feature;
+extern LV2_Feature state_sched_feature;
+extern LV2_Feature safe_restore_feature;
+extern LV2_Feature log_feature;
+extern LV2_Feature options_feature;
+extern LV2_Feature def_state_feature;
+
+const LV2_Feature* state_features[9] = {
+	&uri_map_feature, &map_feature, &unmap_feature,
+	&make_path_feature,
+	&state_sched_feature,
+	&safe_restore_feature,
+	&log_feature,
+	&options_feature,
+	NULL
+};
 
 char*
 jalv_make_path(LV2_State_Make_Path_Handle handle,
@@ -178,19 +199,19 @@ set_port_value(const char* port_symbol,
 void
 jalv_apply_state(Jalv* jalv, LilvState* state)
 {
+	bool must_pause = !jalv->safe_restore && jalv->play_state == JALV_RUNNING;
 	if (state) {
-		const bool must_pause = (jalv->play_state == JALV_RUNNING);
 		if (must_pause) {
 			jalv->play_state = JALV_PAUSE_REQUESTED;
 			zix_sem_wait(&jalv->paused);
 		}
 
 		lilv_state_restore(
-			state, jalv->instance, set_port_value, jalv, 0, NULL);
+			state, jalv->instance, set_port_value, jalv, 0, state_features);
 
-		jalv->state_changed = true;
 		if (must_pause) {
-			jalv->play_state = JALV_RUNNING;
+			jalv->request_update = true;
+			jalv->play_state     = JALV_RUNNING;
 		}
 	}
 }

@@ -43,7 +43,7 @@ def configure(conf):
     autowaf.set_c99_mode(conf)
     autowaf.display_header('Jalv Configuration')
 
-    autowaf.check_pkg(conf, 'lv2', atleast_version='1.11.1', uselib_store='LV2')
+    autowaf.check_pkg(conf, 'lv2', atleast_version='1.13.1', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.21.5', mandatory=True)
     autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',

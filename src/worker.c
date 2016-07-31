@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2013 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -21,26 +21,26 @@ jalv_worker_respond(LV2_Worker_Respond_Handle handle,
                     uint32_t                  size,
                     const void*               data)
 {
-	Jalv* jalv = (Jalv*)handle;
-	jack_ringbuffer_write(jalv->worker.responses,
-	                      (const char*)&size, sizeof(size));
-	jack_ringbuffer_write(jalv->worker.responses, (const char*)data, size);
+	JalvWorker* worker = (JalvWorker*)handle;
+	jack_ringbuffer_write(worker->responses, (const char*)&size, sizeof(size));
+	jack_ringbuffer_write(worker->responses, (const char*)data, size);
 	return LV2_WORKER_SUCCESS;
 }
 
 static void*
 worker_func(void* data)
 {
-	Jalv* jalv = (Jalv*)data;
-	void* buf  = NULL;
+	JalvWorker* worker = (JalvWorker*)data;
+	Jalv*       jalv   = worker->jalv;
+	void*       buf    = NULL;
 	while (true) {
-		zix_sem_wait(&jalv->worker.sem);
+		zix_sem_wait(&worker->sem);
 		if (jalv->exit) {
 			break;
 		}
 
 		uint32_t size = 0;
-		jack_ringbuffer_read(jalv->worker.requests, (char*)&size, sizeof(size));
+		jack_ringbuffer_read(worker->requests, (char*)&size, sizeof(size));
 
 		if (!(buf = realloc(buf, size))) {
 			fprintf(stderr, "error: realloc() failed\n");
@@ -48,10 +48,10 @@ worker_func(void* data)
 			return NULL;
 		}
 
-		jack_ringbuffer_read(jalv->worker.requests, (char*)buf, size);
+		jack_ringbuffer_read(worker->requests, (char*)buf, size);
 
-		jalv->worker.iface->work(
-			jalv->instance->lv2_handle, jalv_worker_respond, jalv, size, buf);
+		worker->iface->work(
+			jalv->instance->lv2_handle, jalv_worker_respond, worker, size, buf);
 	}
 
 	free(buf);
@@ -61,14 +61,18 @@ worker_func(void* data)
 void
 jalv_worker_init(Jalv*                       jalv,
                  JalvWorker*                 worker,
-                 const LV2_Worker_Interface* iface)
+                 const LV2_Worker_Interface* iface,
+                 bool                        threaded)
 {
 	worker->iface = iface;
-	zix_thread_create(&worker->thread, 4096, worker_func, jalv);
-	worker->requests  = jack_ringbuffer_create(4096);
+	worker->threaded = threaded;
+	if (threaded) {
+		zix_thread_create(&worker->thread, 4096, worker_func, worker);
+		worker->requests = jack_ringbuffer_create(4096);
+		jack_ringbuffer_mlock(worker->requests);
+	}
 	worker->responses = jack_ringbuffer_create(4096);
 	worker->response  = malloc(4096);
-	jack_ringbuffer_mlock(worker->requests);
 	jack_ringbuffer_mlock(worker->responses);
 }
 
@@ -76,9 +80,11 @@ void
 jalv_worker_finish(JalvWorker* worker)
 {
 	if (worker->requests) {
-		zix_sem_post(&worker->sem);
-		zix_thread_join(worker->thread, NULL);
-		jack_ringbuffer_free(worker->requests);
+		if (worker->threaded) {
+			zix_sem_post(&worker->sem);
+			zix_thread_join(worker->thread, NULL);
+			jack_ringbuffer_free(worker->requests);
+		}
 		jack_ringbuffer_free(worker->responses);
 		free(worker->response);
 	}
@@ -89,16 +95,24 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
                      uint32_t                   size,
                      const void*                data)
 {
-	Jalv* jalv = (Jalv*)handle;
-	jack_ringbuffer_write(jalv->worker.requests,
-	                      (const char*)&size, sizeof(size));
-	jack_ringbuffer_write(jalv->worker.requests, (const char*)data, size);
-	zix_sem_post(&jalv->worker.sem);
+	JalvWorker* worker = (JalvWorker*)handle;
+	Jalv*       jalv   = worker->jalv;
+	if (worker->threaded) {
+		// Schedule a request to be executed by the worker thread
+		jack_ringbuffer_write(worker->requests,
+		                      (const char*)&size, sizeof(size));
+		jack_ringbuffer_write(worker->requests, (const char*)data, size);
+		zix_sem_post(&worker->sem);
+	} else {
+		// Execute work immediately in this thread
+		worker->iface->work(
+			jalv->instance->lv2_handle, jalv_worker_respond, worker, size, data);
+	}
 	return LV2_WORKER_SUCCESS;
 }
 
 void
-jalv_worker_emit_responses(Jalv* jalv, JalvWorker* worker)
+jalv_worker_emit_responses(JalvWorker* worker, LilvInstance* instance)
 {
 	if (worker->responses) {
 		uint32_t read_space = jack_ringbuffer_read_space(worker->responses);
@@ -110,7 +124,7 @@ jalv_worker_emit_responses(Jalv* jalv, JalvWorker* worker)
 				worker->responses, (char*)worker->response, size);
 
 			worker->iface->work_response(
-				jalv->instance->lv2_handle, size, worker->response);
+				instance->lv2_handle, size, worker->response);
 
 			read_space -= sizeof(size) + size;
 		}

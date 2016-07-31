@@ -3,6 +3,7 @@ jalv (1.4.7) unstable;
   * Support CV ports if Jack metadata is enabled (patch from Hanspeter Portner)
   * Improve preset support
   * Support numeric and string plugin properties (event-based control)
+  * Support thread-safe state restoration
   * Update UI when internal plugin state is changed during preset load
   * Add generic Qt control UI from Amadeus Folego
   * Set Jack port order metadata

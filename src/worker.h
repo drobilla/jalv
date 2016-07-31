@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2013 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -21,7 +21,8 @@
 void
 jalv_worker_init(Jalv*                       jalv,
                  JalvWorker*                 worker,
-                 const LV2_Worker_Interface* iface);
+                 const LV2_Worker_Interface* iface,
+                 bool                        threaded);
 
 void
 jalv_worker_finish(JalvWorker* worker);
@@ -32,4 +33,4 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
                      const void*                data);
 
 void
-jalv_worker_emit_responses(Jalv* jalv, JalvWorker* worker);
+jalv_worker_emit_responses(JalvWorker* worker, LilvInstance* instance);

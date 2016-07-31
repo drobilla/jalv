@@ -141,14 +141,16 @@ static LV2_URI_Map_Feature uri_map = { NULL, &uri_to_id };
 
 static LV2_Extension_Data_Feature ext_data = { NULL };
 
-static LV2_Feature uri_map_feature   = { NS_EXT "uri-map", &uri_map };
-static LV2_Feature map_feature       = { LV2_URID__map, NULL };
-static LV2_Feature unmap_feature     = { LV2_URID__unmap, NULL };
-static LV2_Feature make_path_feature = { LV2_STATE__makePath, NULL };
-static LV2_Feature schedule_feature  = { LV2_WORKER__schedule, NULL };
-static LV2_Feature log_feature       = { LV2_LOG__log, NULL };
-static LV2_Feature options_feature   = { LV2_OPTIONS__options, NULL };
-static LV2_Feature def_state_feature = { LV2_STATE__loadDefaultState, NULL };
+LV2_Feature uri_map_feature      = { NS_EXT "uri-map", NULL };
+LV2_Feature map_feature          = { LV2_URID__map, NULL };
+LV2_Feature unmap_feature        = { LV2_URID__unmap, NULL };
+LV2_Feature make_path_feature    = { LV2_STATE__makePath, NULL };
+LV2_Feature sched_feature        = { LV2_WORKER__schedule, NULL };
+LV2_Feature state_sched_feature  = { LV2_WORKER__schedule, NULL };
+LV2_Feature safe_restore_feature = { LV2_STATE__threadSafeRestore, NULL };
+LV2_Feature log_feature          = { LV2_LOG__log, NULL };
+LV2_Feature options_feature      = { LV2_OPTIONS__options, NULL };
+LV2_Feature def_state_feature    = { LV2_STATE__loadDefaultState, NULL };
 
 /** These features have no data */
 static LV2_Feature buf_size_features[3] = {
@@ -156,13 +158,13 @@ static LV2_Feature buf_size_features[3] = {
 	{ LV2_BUF_SIZE__fixedBlockLength, NULL },
 	{ LV2_BUF_SIZE__boundedBlockLength, NULL } };
 
-const LV2_Feature* features[13] = {
+const LV2_Feature* features[12] = {
 	&uri_map_feature, &map_feature, &unmap_feature,
-	&make_path_feature,
-	&schedule_feature,
+	&sched_feature,
 	&log_feature,
 	&options_feature,
 	&def_state_feature,
+	&safe_restore_feature,
 	&buf_size_features[0],
 	&buf_size_features[1],
 	&buf_size_features[2],
@@ -386,7 +388,7 @@ activate_port(Jalv*    jalv,
 		port->jack_port = jack_port_register(
 			jalv->jack_client, lilv_node_as_string(sym),
 			JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
-		if(port->jack_port) {
+		if (port->jack_port) {
 			jack_set_property(jalv->jack_client, jack_port_uuid(port->jack_port),
 			                  "http://jackaudio.org/metadata/signal-type", "CV",
 			                  "text/plain");
@@ -554,17 +556,14 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
 			}
 
-			if (jalv->state_changed) {
+			if (jalv->request_update) {
 				/* Plugin state has changed, request an update */
 				const LV2_Atom_Object get = {
 					{ sizeof(LV2_Atom_Object_Body), jalv->urids.atom_Object },
 					{ 0, jalv->urids.patch_Get } };
-
 				lv2_evbuf_write(
 					&iter, 0, 0,
 					get.atom.type, get.atom.size, LV2_ATOM_BODY(&get));
-
-				jalv->state_changed = false;
 			}
 
 			if (port->jack_port) {
@@ -584,6 +583,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			lv2_evbuf_reset(port->evbuf, false);
 		}
 	}
+	jalv->request_update = false;
 
 	/* Read and apply control change events from UI */
 	if (jalv->has_ui) {
@@ -616,8 +616,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	/* Run plugin for this cycle */
 	lilv_instance_run(jalv->instance, nframes);
 
-	/* Process any replies from the worker. */
-	jalv_worker_emit_responses(jalv, &jalv->worker);
+	/* Process any worker replies. */
+	jalv_worker_emit_responses(&jalv->state_worker, jalv->instance);
+	jalv_worker_emit_responses(&jalv->worker, jalv->instance);
 
 	/* Notify the plugin the run() cycle is finished */
 	if (jalv->worker.iface && jalv->worker.iface->end_run) {
@@ -1000,11 +1001,15 @@ main(int argc, char** argv)
 
 	jalv.symap = symap_new();
 	zix_sem_init(&jalv.symap_lock, 1);
+	uri_map_feature.data  = &uri_map;
 	uri_map.callback_data = &jalv;
 
 	jalv.map.handle  = &jalv;
 	jalv.map.map     = map_uri;
 	map_feature.data = &jalv.map;
+
+	jalv.worker.jalv       = &jalv;
+	jalv.state_worker.jalv = &jalv;
 
 	jalv.unmap.handle  = &jalv;
 	jalv.unmap.unmap   = unmap_uri;
@@ -1070,8 +1075,11 @@ main(int argc, char** argv)
 	LV2_State_Make_Path make_path = { &jalv, jalv_make_path };
 	make_path_feature.data = &make_path;
 
-	LV2_Worker_Schedule schedule = { &jalv, jalv_worker_schedule };
-	schedule_feature.data = &schedule;
+	LV2_Worker_Schedule sched = { &jalv.worker, jalv_worker_schedule };
+	sched_feature.data = &sched;
+
+	LV2_Worker_Schedule ssched = { &jalv.state_worker, jalv_worker_schedule };
+	state_sched_feature.data = &ssched;
 
 	LV2_Log_Log llog = { &jalv, jalv_printf, jalv_vprintf };
 	log_feature.data = &llog;
@@ -1191,6 +1199,14 @@ main(int argc, char** argv)
 		}
 	}
 	lilv_nodes_free(req_feats);
+
+	/* Check for thread-safe state restore() method. */
+	LilvNode* state_threadSafeRestore = lilv_new_uri(
+		jalv.world, LV2_STATE__threadSafeRestore);
+	if (lilv_plugin_has_feature(jalv.plugin, state_threadSafeRestore)) {
+		jalv.safe_restore = true;
+	}
+	lilv_node_free(state_threadSafeRestore);
 
 	if (!state) {
 		/* Not restoring state, load the plugin as a preset to get default */
@@ -1345,13 +1361,16 @@ main(int argc, char** argv)
 		jalv_allocate_port_buffers(&jalv);
 	}
 
-	/* Create thread and ringbuffers for worker if necessary */
+	/* Create workers if necessary */
 	if (lilv_plugin_has_feature(jalv.plugin, jalv.nodes.work_schedule)
 	    && lilv_plugin_has_extension_data(jalv.plugin, jalv.nodes.work_interface)) {
-		jalv_worker_init(
-			&jalv, &jalv.worker,
-			(const LV2_Worker_Interface*)lilv_instance_get_extension_data(
-				jalv.instance, LV2_WORKER__interface));
+		const LV2_Worker_Interface* iface = (const LV2_Worker_Interface*)
+			lilv_instance_get_extension_data(jalv.instance, LV2_WORKER__interface);
+
+		jalv_worker_init(&jalv, &jalv.worker, iface, true);
+		if (jalv.safe_restore) {
+			jalv_worker_init(&jalv, &jalv.state_worker, iface, false);
+		}
 	}
 
 	/* Apply loaded state to plugin instance if necessary */
