@@ -1001,6 +1001,7 @@ main(int argc, char** argv)
 
 	jalv.symap = symap_new();
 	zix_sem_init(&jalv.symap_lock, 1);
+	zix_sem_init(&jalv.work_lock, 1);
 	uri_map_feature.data  = &uri_map;
 	uri_map.callback_data = &jalv;
 

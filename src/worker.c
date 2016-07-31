@@ -50,8 +50,10 @@ worker_func(void* data)
 
 		jack_ringbuffer_read(worker->requests, (char*)buf, size);
 
+		zix_sem_wait(&jalv->work_lock);
 		worker->iface->work(
 			jalv->instance->lv2_handle, jalv_worker_respond, worker, size, buf);
+		zix_sem_post(&jalv->work_lock);
 	}
 
 	free(buf);
@@ -105,8 +107,10 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
 		zix_sem_post(&worker->sem);
 	} else {
 		// Execute work immediately in this thread
+		zix_sem_wait(&jalv->work_lock);
 		worker->iface->work(
 			jalv->instance->lv2_handle, jalv_worker_respond, worker, size, data);
+		zix_sem_post(&jalv->work_lock);
 	}
 	return LV2_WORKER_SUCCESS;
 }

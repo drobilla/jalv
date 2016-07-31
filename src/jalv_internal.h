@@ -267,6 +267,7 @@ struct Jalv {
 	void*              ui_event_buf;   ///< Buffer for reading UI port events
 	JalvWorker         worker;         ///< Worker thread implementation
 	JalvWorker         state_worker;   ///< Synchronous worker for state restore
+	ZixSem             work_lock;      ///< Lock for plugin work() method
 	ZixSem*            done;           ///< Exit semaphore
 	ZixSem             paused;         ///< Paused signal from process thread
 	JalvPlayState      play_state;     ///< Current play state
