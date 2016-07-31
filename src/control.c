@@ -115,7 +115,7 @@ new_property_control(Jalv* jalv, const LilvNode* property)
 void
 add_control(Controls* controls, ControlID* control)
 {
-	controls->controls = realloc(
+	controls->controls = (ControlID**)realloc(
 		controls->controls, (controls->n_controls + 1) * sizeof(ControlID*));
 	controls->controls[controls->n_controls++] = control;
 }

@@ -118,7 +118,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "JACK client name", NULL},
 		{ "exact-jack-name", 'x', 0, G_OPTION_ARG_NONE, &opts->name_exact,
 		  "Exact JACK client name (exit if taken)", NULL },
-		{ 0, 0, 0, 0, 0, 0, 0 } };
+		{ 0, 0, 0, G_OPTION_ARG_NONE, 0, 0, 0 } };
 	GError* error = NULL;
 	const int err = gtk_init_with_args(
 		argc, argv,
@@ -291,7 +291,7 @@ get_bank_menu(Jalv* jalv, PresetMenu* menu, const LilvNode* bank)
 		g_sequence_insert_sorted(menu->banks, bank_menu, menu_cmp, NULL);
 		return bank_menu;
 	}
-	return g_sequence_get(i);
+	return (PresetMenu*)g_sequence_get(i);
 }
 
 static int
@@ -327,7 +327,7 @@ add_preset_to_menu(Jalv*           jalv,
 	g_signal_connect_data(G_OBJECT(item), "activate",
 	                      G_CALLBACK(on_preset_activate),
 	                      record, on_preset_destroy,
-	                      0);
+	                      (GConnectFlags)0);
 
 	return 0;
 }
@@ -353,7 +353,7 @@ rebuild_preset_menu(Jalv* jalv, GtkContainer* pset_menu)
 	for (GList* items = g_list_nth(gtk_container_get_children(pset_menu), 3);
 	     items;
 	     items = items->next) {
-		gtk_container_remove(pset_menu, items->data);
+		gtk_container_remove(pset_menu, GTK_WIDGET(items->data));
 	}
 
 	// Load presets and build new menu
@@ -453,7 +453,7 @@ on_delete_preset_activate(GtkWidget* widget, void* ptr)
 	GtkWidget* dialog = gtk_dialog_new_with_buttons(
 		"Delete Preset?",
 		(GtkWindow*)jalv->window,
-		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		(GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 		"_Cancel", GTK_RESPONSE_REJECT,
 		"_OK", GTK_RESPONSE_ACCEPT,
 		NULL);
@@ -671,7 +671,7 @@ jalv_ui_port_event(Jalv*       jalv,
 {
 	if (protocol == 0) {
 		control_changed(jalv,
-		                jalv->ports[port_index].widget,
+		                (Controller*)jalv->ports[port_index].widget,
 		                buffer_size,
 		                jalv->forge.Float,
 		                buffer);
@@ -998,7 +998,7 @@ add_control_row(GtkWidget*  table,
 	gtk_table_attach(GTK_TABLE(table),
 	                 label,
 	                 0, 1, row, row + 1,
-	                 GTK_FILL, GTK_FILL | GTK_EXPAND, 8, 1);
+	                 GTK_FILL, (GtkAttachOptions)(GTK_FILL|GTK_EXPAND), 8, 1);
 	int control_left_attach = 1;
 	if (controller->spin) {
 		control_left_attach = 2;
@@ -1008,7 +1008,7 @@ add_control_row(GtkWidget*  table,
 	}
 	gtk_table_attach(GTK_TABLE(table), controller->control,
 	                 control_left_attach, 3, row, row + 1,
-	                 GTK_FILL | GTK_EXPAND, GTK_FILL, 2, 1);
+	                 (GtkAttachOptions)(GTK_FILL|GTK_EXPAND), GTK_FILL, 2, 1);
 }
 
 static int

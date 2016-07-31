@@ -213,7 +213,7 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
 		*subframes = 0;
 		*type      = aev->body.type;
 		*size      = aev->body.size;
-		*data      = LV2_ATOM_BODY(&aev->body);
+		*data      = (uint8_t*)LV2_ATOM_BODY(&aev->body);
 		break;
 	}
 

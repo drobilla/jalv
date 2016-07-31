@@ -300,9 +300,9 @@ static void
 jalv_allocate_port_buffers(Jalv* jalv)
 {
 	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-		struct Port* const port = &jalv->ports[i];
+		struct Port* const port     = &jalv->ports[i];
 		switch (port->type) {
-		case TYPE_EVENT:
+		case TYPE_EVENT: {
 			lv2_evbuf_free(port->evbuf);
 			const size_t buf_size = (port->buf_size > 0)
 				? port->buf_size
@@ -316,6 +316,7 @@ jalv_allocate_port_buffers(Jalv* jalv)
 				              lilv_node_as_string(jalv->nodes.atom_Sequence)));
 			lilv_instance_connect_port(
 				jalv->instance, i, lv2_evbuf_get_buffer(port->evbuf));
+		}
 		default: break;
 		}
 	}
@@ -551,9 +552,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			/* Write transport change event if applicable */
 			LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
 			if (xport_changed) {
-				lv2_evbuf_write(
-					&iter, 0, 0,
-					lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
+				lv2_evbuf_write(&iter, 0, 0,
+				                lv2_pos->type, lv2_pos->size,
+				                (const uint8_t*)LV2_ATOM_BODY(lv2_pos));
 			}
 
 			if (jalv->request_update) {
@@ -561,9 +562,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				const LV2_Atom_Object get = {
 					{ sizeof(LV2_Atom_Object_Body), jalv->urids.atom_Object },
 					{ 0, jalv->urids.patch_Get } };
-				lv2_evbuf_write(
-					&iter, 0, 0,
-					get.atom.type, get.atom.size, LV2_ATOM_BODY(&get));
+				lv2_evbuf_write(&iter, 0, 0,
+				                get.atom.type, get.atom.size,
+				                (const uint8_t*)LV2_ATOM_BODY(&get));
 			}
 
 			if (port->jack_port) {
@@ -605,7 +606,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
 				const LV2_Atom* const atom = (const LV2_Atom*)body;
 				lv2_evbuf_write(&e, nframes, 0, atom->type, atom->size,
-				                LV2_ATOM_BODY_CONST(atom));
+				                (const uint8_t*)LV2_ATOM_BODY_CONST(atom));
 			} else {
 				fprintf(stderr, "error: Unknown control change protocol %d\n",
 				        ev.protocol);
@@ -680,7 +681,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					}
 					jack_ringbuffer_write(jalv->plugin_events, evbuf, sizeof(evbuf));
 					/* TODO: race, ensure reader handles this correctly */
-					jack_ringbuffer_write(jalv->plugin_events, (void*)body, size);
+					jack_ringbuffer_write(jalv->plugin_events, (const char*)body, size);
 				}
 			}
 		} else if (send_ui_updates
@@ -748,7 +749,7 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 	Jalv* const jalv = (Jalv*)arg;
 
 	#define MAX_CMD_LEN 256
-	event->command_line = malloc(MAX_CMD_LEN);
+	event->command_line = (char*)malloc(MAX_CMD_LEN);
 	snprintf(event->command_line, MAX_CMD_LEN, "%s -u %s -l \"${SESSION_DIR}\"",
 	         jalv->prog_name,
 	         event->client_uuid);
@@ -925,7 +926,7 @@ jalv_update(Jalv* jalv)
 		void* const buf = jalv->ui_event_buf;
 
 		/* Read event body */
-		jack_ringbuffer_read(jalv->plugin_events, buf, ev.size);
+		jack_ringbuffer_read(jalv->plugin_events, (char*)buf, ev.size);
 
 		if (jalv->opts.dump && ev.protocol == jalv->urids.atom_eventTransfer) {
 			/* Dump event in Turtle to the console */
@@ -1269,7 +1270,8 @@ main(int argc, char** argv)
 	if (jalv.opts.uuid) {
 		jalv.jack_client = jack_client_open(
 			jack_name,
-			JackSessionID | (jalv.opts.name_exact ? JackUseExactName : 0),
+			(jack_options_t)(JackSessionID |
+			                 (jalv.opts.name_exact ? JackUseExactName : 0)),
 			NULL,
 			jalv.opts.uuid);
 	}
@@ -1340,7 +1342,7 @@ main(int argc, char** argv)
 		{ LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL }
 	};
 
-	options_feature.data = &options;
+	options_feature.data = (void*)&options;
 
 	/* Create Plugin <=> UI communication buffers */
 	jalv.ui_events     = jack_ringbuffer_create(jalv.opts.buffer_size);
