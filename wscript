@@ -94,7 +94,7 @@ def configure(conf):
                uselib='JACK',
                mandatory=False)
 
-    defines = ['_POSIX_SOURCE']
+    defines = ['_POSIX_C_SOURCE=200809L']
 
     conf.check(function_name='isatty',
                header_name='unistd.h',
@@ -110,7 +110,7 @@ def configure(conf):
 
     if conf.is_defined('HAVE_ISATTY') and conf.is_defined('HAVE_FILENO'):
         autowaf.define(conf, 'JALV_WITH_COLOR', 1)
-        conf.env.append_unique('CFLAGS', ['-D_POSIX_SOURCE'])
+        conf.env.append_unique('CFLAGS', ['-D_POSIX_C_SOURCE=200809L'])
 
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)

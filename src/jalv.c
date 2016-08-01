@@ -14,8 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#define _POSIX_C_SOURCE 200809L  /* for mkdtemp */
-#define _DARWIN_C_SOURCE /* for mkdtemp on OSX */
+#define _POSIX_C_SOURCE 200809L /* for mkdtemp */
+#define _DARWIN_C_SOURCE        /* for mkdtemp on OSX */
+
 #include <assert.h>
 #include <math.h>
 #include <signal.h>

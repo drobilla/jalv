@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2014 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,7 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#define _XOPEN_SOURCE 500
+#define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE   500
 
 #include <stdbool.h>
 #include <stdio.h>
