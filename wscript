@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import subprocess
 from waflib.extras import autowaf as autowaf
 import waflib.Options as Options
@@ -213,3 +214,14 @@ def upload_docs(ctx):
 
 def lint(ctx):
     subprocess.call('cpplint.py --filter=+whitespace/comments,-whitespace/tab,-whitespace/braces,-whitespace/labels,-build/header_guard,-readability/casting,-readability/todo,-build/include,-runtime/sizeof src/* jalv/*', shell=True)
+
+def posts(ctx):
+    path = str(ctx.path.abspath())
+    autowaf.news_to_posts(
+        os.path.join(path, 'NEWS'),
+        {'title'        : 'Jalv',
+         'description'  : autowaf.get_blurb(os.path.join(path, 'README')),
+         'dist_pattern' : 'http://download.drobilla.net/jalv-%s.tar.bz2'},
+        { 'Author' : 'drobilla',
+          'Tags'   : 'Hacking, LAD, LV2' },
+        os.path.join(out, 'posts'))

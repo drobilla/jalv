@@ -1,9 +1,10 @@
 Jalv
 ----
 
-Jalv is a simple but fully featured LV2 host for Jack.  It runs LV2 plugins and
-exposes their ports as Jack ports, essentially making any LV2 plugin function
-as a Jack application.
+Jalv is a simple but fully featured LV2 host for Jack which exposes plugin
+ports to Jack, essentially making any LV2 plugin function as a Jack
+application.
+For more information, see <http://drobilla.net/software/jalv>.
 
 Jalv is a small program which is useful, but also intended to be an appropriate
 test host for plugin development.  It runs plugins from the command line with
