@@ -635,8 +635,8 @@ build_control_widget(Jalv* jalv)
 	FlowLayout* flowLayout = new FlowLayout();
 	QLayout*    layout     = flowLayout;
 
-	LilvNode*    lastGroup = NULL;
-	QHBoxLayout* groupLayout;
+	LilvNode*    lastGroup   = NULL;
+	QHBoxLayout* groupLayout = NULL;
 	for (int i = 0; i < portContainers.count(); ++i) {
 		PortContainer portContainer = portContainers[i];
 		Port*         port          = portContainer.port;
