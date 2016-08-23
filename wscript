@@ -25,6 +25,9 @@ def options(opt):
     opt.add_option('--no-gtk', action='store_true', default=False,
                    dest='no_gtk',
                    help="Do not build Gtk GUI")
+    opt.add_option('--no-gtkmm', action='store_true', default=False,
+                   dest='no_gtkmm',
+                   help="Do not build Gtkmm GUI")
     opt.add_option('--no-gtk2', action='store_true', dest='no_gtk2',
                    help='Do not build Gtk2 GUI')
     opt.add_option('--no-gtk3', action='store_true', dest='no_gtk3',
@@ -62,6 +65,7 @@ def configure(conf):
         if not Options.options.no_gtk2:
             autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
                               atleast_version='2.18.0', mandatory=False)
+        if not Options.options.no_gtkmm:
             autowaf.check_pkg(conf, 'gtkmm-2.4', uselib_store='GTKMM2',
                               atleast_version='2.20.0', mandatory=False)
         if not Options.options.no_gtk3:
