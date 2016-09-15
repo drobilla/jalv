@@ -669,13 +669,15 @@ jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    protocol,
                    const void* buffer)
 {
-	if (protocol == 0) {
+	if (protocol == 0 && (Controller*)jalv->ports[port_index].widget) {
 		control_changed(jalv,
 		                (Controller*)jalv->ports[port_index].widget,
 		                buffer_size,
 		                jalv->forge.Float,
 		                buffer);
 		return;
+	} else if (protocol == 0) {
+		return;  // No widget (probably notOnGUI)
 	} else if (protocol != jalv->urids.atom_eventTransfer) {
 		fprintf(stderr, "Unknown port event protocol\n");
 		return;
