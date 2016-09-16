@@ -402,23 +402,17 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	, port(portContainer.port)
 	, label(new QLabel())
 {
+	JalvNodes*      nodes    = &portContainer.jalv->nodes;
 	const LilvPort* lilvPort = port->lilv_port;
-	LilvWorld*      world    = portContainer.jalv->world;
-
-	LilvNode* lv2_integer     = lilv_new_uri(world, LV2_CORE__integer);
-	LilvNode* lv2_toggled     = lilv_new_uri(world, LV2_CORE__toggled);
-	LilvNode* lv2_enumeration = lilv_new_uri(world, LV2_CORE__enumeration);
-	LilvNode* logarithmic     = lilv_new_uri(world, LV2_PORT_PROPS__logarithmic);
-	LilvNode* rangeSteps      = lilv_new_uri(world, LV2_PORT_PROPS__rangeSteps);
-	LilvNode* rdfs_comment    = lilv_new_uri(world, LILV_NS_RDFS "comment");
 
 	LilvNode* nmin;
 	LilvNode* nmax;
 	LilvNode* ndef;
 	lilv_port_get_range(plugin, lilvPort, &ndef, &nmin, &nmax);
 
-	if (lilv_port_has_property(plugin, lilvPort, rangeSteps)) {
-		steps = lilv_node_as_int(rangeSteps);
+	LilvNode* stepsNode = lilv_port_get(plugin, lilvPort, nodes->pprops_rangeSteps);
+	if (lilv_node_is_int(stepsNode)) {
+		steps = lilv_node_as_int(stepsNode);
 	} else {
 		steps = DIAL_STEPS;
 	}
@@ -442,11 +436,11 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	}
 
 	// Check port properties
-	isLogarithmic = lilv_port_has_property(plugin, lilvPort, logarithmic);
-	isInteger     = lilv_port_has_property(plugin, lilvPort, lv2_integer);
-	isEnum        = lilv_port_has_property(plugin, lilvPort, lv2_enumeration);
+	isLogarithmic = lilv_port_has_property(plugin, lilvPort, nodes->pprops_logarithmic);
+	isInteger     = lilv_port_has_property(plugin, lilvPort, nodes->lv2_integer);
+	isEnum        = lilv_port_has_property(plugin, lilvPort, nodes->lv2_enumeration);
 
-	if (lilv_port_has_property(plugin, lilvPort, lv2_toggled)) {
+	if (lilv_port_has_property(plugin, lilvPort, nodes->lv2_toggled)) {
 		isInteger = true;
 
 		if (!scaleMap[0]) {
@@ -482,7 +476,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	}
 
 	// Set tooltip if comment is available
-	LilvNode* comment = lilv_port_get(plugin, lilvPort, rdfs_comment);
+	LilvNode* comment = lilv_port_get(plugin, lilvPort, nodes->rdfs_comment);
 	if (comment) {
 		QString* tooltip = new QString();
 		tooltip->append(lilv_node_as_string(comment));
@@ -497,11 +491,6 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	lilv_node_free(nmax);
 	lilv_node_free(ndef);
 	lilv_node_free(nname);
-	lilv_node_free(lv2_integer);
-	lilv_node_free(lv2_toggled);
-	lilv_node_free(lv2_enumeration);
-	lilv_node_free(logarithmic);
-	lilv_node_free(rangeSteps);
 	lilv_node_free(comment);
 }
 
@@ -612,12 +601,11 @@ build_control_widget(Jalv* jalv)
 	const LilvPlugin* plugin = jalv->plugin;
 	LilvWorld*        world  = jalv->world;
 
-	LilvNode* pprop_notOnGUI = lilv_new_uri(world, LV2_PORT_PROPS__notOnGUI);
-
 	QList<PortContainer> portContainers;
 	for (unsigned i = 0; i < jalv->num_ports; ++i) {
 		if (!jalv->opts.show_hidden &&
-		    lilv_port_has_property(plugin, jalv->ports[i].lilv_port, pprop_notOnGUI)) {
+		    lilv_port_has_property(plugin, jalv->ports[i].lilv_port,
+		                           jalv->nodes.pprops_notOnGUI)) {
 			continue;
 		}
 
@@ -667,8 +655,6 @@ build_control_widget(Jalv* jalv)
 	}
 
 	grid->setLayout(layout);
-
-	lilv_node_free(pprop_notOnGUI);
 
 	return grid;
 }

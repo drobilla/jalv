@@ -215,10 +215,13 @@ typedef struct {
 	LilvNode* lv2_name;
 	LilvNode* lv2_reportsLatency;
 	LilvNode* lv2_sampleRate;
+	LilvNode* lv2_symbol;
 	LilvNode* lv2_toggled;
 	LilvNode* midi_MidiEvent;
 	LilvNode* pg_group;
 	LilvNode* pprops_logarithmic;
+	LilvNode* pprops_notOnGUI;
+	LilvNode* pprops_rangeSteps;
 	LilvNode* pset_Preset;
 	LilvNode* pset_bank;
 	LilvNode* rdfs_comment;

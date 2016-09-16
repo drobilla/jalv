@@ -1124,10 +1124,13 @@ main(int argc, char** argv)
 	jalv.nodes.lv2_name               = lilv_new_uri(world, LV2_CORE__name);
 	jalv.nodes.lv2_reportsLatency     = lilv_new_uri(world, LV2_CORE__reportsLatency);
 	jalv.nodes.lv2_sampleRate         = lilv_new_uri(world, LV2_CORE__sampleRate);
+	jalv.nodes.lv2_symbol             = lilv_new_uri(world, LV2_CORE__symbol);
 	jalv.nodes.lv2_toggled            = lilv_new_uri(world, LV2_CORE__toggled);
 	jalv.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
 	jalv.nodes.pg_group               = lilv_new_uri(world, LV2_PORT_GROUPS__group);
 	jalv.nodes.pprops_logarithmic     = lilv_new_uri(world, LV2_PORT_PROPS__logarithmic);
+	jalv.nodes.pprops_notOnGUI        = lilv_new_uri(world, LV2_PORT_PROPS__notOnGUI);
+	jalv.nodes.pprops_rangeSteps      = lilv_new_uri(world, LV2_PORT_PROPS__rangeSteps);
 	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
 	jalv.nodes.pset_bank              = lilv_new_uri(world, LV2_PRESETS__bank);
 	jalv.nodes.rdfs_comment           = lilv_new_uri(world, LILV_NS_RDFS "comment");
