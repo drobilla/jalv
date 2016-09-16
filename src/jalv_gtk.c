@@ -400,15 +400,14 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 	gtk_entry_set_activates_default(GTK_ENTRY(uri_entry), TRUE);
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-		const char* path   = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-		const char* uri    = gtk_entry_get_text(GTK_ENTRY(uri_entry));
-		const char* prefix = "";
-		const char* sep    = "";
+		LilvNode*   plug_name = lilv_plugin_get_name(jalv->plugin);
+		const char* path      = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+		const char* uri       = gtk_entry_get_text(GTK_ENTRY(uri_entry));
+		const char* prefix    = "";
+		const char* sep       = "";
 		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(add_prefix))) {
-			LilvNode* plug_name = lilv_plugin_get_name(jalv->plugin);
 			prefix = lilv_node_as_string(plug_name);
 			sep    = "_";
-			lilv_node_free(plug_name);
 		}
 
 		char* dirname  = g_path_get_dirname(path);
@@ -434,9 +433,11 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 		g_free(dir);
 		g_free(file);
 		g_free(bundle);
+		free(sprefix);
 		free(sym);
 		g_free(basename);
 		g_free(dirname);
+		lilv_node_free(plug_name);
 	}
 
 	gtk_widget_destroy(GTK_WIDGET(dialog));
