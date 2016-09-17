@@ -232,6 +232,10 @@ create_port(Jalv*    jalv,
 	if (lilv_port_is_a(jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
 		port->type    = TYPE_CONTROL;
 		port->control = isnan(default_value) ? 0.0f : default_value;
+		if (jalv->opts.show_hidden ||
+		    !lilv_port_has_property(jalv->plugin, port->lilv_port, jalv->nodes.pprops_notOnGUI)) {
+			add_control(&jalv->controls, new_port_control(jalv, port->index));
+		}
 	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
 	                          jalv->nodes.lv2_AudioPort)) {
 		port->type = TYPE_AUDIO;
@@ -345,6 +349,18 @@ jalv_port_by_symbol(Jalv* jalv, const char* sym)
 	return NULL;
 }
 
+ControlID*
+jalv_control_by_symbol(Jalv* jalv, const char* sym)
+{
+	for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+		if (!strcmp(lilv_node_as_string(jalv->controls.controls[i]->symbol),
+		            sym)) {
+			return jalv->controls.controls[i];
+		}
+	}
+	return NULL;
+}
+
 static void
 print_control_value(Jalv* jalv, const struct Port* port, float value)
 {
@@ -377,7 +393,6 @@ activate_port(Jalv*    jalv,
 	/* Connect the port based on its type */
 	switch (port->type) {
 	case TYPE_CONTROL:
-		print_control_value(jalv, port, port->control);
 		lilv_instance_connect_port(jalv->instance, port_index, &port->control);
 		break;
 	case TYPE_AUDIO:
@@ -427,6 +442,96 @@ activate_port(Jalv*    jalv,
 	}
 #endif
 }
+
+void
+jalv_create_controls(Jalv* jalv, bool writable)
+{
+	const LilvPlugin* plugin         = jalv->plugin;
+	LilvWorld*        world          = jalv->world;
+	LilvNode*         patch_writable = lilv_new_uri(world, LV2_PATCH__writable);
+	LilvNode*         patch_readable = lilv_new_uri(world, LV2_PATCH__readable);
+
+	LilvNodes* properties = lilv_world_find_nodes(
+		world,
+		lilv_plugin_get_uri(plugin),
+		writable ? patch_writable : patch_readable,
+		NULL);
+	LILV_FOREACH(nodes, p, properties) {
+		const LilvNode* property = lilv_nodes_get(properties, p);
+		ControlID*      record   = NULL;
+
+		if (!writable && lilv_world_ask(world,
+		                                lilv_plugin_get_uri(plugin),
+		                                patch_writable,
+		                                property)) {
+			// Find existing writable control
+			for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+				if (lilv_node_equals(jalv->controls.controls[i]->node, property)) {
+					record              = jalv->controls.controls[i];
+					record->is_readable = true;
+					break;
+				}
+			}
+
+			if (record) {
+				continue;
+			}
+		}
+
+		record = new_property_control(jalv, property);
+		if (writable) {
+			record->is_writable = true;
+		} else {
+			record->is_readable = true;
+		}
+
+		if (record->value_type) {
+			add_control(&jalv->controls, record);
+		} else {
+			fprintf(stderr, "Parameter <%s> has unknown value type, ignored\n",
+			        lilv_node_as_string(record->node));
+			free(record);
+		}
+	}
+	lilv_nodes_free(properties);
+
+	lilv_node_free(patch_readable);
+	lilv_node_free(patch_writable);
+}
+
+void
+jalv_set_control(const ControlID* control,
+                 uint32_t         size,
+                 LV2_URID         type,
+                 const void*      body)
+{
+	Jalv* jalv = control->jalv;
+	if (control->type == PORT && type == jalv->forge.Float) {
+		struct Port* port = &control->jalv->ports[control->index];
+		port->control = *(float*)body;
+	} else if (control->type == PROPERTY) {
+		// Copy forge since it is used by process thread
+		LV2_Atom_Forge       forge = jalv->forge;
+		LV2_Atom_Forge_Frame frame;
+		uint8_t              buf[1024];
+		lv2_atom_forge_set_buffer(&forge, buf, sizeof(buf));
+
+		lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Set);
+		lv2_atom_forge_key(&forge, jalv->urids.patch_property);
+		lv2_atom_forge_urid(&forge, control->property);
+		lv2_atom_forge_key(&forge, jalv->urids.patch_value);
+		lv2_atom_forge_atom(&forge, size, type);
+		lv2_atom_forge_write(&forge, body, size);
+
+		const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);
+		jalv_ui_write(jalv,
+		              jalv->control_in,
+		              lv2_atom_total_size(atom),
+		              jalv->urids.atom_eventTransfer,
+		              atom);
+	}
+}
+
 
 /** Jack buffer size callback. */
 static int
@@ -817,17 +922,6 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 
 	lilv_free(binary_path);
 	lilv_free(bundle_path);
-
-	/* Set initial control values on UI */
-	if (jalv->ui_instance) {
-		for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-			if (jalv->ports[i].type == TYPE_CONTROL) {
-				suil_instance_port_event(jalv->ui_instance, i,
-				                         sizeof(float), 0,
-				                         &jalv->ports[i].control);
-			}
-		}
-	}
 }
 
 bool
@@ -904,6 +998,36 @@ jalv_ui_port_index(SuilController controller, const char* symbol)
 	return port ? port->index : LV2UI_INVALID_PORT_INDEX;
 }
 
+void
+jalv_init_ui(Jalv* jalv)
+{
+	// Set initial control port values
+	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+		if (jalv->ports[i].type == TYPE_CONTROL) {
+			jalv_ui_port_event(jalv, i,
+			                   sizeof(float), 0,
+			                   &jalv->ports[i].control);
+		}
+	}
+
+	if (jalv->control_in != (uint32_t)-1) {
+		// Send patch:Get message for initial parameters/etc
+		LV2_Atom_Forge       forge = jalv->forge;
+		LV2_Atom_Forge_Frame frame;
+		uint8_t              buf[1024];
+		lv2_atom_forge_set_buffer(&forge, buf, sizeof(buf));
+		lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Get);
+
+		const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);
+		jalv_ui_write(jalv,
+		              jalv->control_in,
+		              lv2_atom_total_size(atom),
+		              jalv->urids.atom_eventTransfer,
+		              atom);
+		lv2_atom_forge_pop(&forge, &frame);
+	}
+}
+
 bool
 jalv_update(Jalv* jalv)
 {
@@ -966,13 +1090,15 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
 		return false;
 	}
 
-	struct Port* port = jalv_port_by_symbol(jalv, sym);
-	if (!port) {
-		fprintf(stderr, "warning: Ignoring value for unknown port `%s'\n", sym);
+	ControlID* control = jalv_control_by_symbol(jalv, sym);
+	if (!control) {
+		fprintf(stderr, "warning: Ignoring value for unknown control `%s'\n", sym);
 		return false;
 	}
 
-	port->control = val;
+	jalv_set_control(control, sizeof(float), jalv->urids.atom_Float, &val);
+	printf("%-*s = %f\n", jalv->longest_sym, sym, val);
+
 	return true;
 }
 
@@ -992,6 +1118,7 @@ main(int argc, char** argv)
 	jalv.midi_buf_size = 1024;  /* Should be set by jack_buffer_size_cb */
 	jalv.play_state    = JALV_PAUSED;
 	jalv.bpm           = 120.0f;
+	jalv.control_in    = (uint32_t)-1;
 
 	if (jalv_init(&argc, &argv, &jalv.opts)) {
 		return EXIT_FAILURE;
@@ -1248,8 +1375,10 @@ main(int argc, char** argv)
 		fprintf(stderr, "UI:           None\n");
 	}
 
-	/* Create port structures (jalv.ports) */
+	/* Create port and control structures */
 	jalv_create_ports(&jalv);
+	jalv_create_controls(&jalv, true);
+	jalv_create_controls(&jalv, false);
 
 	/* Determine the name of the JACK client */
 	char* jack_name = NULL;
@@ -1408,6 +1537,15 @@ main(int argc, char** argv)
 	/* Create Jack ports and connect plugin ports to buffers */
 	for (uint32_t i = 0; i < jalv.num_ports; ++i) {
 		activate_port(&jalv, i);
+	}
+
+	/* Print initial control values */
+	for (size_t i = 0; i < jalv.controls.n_controls; ++i) {
+		ControlID* control = jalv.controls.controls[i];
+		if (control->type == PORT) {// && control->value_type == jalv->forge.Float) {
+			struct Port* port = &jalv.ports[control->index];
+			print_control_value(&jalv, port, port->control);
+		}
 	}
 
 	/* Activate plugin */

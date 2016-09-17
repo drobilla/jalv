@@ -38,11 +38,17 @@ new_port_control(Jalv* jalv, uint32_t index)
 	ControlID* id = (ControlID*)calloc(1, sizeof(ControlID));
 	id->jalv           = jalv;
 	id->type           = PORT;
+	id->node           = lilv_node_duplicate(lilv_port_get_node(plug, lport));
+	id->symbol         = lilv_node_duplicate(lilv_port_get_symbol(plug, lport));
+	id->label          = lilv_port_get_name(plug, lport);
 	id->index          = index;
+	id->group          = lilv_port_get(plug, lport, jalv->nodes.pg_group);
 	id->min            = lilv_port_get(plug, lport, nodes->lv2_minimum);
 	id->max            = lilv_port_get(plug, lport, nodes->lv2_maximum);
 	id->def            = lilv_port_get(plug, lport, nodes->lv2_default);
 	id->value_type     = jalv->forge.Float;
+	id->is_writable    = lilv_port_is_a(plug, lport, nodes->lv2_InputPort);
+	id->is_readable    = lilv_port_is_a(plug, lport, nodes->lv2_OutputPort);
 	id->is_toggle      = lilv_port_has_property(plug, lport, nodes->lv2_toggled);
 	id->is_integer     = lilv_port_has_property(plug, lport, nodes->lv2_integer);
 	id->is_enumeration = lilv_port_has_property(plug, lport, nodes->lv2_enumeration);
@@ -61,6 +67,32 @@ new_port_control(Jalv* jalv, uint32_t index)
 			lilv_node_free(id->max);
 			id->max = lilv_new_float(jalv->world, max);
 		}
+	}
+
+	/* Get scale points */
+	LilvScalePoints* sp = lilv_port_get_scale_points(plug, lport);
+	if (sp) {
+		id->points = (ScalePoint*)malloc(
+			lilv_scale_points_size(sp) * sizeof(ScalePoint));
+		size_t np = 0;
+		LILV_FOREACH(scale_points, s, sp) {
+			const LilvScalePoint* p = lilv_scale_points_get(sp, s);
+			if (lilv_node_is_float(lilv_scale_point_get_value(p)) ||
+			    lilv_node_is_int(lilv_scale_point_get_value(p))) {
+				id->points[np].value = lilv_node_as_float(
+					lilv_scale_point_get_value(p));
+				id->points[np].label = strdup(
+					lilv_node_as_string(lilv_scale_point_get_label(p)));
+				++np;
+			}
+			/* TODO: Non-float scale points? */
+		}
+
+		qsort(id->points, np, sizeof(ScalePoint),
+		      (int (*)(const void*, const void*))scale_point_cmp);
+		id->n_points = np;
+
+		lilv_scale_points_free(sp);
 	}
 
 	return id;
@@ -82,6 +114,9 @@ new_property_control(Jalv* jalv, const LilvNode* property)
 	ControlID* id = (ControlID*)calloc(1, sizeof(ControlID));
 	id->jalv     = jalv;
 	id->type     = PROPERTY;
+	id->node     = lilv_node_duplicate(property);
+	id->symbol   = lilv_world_get_symbol(jalv->world, property);
+	id->label    = lilv_world_get(jalv->world, property, jalv->nodes.rdfs_label, NULL);
 	id->property = jalv->map.map(jalv, lilv_node_as_uri(property));
 
 	id->min = lilv_world_get(jalv->world, property, jalv->nodes.lv2_minimum, NULL);
@@ -103,6 +138,11 @@ new_property_control(Jalv* jalv, const LilvNode* property)
 	id->is_toggle  = (id->value_type == jalv->forge.Bool);
 	id->is_integer = (id->value_type == jalv->forge.Int ||
 	                  id->value_type == jalv->forge.Long);
+
+	const size_t sym_len = strlen(lilv_node_as_string(id->symbol));
+	if (sym_len > jalv->longest_sym) {
+		jalv->longest_sym = sym_len;
+	}
 
 	if (!id->value_type) {
 		fprintf(stderr, "Unknown value type for property <%s>\n",

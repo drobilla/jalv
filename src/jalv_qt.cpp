@@ -361,9 +361,14 @@ jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    protocol,
                    const void* buffer)
 {
-	Control* control = (Control*)jalv->ports[port_index].widget;
-	if (control) {
-		control->setValue(*(const float*)buffer);
+	if (jalv->ui_instance) {
+		suil_instance_port_event(jalv->ui_instance, port_index,
+		                         buffer_size, protocol, buffer);
+	} else {
+		Control* control = (Control*)jalv->ports[port_index].widget;
+		if (control) {
+			control->setValue(*(const float*)buffer);
+		}
 	}
 }
 

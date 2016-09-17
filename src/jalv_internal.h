@@ -101,12 +101,17 @@ int scale_point_cmp(const ScalePoint* a, const ScalePoint* b);
 typedef struct {
 	Jalv*       jalv;
 	ControlType type;
+	LilvNode*   node;
+	LilvNode*   symbol;          ///< Symbol
+	LilvNode*   label;           ///< Human readable label
 	LV2_URID    property;        ///< Iff type == PROPERTY
 	uint32_t    index;           ///< Iff type == PORT
+	LilvNode*   group;           ///< Port/control group, or NULL
 	void*       widget;          ///< Control Widget
 	size_t      n_points;        ///< Number of scale points
 	ScalePoint* points;          ///< Scale points
 	LV2_URID    value_type;      ///< Type of control value
+	LV2_Atom    value;           ///< Current value
 	LilvNode*   min;             ///< Minimum value
 	LilvNode*   max;             ///< Maximum value
 	LilvNode*   def;             ///< Default value
@@ -114,6 +119,8 @@ typedef struct {
 	bool        is_integer;      ///< Integer values only
 	bool        is_enumeration;  ///< Point values only
 	bool        is_logarithmic;  ///< Logarithmic scale
+	bool        is_writable;     ///< Writable (input)
+	bool        is_readable;     ///< Readable (output)
 } ControlID;
 
 ControlID*
@@ -316,6 +323,18 @@ jalv_create_ports(Jalv* jalv);
 struct Port*
 jalv_port_by_symbol(Jalv* jalv, const char* sym);
 
+void
+jalv_create_controls(Jalv* jalv, bool writable);
+
+ControlID*
+jalv_control_by_symbol(Jalv* jalv, const char* sym);
+
+void
+jalv_set_control(const ControlID* control,
+                 uint32_t         size,
+                 LV2_URID         type,
+                 const void*      body);
+
 const char*
 jalv_native_ui_type(Jalv* jalv);
 
@@ -324,6 +343,9 @@ jalv_discover_ui(Jalv* jalv);
 
 int
 jalv_open_ui(Jalv* jalv);
+
+void
+jalv_init_ui(Jalv* jalv);
 
 int
 jalv_close_ui(Jalv* jalv);
