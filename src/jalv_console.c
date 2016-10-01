@@ -16,7 +16,8 @@
 
 #define _POSIX_C_SOURCE 200809L
 #define _XOPEN_SOURCE   600
-#define _BSD_SOURCE
+#define _BSD_SOURCE     1
+#define _DEFAULT_SOURCE 1
 
 #include <stdbool.h>
 #include <stdio.h>
