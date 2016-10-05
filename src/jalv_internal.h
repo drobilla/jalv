@@ -390,6 +390,9 @@ jalv_ui_write(SuilController controller,
               uint32_t       protocol,
               const void*    buffer);
 
+void
+jalv_apply_ui_events(Jalv* jalv, uint32_t nframes);
+
 uint32_t
 jalv_ui_port_index(SuilController controller, const char* port_symbol);
 
@@ -399,6 +402,15 @@ jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    buffer_size,
                    uint32_t    protocol,
                    const void* buffer);
+
+bool
+jalv_send_to_ui(Jalv*       jalv,
+                uint32_t    port_index,
+                uint32_t    type,
+                uint32_t    size,
+                const void* body);
+bool
+jalv_run(Jalv* jalv, uint32_t nframes);
 
 bool
 jalv_update(Jalv* jalv);

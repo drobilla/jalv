@@ -190,54 +190,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 	}
 	jalv->request_update = false;
 
-	/* Read and apply control change events from UI */
-	if (jalv->has_ui) {
-		ControlChange ev;
-		const size_t  space = zix_ring_read_space(jalv->ui_events);
-		for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
-			zix_ring_read(jalv->ui_events, (char*)&ev, sizeof(ev));
-			char body[ev.size];
-			if (zix_ring_read(jalv->ui_events, body, ev.size) != ev.size) {
-				fprintf(stderr, "error: Error reading from UI ring buffer\n");
-				break;
-			}
-			assert(ev.index < jalv->num_ports);
-			struct Port* const port = &jalv->ports[ev.index];
-			if (ev.protocol == 0) {
-				assert(ev.size == sizeof(float));
-				port->control = *(float*)body;
-			} else if (ev.protocol == jalv->urids.atom_eventTransfer) {
-				LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
-				const LV2_Atom* const atom = (const LV2_Atom*)body;
-				lv2_evbuf_write(&e, nframes, 0, atom->type, atom->size,
-				                (const uint8_t*)LV2_ATOM_BODY_CONST(atom));
-			} else {
-				fprintf(stderr, "error: Unknown control change protocol %d\n",
-				        ev.protocol);
-			}
-		}
-	}
-
 	/* Run plugin for this cycle */
-	lilv_instance_run(jalv->instance, nframes);
-
-	/* Process any worker replies. */
-	jalv_worker_emit_responses(&jalv->state_worker, jalv->instance);
-	jalv_worker_emit_responses(&jalv->worker, jalv->instance);
-
-	/* Notify the plugin the run() cycle is finished */
-	if (jalv->worker.iface && jalv->worker.iface->end_run) {
-		jalv->worker.iface->end_run(jalv->instance->lv2_handle);
-	}
-
-	/* Check if it's time to send updates to the UI */
-	jalv->event_delta_t += nframes;
-	bool           send_ui_updates = false;
-	jack_nframes_t update_frames   = jalv->sample_rate / jalv->ui_update_hz;
-	if (jalv->has_ui && (jalv->event_delta_t > update_frames)) {
-		send_ui_updates = true;
-		jalv->event_delta_t = 0;
-	}
+	const bool send_ui_updates = jalv_run(jalv, nframes);
 
 	/* Deliver MIDI output and UI events */
 	for (uint32_t p = 0; p < jalv->num_ports; ++p) {
@@ -261,31 +215,19 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			for (LV2_Evbuf_Iterator i = lv2_evbuf_begin(port->evbuf);
 			     lv2_evbuf_is_valid(i);
 			     i = lv2_evbuf_next(i)) {
+				// Get event from LV2 buffer
 				uint32_t frames, subframes, type, size;
 				uint8_t* body;
 				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
+
 				if (buf && type == jalv->midi_event_id) {
+					// Write MIDI event to Jack output
 					jack_midi_event_write(buf, frames, body, size);
 				}
 
-				/* TODO: Be more disciminate about what to send */
 				if (jalv->has_ui && !port->old_api) {
-					char evbuf[sizeof(ControlChange) + sizeof(LV2_Atom)];
-					ControlChange* ev = (ControlChange*)evbuf;
-					ev->index    = p;
-					ev->protocol = jalv->urids.atom_eventTransfer;
-					ev->size     = sizeof(LV2_Atom) + size;
-					LV2_Atom* atom = (LV2_Atom*)ev->body;
-					atom->type = type;
-					atom->size = size;
-					if (zix_ring_write_space(jalv->plugin_events)
-					    < sizeof(evbuf) + size) {
-						fprintf(stderr, "Plugin => UI buffer overflow!\n");
-						break;
-					}
-					zix_ring_write(jalv->plugin_events, evbuf, sizeof(evbuf));
-					/* TODO: race, ensure reader handles this correctly */
-					zix_ring_write(jalv->plugin_events, (const char*)body, size);
+					// Forward event to UI
+					jalv_send_to_ui(jalv, p, type, size, body);
 				}
 			}
 		} else if (send_ui_updates

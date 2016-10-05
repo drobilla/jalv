@@ -555,6 +555,39 @@ jalv_ui_write(SuilController controller,
 	zix_ring_write(jalv->ui_events, buf, sizeof(buf));
 }
 
+void
+jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
+{
+	if (!jalv->has_ui) {
+		return;
+	}
+
+	ControlChange ev;
+	const size_t  space = zix_ring_read_space(jalv->ui_events);
+	for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
+		zix_ring_read(jalv->ui_events, (char*)&ev, sizeof(ev));
+		char body[ev.size];
+		if (zix_ring_read(jalv->ui_events, body, ev.size) != ev.size) {
+			fprintf(stderr, "error: Error reading from UI ring buffer\n");
+			break;
+		}
+		assert(ev.index < jalv->num_ports);
+		struct Port* const port = &jalv->ports[ev.index];
+		if (ev.protocol == 0) {
+			assert(ev.size == sizeof(float));
+			port->control = *(float*)body;
+		} else if (ev.protocol == jalv->urids.atom_eventTransfer) {
+			LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
+			const LV2_Atom* const atom = (const LV2_Atom*)body;
+			lv2_evbuf_write(&e, nframes - 1, 0, atom->type, atom->size,
+			                (const uint8_t*)LV2_ATOM_BODY_CONST(atom));
+		} else {
+			fprintf(stderr, "error: Unknown control change protocol %d\n",
+			        ev.protocol);
+		}
+	}
+}
+
 uint32_t
 jalv_ui_port_index(SuilController controller, const char* symbol)
 {
@@ -595,6 +628,64 @@ jalv_init_ui(Jalv* jalv)
 }
 
 bool
+jalv_send_to_ui(Jalv*       jalv,
+                uint32_t    port_index,
+                uint32_t    type,
+                uint32_t    size,
+                const void* body)
+{
+	/* TODO: Be more disciminate about what to send */
+	char evbuf[sizeof(ControlChange) + sizeof(LV2_Atom)];
+	ControlChange* ev = (ControlChange*)evbuf;
+	ev->index    = port_index;
+	ev->protocol = jalv->urids.atom_eventTransfer;
+	ev->size     = sizeof(LV2_Atom) + size;
+
+	LV2_Atom* atom = (LV2_Atom*)ev->body;
+	atom->type = type;
+	atom->size = size;
+
+	if (zix_ring_write_space(jalv->plugin_events) >= sizeof(evbuf) + size) {
+		zix_ring_write(jalv->plugin_events, evbuf, sizeof(evbuf));
+		zix_ring_write(jalv->plugin_events, (const char*)body, size);
+		return true;
+	} else {
+		fprintf(stderr, "Plugin => UI buffer overflow!\n");
+		return false;
+	}
+}
+
+bool
+jalv_run(Jalv* jalv, uint32_t nframes)
+{
+	/* Read and apply control change events from UI */
+	jalv_apply_ui_events(jalv, nframes);
+
+	/* Run plugin for this cycle */
+	lilv_instance_run(jalv->instance, nframes);
+
+	/* Process any worker replies. */
+	jalv_worker_emit_responses(&jalv->state_worker, jalv->instance);
+	jalv_worker_emit_responses(&jalv->worker, jalv->instance);
+
+	/* Notify the plugin the run() cycle is finished */
+	if (jalv->worker.iface && jalv->worker.iface->end_run) {
+		jalv->worker.iface->end_run(jalv->instance->lv2_handle);
+	}
+
+	/* Check if it's time to send updates to the UI */
+	jalv->event_delta_t += nframes;
+	bool     send_ui_updates = false;
+	uint32_t update_frames   = jalv->sample_rate / jalv->ui_update_hz;
+	if (jalv->has_ui && (jalv->event_delta_t > update_frames)) {
+		send_ui_updates = true;
+		jalv->event_delta_t = 0;
+	}
+
+	return send_ui_updates;
+}
+
+bool
 jalv_update(Jalv* jalv)
 {
 	/* Check quit flag and close if set. */
@@ -607,7 +698,7 @@ jalv_update(Jalv* jalv)
 	ControlChange ev;
 	const size_t  space = zix_ring_read_space(jalv->plugin_events);
 	for (size_t i = 0;
-	     i + sizeof(ev) + sizeof(float) <= space;
+	     i + sizeof(ev) < space;
 	     i += sizeof(ev) + ev.size) {
 		/* Read event header to get the size */
 		zix_ring_read(jalv->plugin_events, (char*)&ev, sizeof(ev));
