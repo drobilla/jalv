@@ -557,7 +557,7 @@ control_changed(Jalv*       jalv,
 			bool          valid = gtk_tree_model_get_iter_first(model, &i);
 			while (valid) {
 				gtk_tree_model_get_value(model, &i, 0, &value);
-				const double v = g_value_get_double(&value);
+				const double v = g_value_get_float(&value);
 				g_value_unset(&value);
 				if (fabs(v - fvalue) < FLT_EPSILON) {
 					gtk_combo_box_set_active_iter(GTK_COMBO_BOX(widget), &i);
@@ -741,7 +741,7 @@ combo_changed(GtkComboBox* box, gpointer data)
 		GValue        value = { 0, { { 0 } } };
 
 		gtk_tree_model_get_value(model, &iter, 0, &value);
-		const double v = g_value_get_double(&value);
+		const double v = g_value_get_float(&value);
 		g_value_unset(&value);
 
 		set_float_control(control, v);
@@ -809,7 +809,7 @@ make_combo(ControlID* record, float value)
 	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), active);
 	g_object_unref(list_store);
 
-	gtk_widget_set_sensitive(GTK_WIDGET(list_store), record->is_writable);
+	gtk_widget_set_sensitive(combo, record->is_writable);
 
 	GtkCellRenderer* cell = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), cell, TRUE);
