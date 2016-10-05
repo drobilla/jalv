@@ -21,19 +21,19 @@ def options(opt):
     autowaf.set_options(opt)
     opt.add_option('--no-jack-session', action='store_true', default=False,
                    dest='no_jack_session',
-                   help="Do not build JACK session support")
+                   help='Do not build JACK session support')
     opt.add_option('--no-gtk', action='store_true', default=False,
                    dest='no_gtk',
-                   help="Do not build Gtk GUI")
+                   help='Do not build Gtk GUI')
     opt.add_option('--no-gtkmm', action='store_true', default=False,
                    dest='no_gtkmm',
-                   help="Do not build Gtkmm GUI")
+                   help='Do not build Gtkmm GUI')
     opt.add_option('--no-gtk2', action='store_true', dest='no_gtk2',
                    help='Do not build Gtk2 GUI')
     opt.add_option('--no-gtk3', action='store_true', dest='no_gtk3',
                    help='Do not build Gtk3 GUI')
     opt.add_option('--no-qt', action='store_true', default=False, dest='no_qt',
-                   help="Do not build Qt GUI")
+                   help='Do not build Qt GUI')
     opt.add_option('--no-qt4', action='store_true', dest='no_qt4',
                    help='Do not build Qt4 GUI')
     opt.add_option('--no-qt5', action='store_true', dest='no_qt5',

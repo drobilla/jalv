@@ -203,9 +203,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				jalv->plugin_latency = port->control;
 				jack_recompute_total_latencies(client);
 			}
-		}
-
-		if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
+		} else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
 			void* buf = NULL;
 			if (port->sys_port) {
 				buf = jack_port_get_buffer(port->sys_port, nframes);
@@ -230,9 +228,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					jalv_send_to_ui(jalv, p, type, size, body);
 				}
 			}
-		} else if (send_ui_updates
-		           && port->flow != FLOW_INPUT
-		           && port->type == TYPE_CONTROL) {
+		} else if (send_ui_updates &&
+		           port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL) {
 			char buf[sizeof(ControlChange) + sizeof(float)];
 			ControlChange* ev = (ControlChange*)buf;
 			ev->index    = p;
