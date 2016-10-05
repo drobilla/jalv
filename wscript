@@ -19,6 +19,9 @@ def options(opt):
     opt.load('compiler_c')
     opt.load('compiler_cxx')
     autowaf.set_options(opt)
+    opt.add_option('--portaudio', action='store_true', default=False,
+                   dest='portaudio',
+                   help='Use PortAudio backend, not JACK')
     opt.add_option('--no-jack-session', action='store_true', default=False,
                    dest='no_jack_session',
                    help='Do not build JACK session support')
@@ -58,8 +61,12 @@ def configure(conf):
                       atleast_version='0.6.0', mandatory=True)
     autowaf.check_pkg(conf, 'sratom-0', uselib_store='SRATOM',
                       atleast_version='0.5.1', mandatory=True)
-    autowaf.check_pkg(conf, 'jack', uselib_store='JACK',
-                      atleast_version='0.120.0', mandatory=True)
+    if Options.options.portaudio:
+        autowaf.check_pkg(conf, 'portaudio-2.0', uselib_store='PORTAUDIO',
+                          atleast_version='2.0.0', mandatory=False)
+    else:
+        autowaf.check_pkg(conf, 'jack', uselib_store='JACK',
+                          atleast_version='0.120.0', mandatory=True)
 
     if not Options.options.no_gtk:
         if not Options.options.no_gtk2:
@@ -87,17 +94,18 @@ def configure(conf):
                 if not conf.find_program('moc-qt5', var='MOC5', mandatory=False):
                     conf.find_program('moc', var='MOC5')
 
-    conf.check(function_name='jack_port_type_get_buffer_size',
-               header_name='jack/jack.h',
-               define_name='HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE',
-               uselib='JACK',
-               mandatory=False)
+    if conf.env.HAVE_JACK:
+        conf.check(function_name='jack_port_type_get_buffer_size',
+                   header_name='jack/jack.h',
+                   define_name='HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE',
+                   uselib='JACK',
+                   mandatory=False)
 
-    conf.check(function_name='jack_set_property',
-               header_name='jack/metadata.h',
-               define_name='HAVE_JACK_METADATA',
-               uselib='JACK',
-               mandatory=False)
+        conf.check(function_name='jack_set_property',
+                   header_name='jack/metadata.h',
+                   define_name='HAVE_JACK_METADATA',
+                   uselib='JACK',
+                   mandatory=False)
 
     defines = ['_POSIX_C_SOURCE=200809L']
 
@@ -130,8 +138,10 @@ def configure(conf):
 
     conf.write_config_header('jalv_config.h', remove=False)
 
-    autowaf.display_msg(conf, "Jack metadata support",
-                        conf.is_defined('HAVE_JACK_METADATA'))
+    autowaf.display_msg(conf, "Backend", "Jack" if conf.env.HAVE_JACK else "PortAudio")
+    if conf.env.HAVE_JACK:
+        autowaf.display_msg(conf, "Jack metadata support",
+                            conf.is_defined('HAVE_JACK_METADATA'))
     autowaf.display_msg(conf, "Gtk 2.0 support", bool(conf.env.HAVE_GTK2))
     autowaf.display_msg(conf, "Gtk 3.0 support", bool(conf.env.HAVE_GTK3))
     autowaf.display_msg(conf, "Gtkmm 2.0 support", bool(conf.env.HAVE_GTKMM2))
@@ -141,10 +151,9 @@ def configure(conf):
     print('')
 
 def build(bld):
-    libs   = 'LILV SUIL JACK SERD SORD SRATOM LV2'
+    libs   = 'LILV SUIL JACK SERD SORD SRATOM LV2 PORTAUDIO'
     source = '''
     src/control.c
-    src/jack.c
     src/jalv.c
     src/log.c
     src/lv2_evbuf.c
@@ -153,6 +162,11 @@ def build(bld):
     src/worker.c
     src/zix/ring.c
     '''
+
+    if bld.env.HAVE_JACK:
+        source += 'src/jack.c'
+    elif bld.env.HAVE_PORTAUDIO:
+        source += 'src/portaudio.c'
 
     # Non-GUI version
     obj = bld(features     = 'c cprogram',

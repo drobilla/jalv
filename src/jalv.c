@@ -771,8 +771,8 @@ main(int argc, char** argv)
 	Jalv jalv;
 	memset(&jalv, '\0', sizeof(Jalv));
 	jalv.prog_name     = argv[0];
-	jalv.block_length  = 4096;  /* Should be set by jack_buffer_size_cb */
-	jalv.midi_buf_size = 1024;  /* Should be set by jack_buffer_size_cb */
+	jalv.block_length  = 4096;  /* Should be set by backend */
+	jalv.midi_buf_size = 1024;  /* Should be set by backend */
 	jalv.play_state    = JALV_PAUSED;
 	jalv.bpm           = 120.0f;
 	jalv.control_in    = (uint32_t)-1;

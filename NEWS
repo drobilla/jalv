@@ -8,6 +8,7 @@ jalv (1.4.7) unstable;
   * Support thread-safe state restoration
   * Update UI when internal plugin state is changed during preset load
   * Add generic Qt control UI from Amadeus Folego
+  * Add PortAudio backend (compile time option, audio only)
   * Set Jack port order metadata
   * Allow Jack client name to be set from command line (thanks Adam Avramov)
   * Add command prompt to console version for changing controls
@@ -20,7 +21,7 @@ jalv (1.4.7) unstable;
   * Use moc-qt4 if present for systems with multiple Qt versions
   * Add Qt5 version
 
- -- David Robillard <d@drobilla.net>  Fri, 16 Sep 2016 16:37:23 -0700
+ -- David Robillard <d@drobilla.net>  Wed, 05 Oct 2016 06:15:57 -0400
 
 jalv (1.4.6) stable;
 
