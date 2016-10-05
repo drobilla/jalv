@@ -22,8 +22,8 @@ jalv_worker_respond(LV2_Worker_Respond_Handle handle,
                     const void*               data)
 {
 	JalvWorker* worker = (JalvWorker*)handle;
-	jack_ringbuffer_write(worker->responses, (const char*)&size, sizeof(size));
-	jack_ringbuffer_write(worker->responses, (const char*)data, size);
+	zix_ring_write(worker->responses, (const char*)&size, sizeof(size));
+	zix_ring_write(worker->responses, (const char*)data, size);
 	return LV2_WORKER_SUCCESS;
 }
 
@@ -40,7 +40,7 @@ worker_func(void* data)
 		}
 
 		uint32_t size = 0;
-		jack_ringbuffer_read(worker->requests, (char*)&size, sizeof(size));
+		zix_ring_read(worker->requests, (char*)&size, sizeof(size));
 
 		if (!(buf = realloc(buf, size))) {
 			fprintf(stderr, "error: realloc() failed\n");
@@ -48,7 +48,7 @@ worker_func(void* data)
 			return NULL;
 		}
 
-		jack_ringbuffer_read(worker->requests, (char*)buf, size);
+		zix_ring_read(worker->requests, (char*)buf, size);
 
 		zix_sem_wait(&jalv->work_lock);
 		worker->iface->work(
@@ -70,12 +70,12 @@ jalv_worker_init(Jalv*                       jalv,
 	worker->threaded = threaded;
 	if (threaded) {
 		zix_thread_create(&worker->thread, 4096, worker_func, worker);
-		worker->requests = jack_ringbuffer_create(4096);
-		jack_ringbuffer_mlock(worker->requests);
+		worker->requests = zix_ring_new(4096);
+		zix_ring_mlock(worker->requests);
 	}
-	worker->responses = jack_ringbuffer_create(4096);
+	worker->responses = zix_ring_new(4096);
 	worker->response  = malloc(4096);
-	jack_ringbuffer_mlock(worker->responses);
+	zix_ring_mlock(worker->responses);
 }
 
 void
@@ -85,9 +85,9 @@ jalv_worker_finish(JalvWorker* worker)
 		if (worker->threaded) {
 			zix_sem_post(&worker->sem);
 			zix_thread_join(worker->thread, NULL);
-			jack_ringbuffer_free(worker->requests);
+			zix_ring_free(worker->requests);
 		}
-		jack_ringbuffer_free(worker->responses);
+		zix_ring_free(worker->responses);
 		free(worker->response);
 	}
 }
@@ -101,9 +101,8 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
 	Jalv*       jalv   = worker->jalv;
 	if (worker->threaded) {
 		// Schedule a request to be executed by the worker thread
-		jack_ringbuffer_write(worker->requests,
-		                      (const char*)&size, sizeof(size));
-		jack_ringbuffer_write(worker->requests, (const char*)data, size);
+		zix_ring_write(worker->requests, (const char*)&size, sizeof(size));
+		zix_ring_write(worker->requests, (const char*)data, size);
 		zix_sem_post(&worker->sem);
 	} else {
 		// Execute work immediately in this thread
@@ -119,13 +118,12 @@ void
 jalv_worker_emit_responses(JalvWorker* worker, LilvInstance* instance)
 {
 	if (worker->responses) {
-		uint32_t read_space = jack_ringbuffer_read_space(worker->responses);
+		uint32_t read_space = zix_ring_read_space(worker->responses);
 		while (read_space) {
 			uint32_t size = 0;
-			jack_ringbuffer_read(worker->responses, (char*)&size, sizeof(size));
+			zix_ring_read(worker->responses, (char*)&size, sizeof(size));
 
-			jack_ringbuffer_read(
-				worker->responses, (char*)worker->response, size);
+			zix_ring_read(worker->responses, (char*)worker->response, size);
 
 			worker->iface->work_response(
 				instance->lv2_handle, size, worker->response);

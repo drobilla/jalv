@@ -113,6 +113,12 @@ def configure(conf):
                define_name='HAVE_FILENO',
                mandatory=False)
 
+    conf.check(function_name='mlock',
+               header_name='sys/mman.h',
+               defines=defines,
+               define_name='HAVE_MLOCK',
+               mandatory=False)
+
     if conf.is_defined('HAVE_ISATTY') and conf.is_defined('HAVE_FILENO'):
         autowaf.define(conf, 'JALV_WITH_COLOR', 1)
         conf.env.append_unique('CFLAGS', ['-D_POSIX_C_SOURCE=200809L'])
@@ -135,9 +141,18 @@ def configure(conf):
     print('')
 
 def build(bld):
-    libs = 'LILV SUIL JACK SERD SORD SRATOM LV2'
-
-    source = 'src/jalv.c src/symap.c src/state.c src/lv2_evbuf.c src/worker.c src/log.c src/control.c'
+    libs   = 'LILV SUIL JACK SERD SORD SRATOM LV2'
+    source = '''
+    src/control.c
+    src/jack.c
+    src/jalv.c
+    src/log.c
+    src/lv2_evbuf.c
+    src/state.c
+    src/symap.c
+    src/worker.c
+    src/zix/ring.c
+    '''
 
     # Non-GUI version
     obj = bld(features     = 'c cprogram',

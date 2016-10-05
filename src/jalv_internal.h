@@ -24,9 +24,6 @@
 #    include <unistd.h>
 #endif
 
-#include <jack/jack.h>
-#include <jack/ringbuffer.h>
-
 #include "lilv/lilv.h"
 #include "serd/serd.h"
 #include "suil/suil.h"
@@ -40,6 +37,7 @@
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/worker/worker.h"
 
+#include "zix/ring.h"
 #include "zix/sem.h"
 #include "zix/thread.h"
 
@@ -48,9 +46,17 @@
 #include "lv2_evbuf.h"
 #include "symap.h"
 
+#ifdef __clang__
+#    define REALTIME __attribute__((annotate("realtime")))
+#else
+#    define REALTIME
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct JalvBackend JalvBackend;
 
 typedef struct Jalv Jalv;
 
@@ -69,10 +75,10 @@ enum PortType {
 };
 
 struct Port {
-	const LilvPort* lilv_port;
-	enum PortType   type;
-	enum PortFlow   flow;
-	jack_port_t*    jack_port;  ///< For audio/MIDI ports, otherwise NULL
+	const LilvPort* lilv_port;  ///< LV2 port
+	enum PortType   type;       ///< Data type
+	enum PortFlow   flow;       ///< Data flow direction
+	void*           sys_port;   ///< For audio/MIDI ports, otherwise NULL
 	LV2_Evbuf*      evbuf;      ///< For MIDI ports, otherwise NULL
 	void*           widget;     ///< Control widget, if applicable
 	size_t          buf_size;   ///< Custom buffer size, or 0
@@ -248,8 +254,8 @@ typedef enum {
 
 typedef struct {
 	Jalv*                       jalv;       ///< Pointer back to Jalv
-	jack_ringbuffer_t*          requests;   ///< Requests to the worker
-	jack_ringbuffer_t*          responses;  ///< Responses from the worker
+	ZixRing*                    requests;   ///< Requests to the worker
+	ZixRing*                    responses;  ///< Responses from the worker
 	void*                       response;   ///< Worker response buffer
 	ZixSem                      sem;        ///< Worker semaphore
 	ZixThread                   thread;     ///< Worker thread
@@ -271,9 +277,9 @@ struct Jalv {
 	Sratom*            ui_sratom;      ///< Atom serialiser for UI thread
 	Symap*             symap;          ///< URI map
 	ZixSem             symap_lock;     ///< Lock for URI map
-	jack_client_t*     jack_client;    ///< Jack client
-	jack_ringbuffer_t* ui_events;      ///< Port events from UI
-	jack_ringbuffer_t* plugin_events;  ///< Port events from plugin
+	JalvBackend*       backend;        ///< Audio system backend
+	ZixRing*           ui_events;      ///< Port events from UI
+	ZixRing*           plugin_events;  ///< Port events from plugin
 	void*              ui_event_buf;   ///< Buffer for reading UI port events
 	JalvWorker         worker;         ///< Worker thread implementation
 	JalvWorker         state_worker;   ///< Synchronous worker for state restore
@@ -294,17 +300,17 @@ struct Jalv {
 	void*              window;         ///< Window (if applicable)
 	struct Port*       ports;          ///< Port array of size num_ports
 	Controls           controls;       ///< Available plugin controls
-	uint32_t           block_length;   ///< Jack buffer size (block length)
+	uint32_t           block_length;   ///< Audio buffer size (block length)
 	size_t             midi_buf_size;  ///< Size of MIDI port buffers
 	uint32_t           control_in;     ///< Index of control input port
 	uint32_t           num_ports;      ///< Size of the two following arrays:
 	uint32_t           longest_sym;    ///< Longest port symbol
 	uint32_t           plugin_latency; ///< Latency reported by plugin (if any)
 	float              ui_update_hz;   ///< Frequency of UI updates
-	jack_nframes_t     sample_rate;    ///< Sample rate
-	jack_nframes_t     event_delta_t;  ///< Frames since last update sent to UI
+	uint32_t           sample_rate;    ///< Sample rate
+	uint32_t           event_delta_t;  ///< Frames since last update sent to UI
 	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
-	jack_nframes_t     position;       ///< Transport position in frames
+	uint32_t           position;       ///< Transport position in frames
 	float              bpm;            ///< Transport tempo in beats per minute
 	bool               rolling;        ///< Transport speed (0=stop, 1=play)
 	bool               buf_size_set;   ///< True iff buffer size callback fired
@@ -317,8 +323,27 @@ struct Jalv {
 int
 jalv_init(int* argc, char*** argv, JalvOptions* opts);
 
+JalvBackend*
+jalv_backend_init(Jalv* jalv);
+
+void
+jalv_backend_activate(Jalv* jalv);
+
+void
+jalv_backend_deactivate(Jalv* jalv);
+
+void
+jalv_backend_close(Jalv* jalv);
+
+/** Expose a port to the system (if applicable) and connect it to its buffer. */
+void
+jalv_backend_activate_port(Jalv* jalv, uint32_t port_index);
+
 void
 jalv_create_ports(Jalv* jalv);
+
+void
+jalv_allocate_port_buffers(Jalv* jalv);
 
 struct Port*
 jalv_port_by_symbol(Jalv* jalv, const char* sym);
