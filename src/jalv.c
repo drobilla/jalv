@@ -579,7 +579,7 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
 		} else if (ev.protocol == jalv->urids.atom_eventTransfer) {
 			LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
 			const LV2_Atom* const atom = (const LV2_Atom*)body;
-			lv2_evbuf_write(&e, nframes - 1, 0, atom->type, atom->size,
+			lv2_evbuf_write(&e, nframes, 0, atom->type, atom->size,
 			                (const uint8_t*)LV2_ATOM_BODY_CONST(atom));
 		} else {
 			fprintf(stderr, "error: Unknown control change protocol %d\n",
