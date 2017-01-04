@@ -5,7 +5,7 @@ from waflib.extras import autowaf as autowaf
 import waflib.Options as Options
 
 # Version of this package (even if built as a child)
-JALV_VERSION = '1.4.7'
+JALV_VERSION = '1.6.0'
 
 # Variables for 'waf dist'
 APPNAME = 'jalv'
@@ -52,7 +52,7 @@ def configure(conf):
 
     autowaf.check_pkg(conf, 'lv2', atleast_version='1.14.0', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
-                      atleast_version='0.21.5', mandatory=True)
+                      atleast_version='0.24.0', mandatory=True)
     autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',
                       atleast_version='0.14.0', mandatory=True)
     autowaf.check_pkg(conf, 'sord-0', uselib_store='SORD',
@@ -60,7 +60,7 @@ def configure(conf):
     autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
                       atleast_version='0.6.0', mandatory=True)
     autowaf.check_pkg(conf, 'sratom-0', uselib_store='SRATOM',
-                      atleast_version='0.5.1', mandatory=True)
+                      atleast_version='0.6.0', mandatory=True)
     if Options.options.portaudio:
         autowaf.check_pkg(conf, 'portaudio-2.0', uselib_store='PORTAUDIO',
                           atleast_version='2.0.0', mandatory=False)

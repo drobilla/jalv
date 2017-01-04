@@ -1,4 +1,4 @@
-jalv (1.4.7) unstable;
+jalv (1.6.0) stable;
 
   * Support CV ports if Jack metadata is enabled (patch from Hanspeter Portner)
   * Fix unreliable UI state initialization (patch from Hanspeter Portner)
@@ -21,7 +21,7 @@ jalv (1.4.7) unstable;
   * Use moc-qt4 if present for systems with multiple Qt versions
   * Add Qt5 version
 
- -- David Robillard <d@drobilla.net>  Wed, 05 Oct 2016 06:15:57 -0400
+ -- David Robillard <d@drobilla.net>  Wed, 04 Jan 2017 12:24:58 -0500
 
 jalv (1.4.6) stable;
 
