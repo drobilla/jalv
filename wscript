@@ -5,7 +5,7 @@ from waflib.extras import autowaf as autowaf
 import waflib.Options as Options
 
 # Version of this package (even if built as a child)
-JALV_VERSION = '1.6.0'
+JALV_VERSION = '1.6.1'
 
 # Variables for 'waf dist'
 APPNAME = 'jalv'
@@ -231,7 +231,7 @@ def build(bld):
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
                   install_path = '${BINDIR}',
-                  cxxflags     = ['-fPIC'])
+                  cxxflags     = ['-fPIC', '-std=c++11'])
         autowaf.use_lib(bld, obj, libs + ' QT5')
 
     # Man pages
