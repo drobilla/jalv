@@ -50,6 +50,9 @@ def configure(conf):
     autowaf.set_c99_mode(conf)
     autowaf.display_header('Jalv Configuration')
 
+    if conf.check_cxx(cxxflags=["-std=c++0x"]):
+        conf.env.append_unique('CXXFLAGS', ['-std=c++0x'])  # for Gtkmm
+
     autowaf.check_pkg(conf, 'lv2', atleast_version='1.14.0', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.24.0', mandatory=True)

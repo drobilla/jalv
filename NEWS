@@ -1,3 +1,9 @@
+jalv (1.6.1) unstable;
+
+  * Fix compilation with recent Gtkmm versions that require C++11
+
+ -- David Robillard <d@drobilla.net>  Sun, 12 Feb 2017 15:20:20 +0100
+
 jalv (1.6.0) stable;
 
   * Support CV ports if Jack metadata is enabled (patch from Hanspeter Portner)
