@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <http://drobilla.net>
+  Copyright 2007-2017 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -22,6 +22,16 @@
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
 
 #include "jalv_internal.h"
+
+#if GTK_MAJOR_VERSION == 3
+#if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+#endif
 
 static GtkCheckMenuItem* active_preset_item = NULL;
 static bool              updating           = false;
@@ -1226,3 +1236,12 @@ jalv_close_ui(Jalv* jalv)
 	gtk_main_quit();
 	return 0;
 }
+
+#if GTK_MAJOR_VERSION == 3
+#if defined(__clang__)
+#    pragma clang diagnostic pop
+#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+#    pragma GCC diagnostic pop
+#endif
+#endif
+
