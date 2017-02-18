@@ -1,8 +1,9 @@
 jalv (1.6.1) unstable;
 
   * Fix compilation with recent Gtkmm versions that require C++11
+  * Add jalv -i option to ignore stdin for background use
 
- -- David Robillard <d@drobilla.net>  Sun, 12 Feb 2017 15:20:20 +0100
+ -- David Robillard <d@drobilla.net>  Sat, 18 Feb 2017 17:59:35 +0100
 
 jalv (1.6.0) stable;
 

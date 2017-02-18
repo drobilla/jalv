@@ -106,6 +106,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 				opts->controls, (++n_controls + 1) * sizeof(char*));
 			opts->controls[n_controls - 1] = (*argv)[a];
 			opts->controls[n_controls]     = NULL;
+		} else if ((*argv)[a][1] == 'i') {
+			opts->non_interactive = true;
 		} else if ((*argv)[a][1] == 'd') {
 			opts->dump = true;
 		} else if ((*argv)[a][1] == 't') {
@@ -191,7 +193,7 @@ jalv_open_ui(Jalv* jalv)
 
 		show_iface->hide(suil_instance_get_handle(jalv->ui_instance));
 
-	} else {
+	} else if (!jalv->opts.non_interactive) {
 		// Primitive command prompt for setting control values
 		while (!zix_sem_try_wait(jalv->done)) {
 			char line[128];
@@ -202,6 +204,8 @@ jalv_open_ui(Jalv* jalv)
 				break;
 			}
 		}
+	} else {
+		zix_sem_wait(jalv->done);
 	}
 
 	// Caller waits on the done sem, so increment it again to exit
