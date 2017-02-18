@@ -1,4 +1,4 @@
-.TH JALV.GTK "10 Oct 2015"
+.TH JALV.GTK "18 Feb 2017"
 
 .SH NAME
 .B jalv.gtk \- Run an LV2 plugin as a JACK application (Gtk version).
@@ -9,40 +9,40 @@
 .SH OPTIONS
 
 .TP
-\fB\-h\fR, \fB\-\-help\fR
-Print the command line options.
-
-.TP
-\fB\-\-print\-controls\fR
-Print control output changes to stdout.
+\fB\-b SIZE\fR
+Buffer size for plugin <=> UI communication.
 
 .TP
 \fB\-c SYM=VAL\fR
 Set control value (e.g. "vol=1.4").
 
 .TP
-\fB\-u UUID\fR, \fB\-\-uuid UUID\fR
-UUID for Jack session restoration.
+\fB\-d\fR, \fB\-\-dump\fR
+Dump plugin <=> UI communication.
+
+.TP
+\fB\-g\fR, \fB\-\-generic\-ui\fR
+Use Jalv generic UI and not the plugin UI.
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print the command line options.
 
 .TP
 \fB\-l DIR\fR, \fB\-\-load DIR\fR
 Load state from state directory.
 
 .TP
-\fB\-d\fR, \fB\-\-dump\fR
-Dump plugin <=> UI communication.
+\fB\-p\fR, \fB\-\-print\-controls\fR
+Print control output changes to stdout.
 
 .TP
 \fB\-t\fR, \fB\-\-trace\fR
 Print trace messages from plugin.
 
 .TP
-\fB\-b SIZE\fR
-Buffer size for plugin <=> UI communication.
-
-.TP
-\fB\-g\fR, \fB\-\-generic\-ui\fR
-Use Jalv generic UI and not the plugin UI.
+\fB\-u UUID\fR, \fB\-\-uuid UUID\fR
+UUID for Jack session restoration.
 
 .SH "SEE ALSO"
 .BR jalv(1),

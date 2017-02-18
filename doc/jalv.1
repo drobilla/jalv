@@ -9,32 +9,36 @@
 .SH OPTIONS
 
 .TP
-\fB\-h\fR
-Print the command line options.
-
-.TP
-\fB\-p\fR
-Print control output changes to stdout.
-
-.TP
-\fB\-i\fR
-Ignore input on stdin (for background use).
+\fB\-b SIZE\fR
+Buffer size for plugin <=> UI communication.
 
 .TP
 \fB\-c SYM=VAL\fR
 Set control value (e.g. "vol=1.4").
 
 .TP
-\fB\-u UUID\fR
-UUID for Jack session restoration.
+\fB\-d\fR
+Dump plugin <=> UI communication.
+
+.TP
+\fB\-h\fR
+Print the command line options.
+
+.TP
+\fB\-i\fR
+Ignore input on stdin (for background use).
 
 .TP
 \fB\-l DIR\fR
 Load state from state directory.
 
 .TP
-\fB\-d\fR
-Dump plugin <=> UI communication.
+\fB\-n NAME\fR
+Jack client name
+
+.TP
+\fB\-p\fR
+Print control output changes to stdout.
 
 .TP
 \fB\-s\fR
@@ -47,12 +51,8 @@ This option only works when plugins provide a UI that is usable via the non-embe
 Print trace messages from plugin
 
 .TP
-\fB\-b SIZE\fR
-Buffer size for plugin <=> UI communication.
-
-.TP
-\fB\-n NAME\fR
-Jack client name
+\fB\-u UUID\fR
+UUID for Jack session restoration.
 
 .TP
 \fB\-x\fR
