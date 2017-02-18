@@ -1,4 +1,4 @@
-.TH JALV 1 "10 Oct 2015"
+.TH JALV 1 "18 Feb 2017"
 
 .SH NAME
 .B jalv \- Run an LV2 plugin as a JACK application (console version).
@@ -13,7 +13,7 @@
 Print the command line options.
 
 .TP
-\fB\-c\fR
+\fB\-p\fR
 Print control output changes to stdout.
 
 .TP
@@ -45,6 +45,14 @@ Print trace messages from plugin
 .TP
 \fB\-b SIZE\fR
 Buffer size for plugin <=> UI communication.
+
+.TP
+\fB\-n NAME\fR
+Jack client name
+
+.TP
+\fB\-x\fR
+Use only exact Jack client name, and exit if it is taken
 
 .SH "SEE ALSO"
 .BR jalv.gtk(1),
