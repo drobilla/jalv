@@ -47,11 +47,9 @@ def configure(conf):
     conf.load('compiler_c')
     conf.load('compiler_cxx')
     autowaf.configure(conf)
-    autowaf.set_c99_mode(conf)
     autowaf.display_header('Jalv Configuration')
-
-    if conf.check_cxx(cxxflags=["-std=c++0x"]):
-        conf.env.append_unique('CXXFLAGS', ['-std=c++0x'])  # for Gtkmm
+    autowaf.set_c99_mode(conf)
+    autowaf.set_cxx11_mode(conf)
 
     autowaf.check_pkg(conf, 'lv2', atleast_version='1.14.0', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
@@ -234,7 +232,7 @@ def build(bld):
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
                   install_path = '${BINDIR}',
-                  cxxflags     = ['-fPIC', '-std=c++11'])
+                  cxxflags     = ['-fPIC'])
         autowaf.use_lib(bld, obj, libs + ' QT5')
 
     # Man pages
