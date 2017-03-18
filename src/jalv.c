@@ -777,6 +777,7 @@ main(int argc, char** argv)
 	jalv.bpm           = 120.0f;
 	jalv.control_in    = (uint32_t)-1;
 
+	suil_init(&argc, &argv, SUIL_ARG_NONE);
 	if (jalv_init(&argc, &argv, &jalv.opts)) {
 		return EXIT_FAILURE;
 	}
