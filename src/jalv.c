@@ -1110,8 +1110,7 @@ main(int argc, char** argv)
 	}
 
 	/* Create workers if necessary */
-	if (lilv_plugin_has_feature(jalv.plugin, jalv.nodes.work_schedule)
-	    && lilv_plugin_has_extension_data(jalv.plugin, jalv.nodes.work_interface)) {
+	if (lilv_plugin_has_extension_data(jalv.plugin, jalv.nodes.work_interface)) {
 		const LV2_Worker_Interface* iface = (const LV2_Worker_Interface*)
 			lilv_instance_get_extension_data(jalv.instance, LV2_WORKER__interface);
 
