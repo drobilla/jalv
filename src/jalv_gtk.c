@@ -91,8 +91,6 @@ on_window_destroy(GtkWidget* widget,
                   gpointer   data)
 {
 	Jalv* jalv = (Jalv*)data;
-	suil_instance_free(jalv->ui_instance);
-	jalv->ui_instance = NULL;
 	gtk_main_quit();
 }
 
@@ -1226,6 +1224,8 @@ jalv_open_ui(Jalv* jalv)
 	gtk_window_present(GTK_WINDOW(window));
 
 	gtk_main();
+	suil_instance_free(jalv->ui_instance);
+	jalv->ui_instance = NULL;
 	zix_sem_post(jalv->done);
 	return 0;
 }
