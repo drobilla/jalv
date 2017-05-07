@@ -2,8 +2,9 @@ jalv (1.6.1) unstable;
 
   * Fix compilation with recent Gtkmm versions that require C++11
   * Add jalv -i option to ignore stdin for background use
+  * Fix Jack deactivation
 
- -- David Robillard <d@drobilla.net>  Sat, 18 Feb 2017 17:59:35 +0100
+ -- David Robillard <d@drobilla.net>  Sun, 07 May 2017 13:35:11 +0200
 
 jalv (1.6.0) stable;
 

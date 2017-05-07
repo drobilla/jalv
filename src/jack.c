@@ -402,7 +402,7 @@ jalv_backend_activate(Jalv* jalv)
 void
 jalv_backend_deactivate(Jalv* jalv)
 {
-	jack_activate(jalv->backend->client);
+	jack_deactivate(jalv->backend->client);
 }
 
 void
