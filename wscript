@@ -15,32 +15,33 @@ VERSION = JALV_VERSION
 top = '.'
 out = 'build'
 
-def options(opt):
-    opt.load('compiler_c')
-    opt.load('compiler_cxx')
-    autowaf.set_options(opt)
+def options(ctx):
+    ctx.load('compiler_c')
+    ctx.load('compiler_cxx')
+    autowaf.set_options(ctx)
+    opt = ctx.get_option_group('Configuration options')
     opt.add_option('--portaudio', action='store_true', default=False,
                    dest='portaudio',
-                   help='Use PortAudio backend, not JACK')
+                   help='use PortAudio backend, not JACK')
     opt.add_option('--no-jack-session', action='store_true', default=False,
                    dest='no_jack_session',
-                   help='Do not build JACK session support')
+                   help='do not build JACK session support')
     opt.add_option('--no-gtk', action='store_true', default=False,
                    dest='no_gtk',
-                   help='Do not build Gtk GUI')
+                   help='do not build Gtk GUI')
     opt.add_option('--no-gtkmm', action='store_true', default=False,
                    dest='no_gtkmm',
-                   help='Do not build Gtkmm GUI')
+                   help='do not build Gtkmm GUI')
     opt.add_option('--no-gtk2', action='store_true', dest='no_gtk2',
-                   help='Do not build Gtk2 GUI')
+                   help='do not build Gtk2 GUI')
     opt.add_option('--no-gtk3', action='store_true', dest='no_gtk3',
-                   help='Do not build Gtk3 GUI')
+                   help='do not build Gtk3 GUI')
     opt.add_option('--no-qt', action='store_true', default=False, dest='no_qt',
-                   help='Do not build Qt GUI')
+                   help='do not build Qt GUI')
     opt.add_option('--no-qt4', action='store_true', dest='no_qt4',
-                   help='Do not build Qt4 GUI')
+                   help='do not build Qt4 GUI')
     opt.add_option('--no-qt5', action='store_true', dest='no_qt5',
-                   help='Do not build Qt5 GUI')
+                   help='do not build Qt5 GUI')
 
 def configure(conf):
     conf.line_just = 52
