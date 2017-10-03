@@ -48,8 +48,6 @@ def configure(conf):
     conf.load('compiler_cxx')
     autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
-    autowaf.set_c99_mode(conf)
-    autowaf.set_cxx11_mode(conf)
 
     if conf.check(cflags=["-std=c11"]):
         conf.env.append_unique('CFLAGS', ['-std=c11'])
