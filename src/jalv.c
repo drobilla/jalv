@@ -1211,6 +1211,20 @@ jalv_close(Jalv* const jalv)
 #ifdef HAVE_SUIL
 	suil_host_free(jalv->ui_host);
 #endif
+
+	for (unsigned i = 0; i < jalv->controls.n_controls; ++i) {
+		ControlID* const control = jalv->controls.controls[i];
+		lilv_node_free(control->node);
+		lilv_node_free(control->symbol);
+		lilv_node_free(control->label);
+		lilv_node_free(control->group);
+		lilv_node_free(control->min);
+		lilv_node_free(control->max);
+		lilv_node_free(control->def);
+		free(control);
+	}
+	free(jalv->controls.controls);
+
 	if (jalv->sratom) {
 		sratom_free(jalv->sratom);
 	}
