@@ -43,9 +43,6 @@ new_port_control(Jalv* jalv, uint32_t index)
 	id->label          = lilv_port_get_name(plug, lport);
 	id->index          = index;
 	id->group          = lilv_port_get(plug, lport, jalv->nodes.pg_group);
-	id->min            = lilv_port_get(plug, lport, nodes->lv2_minimum);
-	id->max            = lilv_port_get(plug, lport, nodes->lv2_maximum);
-	id->def            = lilv_port_get(plug, lport, nodes->lv2_default);
 	id->value_type     = jalv->forge.Float;
 	id->is_writable    = lilv_port_is_a(plug, lport, nodes->lv2_InputPort);
 	id->is_readable    = lilv_port_is_a(plug, lport, nodes->lv2_OutputPort);
