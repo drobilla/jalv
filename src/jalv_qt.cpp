@@ -422,6 +422,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	} else {
 		steps = DIAL_STEPS;
 	}
+	lilv_node_free(stepsNode);
 
 	// Fill scalePoints Map
 	LilvScalePoints* sp = lilv_port_get_scale_points(plugin, lilvPort);
@@ -654,11 +655,13 @@ build_control_widget(Jalv* jalv)
 		} else {
 			layout->addWidget(control);
 		}
+		lilv_node_free(lastGroup);
 		lastGroup = group;
 
 		uint32_t index = lilv_port_get_index(plugin, port->lilv_port);
 		jalv->ports[index].widget = control;
 	}
+	lilv_node_free(lastGroup);
 
 	grid->setLayout(layout);
 
