@@ -175,6 +175,7 @@ typedef struct {
 	int      show_ui;           ///< Show non-embedded UI
 	int      print_controls;    ///< Print control changes to stdout
 	int      non_interactive;   ///< Do not listen for commands on stdin
+	char*    ui_uri;            ///< URI of UI to load
 } JalvOptions;
 
 typedef struct {

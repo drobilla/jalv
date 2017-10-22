@@ -38,6 +38,7 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -b SIZE      Buffer size for plugin <=> UI communication\n");
 	fprintf(os, "  -c SYM=VAL   Set control value (e.g. \"vol=1.4\")\n");
 	fprintf(os, "  -d           Dump plugin <=> UI communication\n");
+	fprintf(os, "  -U URI       Load the UI with the given URI\n");
 	fprintf(os, "  -h           Display this help and exit\n");
 	fprintf(os, "  -l DIR       Load state from save directory\n");
 	fprintf(os, "  -n NAME      JACK client name\n");
@@ -74,6 +75,12 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 			opts->show_ui = true;
 		} else if ((*argv)[a][1] == 'p') {
 			opts->print_controls = true;
+		} else if ((*argv)[a][1] == 'U') {
+			if (++a == *argc) {
+				fprintf(stderr, "Missing argument for -U\n");
+				return 1;
+			}
+			opts->ui_uri = jalv_strdup((*argv)[a]);
 		} else if ((*argv)[a][1] == 'u') {
 			if (++a == *argc) {
 				fprintf(stderr, "Missing argument for -u\n");

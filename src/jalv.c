@@ -737,6 +737,15 @@ jalv_select_custom_ui(const Jalv* const jalv)
 {
 	const char* const native_ui_type_uri = jalv_native_ui_type();
 
+	if (jalv->opts.ui_uri) {
+		// Specific UI explicitly requested by user
+		LilvNode*       uri  = lilv_new_uri(jalv->world, jalv->opts.ui_uri);
+		const LilvUI*   ui   = lilv_uis_get_by_uri(jalv->uis, uri);
+
+		lilv_node_free(uri);
+		return ui;
+	}
+
 #ifdef HAVE_SUIL
 	if (native_ui_type_uri) {
 		// Try to find an embeddable UI
