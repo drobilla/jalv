@@ -362,7 +362,7 @@ jalv_set_control(const ControlID* control,
                  const void*      body);
 
 const char*
-jalv_native_ui_type(Jalv* jalv);
+jalv_native_ui_type(void);
 
 bool
 jalv_discover_ui(Jalv* jalv);
