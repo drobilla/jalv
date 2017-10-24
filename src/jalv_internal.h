@@ -117,7 +117,6 @@ typedef struct {
 	size_t      n_points;        ///< Number of scale points
 	ScalePoint* points;          ///< Scale points
 	LV2_URID    value_type;      ///< Type of control value
-	LV2_Atom    value;           ///< Current value
 	LilvNode*   min;             ///< Minimum value
 	LilvNode*   max;             ///< Maximum value
 	LilvNode*   def;             ///< Default value
