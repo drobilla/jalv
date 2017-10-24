@@ -30,7 +30,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(Jalv* jalv)
+jalv_native_ui_type(void)
 {
 	return "http://lv2plug.in/ns/extensions/ui#GtkUI";
 }
@@ -73,7 +73,7 @@ jalv_open_ui(Jalv* jalv)
 	Gtk::Window* window = new Gtk::Window();
 
 	if (jalv->ui) {
-		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), NULL);
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(), NULL);
 	}
 
 	if (jalv->ui_instance) {

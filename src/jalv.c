@@ -723,7 +723,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
 }
 
 static void
-signal_handler(int ignored)
+signal_handler(ZIX_UNUSED int sig)
 {
 	zix_sem_post(&exit_sem);
 }
@@ -975,7 +975,7 @@ main(int argc, char** argv)
 	}
 
 	/* Get a plugin UI */
-	const char* native_ui_type_uri = jalv_native_ui_type(&jalv);
+	const char* native_ui_type_uri = jalv_native_ui_type();
 	jalv.uis = lilv_plugin_get_uis(jalv.plugin);
 	if (!jalv.opts.generic_ui && native_ui_type_uri) {
 #ifdef HAVE_SUIL

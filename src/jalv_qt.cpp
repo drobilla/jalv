@@ -334,7 +334,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(Jalv* jalv)
+jalv_native_ui_type(void)
 {
 #if QT_VERSION >= 0x050000
 	return "http://lv2plug.in/ns/extensions/ui#Qt5UI";
@@ -687,7 +687,7 @@ jalv_open_ui(Jalv* jalv)
 	jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
 
 	if (jalv->ui && !jalv->opts.generic_ui) {
-		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), win);
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(), win);
 	}
 
 	QWidget* widget;

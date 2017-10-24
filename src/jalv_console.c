@@ -50,17 +50,19 @@ print_usage(const char* name, bool error)
 }
 
 int
-jalv_ui_resize(Jalv* jalv, int width, int height)
+jalv_ui_resize(ZIX_UNUSED Jalv* jalv,
+               ZIX_UNUSED int   width,
+               ZIX_UNUSED int   height)
 {
-	return 0;
+	return height;
 }
 
 void
-jalv_ui_port_event(Jalv*       jalv,
-                   uint32_t    port_index,
-                   uint32_t    buffer_size,
-                   uint32_t    protocol,
-                   const void* buffer)
+jalv_ui_port_event(ZIX_UNUSED Jalv*       jalv,
+                   ZIX_UNUSED uint32_t    port_index,
+                   ZIX_UNUSED uint32_t    buffer_size,
+                   ZIX_UNUSED uint32_t    protocol,
+                   ZIX_UNUSED const void* buffer)
 {
 }
 
@@ -131,7 +133,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(Jalv* jalv)
+jalv_native_ui_type(void)
 {
 	return NULL;
 }
@@ -232,7 +234,7 @@ jalv_run_custom_ui(Jalv* jalv)
 	const LV2UI_Idle_Interface* idle_iface = NULL;
 	const LV2UI_Show_Interface* show_iface = NULL;
 	if (jalv->ui && jalv->opts.show_ui) {
-		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), NULL);
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(), NULL);
 		idle_iface = (const LV2UI_Idle_Interface*)
 			suil_instance_extension_data(jalv->ui_instance, LV2_UI__idleInterface);
 		show_iface = (LV2UI_Show_Interface*)
