@@ -105,6 +105,13 @@ typedef bool (*ZixEqualFunc)(const void* a, const void* b);
 */
 typedef void (*ZixDestroyFunc)(void* ptr);
 
+static inline size_t zix_round_up(const size_t value, const size_t boundary)
+{
+	const size_t elem_count = (value + boundary - 1) / boundary;
+	return elem_count * boundary;
+}
+
+
 /**
    @}
 */
