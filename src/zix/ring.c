@@ -1,5 +1,5 @@
 /*
-  Copyright 2011 David Robillard <http://drobilla.net>
+  Copyright 2011-2017 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -29,22 +29,26 @@
 #    define ZIX_MLOCK(ptr, size)
 #endif
 
-#if defined(__APPLE__)
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+#    include <stdatomic.h>
+#    define ZIX_WRITE_BARRIER() atomic_thread_fence(memory_order_release)
+#    define ZIX_READ_BARRIER() atomic_thread_fence(memory_order_acquire)
+#elif defined(__APPLE__) /* Pre 10.12 */
 #    include <libkern/OSAtomic.h>
-#    define ZIX_FULL_BARRIER() OSMemoryBarrier()
+#    define ZIX_WRITE_BARRIER() OSMemoryBarrier()
+#    define ZIX_READ_BARRIER() OSMemoryBarrier()
 #elif defined(_WIN32)
 #    include <windows.h>
-#    define ZIX_FULL_BARRIER() MemoryBarrier()
+#    define ZIX_WRITE_BARRIER() MemoryBarrier()
+#    define ZIX_READ_BARRIER() MemoryBarrier()
 #elif (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1)
-#    define ZIX_FULL_BARRIER() __sync_synchronize()
+#    define ZIX_WRITE_BARRIER() __sync_synchronize()
+#    define ZIX_READ_BARRIER() __sync_synchronize()
 #else
 #    pragma message("warning: No memory barriers, possible SMP bugs")
-#    define ZIX_FULL_BARRIER()
+#    define ZIX_WRITE_BARRIER()
+#    define ZIX_READ_BARRIER()
 #endif
-
-/* No support for any systems with separate read and write barriers */
-#define ZIX_READ_BARRIER() ZIX_FULL_BARRIER()
-#define ZIX_WRITE_BARRIER() ZIX_FULL_BARRIER()
 
 #include "zix/ring.h"
 
