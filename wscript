@@ -44,11 +44,11 @@ def options(ctx):
                    help='do not build Qt5 GUI')
 
 def configure(conf):
-    conf.line_just = 52
-    conf.load('compiler_c')
-    conf.load('compiler_cxx')
-    autowaf.configure(conf)
     autowaf.display_header('Jalv Configuration')
+    autowaf.set_line_just(conf, 45)
+    conf.load('compiler_c', cache=True)
+    conf.load('compiler_cxx', cache=True)
+    conf.load('autowaf', cache=True)
 
     if conf.check(cflags=["-std=c11"]):
         conf.env.append_unique('CFLAGS', ['-std=c11'])
@@ -98,37 +98,38 @@ def configure(conf):
                     conf.find_program('moc', var='MOC5')
 
     if conf.env.HAVE_JACK:
-        conf.check(function_name='jack_port_type_get_buffer_size',
-                   header_name='jack/jack.h',
-                   define_name='HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE',
-                   uselib='JACK',
-                   mandatory=False)
+        autowaf.check_function(
+            conf, 'c', 'jack_port_type_get_buffer_size',
+            header_name = 'jack/jack.h',
+            define_name = 'HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE',
+            uselib      = 'JACK',
+            mandatory   = False)
 
-        conf.check(function_name='jack_set_property',
-                   header_name='jack/metadata.h',
-                   define_name='HAVE_JACK_METADATA',
-                   uselib='JACK',
-                   mandatory=False)
+        autowaf.check_function(conf, 'c', 'jack_set_property',
+                               header_name = 'jack/metadata.h',
+                               define_name = 'HAVE_JACK_METADATA',
+                               uselib      = 'JACK',
+                               mandatory   = False)
 
     defines = ['_POSIX_C_SOURCE=200809L']
 
-    conf.check(function_name='isatty',
-               header_name='unistd.h',
-               defines=defines,
-               define_name='HAVE_ISATTY',
-               mandatory=False)
+    autowaf.check_function(conf, 'c', 'isatty',
+                           header_name = 'unistd.h',
+                           defines     = defines,
+                           define_name = 'HAVE_ISATTY',
+                           mandatory   = False)
 
-    conf.check(function_name='fileno',
-               header_name='stdio.h',
-               defines=defines,
-               define_name='HAVE_FILENO',
-               mandatory=False)
+    autowaf.check_function(conf, 'c', 'fileno',
+                           header_name = 'stdio.h',
+                           defines     = defines,
+                           define_name = 'HAVE_FILENO',
+                           mandatory   = False)
 
-    conf.check(function_name='mlock',
-               header_name='sys/mman.h',
-               defines=defines,
-               define_name='HAVE_MLOCK',
-               mandatory=False)
+    autowaf.check_function(conf, 'c', 'mlock',
+                           header_name = 'sys/mman.h',
+                           defines     = defines,
+                           define_name = 'HAVE_MLOCK',
+                           mandatory   = False)
 
     if conf.is_defined('HAVE_ISATTY') and conf.is_defined('HAVE_FILENO'):
         autowaf.define(conf, 'JALV_WITH_COLOR', 1)
@@ -141,6 +142,7 @@ def configure(conf):
 
     conf.write_config_header('jalv_config.h', remove=False)
 
+    autowaf.display_summary(conf)
     autowaf.display_msg(conf, "Backend", "Jack" if conf.env.HAVE_JACK else "PortAudio")
     if conf.env.HAVE_JACK:
         autowaf.display_msg(conf, "Jack metadata support",
