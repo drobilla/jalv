@@ -205,7 +205,7 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
 		*data      = (uint8_t*)ev + sizeof(LV2_Event);
 		break;
 	case LV2_EVBUF_ATOM:
-		aseq = (LV2_Atom_Sequence*)&iter.evbuf->buf.atom;
+		aseq = &iter.evbuf->buf.atom;
 		aev = (LV2_Atom_Event*)(
 			(char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq)
 			+ iter.offset);
@@ -252,7 +252,7 @@ lv2_evbuf_write(LV2_Evbuf_Iterator* iter,
 		iter->offset      += size;
 		break;
 	case LV2_EVBUF_ATOM:
-		aseq = (LV2_Atom_Sequence*)&iter->evbuf->buf.atom;
+		aseq = &iter->evbuf->buf.atom;
 		if (iter->evbuf->capacity - sizeof(LV2_Atom) - aseq->atom.size
 		    < sizeof(LV2_Atom_Event) + size) {
 			return false;
