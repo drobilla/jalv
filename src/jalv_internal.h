@@ -395,7 +395,7 @@ void
 jalv_apply_ui_events(Jalv* jalv, uint32_t nframes);
 
 uint32_t
-jalv_ui_port_index(SuilController controller, const char* port_symbol);
+jalv_ui_port_index(SuilController controller, const char* symbol);
 
 void
 jalv_ui_port_event(Jalv*       jalv,
