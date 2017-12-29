@@ -251,7 +251,17 @@ def upload_docs(ctx):
         os.system('rsync -avz --delete -e ssh build/%s.html drobilla@drobilla.net:~/drobilla.net/man/' % page)
 
 def lint(ctx):
-    subprocess.call('cpplint.py --filter=+whitespace/comments,-whitespace/tab,-whitespace/braces,-whitespace/labels,-build/header_guard,-readability/casting,-readability/todo,-build/include,-runtime/sizeof src/* jalv/*', shell=True)
+    "checks code for style issues"
+    import subprocess
+    cmd = ("clang-tidy -p=. -header-filter=src/ -checks=\"*," +
+           "-clang-analyzer-alpha.*," +
+           "-google-readability-todo," +
+           "-llvm-header-guard," +
+           "-llvm-include-order," +
+           "-misc-unused-parameters," +
+           "-readability-else-after-return\" " +
+           "$(find .. -name '*.c')")
+    subprocess.call(cmd, cwd='build', shell=True)
 
 def posts(ctx):
     path = str(ctx.path.abspath())
