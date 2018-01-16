@@ -18,11 +18,14 @@
 #define _DARWIN_C_SOURCE        /* for mkdtemp on OSX */
 
 #include <assert.h>
+#include <malloc.h>
 #include <math.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #ifndef __cplusplus
 #    include <stdbool.h>
@@ -32,8 +35,6 @@
 #    include <io.h>  /* for _mktemp */
 #    define snprintf _snprintf
 #else
-#    include <sys/stat.h>
-#    include <sys/types.h>
 #    include <unistd.h>
 #endif
 
