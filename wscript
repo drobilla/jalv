@@ -49,9 +49,7 @@ def configure(conf):
     conf.load('compiler_c', cache=True)
     conf.load('compiler_cxx', cache=True)
     conf.load('autowaf', cache=True)
-
-    if conf.check(cflags=["-std=c11"]):
-        conf.env.append_unique('CFLAGS', ['-std=c11'])
+    autowaf.set_c_lang(conf, 'c99')
 
     autowaf.check_pkg(conf, 'lv2', atleast_version='1.14.0', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
