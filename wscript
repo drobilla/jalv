@@ -120,6 +120,12 @@ def configure(conf):
                            define_name = 'HAVE_MLOCK',
                            mandatory   = False)
 
+    autowaf.check_function(conf, 'c', 'sigaction',
+                           header_name = 'signal.h',
+                           defines     = defines,
+                           define_name = 'HAVE_SIGACTION',
+                           mandatory   = False)
+
     if conf.is_defined('HAVE_ISATTY') and conf.is_defined('HAVE_FILENO'):
         autowaf.define(conf, 'JALV_WITH_COLOR', 1)
         conf.env.append_unique('CFLAGS', ['-D_POSIX_C_SOURCE=200809L'])
