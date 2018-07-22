@@ -18,7 +18,6 @@
 #define _DARWIN_C_SOURCE        /* for mkdtemp on OSX */
 
 #include <assert.h>
-#include <malloc.h>
 #include <math.h>
 #include <signal.h>
 #include <stdio.h>
