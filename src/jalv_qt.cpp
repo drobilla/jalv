@@ -14,8 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <stdio.h>
-#include <math.h>
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
 
 #include "jalv_internal.h"
 
@@ -417,7 +418,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 
 	LilvNode* stepsNode = lilv_port_get(plugin, lilvPort, nodes->pprops_rangeSteps);
 	if (lilv_node_is_int(stepsNode)) {
-		steps = lilv_node_as_int(stepsNode);
+		steps = std::max(lilv_node_as_int(stepsNode), 2);
 	} else {
 		steps = DIAL_STEPS;
 	}
@@ -563,7 +564,7 @@ Control::getValue()
 	} else if (isInteger) {
 		return dial->value();
 	} else if (isLogarithmic) {
-		return min * pow(max / min, (float)dial->value() / steps);
+		return min * pow(max / min, (float)dial->value() / (steps - 1));
 	} else {
 		return (float)dial->value() / steps;
 	}
