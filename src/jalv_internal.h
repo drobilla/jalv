@@ -366,6 +366,9 @@ jalv_backend_close(Jalv* jalv);
 void
 jalv_backend_activate_port(Jalv* jalv, uint32_t port_index);
 
+uint32_t
+jalv_backend_get_process_cycle_id(const Jalv* const jalv);
+
 void
 jalv_create_ports(Jalv* jalv);
 

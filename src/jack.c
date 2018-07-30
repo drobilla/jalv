@@ -511,6 +511,17 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 #endif
 }
 
+/**
+ * @brief jalv_backend_is_same_cycle
+ * @param jalv
+ * @return true if this is the same period which will be processed
+ */
+uint32_t
+jalv_backend_get_process_cycle_id(const Jalv* const jalv)
+{
+	return jack_last_frame_time(jalv->backend->client);
+}
+
 int
 jack_initialize(jack_client_t* const client, const char* const load_init)
 {

@@ -23,6 +23,7 @@
 
 struct JalvBackend {
 	PaStream* stream;
+	uint32_t process_cycle_id;
 };
 
 static int
@@ -34,6 +35,8 @@ pa_process_cb(const void*                     inputs,
               void*                           handle)
 {
 	Jalv* jalv = (Jalv*)handle;
+
+	jalv->backend->process_cycle_id++;
 
 	/* Prepare port buffers */
 	uint32_t in_index  = 0;
@@ -220,4 +223,10 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 	default:
 		break;
 	}
+}
+
+uint32_t
+jalv_backend_get_process_cycle_id(const Jalv* const jalv)
+{
+	return jalv->backend->process_cycle_id;
 }
