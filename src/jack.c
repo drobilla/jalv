@@ -388,9 +388,11 @@ jalv_backend_init(Jalv* jalv)
 void
 jalv_backend_close(Jalv* jalv)
 {
-	jack_client_close(jalv->backend->client);
-	free(jalv->backend);
-	jalv->backend = NULL;
+	if (!jalv->backend) {
+		jack_client_close(jalv->backend->client);
+		free(jalv->backend);
+		jalv->backend = NULL;
+	}
 }
 
 void
@@ -402,7 +404,9 @@ jalv_backend_activate(Jalv* jalv)
 void
 jalv_backend_deactivate(Jalv* jalv)
 {
-	jack_deactivate(jalv->backend->client);
+	if (jalv->backend) {
+		jack_deactivate(jalv->backend->client);
+	}
 }
 
 void
