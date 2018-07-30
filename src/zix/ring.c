@@ -89,8 +89,10 @@ zix_ring_new(uint32_t size)
 void
 zix_ring_free(ZixRing* ring)
 {
-	free(ring->buf);
-	free(ring);
+	if (ring) {
+		free(ring->buf);
+		free(ring);
+	}
 }
 
 void
