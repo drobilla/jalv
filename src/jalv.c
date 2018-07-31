@@ -39,6 +39,7 @@
 
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "control_backend.h"
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
@@ -160,7 +161,6 @@ create_port(Jalv*    jalv,
 	port->evbuf     = NULL;
 	port->buf_size  = 0;
 	port->index     = port_index;
-	port->control   = 0.0f;
 	port->flow      = FLOW_UNKNOWN;
 
 	const bool optional = lilv_port_has_property(
@@ -181,10 +181,12 @@ create_port(Jalv*    jalv,
 	                                           port->lilv_port,
 	                                           jalv->nodes.pprops_notOnGUI);
 
+	jalv_control_port_init(jalv, port);
+
 	/* Set control values */
 	if (lilv_port_is_a(jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
 		port->type    = TYPE_CONTROL;
-		port->control = isnan(default_value) ? 0.0f : default_value;
+		jalv_control_set(jalv, port, isnan(default_value) ? 0.0f : default_value);
 		if (!hidden) {
 			add_control(&jalv->controls, new_port_control(jalv, port->index));
 		}
@@ -365,7 +367,11 @@ jalv_set_control(const ControlID* control,
 	Jalv* jalv = control->jalv;
 	if (control->type == PORT && type == jalv->forge.Float) {
 		struct Port* port = &control->jalv->ports[control->index];
-		port->control = *(const float*)body;
+		/* This value will be written from different threads e.g. gtk and JACK processing CB
+		 * and atomic copy is not guaranteed on all platforms (e.g. unaligned access on ARM).
+		 * Therefore we cannot directly write to port->control
+		 */
+		jalv_control_set(jalv, port, *(const float*)body);
 	} else if (control->type == PROPERTY) {
 		// Copy forge since it is used by process thread
 		LV2_Atom_Forge       forge = jalv->forge;
@@ -525,7 +531,8 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
 		struct Port* const port = &jalv->ports[ev.index];
 		if (ev.protocol == 0) {
 			assert(ev.size == sizeof(float));
-			port->control = *(float*)body;
+			/* only be called inside the lock. Therefore no atomic access required */
+			jalv_control_set(jalv, port, *(float*)body);
 		} else if (ev.protocol == jalv->urids.atom_eventTransfer) {
 			LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
 			const LV2_Atom* const atom = (const LV2_Atom*)body;
@@ -608,8 +615,20 @@ jalv_send_to_ui(Jalv*       jalv,
 bool
 jalv_run(Jalv* jalv, uint32_t nframes)
 {
+	/* lock control data for write access */
+	if (jalv_control_lock(jalv) < 0) {
+		fprintf(stderr, "jalv_control_lock() failed");
+		return false;
+	}
+
 	/* Read and apply control change events from UI */
 	jalv_apply_ui_events(jalv, nframes);
+
+	if (jalv_control_before_run(jalv) < 0) {
+		jalv_control_unlock(jalv);
+		fprintf(stderr, "jalv_control_before_run() failed");
+		return false;
+	}
 
 	/* Run plugin for this cycle */
 	lilv_instance_run(jalv->instance, nframes);
@@ -621,6 +640,17 @@ jalv_run(Jalv* jalv, uint32_t nframes)
 	/* Notify the plugin the run() cycle is finished */
 	if (jalv->worker.iface && jalv->worker.iface->end_run) {
 		jalv->worker.iface->end_run(jalv->instance->lv2_handle);
+	}
+
+	if (jalv_control_after_run(jalv) < 0) {
+		jalv_control_unlock(jalv);
+		fprintf(stderr, "jalv_control_after_run() failed");
+		return false;
+	}
+
+	if (jalv_control_unlock(jalv) < 0) {
+		fprintf(stderr, "jalv_control_unlock() failed");
+		return false;
 	}
 
 	/* Check if it's time to send updates to the UI */
@@ -1008,6 +1038,12 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		return -6;
 	}
 
+	if (jalv_control_backend_init(jalv) != 0) {
+		fprintf(stderr, "Init of control backend failed\n");
+		jalv_close(jalv);
+		return -7;
+	}
+
 	printf("Sample rate:  %u Hz\n", jalv->sample_rate);
 	printf("Block length: %u frames\n", jalv->block_length);
 	printf("MIDI buffers: %zu bytes\n", jalv->midi_buf_size);
@@ -1150,7 +1186,11 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		ControlID* control = jalv->controls.controls[i];
 		if (control->type == PORT && control->is_writable) {
 			struct Port* port = &jalv->ports[control->index];
-			jalv_print_control(jalv, port, port->control);
+			/* Backend thread is not yet started.
+			 * Therefore there is no other thread
+			 * which writes to this variable
+			 */
+			jalv_print_control(jalv, port, jalv_control_get(jalv, port));
 		}
 	}
 
@@ -1180,6 +1220,7 @@ jalv_close(Jalv* const jalv)
 	/* Deactivate audio */
 	jalv_backend_deactivate(jalv);
 	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+		jalv_control_port_destroy(jalv, &jalv->ports[i]);
 		if (jalv->ports[i].evbuf) {
 			lv2_evbuf_free(jalv->ports[i].evbuf);
 		}
@@ -1197,6 +1238,8 @@ jalv_close(Jalv* const jalv)
 		lilv_instance_deactivate(jalv->instance);
 		lilv_instance_free(jalv->instance);
 	}
+
+	jalv_control_backend_destroy(jalv);
 
 	/* Clean up */
 	free(jalv->ports);

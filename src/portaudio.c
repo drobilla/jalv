@@ -19,6 +19,7 @@
 #include <portaudio.h>
 
 #include "jalv_internal.h"
+#include "control_backend.h"
 #include "worker.h"
 
 struct JalvBackend {
@@ -93,7 +94,10 @@ pa_process_cb(const void*                     inputs,
 			ev->index    = p;
 			ev->protocol = 0;
 			ev->size     = sizeof(float);
-			*(float*)ev->body = port->control;
+			/* The control port will only be manipulated by this thread.
+			 * Therefore reading is safe.
+			 */
+			*(float*)ev->body = jalv_control_get(jalv, port);
 			if (zix_ring_write(jalv->plugin_events, buf, sizeof(buf))
 			    < sizeof(buf)) {
 				fprintf(stderr, "Plugin => UI buffer overflow!\n");
@@ -215,7 +219,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 	struct Port* const port = &jalv->ports[port_index];
 	switch (port->type) {
 	case TYPE_CONTROL:
-		lilv_instance_connect_port(jalv->instance, port_index, &port->control);
+		lilv_instance_connect_port(jalv->instance, port_index, jalv_control_data(jalv, port));
 		break;
 	default:
 		break;

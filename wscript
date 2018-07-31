@@ -160,6 +160,10 @@ def build(bld):
     src/zix/ring.c
     '''
 
+    # When adding additional control backend implementations
+    # use this as the default one
+    source += 'src/control_simple.c '
+
     if bld.env.HAVE_JACK:
         source += 'src/jack.c'
 
