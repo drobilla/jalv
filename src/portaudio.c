@@ -20,6 +20,7 @@
 
 #include "jalv_internal.h"
 #include "worker.h"
+#include "zix/atomic.h"
 
 struct JalvBackend {
 	PaStream* stream;
@@ -96,7 +97,10 @@ pa_process_cb(const void*                     inputs,
 			ev->index    = p;
 			ev->protocol = 0;
 			ev->size     = sizeof(float);
-			*(float*)ev->body = port->control;
+			/* The shared memory will only be manipulated by this thread.
+			 * Therefore reading is safe.
+			 */
+			*(float*)ev->body = port->control.data[0];
 			if (zix_ring_write(jalv->plugin_events, buf, sizeof(buf))
 			    < sizeof(buf)) {
 				fprintf(stderr, "Plugin => UI buffer overflow!\n");
@@ -218,11 +222,20 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 	struct Port* const port = &jalv->ports[port_index];
 	switch (port->type) {
 	case TYPE_CONTROL:
-		lilv_instance_connect_port(jalv->instance, port_index, &port->control);
+		lilv_instance_connect_port(jalv->instance, port_index, port->control.data);
 		break;
 	default:
 		break;
 	}
+}
+
+int
+jalv_backend_instance_name(Jalv* jalv, char* const name, const size_t size)
+{
+	const int pid = zix_pid();
+	snprintf(name, size, "portaudio%u", pid);
+
+	return 0;
 }
 
 uint32_t

@@ -19,6 +19,7 @@
 #include <cstdio>
 
 #include "jalv_internal.h"
+#include "zix/atomic.h"
 
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
@@ -459,7 +460,21 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	}
 
 	// Find and set min, max and default values for port
-	float defaultValue = ndef ? lilv_node_as_float(ndef) : port->control;
+	float defaultValue = 0.0f;
+	if (ndef) {
+		defaultValue = lilv_node_as_float(ndef);
+	} else {
+		/* the audio backend thread is already running
+		 * when calling this function.
+		 * Therefore the read could be interrupted
+		 * by a write of the backend thread.
+		 * Which could result in invalid data
+		 * if the read or the write was not atomic
+		 * (e.g. on ARM when accessing unaligned)
+		 * As a result port->control cannot be used for reading
+		 */
+		jalv_api_ctl_read_port_by_index(&portContainer.jalv->jalv_api, port->control.shm_index, sizeof(defaultValue), &defaultValue);
+	}
 	setRange(lilv_node_as_float(nmin), lilv_node_as_float(nmax));
 	setValue(defaultValue);
 
@@ -577,7 +592,11 @@ Control::dialChanged(int dialValue)
 	float value = getValue();
 
 	label->setText(getValueLabel(value));
-	port->control = value;
+	/* This method will be called by main thread
+	 * after starting the backend thread.
+	 * Therefore we cannot directly write to port->control
+	 */
+	ZIX_ATOMIC_WRITE(&port->control.new_data, value);
 }
 
 static bool
