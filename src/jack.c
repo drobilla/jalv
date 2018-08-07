@@ -388,7 +388,7 @@ jalv_backend_init(Jalv* jalv)
 void
 jalv_backend_close(Jalv* jalv)
 {
-	if (!jalv->backend) {
+	if (jalv->backend) {
 		jack_client_close(jalv->backend->client);
 		free(jalv->backend);
 		jalv->backend = NULL;
