@@ -141,7 +141,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 {
 	char  sym[64];
 	float value;
-	if (sscanf(cmd, "%[a-zA-Z0-9] = %f", sym, &value) == 2) {
+	if (sscanf(cmd, "%[a-zA-Z0-9_] = %f", sym, &value) == 2) {
 		struct Port* port = NULL;
 		for (uint32_t i = 0; i < jalv->num_ports; ++i) {
 			struct Port* p = &jalv->ports[i];
