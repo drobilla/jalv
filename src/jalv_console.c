@@ -136,12 +136,90 @@ jalv_native_ui_type(Jalv* jalv)
 	return NULL;
 }
 
+
+static void
+jalv_print_control_values(Jalv* jalv)
+{
+	for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+		ControlID* control = jalv->controls.controls[i];
+		if (control->type == PORT) {// && control->value_type == jalv->forge.Float) {
+			struct Port* port = &jalv->ports[control->index];
+			printf("%s = %f\n", lilv_node_as_string(control->symbol), port->control);
+		}
+	}
+}
+
+static void
+jalv_print_control_info(Jalv* jalv)
+{
+	printf("CONTROL INFO\n");
+	for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+		ControlID* control = jalv->controls.controls[i];
+		if (control->type == PORT) {// && control->value_type == jalv->forge.Float) {
+			struct Port* port = &jalv->ports[control->index];
+			//const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
+			printf("%s => { \"index\": %d, \"label\": \"%s\", \"group\": \"%s\", [ ",
+				lilv_node_as_string(control->symbol),
+				control->index,
+				lilv_node_as_string(control->label),
+				lilv_node_as_string(control->group)
+			);
+			for (size_t j=0; j<control->n_points; j++) {
+				printf("{ \"label\": \"%s\", \"value\": %f }",control->points[j].label,control->points[j].value);
+				if (j<(control->n_points-1)) printf(",");
+			}
+			printf(" ], \"min\": %f, \"max\": %f, \"default\": %f, \"value\": %f, \"is_toggle\": %d, \"is_integer\": %d, \"is_enumeration\": %d, \"is_logarithmic\": %d, \"is_writable\": %d, \"is_readable\": %d }\n",
+				lilv_node_as_float(control->min),
+				lilv_node_as_float(control->max),
+				lilv_node_as_float(control->def),
+				port->control,
+				control->is_toggle,
+				control->is_integer,
+				control->is_enumeration,
+				control->is_logarithmic,
+				control->is_writable,
+				control->is_readable
+			);
+		}
+	}
+}
+
 static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
-	char  sym[64];
+	uint32_t index;
+	char sym[255];
 	float value;
-	if (sscanf(cmd, "%[a-zA-Z0-9_] = %f", sym, &value) == 2) {
+
+	if (strcmp(cmd, "\\get_presets\n") == 0) {
+		jalv_unload_presets(jalv);
+		jalv_load_presets(jalv,NULL,NULL);
+		printf("\n");
+	}
+	else if (sscanf(cmd, "\\set_preset %[a-zA-Z0-9_:/-.#]\n", sym) == 1) {
+		LilvNode* preset = lilv_new_uri(jalv->world, sym);
+		jalv_apply_preset(jalv, preset);
+		lilv_node_free(preset);
+		jalv_print_control_values(jalv);
+		printf("\n");
+	}
+	else if (strcmp(cmd, "\\get_controls\n") == 0) {
+		jalv_print_control_values(jalv);
+		printf("\n");
+	}
+	else if (strcmp(cmd, "\\info_controls\n") == 0) {
+		jalv_print_control_info(jalv);
+		printf("\n");
+	}
+	else if (sscanf(cmd, "\\set_control %d, %f", &index, &value) == 2) {
+		if (index<0 || index>jalv->num_ports) {
+			fprintf(stderr, "ERROR: port index out of range\n", sym);
+		}
+		else {
+			jalv->ports[index].control = value;
+		}
+	}
+	else if (sscanf(cmd, "%[a-zA-Z0-9_] = %f", sym, &value) == 2) {
 		struct Port* port = NULL;
 		for (uint32_t i = 0; i < jalv->num_ports; ++i) {
 			struct Port* p = &jalv->ports[i];
@@ -153,9 +231,9 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		}
 		if (port) {
 			port->control = value;
-			printf("%-*s = %f\n", jalv->longest_sym, sym, value);
+			printf("%s = %f\n", sym, value);
 		} else {
-			fprintf(stderr, "error: no port `%s'\n", sym);
+			fprintf(stderr, "ERROR: no port `%s'\n", sym);
 		}
 	}
 }

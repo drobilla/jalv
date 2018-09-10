@@ -966,9 +966,8 @@ main(int argc, char** argv)
 
 	/* Load preset, if specified */
 	if (jalv.opts.preset) {
-		LilvNode* preset = lilv_new_uri(jalv.world, jalv.opts.preset);
-
 		jalv_load_presets(&jalv, NULL, NULL);
+		LilvNode* preset = lilv_new_uri(jalv.world, jalv.opts.preset);
 		state = lilv_state_new_from_world(jalv.world, &jalv.map, preset);
 		jalv.preset = state;
 		lilv_node_free(preset);

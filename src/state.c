@@ -112,16 +112,23 @@ jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
 	LILV_FOREACH(nodes, i, presets) {
 		const LilvNode* preset = lilv_nodes_get(presets, i);
 		lilv_world_load_resource(jalv->world, preset);
+
+		printf("Preset <%s>\n",
+					lilv_node_as_string(lilv_nodes_get(presets, i)));
+
 		if (!sink) {
 			continue;
 		}
-
+		
 		LilvNodes* labels = lilv_world_find_nodes(
 			jalv->world, preset, jalv->nodes.rdfs_label, NULL);
 		if (labels) {
 			const LilvNode* label = lilv_nodes_get_first(labels);
 			sink(jalv, preset, label, data);
 			lilv_nodes_free(labels);
+			printf("Preset <%s> => %s\n",
+							lilv_node_as_string(lilv_nodes_get(presets, i)),
+							lilv_node_as_string(label));
 		} else {
 			fprintf(stderr, "Preset <%s> has no rdfs:label\n",
 			        lilv_node_as_string(lilv_nodes_get(presets, i)));
