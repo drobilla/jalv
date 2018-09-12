@@ -152,7 +152,6 @@ jalv_print_control_values(Jalv* jalv)
 static void
 jalv_print_control_info(Jalv* jalv)
 {
-	printf("CONTROL INFO\n");
 	for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
 		ControlID* control = jalv->controls.controls[i];
 		if (control->type == PORT) {// && control->value_type == jalv->forge.Float) {
