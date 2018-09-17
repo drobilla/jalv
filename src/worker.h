@@ -27,6 +27,9 @@ jalv_worker_init(Jalv*                       jalv,
 void
 jalv_worker_finish(JalvWorker* worker);
 
+void
+jalv_worker_destroy(JalvWorker* worker);
+
 LV2_Worker_Status
 jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
                      uint32_t                   size,

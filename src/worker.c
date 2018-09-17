@@ -81,10 +81,17 @@ jalv_worker_init(Jalv*                       jalv,
 void
 jalv_worker_finish(JalvWorker* worker)
 {
+	if (worker->threaded) {
+		zix_sem_post(&worker->sem);
+		zix_thread_join(worker->thread, NULL);
+	}
+}
+
+void
+jalv_worker_destroy(JalvWorker* worker)
+{
 	if (worker->requests) {
 		if (worker->threaded) {
-			zix_sem_post(&worker->sem);
-			zix_thread_join(worker->thread, NULL);
 			zix_ring_free(worker->requests);
 		}
 		zix_ring_free(worker->responses);
