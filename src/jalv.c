@@ -1179,6 +1179,9 @@ main(int argc, char** argv)
 	}
 	jalv_backend_close(&jalv);
 
+	/* Destroy the worker */
+	jalv_worker_destroy(&jalv.worker);
+
 	/* Deactivate plugin */
 	suil_instance_free(jalv.ui_instance);
 	lilv_instance_deactivate(jalv.instance);
