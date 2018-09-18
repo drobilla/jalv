@@ -1138,6 +1138,7 @@ main(int argc, char** argv)
 		jalv_backend_activate_port(&jalv, i);
 	}
 
+
 	/* Print initial control values */
 	for (size_t i = 0; i < jalv.controls.n_controls; ++i) {
 		ControlID* control = jalv.controls.controls[i];

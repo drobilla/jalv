@@ -157,7 +157,7 @@ jalv_print_control_info(Jalv* jalv)
 		if (control->type == PORT) {// && control->value_type == jalv->forge.Float) {
 			struct Port* port = &jalv->ports[control->index];
 			//const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-			printf("%s => { \"index\": %d, \"label\": \"%s\", \"group\": \"%s\", [ ",
+			printf("%s => { \"index\": %d, \"label\": \"%s\", \"group\": \"%s\", \"points\": [ ",
 				lilv_node_as_string(control->symbol),
 				control->index,
 				lilv_node_as_string(control->label),
@@ -193,22 +193,18 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 	if (strcmp(cmd, "\\get_presets\n") == 0) {
 		jalv_unload_presets(jalv);
 		jalv_load_presets(jalv,NULL,NULL);
-		printf("\n");
 	}
 	else if (sscanf(cmd, "\\set_preset %[a-zA-Z0-9_:/-.#]\n", sym) == 1) {
 		LilvNode* preset = lilv_new_uri(jalv->world, sym);
 		jalv_apply_preset(jalv, preset);
 		lilv_node_free(preset);
 		jalv_print_control_values(jalv);
-		printf("\n");
 	}
 	else if (strcmp(cmd, "\\get_controls\n") == 0) {
 		jalv_print_control_values(jalv);
-		printf("\n");
 	}
 	else if (strcmp(cmd, "\\info_controls\n") == 0) {
 		jalv_print_control_info(jalv);
-		printf("\n");
 	}
 	else if (sscanf(cmd, "\\set_control %d, %f", &index, &value) == 2) {
 		if (index<0 || index>jalv->num_ports) {

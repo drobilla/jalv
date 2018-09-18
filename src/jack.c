@@ -360,6 +360,8 @@ jalv_backend_init(Jalv* jalv)
 		return NULL;
 	}
 
+	printf("JACK Real Name:    %s\n", jack_get_client_name(client));
+
 	/* Set audio engine properties */
 	jalv->sample_rate   = jack_get_sample_rate(client);
 	jalv->block_length  = jack_get_buffer_size(client);
