@@ -154,7 +154,8 @@ jalv_print_control_info(Jalv* jalv)
 {
 	for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
 		ControlID* control = jalv->controls.controls[i];
-		if (control->type == PORT) {// && control->value_type == jalv->forge.Float) {
+		if (control->type == PORT && control->value_type == jalv->forge.Float && control->is_writable) {
+
 			struct Port* port = &jalv->ports[control->index];
 			//const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
 			printf("%s => { \"index\": %d, \"label\": \"%s\", \"group\": \"%s\", \"points\": [ ",
@@ -175,9 +176,7 @@ jalv_print_control_info(Jalv* jalv)
 				control->is_toggle,
 				control->is_integer,
 				control->is_enumeration,
-				control->is_logarithmic,
-				control->is_writable,
-				control->is_readable
+				control->is_logarithmic
 			);
 		}
 	}
