@@ -1,8 +1,10 @@
 #!/usr/bin/env python
+
 import os
 import subprocess
+
+from waflib import Options
 from waflib.extras import autowaf as autowaf
-import waflib.Options as Options
 
 # Version of this package (even if built as a child)
 JALV_VERSION = '1.6.1'
@@ -20,28 +22,17 @@ def options(ctx):
     ctx.load('compiler_cxx')
     autowaf.set_options(ctx)
     opt = ctx.get_option_group('Configuration options')
-    opt.add_option('--portaudio', action='store_true', default=False,
-                   dest='portaudio',
-                   help='use PortAudio backend, not JACK')
-    opt.add_option('--no-jack-session', action='store_true', default=False,
-                   dest='no_jack_session',
-                   help='do not build JACK session support')
-    opt.add_option('--no-gtk', action='store_true', default=False,
-                   dest='no_gtk',
-                   help='do not build Gtk GUI')
-    opt.add_option('--no-gtkmm', action='store_true', default=False,
-                   dest='no_gtkmm',
-                   help='do not build Gtkmm GUI')
-    opt.add_option('--no-gtk2', action='store_true', dest='no_gtk2',
-                   help='do not build Gtk2 GUI')
-    opt.add_option('--no-gtk3', action='store_true', dest='no_gtk3',
-                   help='do not build Gtk3 GUI')
-    opt.add_option('--no-qt', action='store_true', default=False, dest='no_qt',
-                   help='do not build Qt GUI')
-    opt.add_option('--no-qt4', action='store_true', dest='no_qt4',
-                   help='do not build Qt4 GUI')
-    opt.add_option('--no-qt5', action='store_true', dest='no_qt5',
-                   help='do not build Qt5 GUI')
+    autowaf.add_flags(
+        opt,
+        {'portaudio':       'use PortAudio backend, not JACK',
+         'no-jack-session': 'do not build JACK session support',
+         'no-gtk':          'do not build Gtk GUI',
+         'no-gtkmm':        'do not build Gtkmm GUI',
+         'no-gtk2':         'do not build Gtk2 GUI',
+         'no-gtk3':         'do not build Gtk3 GUI',
+         'no-qt':           'do not build Qt GUI',
+         'no-qt4':          'do not build Qt4 GUI',
+         'no-qt5':          'do not build Qt5 GUI'})
 
 def configure(conf):
     autowaf.display_header('Jalv Configuration')
@@ -136,22 +127,18 @@ def configure(conf):
     if not Options.options.no_jack_session:
         autowaf.define(conf, 'JALV_JACK_SESSION', 1)
 
-    autowaf.define(conf, 'JALV_VERSION', JALV_VERSION)
-
     conf.write_config_header('jalv_config.h', remove=False)
 
-    autowaf.display_summary(conf)
-    autowaf.display_msg(conf, "Backend", "Jack" if conf.env.HAVE_JACK else "PortAudio")
-    if conf.env.HAVE_JACK:
-        autowaf.display_msg(conf, "Jack metadata support",
-                            conf.is_defined('HAVE_JACK_METADATA'))
-    autowaf.display_msg(conf, "Gtk 2.0 support", bool(conf.env.HAVE_GTK2))
-    autowaf.display_msg(conf, "Gtk 3.0 support", bool(conf.env.HAVE_GTK3))
-    autowaf.display_msg(conf, "Gtkmm 2.0 support", bool(conf.env.HAVE_GTKMM2))
-    autowaf.display_msg(conf, "Qt 4.0 support", bool(conf.env.HAVE_QT4))
-    autowaf.display_msg(conf, "Qt 5.0 support", bool(conf.env.HAVE_QT5))
-    autowaf.display_msg(conf, "Color output", bool(conf.env.JALV_WITH_COLOR))
-    print('')
+    autowaf.display_summary(
+        conf,
+        {'Backend': 'Jack' if conf.env.HAVE_JACK else 'PortAudio',
+         'Jack metadata support': conf.is_defined('HAVE_JACK_METADATA'),
+         'Gtk 2.0 support': bool(conf.env.HAVE_GTK2),
+         'Gtk 3.0 support': bool(conf.env.HAVE_GTK3),
+         'Gtkmm 2.0 support': bool(conf.env.HAVE_GTKMM2),
+         'Qt 4.0 support': bool(conf.env.HAVE_QT4),
+         'Qt 5.0 support': bool(conf.env.HAVE_QT5),
+         'Color output': bool(conf.env.JALV_WITH_COLOR)})
 
 def build(bld):
     libs   = 'LILV SUIL JACK SERD SORD SRATOM LV2 PORTAUDIO'
