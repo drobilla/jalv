@@ -384,7 +384,7 @@ bool
 jalv_ui_is_resizable(Jalv* jalv);
 
 void
-jalv_ui_write(SuilController controller,
+jalv_ui_write(void* const    controller,
               uint32_t       port_index,
               uint32_t       buffer_size,
               uint32_t       protocol,
