@@ -26,7 +26,9 @@
 
 #include "lilv/lilv.h"
 #include "serd/serd.h"
+#ifdef HAVE_SUIL
 #include "suil/suil.h"
+#endif
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
@@ -295,8 +297,10 @@ struct Jalv {
 	const LilvUI*      ui;             ///< Plugin UI (RDF data)
 	const LilvNode*    ui_type;        ///< Plugin UI type (unwrapped)
 	LilvInstance*      instance;       ///< Plugin instance (shared library)
+#ifdef HAVE_SUIL
 	SuilHost*          ui_host;        ///< Plugin UI host support
 	SuilInstance*      ui_instance;    ///< Plugin UI instance (shared library)
+#endif
 	void*              window;         ///< Window (if applicable)
 	struct Port*       ports;          ///< Port array of size num_ports
 	Controls           controls;       ///< Available plugin controls

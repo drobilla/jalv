@@ -59,7 +59,9 @@
 
 #include "lilv/lilv.h"
 
+#ifdef HAVE_SUIL
 #include "suil/suil.h"
+#endif
 
 #include "lv2_evbuf.h"
 #include "worker.h"
@@ -445,6 +447,7 @@ jalv_set_control(const ControlID* control,
 void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 {
+#ifdef HAVE_SUIL
 	jalv->ui_host = suil_host_new(jalv_ui_write, jalv_ui_port_index, NULL, NULL);
 
 	const LV2_Feature parent_feature = {
@@ -488,6 +491,7 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 
 	lilv_free(binary_path);
 	lilv_free(bundle_path);
+#endif
 }
 
 bool
@@ -772,7 +776,9 @@ main(int argc, char** argv)
 	jalv.bpm           = 120.0f;
 	jalv.control_in    = (uint32_t)-1;
 
+#ifdef HAVE_SUIL
 	suil_init(&argc, &argv, SUIL_ARG_NONE);
+#endif
 	if (jalv_init(&argc, &argv, &jalv.opts)) {
 		return EXIT_FAILURE;
 	}
@@ -1014,6 +1020,7 @@ main(int argc, char** argv)
 	const char* native_ui_type_uri = jalv_native_ui_type(&jalv);
 	jalv.uis = lilv_plugin_get_uis(jalv.plugin);
 	if (!jalv.opts.generic_ui && native_ui_type_uri) {
+#ifdef HAVE_SUIL
 		const LilvNode* native_ui_type = lilv_new_uri(jalv.world, native_ui_type_uri);
 		LILV_FOREACH(uis, u, jalv.uis) {
 			const LilvUI* this_ui = lilv_uis_get(jalv.uis, u);
@@ -1026,6 +1033,7 @@ main(int argc, char** argv)
 				break;
 			}
 		}
+#endif
 	} else if (!jalv.opts.generic_ui && jalv.opts.show_ui) {
 		jalv.ui = lilv_uis_get(jalv.uis, lilv_uis_begin(jalv.uis));
 	}
@@ -1188,7 +1196,9 @@ main(int argc, char** argv)
 	jalv_worker_destroy(&jalv.worker);
 
 	/* Deactivate plugin */
+#ifdef HAVE_SUIL
 	suil_instance_free(jalv.ui_instance);
+#endif
 	lilv_instance_deactivate(jalv.instance);
 	lilv_instance_free(jalv.instance);
 
@@ -1201,7 +1211,9 @@ main(int argc, char** argv)
 	}
 	symap_free(jalv.symap);
 	zix_sem_destroy(&jalv.symap_lock);
+#ifdef HAVE_SUIL
 	suil_host_free(jalv.ui_host);
+#endif
 	sratom_free(jalv.sratom);
 	sratom_free(jalv.ui_sratom);
 	lilv_uis_free(jalv.uis);

@@ -26,6 +26,7 @@ def options(ctx):
         opt,
         {'portaudio':       'use PortAudio backend, not JACK',
          'no-jack-session': 'do not build JACK session support',
+         'no-gui':          'do not build any GUIs',
          'no-gtk':          'do not build Gtk GUI',
          'no-gtkmm':        'do not build Gtkmm GUI',
          'no-gtk2':         'do not build Gtk2 GUI',
@@ -49,8 +50,6 @@ def configure(conf):
                       atleast_version='0.14.0', mandatory=True)
     autowaf.check_pkg(conf, 'sord-0', uselib_store='SORD',
                       atleast_version='0.12.0', mandatory=True)
-    autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
-                      atleast_version='0.8.7', mandatory=True)
     autowaf.check_pkg(conf, 'sratom-0', uselib_store='SRATOM',
                       atleast_version='0.6.0', mandatory=True)
     if Options.options.portaudio:
@@ -60,7 +59,7 @@ def configure(conf):
         autowaf.check_pkg(conf, 'jack', uselib_store='JACK',
                           atleast_version='0.120.0', mandatory=True)
 
-    if not Options.options.no_gtk:
+    if not Options.options.no_gui and not Options.options.no_gtk:
         if not Options.options.no_gtk2:
             autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
                               atleast_version='2.18.0', mandatory=False)
@@ -71,7 +70,7 @@ def configure(conf):
             autowaf.check_pkg(conf, 'gtk+-3.0', uselib_store='GTK3',
                               atleast_version='3.0.0', mandatory=False)
 
-    if not Options.options.no_qt:
+    if not Options.options.no_gui and not Options.options.no_qt:
         if not Options.options.no_qt4:
             autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
                               atleast_version='4.0.0', mandatory=False)
@@ -85,6 +84,12 @@ def configure(conf):
             if conf.env.HAVE_QT5:
                 if not conf.find_program('moc-qt5', var='MOC5', mandatory=False):
                     conf.find_program('moc', var='MOC5')
+
+    have_gui = (conf.env.HAVE_GTK2 or conf.env.HAVE_GTKMM2 or conf.env.HAVE_GTK3 or
+                conf.env.HAVE_QT4 or conf.env.HAVE_QT5)
+    if have_gui:
+        autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
+                          atleast_version='0.8.7')
 
     if conf.env.HAVE_JACK:
         autowaf.check_function(
