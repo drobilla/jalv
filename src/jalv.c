@@ -769,6 +769,14 @@ int
 main(int argc, char** argv)
 {
 	Jalv jalv;
+
+#ifndef _WIN32
+	struct sigaction action;
+	sigemptyset (&action.sa_mask);
+	action.sa_flags = 0;
+	action.sa_handler = signal_handler;
+#endif
+
 	memset(&jalv, '\0', sizeof(Jalv));
 	jalv.prog_name     = argv[0];
 	jalv.block_length  = 4096;  /* Should be set by backend */
@@ -878,8 +886,14 @@ main(int argc, char** argv)
 	zix_sem_init(&jalv.paused, 0);
 	zix_sem_init(&jalv.worker.sem, 0);
 
+#ifdef _WIN32
+	/* TODO: Signal() is not working in combination with fgets() */
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
+#else
+	sigaction(SIGINT, &action, NULL);
+	sigaction(SIGTERM, &action, NULL);
+#endif
 
 	/* Find all installed plugins */
 	LilvWorld* world = lilv_world_new();
