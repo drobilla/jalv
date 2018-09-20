@@ -166,9 +166,10 @@ jalv_discover_ui(Jalv* jalv)
 	return jalv->opts.show_ui;
 }
 
-int
-jalv_open_ui(Jalv* jalv)
+static bool
+jalv_run_custom_ui(Jalv* jalv)
 {
+#ifdef HAVE_SUIL
 	const LV2UI_Idle_Interface* idle_iface = NULL;
 	const LV2UI_Show_Interface* show_iface = NULL;
 	if (jalv->ui && jalv->opts.show_ui) {
@@ -192,8 +193,17 @@ jalv_open_ui(Jalv* jalv)
 		}
 
 		show_iface->hide(suil_instance_get_handle(jalv->ui_instance));
+		return true;
+	}
+#endif
 
-	} else if (!jalv->opts.non_interactive) {
+	return false;
+}
+
+int
+jalv_open_ui(Jalv* jalv)
+{
+	if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
 		// Primitive command prompt for setting control values
 		while (!zix_sem_try_wait(jalv->done)) {
 			char line[128];
