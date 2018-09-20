@@ -3,8 +3,11 @@ jalv (1.6.1) unstable;
   * Fix compilation with recent Gtkmm versions that require C++11
   * Add jalv -i option to ignore stdin for background use
   * Fix Jack deactivation
+  * Fix potential crash when closed with worker (thanks JP Cimalando)
+  * Add support for underscore in port names on command line
+    (thanks Jośe Fernando Moyano)
 
- -- David Robillard <d@drobilla.net>  Sun, 07 May 2017 13:35:11 +0200
+ -- David Robillard <d@drobilla.net>  Thu, 20 Sep 2018 09:21:15 +0200
 
 jalv (1.6.0) stable;
 
