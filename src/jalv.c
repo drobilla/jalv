@@ -515,13 +515,13 @@ jalv_ui_is_resizable(Jalv* jalv)
 }
 
 void
-jalv_ui_write(SuilController controller,
+jalv_ui_write(void* const    jalv_handle,
               uint32_t       port_index,
               uint32_t       buffer_size,
               uint32_t       protocol,
               const void*    buffer)
 {
-	Jalv* const jalv = (Jalv*)controller;
+	Jalv* const jalv = (Jalv*)jalv_handle;
 
 	if (protocol != 0 && protocol != jalv->urids.atom_eventTransfer) {
 		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
@@ -722,12 +722,7 @@ jalv_update(Jalv* jalv)
 			free(str);
 		}
 
-		if (jalv->ui_instance) {
-			suil_instance_port_event(jalv->ui_instance, ev.index,
-			                         ev.size, ev.protocol, buf);
-		} else {
-			jalv_ui_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
-		}
+		jalv_ui_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
 
 		if (ev.protocol == 0 && jalv->opts.print_controls) {
 			print_control_value(jalv, &jalv->ports[ev.index], *(float*)buf);
