@@ -141,7 +141,14 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 {
 	char  sym[64];
 	float value;
-	if (sscanf(cmd, "%[a-zA-Z0-9_] = %f", sym, &value) == 2) {
+	if (!strncmp(cmd, "help", 4)) {
+		fprintf(stderr,
+		        "Commands:\n"
+		        "  help              Display this help message\n"
+		        "  set SYMBOL VALUE  Set control value\n"
+		        "  SYMBOL = VALUE    Set control value\n");
+	} else if (sscanf(cmd, "set %[a-zA-Z0-9_] %f", sym, &value) == 2 ||
+	           sscanf(cmd, "%[a-zA-Z0-9_] = %f", sym, &value) == 2) {
 		struct Port* port = NULL;
 		for (uint32_t i = 0; i < jalv->num_ports; ++i) {
 			struct Port* p = &jalv->ports[i];
@@ -155,10 +162,10 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 			port->control = value;
 			printf("%s = %f\n", sym, value);
 		} else {
-			fprintf(stderr, "error: no port `%s'\n", sym);
+			fprintf(stderr, "error: no control named `%s'\n", sym);
 		}
 	} else {
-		fprintf(stderr, "error: invalid command\n");
+		fprintf(stderr, "error: invalid command (try `help')\n");
 	}
 }
 
