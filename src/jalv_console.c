@@ -151,6 +151,16 @@ jalv_print_controls(Jalv* jalv, bool writable, bool readable)
 	}
 }
 
+static int
+jalv_print_preset(Jalv*           jalv,
+                  const LilvNode* node,
+                  const LilvNode* title,
+                  void*           data)
+{
+	printf("%s (%s)\n", lilv_node_as_string(node), lilv_node_as_string(title));
+	return 0;
+}
+
 static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
@@ -163,9 +173,19 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		        "  help              Display this help message\n"
 		        "  controls          Print settable control values\n"
 		        "  monitors          Print output control values\n"
+		        "  presets           Print available presets\n"
+		        "  preset URI        Set preset\n"
 		        "  set INDEX VALUE   Set control value by port index\n"
 		        "  set SYMBOL VALUE  Set control value by symbol\n"
 		        "  SYMBOL = VALUE    Set control value by symbol\n");
+	} else if (strcmp(cmd, "presets\n") == 0) {
+		jalv_unload_presets(jalv);
+		jalv_load_presets(jalv, jalv_print_preset, NULL);
+	} else if (sscanf(cmd, "preset %[a-zA-Z0-9_:/-.#]\n", sym) == 1) {
+		LilvNode* preset = lilv_new_uri(jalv->world, sym);
+		jalv_apply_preset(jalv, preset);
+		lilv_node_free(preset);
+		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "controls\n") == 0) {
 		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "monitors\n") == 0) {
