@@ -139,14 +139,23 @@ jalv_native_ui_type(Jalv* jalv)
 static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
-	char  sym[64];
-	float value;
+	char     sym[64];
+	uint32_t index;
+	float    value;
 	if (!strncmp(cmd, "help", 4)) {
 		fprintf(stderr,
 		        "Commands:\n"
 		        "  help              Display this help message\n"
-		        "  set SYMBOL VALUE  Set control value\n"
-		        "  SYMBOL = VALUE    Set control value\n");
+		        "  set INDEX VALUE   Set control value by port index\n"
+		        "  set SYMBOL VALUE  Set control value by symbol\n"
+		        "  SYMBOL = VALUE    Set control value by symbol\n");
+	} else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
+		if (index < jalv->num_ports) {
+			jalv->ports[index].control = value;
+			jalv_print_control(jalv, &jalv->ports[index], value);
+		} else {
+			fprintf(stderr, "error: port index out of range\n");
+		}
 	} else if (sscanf(cmd, "set %[a-zA-Z0-9_] %f", sym, &value) == 2 ||
 	           sscanf(cmd, "%[a-zA-Z0-9_] = %f", sym, &value) == 2) {
 		struct Port* port = NULL;
