@@ -1144,9 +1144,6 @@ main(int argc, char** argv)
 		}
 	}
 
-	/* Set Jack callbacks */
-	jalv_backend_init(&jalv);
-
 	/* Create Jack ports and connect plugin ports to buffers */
 	for (uint32_t i = 0; i < jalv.num_ports; ++i) {
 		jalv_backend_activate_port(&jalv, i);
