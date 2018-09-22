@@ -334,7 +334,6 @@ jalv_backend_init(Jalv* jalv)
 	if (strlen(jack_name) >= (unsigned)jack_client_name_size() - 1) {
 		jack_name[jack_client_name_size() - 1] = '\0';
 	}
-	printf("JACK Name:    %s\n", jack_name);
 
 	/* Connect to JACK */
 #ifdef JALV_JACK_SESSION
@@ -359,6 +358,8 @@ jalv_backend_init(Jalv* jalv)
 	if (!client) {
 		return NULL;
 	}
+
+	printf("JACK Name:    %s\n", jack_get_client_name(client));
 
 	/* Set audio engine properties */
 	jalv->sample_rate   = jack_get_sample_rate(client);
