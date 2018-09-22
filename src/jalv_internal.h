@@ -308,7 +308,6 @@ struct Jalv {
 	size_t             midi_buf_size;  ///< Size of MIDI port buffers
 	uint32_t           control_in;     ///< Index of control input port
 	uint32_t           num_ports;      ///< Size of the two following arrays:
-	uint32_t           longest_sym;    ///< Longest port symbol
 	uint32_t           plugin_latency; ///< Latency reported by plugin (if any)
 	float              ui_update_hz;   ///< Frequency of UI updates
 	uint32_t           sample_rate;    ///< Sample rate

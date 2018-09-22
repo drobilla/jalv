@@ -153,7 +153,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		}
 		if (port) {
 			port->control = value;
-			printf("%-*s = %f\n", jalv->longest_sym, sym, value);
+			printf("%s = %f\n", sym, value);
 		} else {
 			fprintf(stderr, "error: no port `%s'\n", sym);
 		}

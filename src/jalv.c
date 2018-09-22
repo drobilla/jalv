@@ -215,12 +215,16 @@ create_port(Jalv*    jalv,
 		die("Mandatory port has unknown type (neither input nor output)");
 	}
 
+	const bool hidden = !jalv->opts.show_hidden &&
+	                    lilv_port_has_property(jalv->plugin,
+	                                           port->lilv_port,
+	                                           jalv->nodes.pprops_notOnGUI);
+
 	/* Set control values */
 	if (lilv_port_is_a(jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
 		port->type    = TYPE_CONTROL;
 		port->control = isnan(default_value) ? 0.0f : default_value;
-		if (jalv->opts.show_hidden ||
-		    !lilv_port_has_property(jalv->plugin, port->lilv_port, jalv->nodes.pprops_notOnGUI)) {
+		if (!hidden) {
 			add_control(&jalv->controls, new_port_control(jalv, port->index));
 		}
 	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
@@ -251,13 +255,6 @@ create_port(Jalv*    jalv,
 			jalv->opts.buffer_size, port->buf_size * N_BUFFER_CYCLES);
 	}
 	lilv_node_free(min_size);
-
-	/* Update longest symbol for aligned console printing */
-	const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-	const size_t    len = strlen(lilv_node_as_string(sym));
-	if (len > jalv->longest_sym) {
-		jalv->longest_sym = len;
-	}
 }
 
 /**
@@ -352,7 +349,7 @@ static void
 print_control_value(Jalv* jalv, const struct Port* port, float value)
 {
 	const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-	printf("%-*s = %f\n", jalv->longest_sym, lilv_node_as_string(sym), value);
+	printf("%s = %f\n", lilv_node_as_string(sym), value);
 }
 
 void
@@ -753,7 +750,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
 	}
 
 	jalv_set_control(control, sizeof(float), jalv->urids.atom_Float, &val);
-	printf("%-*s = %f\n", jalv->longest_sym, sym, val);
+	printf("%s = %f\n", sym, val);
 
 	return true;
 }
