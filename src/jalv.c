@@ -345,13 +345,6 @@ jalv_control_by_symbol(Jalv* jalv, const char* sym)
 	return NULL;
 }
 
-static void
-print_control_value(Jalv* jalv, const struct Port* port, float value)
-{
-	const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-	printf("%s = %f\n", lilv_node_as_string(sym), value);
-}
-
 void
 jalv_create_controls(Jalv* jalv, bool writable)
 {
@@ -726,7 +719,7 @@ jalv_update(Jalv* jalv)
 		jalv_ui_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
 
 		if (ev.protocol == 0 && jalv->opts.print_controls) {
-			print_control_value(jalv, &jalv->ports[ev.index], *(float*)buf);
+			jalv_print_control(jalv, &jalv->ports[ev.index], *(float*)buf);
 		}
 	}
 
@@ -1151,7 +1144,7 @@ main(int argc, char** argv)
 		ControlID* control = jalv.controls.controls[i];
 		if (control->type == PORT && control->is_writable) {
 			struct Port* port = &jalv.ports[control->index];
-			print_control_value(&jalv, port, port->control);
+			jalv_print_control(&jalv, port, port->control);
 		}
 	}
 

@@ -160,7 +160,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		}
 		if (port) {
 			port->control = value;
-			printf("%s = %f\n", sym, value);
+			jalv_print_control(jalv, port, value);
 		} else {
 			fprintf(stderr, "error: no control named `%s'\n", sym);
 		}
