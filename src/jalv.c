@@ -1149,7 +1149,7 @@ main(int argc, char** argv)
 	/* Print initial control values */
 	for (size_t i = 0; i < jalv.controls.n_controls; ++i) {
 		ControlID* control = jalv.controls.controls[i];
-		if (control->type == PORT) {// && control->value_type == jalv->forge.Float) {
+		if (control->type == PORT && control->is_writable) {
 			struct Port* port = &jalv.ports[control->index];
 			print_control_value(&jalv, port, port->control);
 		}
