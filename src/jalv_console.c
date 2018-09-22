@@ -137,6 +137,21 @@ jalv_native_ui_type(Jalv* jalv)
 }
 
 static void
+jalv_print_controls(Jalv* jalv, bool writable, bool readable)
+{
+	for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+		ControlID* const control = jalv->controls.controls[i];
+		if ((control->is_writable && writable) ||
+		    (control->is_readable && readable)) {
+			struct Port* const port = &jalv->ports[control->index];
+			printf("%s = %f\n",
+			       lilv_node_as_string(control->symbol),
+			       port->control);
+		}
+	}
+}
+
+static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
 	char     sym[64];
@@ -146,9 +161,15 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		fprintf(stderr,
 		        "Commands:\n"
 		        "  help              Display this help message\n"
+		        "  controls          Print settable control values\n"
+		        "  monitors          Print output control values\n"
 		        "  set INDEX VALUE   Set control value by port index\n"
 		        "  set SYMBOL VALUE  Set control value by symbol\n"
 		        "  SYMBOL = VALUE    Set control value by symbol\n");
+	} else if (strcmp(cmd, "controls\n") == 0) {
+		jalv_print_controls(jalv, true, false);
+	} else if (strcmp(cmd, "monitors\n") == 0) {
+		jalv_print_controls(jalv, false, true);
 	} else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
 		if (index < jalv->num_ports) {
 			jalv->ports[index].control = value;
