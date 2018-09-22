@@ -157,6 +157,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		} else {
 			fprintf(stderr, "error: no port `%s'\n", sym);
 		}
+	} else {
+		fprintf(stderr, "error: invalid command\n");
 	}
 }
 
