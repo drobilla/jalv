@@ -179,7 +179,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					jack_midi_event_get(&ev, buf, i);
 					lv2_evbuf_write(&iter,
 					                ev.time, 0,
-					                jalv->midi_event_id,
+					                jalv->urids.midi_MidiEvent,
 					                ev.size, ev.buffer);
 				}
 			}
@@ -218,12 +218,12 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 				uint8_t* body;
 				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
-				if (buf && type == jalv->midi_event_id) {
+				if (buf && type == jalv->urids.midi_MidiEvent) {
 					// Write MIDI event to Jack output
 					jack_midi_event_write(buf, frames, body, size);
 				}
 
-				if (jalv->has_ui && !port->old_api) {
+				if (jalv->has_ui) {
 					// Forward event to UI
 					jalv_send_to_ui(jalv, p, type, size, body);
 				}

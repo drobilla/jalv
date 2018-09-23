@@ -86,7 +86,6 @@ struct Port {
 	size_t          buf_size;   ///< Custom buffer size, or 0
 	uint32_t        index;      ///< Port index
 	float           control;    ///< For control ports, otherwise 0.0f
-	bool            old_api;    ///< True for event, false for atom
 };
 
 /* Controls */
@@ -312,7 +311,6 @@ struct Jalv {
 	float              ui_update_hz;   ///< Frequency of UI updates
 	uint32_t           sample_rate;    ///< Sample rate
 	uint32_t           event_delta_t;  ///< Frames since last update sent to UI
-	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
 	uint32_t           position;       ///< Transport position in frames
 	float              bpm;            ///< Transport tempo in beats per minute
 	bool               rolling;        ///< Transport speed (0=stop, 1=play)

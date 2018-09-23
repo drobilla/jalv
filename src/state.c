@@ -36,7 +36,6 @@
 #define NS_RDFS "http://www.w3.org/2000/01/rdf-schema#"
 #define NS_XSD  "http://www.w3.org/2001/XMLSchema#"
 
-extern LV2_Feature uri_map_feature;
 extern LV2_Feature map_feature;
 extern LV2_Feature unmap_feature;
 extern LV2_Feature make_path_feature;
@@ -48,7 +47,7 @@ extern LV2_Feature options_feature;
 extern LV2_Feature def_state_feature;
 
 const LV2_Feature* state_features[9] = {
-	&uri_map_feature, &map_feature, &unmap_feature,
+	&map_feature, &unmap_feature,
 	&make_path_feature,
 	&state_sched_feature,
 	&safe_restore_feature,

@@ -43,7 +43,6 @@
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
 #include "lv2/lv2plug.in/ns/ext/data-access/data-access.h"
-#include "lv2/lv2plug.in/ns/ext/event/event.h"
 #include "lv2/lv2plug.in/ns/ext/options/options.h"
 #include "lv2/lv2plug.in/ns/ext/parameters/parameters.h"
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
@@ -52,7 +51,6 @@
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
-#include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/worker/worker.h"
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
@@ -108,28 +106,10 @@ unmap_uri(LV2_URID_Unmap_Handle handle,
 	return uri;
 }
 
-/**
-   Map function for URI map extension.
-*/
-static uint32_t
-uri_to_id(LV2_URI_Map_Callback_Data callback_data,
-          const char*               map,
-          const char*               uri)
-{
-	Jalv* jalv = (Jalv*)callback_data;
-	zix_sem_wait(&jalv->symap_lock);
-	const LV2_URID id = symap_map(jalv->symap, uri);
-	zix_sem_post(&jalv->symap_lock);
-	return id;
-}
-
 #define NS_EXT "http://lv2plug.in/ns/ext/"
-
-static LV2_URI_Map_Feature uri_map = { NULL, &uri_to_id };
 
 static LV2_Extension_Data_Feature ext_data = { NULL };
 
-LV2_Feature uri_map_feature      = { NS_EXT "uri-map", NULL };
 LV2_Feature map_feature          = { LV2_URID__map, NULL };
 LV2_Feature unmap_feature        = { LV2_URID__unmap, NULL };
 LV2_Feature make_path_feature    = { LV2_STATE__makePath, NULL };
@@ -147,7 +127,7 @@ static LV2_Feature buf_size_features[3] = {
 	{ LV2_BUF_SIZE__boundedBlockLength, NULL } };
 
 const LV2_Feature* features[12] = {
-	&uri_map_feature, &map_feature, &unmap_feature,
+	&map_feature, &unmap_feature,
 	&sched_feature,
 	&log_feature,
 	&options_feature,
@@ -236,13 +216,8 @@ create_port(Jalv*    jalv,
 		port->type = TYPE_CV;
 #endif
 	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
-	                          jalv->nodes.ev_EventPort)) {
-		port->type = TYPE_EVENT;
-		port->old_api = true;
-	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
 	                          jalv->nodes.atom_AtomPort)) {
 		port->type = TYPE_EVENT;
-		port->old_api = false;
 	} else if (!optional) {
 		die("Mandatory port has unknown data type");
 	}
@@ -298,7 +273,6 @@ jalv_allocate_port_buffers(Jalv* jalv)
 				: jalv->midi_buf_size;
 			port->evbuf = lv2_evbuf_new(
 				buf_size,
-				port->old_api ? LV2_EVBUF_EVENT : LV2_EVBUF_ATOM,
 				jalv->map.map(jalv->map.handle,
 				              lilv_node_as_string(jalv->nodes.atom_Chunk)),
 				jalv->map.map(jalv->map.handle,
@@ -453,7 +427,7 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 		LV2_UI__idleInterface, NULL
 	};
 	const LV2_Feature* ui_features[] = {
-		&uri_map_feature, &map_feature, &unmap_feature,
+		&map_feature, &unmap_feature,
 		&instance_feature,
 		&data_feature,
 		&log_feature,
@@ -780,8 +754,6 @@ main(int argc, char** argv)
 	jalv.symap = symap_new();
 	zix_sem_init(&jalv.symap_lock, 1);
 	zix_sem_init(&jalv.work_lock, 1);
-	uri_map_feature.data  = &uri_map;
-	uri_map.callback_data = &jalv;
 
 	jalv.map.handle  = &jalv;
 	jalv.map.map     = map_uri;
@@ -808,9 +780,6 @@ main(int argc, char** argv)
 	jalv.ui_sratom = sratom_new(&jalv.map);
 	sratom_set_env(jalv.sratom, jalv.env);
 	sratom_set_env(jalv.ui_sratom, jalv.env);
-
-	jalv.midi_event_id = uri_to_id(
-		&jalv, "http://lv2plug.in/ns/ext/event", LV2_MIDI__MidiEvent);
 
 	jalv.urids.atom_Float           = symap_map(jalv.symap, LV2_ATOM__Float);
 	jalv.urids.atom_Int             = symap_map(jalv.symap, LV2_ATOM__Int);
@@ -894,7 +863,6 @@ main(int argc, char** argv)
 	jalv.nodes.atom_Float             = lilv_new_uri(world, LV2_ATOM__Float);
 	jalv.nodes.atom_Path              = lilv_new_uri(world, LV2_ATOM__Path);
 	jalv.nodes.atom_Sequence          = lilv_new_uri(world, LV2_ATOM__Sequence);
-	jalv.nodes.ev_EventPort           = lilv_new_uri(world, LV2_EVENT__EventPort);
 	jalv.nodes.lv2_AudioPort          = lilv_new_uri(world, LV2_CORE__AudioPort);
 	jalv.nodes.lv2_CVPort             = lilv_new_uri(world, LV2_CORE__CVPort);
 	jalv.nodes.lv2_ControlPort        = lilv_new_uri(world, LV2_CORE__ControlPort);
