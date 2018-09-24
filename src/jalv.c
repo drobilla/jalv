@@ -384,7 +384,7 @@ jalv_set_control(const ControlID* control,
 	Jalv* jalv = control->jalv;
 	if (control->type == PORT && type == jalv->forge.Float) {
 		struct Port* port = &control->jalv->ports[control->index];
-		port->control = *(float*)body;
+		port->control = *(const float*)body;
 	} else if (control->type == PROPERTY) {
 		// Copy forge since it is used by process thread
 		LV2_Atom_Forge       forge = jalv->forge;

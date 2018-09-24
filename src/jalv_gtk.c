@@ -278,7 +278,7 @@ pset_menu_free(PresetMenu* menu)
 static gint
 menu_cmp(gconstpointer a, gconstpointer b, ZIX_UNUSED gpointer data)
 {
-	return strcmp(((PresetMenu*)a)->label, ((PresetMenu*)b)->label);
+	return strcmp(((const PresetMenu*)a)->label, ((const PresetMenu*)b)->label);
 }
 
 static PresetMenu*
@@ -1007,8 +1007,8 @@ add_control_row(GtkWidget*  table,
 static int
 control_group_cmp(const void* p1, const void* p2, ZIX_UNUSED void* data)
 {
-	const ControlID* control1 = *(const ControlID**)p1;
-	const ControlID* control2 = *(const ControlID**)p2;
+	const ControlID* control1 = *(const ControlID*const*)p1;
+	const ControlID* control2 = *(const ControlID*const*)p2;
 
 	const int cmp = (control1->group && control2->group)
 		? strcmp(lilv_node_as_string(control1->group),
