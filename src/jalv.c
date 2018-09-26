@@ -744,7 +744,7 @@ main(int argc, char** argv)
 	suil_init(&argc, &argv, SUIL_ARG_NONE);
 #endif
 	if (jalv_init(&argc, &argv, &jalv.opts)) {
-		return EXIT_FAILURE;
+		return -1;
 	}
 
 	if (jalv.opts.uuid) {
@@ -911,7 +911,7 @@ main(int argc, char** argv)
 		}
 		if (!state) {
 			fprintf(stderr, "Failed to load state from %s\n", jalv.opts.load);
-			return EXIT_FAILURE;
+			return -2;
 		}
 		plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
 	} else if (argc > 1) {
@@ -920,7 +920,7 @@ main(int argc, char** argv)
 
 	if (!plugin_uri) {
 		fprintf(stderr, "Missing plugin URI, try lv2ls to list plugins\n");
-		return EXIT_FAILURE;
+		return -3;
 	}
 
 	/* Find plugin */
@@ -930,7 +930,7 @@ main(int argc, char** argv)
 	if (!jalv.plugin) {
 		fprintf(stderr, "Failed to find plugin\n");
 		lilv_world_free(world);
-		return EXIT_FAILURE;
+		return -4;
 	}
 
 	/* Load preset, if specified */
@@ -944,7 +944,7 @@ main(int argc, char** argv)
 		if (!state) {
 			fprintf(stderr, "Failed to find preset <%s>\n", jalv.opts.preset);
 			lilv_world_free(world);
-			return EXIT_FAILURE;
+			return -5;
 		}
 	}
 
@@ -955,7 +955,7 @@ main(int argc, char** argv)
 		if (!feature_is_supported(uri)) {
 			fprintf(stderr, "Feature %s is not supported\n", uri);
 			lilv_world_free(world);
-			return EXIT_FAILURE;
+			return -6;
 		}
 	}
 	lilv_nodes_free(req_feats);
@@ -1010,7 +1010,8 @@ main(int argc, char** argv)
 	jalv_create_controls(&jalv, false);
 
 	if (!(jalv.backend = jalv_backend_init(&jalv))) {
-		die("Failed to connect to audio system");
+		fprintf(stderr, "Failed to connect to audio system\n");
+		return -7;
 	}
 
 	printf("Sample rate:  %u Hz\n", jalv.sample_rate);
@@ -1070,7 +1071,8 @@ main(int argc, char** argv)
 	jalv.instance = lilv_plugin_instantiate(
 		jalv.plugin, jalv.sample_rate, features);
 	if (!jalv.instance) {
-		die("Failed to instantiate plugin.\n");
+		fprintf(stderr, "Failed to instantiate plugin.\n");
+		return -8;
 	}
 
 	ext_data.data_access = lilv_instance_get_descriptor(jalv.instance)->extension_data;
