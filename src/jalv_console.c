@@ -168,7 +168,7 @@ jalv_print_control_info(Jalv* jalv)
 				printf("{ \"label\": \"%s\", \"value\": %f }",control->points[j].label,control->points[j].value);
 				if (j<(control->n_points-1)) printf(",");
 			}
-			printf(" ], \"min\": %f, \"max\": %f, \"default\": %f, \"value\": %f, \"is_toggle\": %d, \"is_integer\": %d, \"is_enumeration\": %d, \"is_logarithmic\": %d, \"is_writable\": %d, \"is_readable\": %d }\n",
+			printf(" ], \"min\": %f, \"max\": %f, \"default\": %f, \"value\": %f, \"is_toggle\": %d, \"is_integer\": %d, \"is_enumeration\": %d, \"is_logarithmic\": %d }\n",
 				lilv_node_as_float(control->min),
 				lilv_node_as_float(control->max),
 				lilv_node_as_float(control->def),
