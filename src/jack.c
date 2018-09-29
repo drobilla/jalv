@@ -313,8 +313,8 @@ jack_session_cb(jack_session_event_t* event, void* arg)
 }
 #endif /* JALV_JACK_SESSION */
 
-JalvBackend*
-jalv_backend_init(Jalv* jalv)
+static jack_client_t*
+jack_create_client(Jalv* jalv)
 {
 	jack_client_t* client = NULL;
 
@@ -355,6 +355,16 @@ jalv_backend_init(Jalv* jalv)
 	}
 
 	free(jack_name);
+
+	return client;
+}
+
+JalvBackend*
+jalv_backend_init(Jalv* jalv)
+{
+	jack_client_t* const client =
+		jalv->backend ? jalv->backend->client : jack_create_client(jalv);
+
 	if (!client) {
 		return NULL;
 	}
