@@ -3,6 +3,7 @@ jalv (1.6.1) unstable;
   * Fix compilation with recent Gtkmm versions that require C++11
   * Add jalv -i option to ignore stdin for background use
   * Add several commands to console interface
+  * Add support for running as an internal Jack client (thanks Timo Wischer)
   * Make Suil dependency optional
   * Remove support for deprecated event and uri-map extensions
   * Fix Jack deactivation
@@ -11,7 +12,7 @@ jalv (1.6.1) unstable;
   * Add support for underscore in port names on command line
     (thanks Jośe Fernando Moyano)
 
- -- David Robillard <d@drobilla.net>  Sun, 23 Sep 2018 15:49:05 +0200
+ -- David Robillard <d@drobilla.net>  Sat, 29 Sep 2018 14:16:07 +0200
 
 jalv (1.6.0) stable;
 
