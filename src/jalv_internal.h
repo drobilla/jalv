@@ -32,12 +32,14 @@
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
+#include "lv2/lv2plug.in/ns/ext/data-access/data-access.h"
 #include "lv2/lv2plug.in/ns/ext/log/log.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
 #include "lv2/lv2plug.in/ns/ext/resize-port/resize-port.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/worker/worker.h"
+#include "lv2/lv2plug.in/ns/ext/options/options.h"
 
 #include "zix/ring.h"
 #include "zix/sem.h"
@@ -263,6 +265,23 @@ typedef struct {
 	bool                        threaded;   ///< Run work in another thread
 } JalvWorker;
 
+typedef struct {
+	LV2_Feature                map_feature;
+	LV2_Feature                unmap_feature;
+	LV2_State_Make_Path        make_path;
+	LV2_Feature                make_path_feature;
+	LV2_Worker_Schedule        sched;
+	LV2_Feature                sched_feature;
+	LV2_Worker_Schedule        ssched;
+	LV2_Feature                state_sched_feature;
+	LV2_Log_Log                llog;
+	LV2_Feature                log_feature;
+	LV2_Options_Option         options[6];
+	LV2_Feature                options_feature;
+	LV2_Feature                safe_restore_feature;
+	LV2_Extension_Data_Feature ext_data;
+} JalvFeatures;
+
 struct Jalv {
 	JalvOptions        opts;           ///< Command-line options
 	JalvURIDs          urids;          ///< URIDs
@@ -318,6 +337,8 @@ struct Jalv {
 	bool               has_ui;         ///< True iff a control UI is present
 	bool               request_update; ///< True iff a plugin update is needed
 	bool               safe_restore;   ///< Plugin restore() is thread-safe
+	JalvFeatures       features;
+	const LV2_Feature** feature_list;
 };
 
 int

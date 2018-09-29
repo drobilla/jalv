@@ -75,6 +75,10 @@
 #    define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
+#ifndef ARRAY_SIZE
+#    define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
+#endif
+
 /* Size factor for UI ring buffers.  The ring size is a few times the size of
    an event output to give the UI a chance to keep up.  Experiments with Ingen,
    which can highly saturate its event output, led me to this value.  It
@@ -108,45 +112,22 @@ unmap_uri(LV2_URID_Unmap_Handle handle,
 
 #define NS_EXT "http://lv2plug.in/ns/ext/"
 
-static LV2_Extension_Data_Feature ext_data = { NULL };
-
-LV2_Feature map_feature          = { LV2_URID__map, NULL };
-LV2_Feature unmap_feature        = { LV2_URID__unmap, NULL };
-LV2_Feature make_path_feature    = { LV2_STATE__makePath, NULL };
-LV2_Feature sched_feature        = { LV2_WORKER__schedule, NULL };
-LV2_Feature state_sched_feature  = { LV2_WORKER__schedule, NULL };
-LV2_Feature safe_restore_feature = { LV2_STATE__threadSafeRestore, NULL };
-LV2_Feature log_feature          = { LV2_LOG__log, NULL };
-LV2_Feature options_feature      = { LV2_OPTIONS__options, NULL };
-LV2_Feature def_state_feature    = { LV2_STATE__loadDefaultState, NULL };
-
 /** These features have no data */
-static LV2_Feature buf_size_features[3] = {
+static const LV2_Feature static_features[] = {
+	{ LV2_STATE__loadDefaultState, NULL },
 	{ LV2_BUF_SIZE__powerOf2BlockLength, NULL },
 	{ LV2_BUF_SIZE__fixedBlockLength, NULL },
 	{ LV2_BUF_SIZE__boundedBlockLength, NULL } };
 
-const LV2_Feature* features[12] = {
-	&map_feature, &unmap_feature,
-	&sched_feature,
-	&log_feature,
-	&options_feature,
-	&def_state_feature,
-	&safe_restore_feature,
-	&buf_size_features[0],
-	&buf_size_features[1],
-	&buf_size_features[2],
-	NULL
-};
-
 /** Return true iff Jalv supports the given feature. */
 static bool
-feature_is_supported(const char* uri)
+feature_is_supported(Jalv* jalv, const char* uri)
 {
 	if (!strcmp(uri, "http://lv2plug.in/ns/lv2core#isLive")) {
 		return true;
 	}
-	for (const LV2_Feature*const* f = features; *f; ++f) {
+
+	for (const LV2_Feature*const* f = jalv->feature_list; *f; ++f) {
 		if (!strcmp(uri, (*f)->URI)) {
 			return true;
 		}
@@ -421,18 +402,19 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 		NS_EXT "instance-access", lilv_instance_get_handle(jalv->instance)
 	};
 	const LV2_Feature data_feature = {
-		LV2_DATA_ACCESS_URI, &ext_data
+		LV2_DATA_ACCESS_URI, &jalv->features.ext_data
 	};
 	const LV2_Feature idle_feature = {
 		LV2_UI__idleInterface, NULL
 	};
 	const LV2_Feature* ui_features[] = {
-		&map_feature, &unmap_feature,
+		&jalv->features.map_feature,
+		&jalv->features.unmap_feature,
 		&instance_feature,
 		&data_feature,
-		&log_feature,
+		&jalv->features.log_feature,
 		&parent_feature,
-		&options_feature,
+		&jalv->features.options_feature,
 		&idle_feature,
 		NULL
 	};
@@ -729,6 +711,13 @@ signal_handler(ZIX_UNUSED int sig)
 }
 
 static void
+init_feature(LV2_Feature* const dest, const char* const URI, void* data)
+{
+	dest->URI = URI;
+	dest->data = data;
+}
+
+static void
 setup_signals(Jalv* const jalv)
 {
 	exit_sem = &jalv->done;
@@ -776,14 +765,14 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 
 	jalv->map.handle  = jalv;
 	jalv->map.map     = map_uri;
-	map_feature.data = &jalv->map;
+	init_feature(&jalv->features.map_feature, LV2_URID__map, &jalv->map);
 
 	jalv->worker.jalv       = jalv;
 	jalv->state_worker.jalv = jalv;
 
 	jalv->unmap.handle  = jalv;
 	jalv->unmap.unmap   = unmap_uri;
-	unmap_feature.data = &jalv->unmap;
+	init_feature(&jalv->features.unmap_feature, LV2_URID__unmap, &jalv->unmap);
 
 	lv2_atom_forge_init(&jalv->forge, &jalv->map);
 
@@ -839,17 +828,26 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 	free(templ);
 #endif
 
-	LV2_State_Make_Path make_path = { jalv, jalv_make_path };
-	make_path_feature.data = &make_path;
+	jalv->features.make_path.handle = jalv;
+	jalv->features.make_path.path = jalv_make_path;
+	init_feature(&jalv->features.make_path_feature,
+	             LV2_STATE__makePath, &jalv->features.make_path);
 
-	LV2_Worker_Schedule sched = { &jalv->worker, jalv_worker_schedule };
-	sched_feature.data = &sched;
+	jalv->features.sched.handle = &jalv->worker;
+	jalv->features.sched.schedule_work = jalv_worker_schedule;
+	init_feature(&jalv->features.sched_feature,
+	             LV2_WORKER__schedule, &jalv->features.sched);
 
-	LV2_Worker_Schedule ssched = { &jalv->state_worker, jalv_worker_schedule };
-	state_sched_feature.data = &ssched;
+	jalv->features.ssched.handle = &jalv->state_worker;
+	jalv->features.ssched.schedule_work = jalv_worker_schedule;
+	init_feature(&jalv->features.state_sched_feature,
+	             LV2_WORKER__schedule, &jalv->features.ssched);
 
-	LV2_Log_Log llog = { jalv, jalv_printf, jalv_vprintf };
-	log_feature.data = &llog;
+	jalv->features.llog.handle  = jalv;
+	jalv->features.llog.printf  = jalv_printf;
+	jalv->features.llog.vprintf = jalv_vprintf;
+	init_feature(&jalv->features.log_feature,
+	             LV2_LOG__log, &jalv->features.llog);
 
 	zix_sem_init(&jalv->done, 0);
 
@@ -955,18 +953,6 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		}
 	}
 
-	/* Check that any required features are supported */
-	LilvNodes* req_feats = lilv_plugin_get_required_features(jalv->plugin);
-	LILV_FOREACH(nodes, f, req_feats) {
-		const char* uri = lilv_node_as_uri(lilv_nodes_get(req_feats, f));
-		if (!feature_is_supported(uri)) {
-			fprintf(stderr, "Feature %s is not supported\n", uri);
-			lilv_world_free(world);
-			return -6;
-		}
-	}
-	lilv_nodes_free(req_feats);
-
 	/* Check for thread-safe state restore() method. */
 	LilvNode* state_threadSafeRestore = lilv_new_uri(
 		jalv->world, LV2_STATE__threadSafeRestore);
@@ -1053,7 +1039,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 	fprintf(stderr, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
 
 	/* Build options array to pass to plugin */
-	const LV2_Options_Option options[] = {
+	const LV2_Options_Option options[ARRAY_SIZE(jalv->features.options)] = {
 		{ LV2_OPTIONS_INSTANCE, 0, jalv->urids.param_sampleRate,
 		  sizeof(float), jalv->urids.atom_Float, &jalv->sample_rate },
 		{ LV2_OPTIONS_INSTANCE, 0, jalv->urids.bufsz_minBlockLength,
@@ -1066,8 +1052,15 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		  sizeof(float), jalv->urids.atom_Float, &jalv->ui_update_hz },
 		{ LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL }
 	};
+	memcpy(jalv->features.options, options, sizeof(jalv->features.options));
 
-	options_feature.data = (void*)&options;
+	init_feature(&jalv->features.options_feature,
+	             LV2_OPTIONS__options,
+	             (void*)jalv->features.options);
+
+	init_feature(&jalv->features.safe_restore_feature,
+	             LV2_STATE__threadSafeRestore,
+	             NULL);
 
 	/* Create Plugin <=> UI communication buffers */
 	jalv->ui_events     = zix_ring_new(jalv->opts.buffer_size);
@@ -1075,16 +1068,51 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 	zix_ring_mlock(jalv->ui_events);
 	zix_ring_mlock(jalv->plugin_events);
 
+	/* Build feature list for passing to plugins */
+	const LV2_Feature* const features[] = {
+		&jalv->features.map_feature,
+		&jalv->features.unmap_feature,
+		&jalv->features.sched_feature,
+		&jalv->features.log_feature,
+		&jalv->features.options_feature,
+		&static_features[0],
+		&static_features[1],
+		&static_features[2],
+		&static_features[3],
+		&static_features[4],
+		NULL
+	};
+	jalv->feature_list = calloc(1, sizeof(features));
+	if (!jalv->feature_list) {
+		fprintf(stderr, "Failed to allocate feature list\n");
+		jalv_close(jalv);
+		return -7;
+	}
+	memcpy(jalv->feature_list, features, sizeof(features));
+
+	/* Check that any required features are supported */
+	LilvNodes* req_feats = lilv_plugin_get_required_features(jalv->plugin);
+	LILV_FOREACH(nodes, f, req_feats) {
+		const char* uri = lilv_node_as_uri(lilv_nodes_get(req_feats, f));
+		if (!feature_is_supported(jalv, uri)) {
+			fprintf(stderr, "Feature %s is not supported\n", uri);
+			jalv_close(jalv);
+			return -6;
+		}
+	}
+	lilv_nodes_free(req_feats);
+
 	/* Instantiate the plugin */
 	jalv->instance = lilv_plugin_instantiate(
-		jalv->plugin, jalv->sample_rate, features);
+		jalv->plugin, jalv->sample_rate, jalv->feature_list);
 	if (!jalv->instance) {
 		fprintf(stderr, "Failed to instantiate plugin.\n");
 		jalv_close(jalv);
 		return -8;
 	}
 
-	ext_data.data_access = lilv_instance_get_descriptor(jalv->instance)->extension_data;
+	jalv->features.ext_data.data_access =
+		lilv_instance_get_descriptor(jalv->instance)->extension_data;
 
 	fprintf(stderr, "\n");
 	if (!jalv->buf_size_set) {
@@ -1197,6 +1225,12 @@ jalv_close(Jalv* const jalv)
 	remove(jalv->temp_dir);
 	free(jalv->temp_dir);
 	free(jalv->ui_event_buf);
+	free(jalv->feature_list);
+
+	free(jalv->opts.name);
+	free(jalv->opts.uuid);
+	free(jalv->opts.load);
+	free(jalv->opts.controls);
 
 	return 0;
 }
