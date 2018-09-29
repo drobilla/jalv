@@ -245,7 +245,7 @@ jalv_run_custom_ui(Jalv* jalv)
 		show_iface->show(suil_instance_get_handle(jalv->ui_instance));
 
 		// Drive idle interface until interrupted
-		while (!zix_sem_try_wait(jalv->done)) {
+		while (!zix_sem_try_wait(&jalv->done)) {
 			jalv_update(jalv);
 			if (idle_iface->idle(suil_instance_get_handle(jalv->ui_instance))) {
 				break;
@@ -266,7 +266,7 @@ jalv_open_ui(Jalv* jalv)
 {
 	if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
 		// Primitive command prompt for setting control values
-		while (!zix_sem_try_wait(jalv->done)) {
+		while (!zix_sem_try_wait(&jalv->done)) {
 			char line[128];
 			printf("> ");
 			if (fgets(line, sizeof(line), stdin)) {
@@ -276,11 +276,11 @@ jalv_open_ui(Jalv* jalv)
 			}
 		}
 	} else {
-		zix_sem_wait(jalv->done);
+		zix_sem_wait(&jalv->done);
 	}
 
 	// Caller waits on the done sem, so increment it again to exit
-	zix_sem_post(jalv->done);
+	zix_sem_post(&jalv->done);
 
 	return 0;
 }
@@ -288,6 +288,6 @@ jalv_open_ui(Jalv* jalv)
 int
 jalv_close_ui(Jalv* jalv)
 {
-	zix_sem_post(jalv->done);
+	zix_sem_post(&jalv->done);
 	return 0;
 }

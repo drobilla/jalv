@@ -82,7 +82,7 @@
 */
 #define N_BUFFER_CYCLES 16
 
-ZixSem exit_sem;  /**< Exit semaphore */
+static ZixSem* exit_sem = NULL;  /**< Exit semaphore used by signal handler*/
 
 static LV2_URID
 map_uri(LV2_URID_Map_Handle handle,
@@ -657,7 +657,7 @@ bool
 jalv_update(Jalv* jalv)
 {
 	/* Check quit flag and close if set. */
-	if (zix_sem_try_wait(&exit_sem)) {
+	if (zix_sem_try_wait(&jalv->done)) {
 		jalv_close_ui(jalv);
 		return false;
 	}
@@ -725,12 +725,14 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
 static void
 signal_handler(ZIX_UNUSED int sig)
 {
-	zix_sem_post(&exit_sem);
+	zix_sem_post(exit_sem);
 }
 
 static void
-setup_signals(void)
+setup_signals(Jalv* const jalv)
 {
+	exit_sem = &jalv->done;
+
 #ifdef HAVE_SIGACTION
 	struct sigaction action;
 	sigemptyset(&action.sa_mask);
@@ -849,13 +851,10 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 	LV2_Log_Log llog = { jalv, jalv_printf, jalv_vprintf };
 	log_feature.data = &llog;
 
-	zix_sem_init(&exit_sem, 0);
-	jalv->done = &exit_sem;
+	zix_sem_init(&jalv->done, 0);
 
 	zix_sem_init(&jalv->paused, 0);
 	zix_sem_init(&jalv->worker.sem, 0);
-
-	setup_signals();
 
 	/* Find all installed plugins */
 	LilvWorld* world = lilv_world_new();
@@ -1193,7 +1192,7 @@ jalv_close(Jalv* const jalv)
 	lilv_uis_free(jalv->uis);
 	lilv_world_free(jalv->world);
 
-	zix_sem_destroy(&exit_sem);
+	zix_sem_destroy(&jalv->done);
 
 	remove(jalv->temp_dir);
 	free(jalv->temp_dir);
@@ -1212,11 +1211,14 @@ main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	/* Set up signal handlers */
+	setup_signals(&jalv);
+
 	/* Run UI (or prompt at console) */
 	jalv_open_ui(&jalv);
 
 	/* Wait for finish signal from UI or signal handler */
-	zix_sem_wait(jalv.done);
+	zix_sem_wait(&jalv.done);
 
 	return jalv_close(&jalv);
 }

@@ -1227,7 +1227,7 @@ jalv_open_ui(Jalv* jalv)
 	gtk_main();
 	suil_instance_free(jalv->ui_instance);
 	jalv->ui_instance = NULL;
-	zix_sem_post(jalv->done);
+	zix_sem_post(&jalv->done);
 	return 0;
 }
 

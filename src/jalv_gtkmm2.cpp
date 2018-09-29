@@ -97,7 +97,7 @@ jalv_open_ui(Jalv* jalv)
 
 	delete window;
 	delete jalv_gtk_main;
-	zix_sem_post(jalv->done);
+	zix_sem_post(&jalv->done);
 
 	return 0;
 }

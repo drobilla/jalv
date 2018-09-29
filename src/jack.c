@@ -51,7 +51,7 @@ jack_shutdown_cb(void* data)
 {
 	Jalv* const jalv = (Jalv*)data;
 	jalv_close_ui(jalv);
-	zix_sem_post(jalv->done);
+	zix_sem_post(&jalv->done);
 }
 
 /** Jack process callback. */
