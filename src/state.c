@@ -36,26 +36,6 @@
 #define NS_RDFS "http://www.w3.org/2000/01/rdf-schema#"
 #define NS_XSD  "http://www.w3.org/2001/XMLSchema#"
 
-extern LV2_Feature map_feature;
-extern LV2_Feature unmap_feature;
-extern LV2_Feature make_path_feature;
-extern LV2_Feature sched_feature;
-extern LV2_Feature state_sched_feature;
-extern LV2_Feature safe_restore_feature;
-extern LV2_Feature log_feature;
-extern LV2_Feature options_feature;
-extern LV2_Feature def_state_feature;
-
-const LV2_Feature* state_features[9] = {
-	&map_feature, &unmap_feature,
-	&make_path_feature,
-	&state_sched_feature,
-	&safe_restore_feature,
-	&log_feature,
-	&options_feature,
-	NULL
-};
-
 char*
 jalv_make_path(LV2_State_Make_Path_Handle handle,
                const char*                path)
@@ -203,6 +183,17 @@ jalv_apply_state(Jalv* jalv, LilvState* state)
 			jalv->play_state = JALV_PAUSE_REQUESTED;
 			zix_sem_wait(&jalv->paused);
 		}
+
+		const LV2_Feature* state_features[9] = {
+			&jalv->features.map_feature,
+			&jalv->features.unmap_feature,
+			&jalv->features.make_path_feature,
+			&jalv->features.state_sched_feature,
+			&jalv->features.safe_restore_feature,
+			&jalv->features.log_feature,
+			&jalv->features.options_feature,
+			NULL
+		};
 
 		lilv_state_restore(
 			state, jalv->instance, set_port_value, jalv, 0, state_features);
