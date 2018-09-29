@@ -69,9 +69,6 @@ jalv_ui_port_event(ZIX_UNUSED Jalv*       jalv,
 int
 jalv_init(int* argc, char*** argv, JalvOptions* opts)
 {
-	opts->controls    = (char**)malloc(sizeof(char*));
-	opts->controls[0] = NULL;
-
 	int n_controls = 0;
 	int a          = 1;
 	for (; a < *argc && (*argv)[a][0] == '-'; ++a) {
