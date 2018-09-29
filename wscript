@@ -166,6 +166,16 @@ def build(bld):
 
     if bld.env.HAVE_JACK:
         source += 'src/jack.c'
+
+        # Non-GUI internal JACK client library
+        obj = bld(features     = 'c cshlib',
+                  source       = source + ' src/jalv_console.c',
+                  target       = 'jalv',
+                  includes     = ['.', 'src'],
+                  lib          = ['pthread'],
+                  install_path = '${LIBDIR}/jack')
+        autowaf.use_lib(bld, obj, libs)
+        obj.env.cshlib_PATTERN = '%s.so'
     elif bld.env.HAVE_PORTAUDIO:
         source += 'src/portaudio.c'
 

@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <ctype.h>
+
 #include <jack/jack.h>
 #include <jack/midiport.h>
 #ifdef JALV_JACK_SESSION
@@ -27,8 +29,15 @@
 #include "worker.h"
 
 struct JalvBackend {
-	jack_client_t* client;  ///< Jack client
+	jack_client_t* client;             ///< Jack client
+	bool           is_internal_client; ///< Running inside jackd
 };
+
+/** Internal Jack client initialization entry point */
+int jack_initialize(jack_client_t* client, const char* load_init);
+
+/** Internal Jack client finalization entry point */
+void jack_finish(void* arg);
 
 /** Jack buffer size callback. */
 static int
@@ -390,9 +399,16 @@ jalv_backend_init(Jalv* jalv)
 	jack_set_session_callback(client, &jack_session_cb, arg);
 #endif
 
-	/* Allocate and return opaque backend */
+	if (jalv->backend) {
+		/* Internal JACK client, jalv->backend->is_internal_client was already
+		   set in jack_initialize() when allocating the backend */
+		return jalv->backend;
+	}
+
+	/* External JACK client, allocate and return opaque backend */
 	JalvBackend* backend = (JalvBackend*)calloc(1, sizeof(JalvBackend));
-	backend->client = client;
+	backend->client             = client;
+	backend->is_internal_client = false;
 	return backend;
 }
 
@@ -400,7 +416,10 @@ void
 jalv_backend_close(Jalv* jalv)
 {
 	if (jalv->backend) {
-		jack_client_close(jalv->backend->client);
+		if (!jalv->backend->is_internal_client) {
+			jack_client_close(jalv->backend->client);
+		}
+
 		free(jalv->backend);
 		jalv->backend = NULL;
 	}
@@ -415,7 +434,7 @@ jalv_backend_activate(Jalv* jalv)
 void
 jalv_backend_deactivate(Jalv* jalv)
 {
-	if (jalv->backend) {
+	if (jalv->backend && !jalv->backend->is_internal_client) {
 		jack_deactivate(jalv->backend->client);
 	}
 }
@@ -490,4 +509,69 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 		lilv_node_free(name);
 	}
 #endif
+}
+
+int
+jack_initialize(jack_client_t* const client, const char* const load_init)
+{
+	const size_t args_len = strlen(load_init);
+	if (args_len > JACK_LOAD_INIT_LIMIT) {
+		fprintf(stderr, "error: Too many arguments given\n");
+		return -1;
+	}
+
+	Jalv* const jalv = (Jalv*)calloc(1, sizeof(Jalv));
+	if (!jalv) {
+		return -1;
+	}
+
+	if (!(jalv->backend = (JalvBackend*)calloc(1, sizeof(JalvBackend)))) {
+		free(jalv);
+		return -1;
+	}
+
+	jalv->backend->client             = client;
+	jalv->backend->is_internal_client = true;
+
+	/* Build full command line with "program" name for building argv */
+	const size_t cmd_len = strlen("jalv ") + args_len;
+	char* const  cmd     = (char*)calloc(cmd_len + 1, 1);
+	strcat(cmd, "jalv ");
+	strcat(cmd, load_init);
+
+	/* Build argv */
+	int         argc = 0;
+	char**      argv = NULL;
+	char*       tok  = cmd;
+	for (size_t i = 0; i <= cmd_len; ++i) {
+		if (isspace(cmd[i]) || !cmd[i]) {
+			argv = (char**)realloc(argv, sizeof(char*) * ++argc);
+			cmd[i] = '\0';
+			argv[argc - 1] = tok;
+			tok = cmd + i + 1;
+		}
+	}
+
+	const int err = jalv_open(jalv, argc, argv);
+	if (err) {
+		jalv_backend_close(jalv);
+		free(jalv);
+	}
+
+	free(argv);
+	free(cmd);
+	return err;
+}
+
+void
+jack_finish(void* const arg)
+{
+	Jalv* const jalv = (Jalv*)arg;
+	if (jalv) {
+		if (jalv_close(jalv)) {
+			fprintf(stderr, "Failed to close Jalv\n");
+		}
+
+		free(jalv);
+	}
 }
