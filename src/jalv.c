@@ -728,6 +728,23 @@ signal_handler(ZIX_UNUSED int sig)
 	zix_sem_post(&exit_sem);
 }
 
+static void
+setup_signals(void)
+{
+#ifdef HAVE_SIGACTION
+	struct sigaction action;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags   = 0;
+	action.sa_handler = signal_handler;
+	sigaction(SIGINT, &action, NULL);
+	sigaction(SIGTERM, &action, NULL);
+#else
+	/* May not work in combination with fgets in the console interface */
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
+#endif
+}
+
 int
 jalv_open(Jalv* const jalv, int argc, char** argv)
 {
@@ -837,18 +854,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 	zix_sem_init(&jalv->paused, 0);
 	zix_sem_init(&jalv->worker.sem, 0);
 
-#ifdef HAVE_SIGACTION
-	struct sigaction action;
-	sigemptyset(&action.sa_mask);
-	action.sa_flags   = 0;
-	action.sa_handler = signal_handler;
-	sigaction(SIGINT, &action, NULL);
-	sigaction(SIGTERM, &action, NULL);
-#else
-	/* May not work in combination with fgets in the console interface */
-	signal(SIGINT, signal_handler);
-	signal(SIGTERM, signal_handler);
-#endif
+	setup_signals();
 
 	/* Find all installed plugins */
 	LilvWorld* world = lilv_world_new();
