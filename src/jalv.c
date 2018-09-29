@@ -728,10 +728,9 @@ signal_handler(ZIX_UNUSED int sig)
 	zix_sem_post(&exit_sem);
 }
 
-static int
-jalv_main(Jalv* jalv, int argc, char** argv)
+int
+jalv_open(Jalv* const jalv, int argc, char** argv)
 {
-	memset(jalv, '\0', sizeof(Jalv));
 	jalv->prog_name     = argv[0];
 	jalv->block_length  = 4096;  /* Should be set by backend */
 	jalv->midi_buf_size = 1024;  /* Should be set by backend */
@@ -742,6 +741,7 @@ jalv_main(Jalv* jalv, int argc, char** argv)
 #ifdef HAVE_SUIL
 	suil_init(&argc, &argv, SUIL_ARG_NONE);
 #endif
+
 	if (jalv_init(&argc, &argv, &jalv->opts)) {
 		return -1;
 	}
@@ -1127,11 +1127,12 @@ jalv_main(Jalv* jalv, int argc, char** argv)
 	jalv_backend_activate(jalv);
 	jalv->play_state = JALV_RUNNING;
 
-	/* Run UI (or prompt at console) */
-	jalv_open_ui(jalv);
+	return 0;
+}
 
-	/* Wait for finish signal from UI or signal handler */
-	zix_sem_wait(&exit_sem);
+int
+jalv_close(Jalv* const jalv)
+{
 	jalv->exit = true;
 
 	fprintf(stderr, "Exiting...\n");
@@ -1155,8 +1156,10 @@ jalv_main(Jalv* jalv, int argc, char** argv)
 #ifdef HAVE_SUIL
 	suil_instance_free(jalv->ui_instance);
 #endif
-	lilv_instance_deactivate(jalv->instance);
-	lilv_instance_free(jalv->instance);
+	if (jalv->instance) {
+		lilv_instance_deactivate(jalv->instance);
+		lilv_instance_free(jalv->instance);
+	}
 
 	/* Clean up */
 	free(jalv->ports);
@@ -1173,7 +1176,7 @@ jalv_main(Jalv* jalv, int argc, char** argv)
 	sratom_free(jalv->sratom);
 	sratom_free(jalv->ui_sratom);
 	lilv_uis_free(jalv->uis);
-	lilv_world_free(world);
+	lilv_world_free(jalv->world);
 
 	zix_sem_destroy(&exit_sem);
 
@@ -1188,5 +1191,17 @@ int
 main(int argc, char** argv)
 {
 	Jalv jalv;
-	return jalv_main(&jalv, argc, argv);
+	memset(&jalv, '\0', sizeof(Jalv));
+
+	if (jalv_open(&jalv, argc, argv)) {
+		return EXIT_FAILURE;
+	}
+
+	/* Run UI (or prompt at console) */
+	jalv_open_ui(&jalv);
+
+	/* Wait for finish signal from UI or signal handler */
+	zix_sem_wait(jalv.done);
+
+	return jalv_close(&jalv);
 }
