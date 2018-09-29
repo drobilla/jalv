@@ -760,6 +760,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 #endif
 
 	if (jalv_init(&argc, &argv, &jalv->opts)) {
+		jalv_close(jalv);
 		return -1;
 	}
 
@@ -916,6 +917,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		}
 		if (!state) {
 			fprintf(stderr, "Failed to load state from %s\n", jalv->opts.load);
+			jalv_close(jalv);
 			return -2;
 		}
 		plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
@@ -925,6 +927,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 
 	if (!plugin_uri) {
 		fprintf(stderr, "Missing plugin URI, try lv2ls to list plugins\n");
+		jalv_close(jalv);
 		return -3;
 	}
 
@@ -934,7 +937,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 	lilv_node_free(plugin_uri);
 	if (!jalv->plugin) {
 		fprintf(stderr, "Failed to find plugin\n");
-		lilv_world_free(world);
+		jalv_close(jalv);
 		return -4;
 	}
 
@@ -948,7 +951,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		lilv_node_free(preset);
 		if (!state) {
 			fprintf(stderr, "Failed to find preset <%s>\n", jalv->opts.preset);
-			lilv_world_free(world);
+			jalv_close(jalv);
 			return -5;
 		}
 	}
@@ -1016,6 +1019,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 
 	if (!(jalv->backend = jalv_backend_init(jalv))) {
 		fprintf(stderr, "Failed to connect to audio system\n");
+		jalv_close(jalv);
 		return -7;
 	}
 
@@ -1077,6 +1081,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		jalv->plugin, jalv->sample_rate, features);
 	if (!jalv->instance) {
 		fprintf(stderr, "Failed to instantiate plugin.\n");
+		jalv_close(jalv);
 		return -8;
 	}
 
@@ -1179,8 +1184,12 @@ jalv_close(Jalv* const jalv)
 #ifdef HAVE_SUIL
 	suil_host_free(jalv->ui_host);
 #endif
-	sratom_free(jalv->sratom);
-	sratom_free(jalv->ui_sratom);
+	if (jalv->sratom) {
+		sratom_free(jalv->sratom);
+	}
+	if (jalv->ui_sratom) {
+		sratom_free(jalv->ui_sratom);
+	}
 	lilv_uis_free(jalv->uis);
 	lilv_world_free(jalv->world);
 
