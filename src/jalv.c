@@ -1005,7 +1005,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 	if (!(jalv->backend = jalv_backend_init(jalv))) {
 		fprintf(stderr, "Failed to connect to audio system\n");
 		jalv_close(jalv);
-		return -7;
+		return -6;
 	}
 
 	printf("Sample rate:  %u Hz\n", jalv->sample_rate);
@@ -1097,7 +1097,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		if (!feature_is_supported(jalv, uri)) {
 			fprintf(stderr, "Feature %s is not supported\n", uri);
 			jalv_close(jalv);
-			return -6;
+			return -8;
 		}
 	}
 	lilv_nodes_free(req_feats);
@@ -1108,7 +1108,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 	if (!jalv->instance) {
 		fprintf(stderr, "Failed to instantiate plugin.\n");
 		jalv_close(jalv);
-		return -8;
+		return -9;
 	}
 
 	jalv->features.ext_data.data_access =
