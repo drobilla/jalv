@@ -1079,7 +1079,6 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		&static_features[1],
 		&static_features[2],
 		&static_features[3],
-		&static_features[4],
 		NULL
 	};
 	jalv->feature_list = calloc(1, sizeof(features));
