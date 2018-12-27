@@ -343,18 +343,6 @@ jalv_native_ui_type(void)
 #endif
 }
 
-int
-jalv_ui_resize(Jalv* jalv, int width, int height)
-{
-	if (jalv->ui_instance && width > 0 && height > 0) {
-		QWidget* widget = (QWidget*)suil_instance_get_widget(jalv->ui_instance);
-		if (widget) {
-			widget->resize(width, height);
-		}
-	}
-	return 0;
-}
-
 void
 jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    port_index,

@@ -49,14 +49,6 @@ print_usage(const char* name, bool error)
 	return error ? 1 : 0;
 }
 
-int
-jalv_ui_resize(ZIX_UNUSED Jalv* jalv,
-               ZIX_UNUSED int   width,
-               ZIX_UNUSED int   height)
-{
-	return height;
-}
-
 void
 jalv_ui_port_event(ZIX_UNUSED Jalv*       jalv,
                    ZIX_UNUSED uint32_t    port_index,

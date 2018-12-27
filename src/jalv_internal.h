@@ -442,9 +442,6 @@ jalv_run(Jalv* jalv, uint32_t nframes);
 bool
 jalv_update(Jalv* jalv);
 
-int
-jalv_ui_resize(Jalv* jalv, int width, int height);
-
 typedef int (*PresetSink)(Jalv*           jalv,
                           const LilvNode* node,
                           const LilvNode* title,
