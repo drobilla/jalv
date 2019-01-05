@@ -482,13 +482,12 @@ jalv_ui_write(void* const    jalv_handle,
 
 	if (jalv->opts.dump && protocol == jalv->urids.atom_eventTransfer) {
 		const LV2_Atom* atom = (const LV2_Atom*)buffer;
-		char*           str  = sratom_to_turtle(
-			jalv->sratom, &jalv->unmap, "jalv:", NULL, NULL,
-			atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
+		char*           str  = sratom_to_string(
+			jalv->sratom, jalv->env, atom, SRATOM_PRETTY_NUMBERS);
 		jalv_ansi_start(stdout, 36);
 		printf("\n## UI => Plugin (%u bytes) ##\n%s\n", atom->size, str);
 		jalv_ansi_reset(stdout);
-		free(str);
+		sratom_free(str);
 	}
 
 	char buf[sizeof(ControlChange) + buffer_size];
@@ -658,9 +657,8 @@ jalv_update(Jalv* jalv)
 		if (jalv->opts.dump && ev.protocol == jalv->urids.atom_eventTransfer) {
 			/* Dump event in Turtle to the console */
 			LV2_Atom* atom = (LV2_Atom*)buf;
-			char*     str  = sratom_to_turtle(
-				jalv->ui_sratom, &jalv->unmap, "jalv:", NULL, NULL,
-				atom->type, atom->size, LV2_ATOM_BODY(atom));
+			char*     str  = sratom_to_string(
+				jalv->ui_sratom, jalv->env, atom, SRATOM_PRETTY_NUMBERS);
 			jalv_ansi_start(stdout, 35);
 			printf("\n## Plugin => UI (%u bytes) ##\n%s\n", atom->size, str);
 			jalv_ansi_reset(stdout);
@@ -772,17 +770,13 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	lv2_atom_forge_init(&jalv->forge, &jalv->map);
 
 	jalv->env = serd_env_new(NULL);
-	serd_env_set_prefix_from_strings(
-		jalv->env, (const uint8_t*)"patch", (const uint8_t*)LV2_PATCH_PREFIX);
-	serd_env_set_prefix_from_strings(
-		jalv->env, (const uint8_t*)"time", (const uint8_t*)LV2_TIME_PREFIX);
-	serd_env_set_prefix_from_strings(
-		jalv->env, (const uint8_t*)"xsd", (const uint8_t*)NS_XSD);
+	serd_env_set_prefix_from_strings(jalv->env, "patch", LV2_PATCH_PREFIX);
+	serd_env_set_prefix_from_strings(jalv->env, "time", LV2_TIME_PREFIX);
+	serd_env_set_prefix_from_strings(jalv->env, "xsd", NS_XSD);
 
-	jalv->sratom    = sratom_new(&jalv->map);
-	jalv->ui_sratom = sratom_new(&jalv->map);
-	sratom_set_env(jalv->sratom, jalv->env);
-	sratom_set_env(jalv->ui_sratom, jalv->env);
+	SerdWorld* serd_world = serd_world_new(); // FIXME
+	jalv->sratom    = sratom_streamer_new(serd_world, &jalv->map, &jalv->unmap);
+	jalv->ui_sratom = sratom_streamer_new(serd_world, &jalv->map, &jalv->unmap);
 
 	jalv->urids.atom_Float           = symap_map(jalv->symap, LV2_ATOM__Float);
 	jalv->urids.atom_Int             = symap_map(jalv->symap, LV2_ATOM__Int);

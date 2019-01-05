@@ -44,9 +44,10 @@ def configure(conf):
 
     conf.check_pkg('lv2 >= 1.16.0', uselib_store='LV2')
     conf.check_pkg('lilv-0 >= 0.24.0', uselib_store='LILV')
-    conf.check_pkg('serd-0 >= 0.24.0', uselib_store='SERD')
+    conf.check_pkg('serd-1 >= 1.0.0', uselib_store='SERD')
     conf.check_pkg('sord-0 >= 0.14.0', uselib_store='SORD')
-    conf.check_pkg('sratom-0 >= 0.6.0', uselib_store='SRATOM')
+    conf.check_pkg('sratom-1 >= 1.0.0', uselib_store='SRATOM')
+
     if Options.options.portaudio:
         conf.check_pkg('portaudio-2.0 >= 2.0.0',
                        uselib_store='PORTAUDIO', mandatory=False)
