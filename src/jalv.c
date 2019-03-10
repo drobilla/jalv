@@ -771,8 +771,11 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
 	jalv->env = serd_env_new(NULL);
 	serd_env_set_prefix_from_strings(jalv->env, "patch", LV2_PATCH_PREFIX);
-	serd_env_set_prefix_from_strings(jalv->env, "time", LV2_TIME_PREFIX);
 	serd_env_set_prefix_from_strings(jalv->env, "xsd", NS_XSD);
+	serd_env_set_prefix_from_strings(jalv->env, "rdf", NS_RDF);
+	serd_env_set_prefix_from_strings(jalv->env, "time", LV2_TIME_PREFIX);
+	serd_env_set_prefix_from_strings(jalv->env, "lv2", LV2_CORE_PREFIX);
+	serd_env_set_prefix_from_strings(jalv->env, "atom", LV2_ATOM_PREFIX);
 
 	SerdWorld* serd_world = serd_world_new(); // FIXME
 	jalv->sratom    = sratom_streamer_new(serd_world, &jalv->map, &jalv->unmap);
