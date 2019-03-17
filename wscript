@@ -20,10 +20,8 @@ out = 'build'
 def options(ctx):
     ctx.load('compiler_c')
     ctx.load('compiler_cxx')
-    autowaf.set_options(ctx)
-    opt = ctx.get_option_group('Configuration options')
-    autowaf.add_flags(
-        opt,
+    ctx.add_flags(
+        ctx.configuration_options(),
         {'portaudio':       'use PortAudio backend, not JACK',
          'no-jack-session': 'do not build JACK session support',
          'no-gui':          'do not build any GUIs',
@@ -36,8 +34,6 @@ def options(ctx):
          'no-qt5':          'do not build Qt5 GUI'})
 
 def configure(conf):
-    autowaf.display_header('Jalv Configuration')
-    autowaf.set_line_just(conf, 45)
     conf.load('compiler_c', cache=True)
     conf.load('compiler_cxx', cache=True)
     conf.load('autowaf', cache=True)
