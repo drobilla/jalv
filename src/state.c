@@ -30,6 +30,7 @@
 
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "zix/atomic.h"
 
 #define NS_JALV "http://drobilla.net/ns/jalv#"
 #define NS_RDF  "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -57,7 +58,11 @@ get_port_value(const char* port_symbol,
 	if (port && port->flow == FLOW_INPUT && port->type == TYPE_CONTROL) {
 		*size = sizeof(float);
 		*type = jalv->forge.Float;
-		return &port->control;
+		// TODO will be called by gtk when lv2 is possibly running and changing the values
+		// Therefore invalid data could be read
+		// Possibly repeat safe process until lv2 processing was not executed in between
+		// -> use same meachnism as external IPC clients do
+		return port->control.data;
 	}
 	*size = *type = 0;
 	return NULL;
@@ -155,8 +160,11 @@ set_port_value(const char*         port_symbol,
 	}
 
 	if (jalv->play_state != JALV_RUNNING) {
-		// Set value on port struct directly
-		port->control = fvalue;
+		/* This method will be called by main thread
+		 * after starting the backend thread.
+		 * Therefore we cannot directly write to port->control
+		 */
+		ZIX_ATOMIC_WRITE(&port->control.new_data, fvalue);
 	} else {
 		// Send value to running plugin
 		jalv_ui_write(jalv, port->index, sizeof(fvalue), 0, &fvalue);

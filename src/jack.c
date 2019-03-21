@@ -27,6 +27,7 @@
 
 #include "jalv_internal.h"
 #include "worker.h"
+#include "zix/atomic.h"
 
 struct JalvBackend {
 	jack_client_t* client;             ///< Jack client
@@ -208,8 +209,12 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 		if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
 		    lilv_port_has_property(jalv->plugin, port->lilv_port,
 		                           jalv->nodes.lv2_reportsLatency)) {
-			if (jalv->plugin_latency != port->control) {
-				jalv->plugin_latency = port->control;
+			/* The shared memory will only be manipulated by this thread.
+			 * Therefore reading is safe.
+			 */
+			const float latency = port->control.data[0];
+			if (jalv->plugin_latency != latency) {
+				jalv->plugin_latency = latency;
 				jack_recompute_total_latencies(client);
 			}
 		} else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
@@ -244,7 +249,11 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			ev->index    = p;
 			ev->protocol = 0;
 			ev->size     = sizeof(float);
-			*(float*)ev->body = port->control;
+			/* The shared memory will only be manipulated by this thread.
+			 * Therefore reading is safe.
+			 */
+			float* const dest = (float*)ev->body;
+			*dest = port->control.data[0];
 			if (zix_ring_write(jalv->plugin_events, buf, sizeof(buf))
 			    < sizeof(buf)) {
 				fprintf(stderr, "Plugin => UI buffer overflow!\n");
@@ -461,7 +470,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 	/* Connect the port based on its type */
 	switch (port->type) {
 	case TYPE_CONTROL:
-		lilv_instance_connect_port(jalv->instance, port_index, &port->control);
+		lilv_instance_connect_port(jalv->instance, port_index, port->control.data);
 		break;
 	case TYPE_AUDIO:
 		port->sys_port = jack_port_register(
@@ -509,6 +518,27 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 		lilv_node_free(name);
 	}
 #endif
+}
+
+int
+jalv_backend_instance_name(Jalv* jalv, char* const name, const size_t size)
+{
+	const char* const client_name = jack_get_client_name(jalv->backend->client);
+	strncpy(name, client_name, size);
+	name[size-1] = 0;
+
+	return 0;
+}
+
+/**
+ * @brief jalv_backend_is_same_cycle
+ * @param jalv
+ * @return true if this is the same period which will be processed
+ */
+uint32_t
+jalv_backend_get_process_cycle_id(const Jalv* const jalv)
+{
+	return jack_last_frame_time(jalv->backend->client);
 }
 
 int

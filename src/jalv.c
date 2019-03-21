@@ -39,6 +39,8 @@
 
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "ipc_controls.h"
+#include "zix/atomic.h"
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
@@ -150,8 +152,7 @@ die(const char* msg)
 */
 static void
 create_port(Jalv*    jalv,
-            uint32_t port_index,
-            float    default_value)
+            uint32_t port_index)
 {
 	struct Port* const port = &jalv->ports[port_index];
 
@@ -160,7 +161,9 @@ create_port(Jalv*    jalv,
 	port->evbuf     = NULL;
 	port->buf_size  = 0;
 	port->index     = port_index;
-	port->control   = 0.0f;
+	port->control.shm_index = -1;
+	port->control.data      = NULL;
+	port->control.new_data  = NAN;
 	port->flow      = FLOW_UNKNOWN;
 
 	const bool optional = lilv_port_has_property(
@@ -184,7 +187,6 @@ create_port(Jalv*    jalv,
 	/* Set control values */
 	if (lilv_port_is_a(jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
 		port->type    = TYPE_CONTROL;
-		port->control = isnan(default_value) ? 0.0f : default_value;
 		if (!hidden) {
 			add_control(&jalv->controls, new_port_control(jalv, port->index));
 		}
@@ -221,12 +223,9 @@ jalv_create_ports(Jalv* jalv)
 {
 	jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
 	jalv->ports     = (struct Port*)calloc(jalv->num_ports, sizeof(struct Port));
-	float* default_values = (float*)calloc(
-		lilv_plugin_get_num_ports(jalv->plugin), sizeof(float));
-	lilv_plugin_get_port_ranges_float(jalv->plugin, NULL, NULL, default_values);
 
 	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-		create_port(jalv, i, default_values[i]);
+		create_port(jalv, i);
 	}
 
 	const LilvPort* control_input = lilv_plugin_get_port_by_designation(
@@ -234,8 +233,6 @@ jalv_create_ports(Jalv* jalv)
 	if (control_input) {
 		jalv->control_in = lilv_port_get_index(jalv->plugin, control_input);
 	}
-
-	free(default_values);
 }
 
 /**
@@ -365,7 +362,11 @@ jalv_set_control(const ControlID* control,
 	Jalv* jalv = control->jalv;
 	if (control->type == PORT && type == jalv->forge.Float) {
 		struct Port* port = &control->jalv->ports[control->index];
-		port->control = *(const float*)body;
+		/* This value will be written from different threads e.g. gtk and JACK processing CB
+		 * and atomic copy is not guaranteed on all platforms (e.g. unaligned access on ARM).
+		 * Therefore we cannot directly write to port->control
+		 */
+		ZIX_ATOMIC_WRITE(&port->control.new_data, *(const float*)body);
 	} else if (control->type == PROPERTY) {
 		// Copy forge since it is used by process thread
 		LV2_Atom_Forge       forge = jalv->forge;
@@ -525,7 +526,8 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
 		struct Port* const port = &jalv->ports[ev.index];
 		if (ev.protocol == 0) {
 			assert(ev.size == sizeof(float));
-			port->control = *(float*)body;
+			/* only be called inside the lock. Therefore no atomic access required */
+			port->control.data[0] = *(float*)body;
 		} else if (ev.protocol == jalv->urids.atom_eventTransfer) {
 			LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
 			const LV2_Atom* const atom = (const LV2_Atom*)body;
@@ -608,6 +610,11 @@ jalv_send_to_ui(Jalv*       jalv,
 bool
 jalv_run(Jalv* jalv, uint32_t nframes)
 {
+	/* lock control data shared memory for write access */
+	if (jalv_api_ctl_lock(jalv, true) != 0) {
+		die("api_ctl_lock() failed");
+	}
+
 	/* Read and apply control change events from UI */
 	jalv_apply_ui_events(jalv, nframes);
 
@@ -622,6 +629,11 @@ jalv_run(Jalv* jalv, uint32_t nframes)
 	if (jalv->worker.iface && jalv->worker.iface->end_run) {
 		jalv->worker.iface->end_run(jalv->instance->lv2_handle);
 	}
+
+	/* unlock control data shared memory for write access.
+	 * Up to now only read access is allowed.
+	 */
+	jalv_api_ctl_unlock(jalv, true);
 
 	/* Check if it's time to send updates to the UI */
 	jalv->event_delta_t += nframes;
@@ -1008,6 +1020,12 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		return -6;
 	}
 
+	if (jalv_api_ctl_init(jalv) != 0) {
+		fprintf(stderr, "Init of external IPC API failed\n");
+		jalv_close(jalv);
+		return -7;
+	}
+
 	printf("Sample rate:  %u Hz\n", jalv->sample_rate);
 	printf("Block length: %u frames\n", jalv->block_length);
 	printf("MIDI buffers: %zu bytes\n", jalv->midi_buf_size);
@@ -1150,7 +1168,11 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		ControlID* control = jalv->controls.controls[i];
 		if (control->type == PORT && control->is_writable) {
 			struct Port* port = &jalv->ports[control->index];
-			jalv_print_control(jalv, port, port->control);
+			/* Backend thread is not yet started.
+			 * Therefore there is no other thread
+			 * which writes to this variable
+			 */
+			jalv_print_control(jalv, port, port->control.data[0]);
 		}
 	}
 
@@ -1197,6 +1219,8 @@ jalv_close(Jalv* const jalv)
 		lilv_instance_deactivate(jalv->instance);
 		lilv_instance_free(jalv->instance);
 	}
+
+	jalv_api_ctl_destroy(jalv);
 
 	/* Clean up */
 	free(jalv->ports);

@@ -26,6 +26,7 @@
 
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "zix/atomic.h"
 
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 
@@ -46,6 +47,7 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -t           Print trace messages from plugin\n");
 	fprintf(os, "  -u UUID      UUID for Jack session restoration\n");
 	fprintf(os, "  -x           Exact JACK client name (exit if taken)\n");
+	fprintf(os, "  -g GROUP     User group name or ID used for creating JALV API IPC resources\n");
 	return error ? 1 : 0;
 }
 
@@ -112,6 +114,14 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 			opts->name = jalv_strdup((*argv)[a]);
 		} else if ((*argv)[a][1] == 'x') {
 			opts->name_exact = 1;
+		} else if ((*argv)[a][1] == 'g') {
+			if (++a == *argc) {
+				fprintf(stderr, "Missing argument for -g\n");
+				return 1;
+			}
+			free(opts->user_group);
+			opts->user_group = jalv_strdup((*argv)[a]);
+
 		} else {
 			fprintf(stderr, "Unknown option %s\n", (*argv)[a]);
 			return print_usage((*argv)[0], true);
@@ -137,7 +147,7 @@ jalv_print_controls(Jalv* jalv, bool writable, bool readable)
 			struct Port* const port = &jalv->ports[control->index];
 			printf("%s = %f\n",
 			       lilv_node_as_string(control->symbol),
-			       port->control);
+			       port->control.data[0]);
 		}
 	}
 }
@@ -183,7 +193,11 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		jalv_print_controls(jalv, false, true);
 	} else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
 		if (index < jalv->num_ports) {
-			jalv->ports[index].control = value;
+			/* This method will be called by main thread
+			 * after starting the backend thread.
+			 * Therefore we cannot directly write to port->control
+			 */
+			ZIX_ATOMIC_WRITE(&jalv->ports[index].control.new_data, value);
 			jalv_print_control(jalv, &jalv->ports[index], value);
 		} else {
 			fprintf(stderr, "error: port index out of range\n");
@@ -200,7 +214,11 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 			}
 		}
 		if (port) {
-			port->control = value;
+			/* This method will be called by main thread
+			 * after starting the backend thread.
+			 * Therefore we cannot directly write to port->control
+			 */
+			ZIX_ATOMIC_WRITE(&port->control.new_data, value);
 			jalv_print_control(jalv, port, value);
 		} else {
 			fprintf(stderr, "error: no control named `%s'\n", sym);

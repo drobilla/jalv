@@ -44,6 +44,7 @@
 #include "zix/ring.h"
 #include "zix/sem.h"
 #include "zix/thread.h"
+#include "jalv.h"
 
 #include "sratom/sratom.h"
 
@@ -87,7 +88,32 @@ struct Port {
 	void*           widget;     ///< Control widget, if applicable
 	size_t          buf_size;   ///< Custom buffer size, or 0
 	uint32_t        index;      ///< Port index
-	float           control;    ///< For control ports, otherwise 0.0f
+	struct {
+		int32_t      shm_index; ///< Control port index in the shared memory
+		/**
+		* @brief data must only be accessed by the backend thread or
+		 * when the backend thread was not yet started.
+		 * The memory of this pointer will also be accessed by the loaded Lv2 plug-in.
+		 * A Lv2 plug-in does not guarantee that it accesses this memory in an atomic manner.
+		 * Therefore it could also result in invalid data
+		 * when this memory will be accessed from a different thread
+		 * with atomic read or writes.
+		 * Instead of that
+		 * jalv_api_ctl_read_port() should be used to read this memory and
+		 * the first element of the memory can be changed by
+		 * writing atomically to new_data.
+		 */
+		float*       data;      ///< For control ports, otherwise NULL
+		/**
+		 * @brief new_data
+		 * *data will be overwritten by this value
+		 * before executing the run() function of the Lv2 plug-in.
+		 * This variable will be accessed by different threads.
+		 * Therefore atomic access has to be used.
+		 */
+		atomic_float new_data;  ///< For control ports, otherwise NaN
+	} control;
+	bool            old_api;    ///< True for event, false for atom
 };
 
 /* Controls */
@@ -175,6 +201,7 @@ typedef struct {
 	int      show_ui;           ///< Show non-embedded UI
 	int      print_controls;    ///< Print control changes to stdout
 	int      non_interactive;   ///< Do not listen for commands on stdin
+	char*    user_group;        ///< The user group which is used for the JALV API
 } JalvOptions;
 
 typedef struct {
@@ -321,6 +348,19 @@ struct Jalv {
 	void*              window;         ///< Window (if applicable)
 	struct Port*       ports;          ///< Port array of size num_ports
 	Controls           controls;       ///< Available plugin controls
+	jalv_api_t         jalv_api;
+	struct {
+		size_t ctl_input_data_size;
+		char*  ctl_input_data;         ///< changed values when in blocking mode
+		ZixShm shm;
+	} jalv_api_blocking;
+	size_t             ctl_data_size;
+	/**
+	 * @brief prev_ctl_data contians the control data before the last changes
+	 * This data will be compared with the data in jalv_api_t::shm
+	 * to find the changed control port values
+	 */
+	char*              prev_ctl_data;
 	uint32_t           block_length;   ///< Audio buffer size (block length)
 	size_t             midi_buf_size;  ///< Size of MIDI port buffers
 	uint32_t           control_in;     ///< Index of control input port
@@ -365,6 +405,12 @@ jalv_backend_close(Jalv* jalv);
 /** Expose a port to the system (if applicable) and connect it to its buffer. */
 void
 jalv_backend_activate_port(Jalv* jalv, uint32_t port_index);
+
+int
+jalv_backend_instance_name(Jalv* jalv, char* const name, const size_t size);
+
+uint32_t
+jalv_backend_get_process_cycle_id(const Jalv* const jalv);
 
 void
 jalv_create_ports(Jalv* jalv);

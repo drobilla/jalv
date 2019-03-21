@@ -37,7 +37,7 @@ def configure(conf):
     conf.load('compiler_c', cache=True)
     conf.load('compiler_cxx', cache=True)
     conf.load('autowaf', cache=True)
-    autowaf.set_c_lang(conf, 'c99')
+    autowaf.set_c_lang(conf, 'gnu11')
 
     autowaf.check_pkg(conf, 'lv2', atleast_version='1.14.0', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
@@ -157,8 +157,13 @@ def build(bld):
     src/state.c
     src/symap.c
     src/worker.c
+    src/ipc_controls.c
     src/zix/ring.c
     '''
+
+    # C/C++ Headers
+    bld.install_files('${INCLUDEDIR}/jalv', 'src/jalv.h')
+    bld.install_files('${INCLUDEDIR}/zix', bld.path.ant_glob('src/zix/*.h'))
 
     if bld.env.HAVE_JACK:
         source += 'src/jack.c'
@@ -168,7 +173,7 @@ def build(bld):
                   source       = source + ' src/jalv_console.c',
                   target       = 'jalv',
                   includes     = ['.', 'src'],
-                  lib          = ['pthread'],
+                  lib          = ['pthread', 'rt'],
                   install_path = '${LIBDIR}/jack')
         autowaf.use_lib(bld, obj, libs)
         obj.env.cshlib_PATTERN = '%s.so'
@@ -180,7 +185,7 @@ def build(bld):
               source       = source + ' src/jalv_console.c',
               target       = 'jalv',
               includes     = ['.', 'src'],
-              lib          = ['pthread'],
+              lib          = ['pthread', 'rt'],
               install_path = '${BINDIR}')
     autowaf.use_lib(bld, obj, libs)
 
@@ -190,7 +195,7 @@ def build(bld):
                   source       = source + ' src/jalv_gtk.c',
                   target       = 'jalv.gtk',
                   includes     = ['.', 'src'],
-                  lib          = ['pthread', 'm'],
+                  lib          = ['pthread', 'rt', 'm'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' GTK2')
 
@@ -200,7 +205,7 @@ def build(bld):
                   source       = source + ' src/jalv_gtk.c',
                   target       = 'jalv.gtk3',
                   includes     = ['.', 'src'],
-                  lib          = ['pthread', 'm'],
+                  lib          = ['pthread', 'rt', 'm'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' GTK3')
 
@@ -210,7 +215,7 @@ def build(bld):
                   source       = source + ' src/jalv_gtkmm2.cpp',
                   target       = 'jalv.gtkmm',
                   includes     = ['.', 'src'],
-                  lib          = ['pthread'],
+                  lib          = ['pthread', 'rt'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' GTKMM2')
 
@@ -223,7 +228,7 @@ def build(bld):
                   source       = source + ' src/jalv_qt.cpp',
                   target       = 'jalv.qt4',
                   includes     = ['.', 'src'],
-                  lib          = ['pthread'],
+                  lib          = ['pthread', 'rt'],
                   install_path = '${BINDIR}')
         autowaf.use_lib(bld, obj, libs + ' QT4')
 
@@ -236,7 +241,7 @@ def build(bld):
                   source       = source + ' src/jalv_qt.cpp',
                   target       = 'jalv.qt5',
                   includes     = ['.', 'src'],
-                  lib          = ['pthread'],
+                  lib          = ['pthread', 'rt'],
                   install_path = '${BINDIR}',
                   cxxflags     = ['-fPIC'])
         autowaf.use_lib(bld, obj, libs + ' QT5')
