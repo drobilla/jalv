@@ -61,6 +61,8 @@ extern "C" {
 #endif
 
 typedef struct JalvBackend JalvBackend;
+typedef struct ControlBackend ControlBackend;
+typedef struct ControlPort ControlPort;
 
 typedef struct Jalv Jalv;
 
@@ -87,7 +89,7 @@ struct Port {
 	void*           widget;     ///< Control widget, if applicable
 	size_t          buf_size;   ///< Custom buffer size, or 0
 	uint32_t        index;      ///< Port index
-	float           control;    ///< For control ports, otherwise 0.0f
+	ControlPort*    control;    ///< For control ports, otherwise NULL
 };
 
 /* Controls */
@@ -321,6 +323,7 @@ struct Jalv {
 	void*              window;         ///< Window (if applicable)
 	struct Port*       ports;          ///< Port array of size num_ports
 	Controls           controls;       ///< Available plugin controls
+	ControlBackend*    control_backend;///< Control backend
 	uint32_t           block_length;   ///< Audio buffer size (block length)
 	size_t             midi_buf_size;  ///< Size of MIDI port buffers
 	uint32_t           control_in;     ///< Index of control input port

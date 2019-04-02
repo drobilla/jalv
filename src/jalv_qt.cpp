@@ -447,7 +447,21 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	}
 
 	// Find and set min, max and default values for port
-	float defaultValue = ndef ? lilv_node_as_float(ndef) : port->control;
+	float defaultValue = 0.0f;
+	if (ndef) {
+		defaultValue = lilv_node_as_float(ndef);
+	} else {
+		/* the audio backend thread is already running
+		 * when calling this function.
+		 * Therefore the read could be interrupted
+		 * by a write of the backend thread.
+		 * Which could result in invalid data
+		 * if the read or the write was not atomic
+		 * (e.g. on ARM when accessing unaligned)
+		 * As a result port->control cannot be used for reading
+		 */
+		defaultValue = jalv_control_get(jalv, port);
+	}
 	setRange(lilv_node_as_float(nmin), lilv_node_as_float(nmax));
 	setValue(defaultValue);
 
@@ -565,7 +579,11 @@ Control::dialChanged(int dialValue)
 	float value = getValue();
 
 	label->setText(getValueLabel(value));
-	port->control = value;
+	/* This method will be called by main thread
+	 * after starting the backend thread.
+	 * Therefore we cannot directly write to port->control
+	 */
+	jalv_control_set(jalv, port, value);
 }
 
 static bool

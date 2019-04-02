@@ -26,6 +26,7 @@
 #endif
 
 #include "jalv_internal.h"
+#include "control_backend.h"
 #include "worker.h"
 
 struct JalvBackend {
@@ -208,8 +209,12 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 		if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
 		    lilv_port_has_property(jalv->plugin, port->lilv_port,
 		                           jalv->nodes.lv2_reportsLatency)) {
-			if (jalv->plugin_latency != port->control) {
-				jalv->plugin_latency = port->control;
+			/* The control port will only be manipulated by this thread.
+			 * Therefore reading is safe.
+			 */
+			const float latency = jalv_control_get(jalv, port);
+			if (jalv->plugin_latency != latency) {
+				jalv->plugin_latency = latency;
 				jack_recompute_total_latencies(client);
 			}
 		} else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
@@ -244,7 +249,11 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			ev->index    = p;
 			ev->protocol = 0;
 			ev->size     = sizeof(float);
-			*(float*)ev->body = port->control;
+			/* The control port will only be manipulated by this thread.
+			 * Therefore reading is safe.
+			 */
+			float* const dest = (float*)ev->body;
+			*dest = jalv_control_get(jalv, port);
 			if (zix_ring_write(jalv->plugin_events, buf, sizeof(buf))
 			    < sizeof(buf)) {
 				fprintf(stderr, "Plugin => UI buffer overflow!\n");
@@ -461,7 +470,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 	/* Connect the port based on its type */
 	switch (port->type) {
 	case TYPE_CONTROL:
-		lilv_instance_connect_port(jalv->instance, port_index, &port->control);
+		lilv_instance_connect_port(jalv->instance, port_index, jalv_control_data(jalv, port));
 		break;
 	case TYPE_AUDIO:
 		port->sys_port = jack_port_register(

@@ -26,6 +26,7 @@
 
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "control_backend.h"
 
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 
@@ -137,7 +138,7 @@ jalv_print_controls(Jalv* jalv, bool writable, bool readable)
 			struct Port* const port = &jalv->ports[control->index];
 			printf("%s = %f\n",
 			       lilv_node_as_string(control->symbol),
-			       port->control);
+			       jalv_control_get(jalv, port));
 		}
 	}
 }
@@ -183,7 +184,11 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		jalv_print_controls(jalv, false, true);
 	} else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
 		if (index < jalv->num_ports) {
-			jalv->ports[index].control = value;
+			/* This method will be called by main thread
+			 * after starting the backend thread.
+			 * Therefore we cannot directly write to port->control
+			 */
+			jalv_control_set(jalv, &jalv->ports[index], value);
 			jalv_print_control(jalv, &jalv->ports[index], value);
 		} else {
 			fprintf(stderr, "error: port index out of range\n");
@@ -200,7 +205,11 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 			}
 		}
 		if (port) {
-			port->control = value;
+			/* This method will be called by main thread
+			 * after starting the backend thread.
+			 * Therefore we cannot directly write to port->control
+			 */
+			jalv_control_set(jalv, port, value);
 			jalv_print_control(jalv, port, value);
 		} else {
 			fprintf(stderr, "error: no control named `%s'\n", sym);
