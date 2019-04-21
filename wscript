@@ -169,8 +169,8 @@ def build(bld):
                   target       = 'jalv',
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
+                  uselib       = libs,
                   install_path = '${LIBDIR}/jack')
-        autowaf.use_lib(bld, obj, libs)
         obj.env.cshlib_PATTERN = '%s.so'
     elif bld.env.HAVE_PORTAUDIO:
         source += 'src/portaudio.c'
@@ -181,8 +181,8 @@ def build(bld):
               target       = 'jalv',
               includes     = ['.', 'src'],
               lib          = ['pthread'],
+              uselib       = libs,
               install_path = '${BINDIR}')
-    autowaf.use_lib(bld, obj, libs)
 
     # Gtk2 version
     if bld.env.HAVE_GTK2:
@@ -191,8 +191,8 @@ def build(bld):
                   target       = 'jalv.gtk',
                   includes     = ['.', 'src'],
                   lib          = ['pthread', 'm'],
+                  uselib       = libs + ' GTK2',
                   install_path = '${BINDIR}')
-        autowaf.use_lib(bld, obj, libs + ' GTK2')
 
     # Gtk3 version
     if bld.env.HAVE_GTK3:
@@ -201,8 +201,8 @@ def build(bld):
                   target       = 'jalv.gtk3',
                   includes     = ['.', 'src'],
                   lib          = ['pthread', 'm'],
+                  uselib       = libs + ' GTK3',
                   install_path = '${BINDIR}')
-        autowaf.use_lib(bld, obj, libs + ' GTK3')
 
     # Gtkmm version
     if bld.env.HAVE_GTKMM2:
@@ -211,8 +211,8 @@ def build(bld):
                   target       = 'jalv.gtkmm',
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
+                  uselib       = libs + ' GTKMM2',
                   install_path = '${BINDIR}')
-        autowaf.use_lib(bld, obj, libs + ' GTKMM2')
 
     # Qt4 version
     if bld.env.HAVE_QT4:
@@ -224,8 +224,8 @@ def build(bld):
                   target       = 'jalv.qt4',
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
+                  uselib       = libs + ' QT4',
                   install_path = '${BINDIR}')
-        autowaf.use_lib(bld, obj, libs + ' QT4')
 
     # Qt5 version
     if bld.env.HAVE_QT5:
@@ -237,9 +237,9 @@ def build(bld):
                   target       = 'jalv.qt5',
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
+                  uselib       = libs + ' QT5',
                   install_path = '${BINDIR}',
                   cxxflags     = ['-fPIC'])
-        autowaf.use_lib(bld, obj, libs + ' QT5')
 
     # Man pages
     bld.install_files('${MANDIR}/man1', bld.path.ant_glob('doc/*.1'))
