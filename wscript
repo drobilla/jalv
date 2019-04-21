@@ -39,7 +39,7 @@ def configure(conf):
     conf.load('autowaf', cache=True)
     autowaf.set_c_lang(conf, 'c99')
 
-    autowaf.check_pkg(conf, 'lv2', atleast_version='1.14.0', uselib_store='LV2')
+    autowaf.check_pkg(conf, 'lv2', atleast_version='1.16.0', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.24.0', mandatory=True)
     autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',

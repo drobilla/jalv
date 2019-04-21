@@ -14,7 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "lv2/lv2plug.in/ns/ext/worker/worker.h"
+#include "lv2/worker/worker.h"
 
 #include "jalv_internal.h"
 

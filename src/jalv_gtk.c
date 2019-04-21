@@ -18,8 +18,8 @@
 
 #include <gtk/gtk.h>
 
-#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
-#include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
+#include "lv2/patch/patch.h"
+#include "lv2/port-props/port-props.h"
 
 #include "jalv_internal.h"
 

@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+#include "lv2/atom/atom.h"
 
 #include "lv2_evbuf.h"
 

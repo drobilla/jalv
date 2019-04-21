@@ -27,7 +27,7 @@
 #include "jalv_config.h"
 #include "jalv_internal.h"
 
-#include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
+#include "lv2/ui/ui.h"
 
 static int
 print_usage(const char* name, bool error)
