@@ -327,7 +327,7 @@ struct Jalv {
 	uint32_t           num_ports;      ///< Size of the two following arrays:
 	uint32_t           plugin_latency; ///< Latency reported by plugin (if any)
 	float              ui_update_hz;   ///< Frequency of UI updates
-	uint32_t           sample_rate;    ///< Sample rate
+	float              sample_rate;    ///< Sample rate
 	uint32_t           event_delta_t;  ///< Frames since last update sent to UI
 	uint32_t           position;       ///< Transport position in frames
 	float              bpm;            ///< Transport tempo in beats per minute
