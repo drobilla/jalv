@@ -625,8 +625,8 @@ jalv_run(Jalv* jalv, uint32_t nframes)
 
 	/* Check if it's time to send updates to the UI */
 	jalv->event_delta_t += nframes;
-	bool     send_ui_updates = false;
-	uint32_t update_frames   = jalv->sample_rate / jalv->ui_update_hz;
+	bool  send_ui_updates = false;
+	float update_frames   = jalv->sample_rate / jalv->ui_update_hz;
 	if (jalv->has_ui && (jalv->event_delta_t > update_frames)) {
 		send_ui_updates = true;
 		jalv->event_delta_t = 0;
@@ -1008,7 +1008,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 		return -6;
 	}
 
-	printf("Sample rate:  %u Hz\n", jalv->sample_rate);
+	printf("Sample rate:  %u Hz\n", (uint32_t)jalv->sample_rate);
 	printf("Block length: %u frames\n", jalv->block_length);
 	printf("MIDI buffers: %zu bytes\n", jalv->midi_buf_size);
 
@@ -1024,7 +1024,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 
 	if (jalv->opts.update_rate == 0.0) {
 		/* Calculate a reasonable UI update frequency. */
-		jalv->ui_update_hz = (float)jalv->sample_rate / jalv->midi_buf_size * 2.0f;
+		jalv->ui_update_hz = jalv->sample_rate / jalv->midi_buf_size * 2.0f;
 		jalv->ui_update_hz = MAX(25.0f, jalv->ui_update_hz);
 	} else {
 		/* Use user-specified UI update rate. */

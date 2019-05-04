@@ -381,7 +381,7 @@ jalv_backend_init(Jalv* jalv)
 	printf("JACK Name:    %s\n", jack_get_client_name(client));
 
 	/* Set audio engine properties */
-	jalv->sample_rate   = jack_get_sample_rate(client);
+	jalv->sample_rate   = (float)jack_get_sample_rate(client);
 	jalv->block_length  = jack_get_buffer_size(client);
 	jalv->midi_buf_size = 4096;
 #ifdef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
