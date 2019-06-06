@@ -7,7 +7,7 @@ from waflib import Options
 from waflib.extras import autowaf as autowaf
 
 # Version of this package (even if built as a child)
-JALV_VERSION = '1.6.1'
+JALV_VERSION = '1.6.2'
 
 # Variables for 'waf dist'
 APPNAME = 'jalv'
