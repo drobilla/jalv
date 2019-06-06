@@ -43,9 +43,9 @@ def configure(conf):
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.24.0', mandatory=True)
     autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',
-                      atleast_version='0.14.0', mandatory=True)
+                      atleast_version='0.24.0', mandatory=True)
     autowaf.check_pkg(conf, 'sord-0', uselib_store='SORD',
-                      atleast_version='0.12.0', mandatory=True)
+                      atleast_version='0.14.0', mandatory=True)
     autowaf.check_pkg(conf, 'sratom-0', uselib_store='SRATOM',
                       atleast_version='0.6.0', mandatory=True)
     if Options.options.portaudio:
@@ -85,7 +85,7 @@ def configure(conf):
                 conf.env.HAVE_QT4 or conf.env.HAVE_QT5)
     if have_gui:
         autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
-                          atleast_version='0.8.7')
+                          atleast_version='0.10.0')
 
     if conf.env.HAVE_JACK:
         autowaf.check_function(
