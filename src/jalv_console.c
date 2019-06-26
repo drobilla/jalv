@@ -50,12 +50,16 @@ print_usage(const char* name, bool error)
 }
 
 void
-jalv_ui_port_event(ZIX_UNUSED Jalv*       jalv,
-                   ZIX_UNUSED uint32_t    port_index,
-                   ZIX_UNUSED uint32_t    buffer_size,
-                   ZIX_UNUSED uint32_t    protocol,
-                   ZIX_UNUSED const void* buffer)
+jalv_ui_port_event(Jalv*       jalv,
+                   uint32_t    port_index,
+                   uint32_t    buffer_size,
+                   uint32_t    protocol,
+                   const void* buffer)
 {
+	if (jalv->ui_instance) {
+		suil_instance_port_event(jalv->ui_instance, port_index,
+		                         buffer_size, protocol, buffer);
+	}
 }
 
 int

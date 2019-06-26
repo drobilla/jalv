@@ -1,3 +1,9 @@
+jalv (1.6.5) unstable;
+
+  * Support port events for ui:showInterface UIs
+
+ -- David Robillard <d@drobilla.net>  Sun, 05 Apr 2020 07:39:19 +0000
+
 jalv (1.6.4) stable;
 
   * Support rdfs:label for port groups
