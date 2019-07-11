@@ -183,6 +183,21 @@ jalv_print_control_info(Jalv* jalv)
 }
 
 static void
+jalv_print_port_info(Jalv* jalv)
+{
+	for (size_t i = 0; i < jalv->num_ports; ++i) {
+		struct Port* port = jalv->ports+i;
+		if (port->sys_port) {
+			printf("%d => { \"type\": %d, \"flow\": %d }\n",
+				port->index,
+				port->type,
+				port->flow
+			);
+		}
+	}
+}
+
+static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
 	uint32_t index;
@@ -198,6 +213,9 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		jalv_apply_preset(jalv, preset);
 		lilv_node_free(preset);
 		jalv_print_control_values(jalv);
+	}
+	else if (strcmp(cmd, "\\info_ports\n") == 0) {
+		jalv_print_port_info(jalv);
 	}
 	else if (strcmp(cmd, "\\get_controls\n") == 0) {
 		jalv_print_control_values(jalv);
