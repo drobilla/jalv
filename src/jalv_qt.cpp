@@ -20,8 +20,8 @@
 
 #include "jalv_internal.h"
 
-#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
-#include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
+#include "lv2/patch/patch.h"
+#include "lv2/port-props/port-props.h"
 
 #include <qglobal.h>
 
@@ -334,25 +334,13 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(Jalv* jalv)
+jalv_native_ui_type(void)
 {
 #if QT_VERSION >= 0x050000
 	return "http://lv2plug.in/ns/extensions/ui#Qt5UI";
 #else
 	return "http://lv2plug.in/ns/extensions/ui#Qt4UI";
 #endif
-}
-
-int
-jalv_ui_resize(Jalv* jalv, int width, int height)
-{
-	if (jalv->ui_instance && width > 0 && height > 0) {
-		QWidget* widget = (QWidget*)suil_instance_get_widget(jalv->ui_instance);
-		if (widget) {
-			widget->resize(width, height);
-		}
-	}
-	return 0;
 }
 
 void
@@ -422,6 +410,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	} else {
 		steps = DIAL_STEPS;
 	}
+	lilv_node_free(stepsNode);
 
 	// Fill scalePoints Map
 	LilvScalePoints* sp = lilv_port_get_scale_points(plugin, lilvPort);
@@ -654,11 +643,13 @@ build_control_widget(Jalv* jalv)
 		} else {
 			layout->addWidget(control);
 		}
+		lilv_node_free(lastGroup);
 		lastGroup = group;
 
 		uint32_t index = lilv_port_get_index(plugin, port->lilv_port);
 		jalv->ports[index].widget = control;
 	}
+	lilv_node_free(lastGroup);
 
 	grid->setLayout(layout);
 
@@ -687,7 +678,7 @@ jalv_open_ui(Jalv* jalv)
 	jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
 
 	if (jalv->ui && !jalv->opts.generic_ui) {
-		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), win);
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(), win);
 	}
 
 	QWidget* widget;
@@ -725,7 +716,7 @@ jalv_open_ui(Jalv* jalv)
 	timer->start(1000 / jalv->ui_update_hz);
 
 	int ret = app->exec();
-	zix_sem_post(jalv->done);
+	zix_sem_post(&jalv->done);
 	return ret;
 }
 

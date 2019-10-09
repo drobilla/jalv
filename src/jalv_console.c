@@ -27,7 +27,7 @@
 #include "jalv_config.h"
 #include "jalv_internal.h"
 
-#include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
+#include "lv2/ui/ui.h"
 
 static int
 print_usage(const char* name, bool error)
@@ -49,27 +49,18 @@ print_usage(const char* name, bool error)
 	return error ? 1 : 0;
 }
 
-int
-jalv_ui_resize(Jalv* jalv, int width, int height)
-{
-	return 0;
-}
-
 void
-jalv_ui_port_event(Jalv*       jalv,
-                   uint32_t    port_index,
-                   uint32_t    buffer_size,
-                   uint32_t    protocol,
-                   const void* buffer)
+jalv_ui_port_event(ZIX_UNUSED Jalv*       jalv,
+                   ZIX_UNUSED uint32_t    port_index,
+                   ZIX_UNUSED uint32_t    buffer_size,
+                   ZIX_UNUSED uint32_t    protocol,
+                   ZIX_UNUSED const void* buffer)
 {
 }
 
 int
 jalv_init(int* argc, char*** argv, JalvOptions* opts)
 {
-	opts->controls    = (char**)malloc(sizeof(char*));
-	opts->controls[0] = NULL;
-
 	int n_controls = 0;
 	int a          = 1;
 	for (; a < *argc && (*argv)[a][0] == '-'; ++a) {
@@ -131,17 +122,74 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(Jalv* jalv)
+jalv_native_ui_type(void)
 {
 	return NULL;
 }
 
 static void
+jalv_print_controls(Jalv* jalv, bool writable, bool readable)
+{
+	for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+		ControlID* const control = jalv->controls.controls[i];
+		if ((control->is_writable && writable) ||
+		    (control->is_readable && readable)) {
+			struct Port* const port = &jalv->ports[control->index];
+			printf("%s = %f\n",
+			       lilv_node_as_string(control->symbol),
+			       port->control);
+		}
+	}
+}
+
+static int
+jalv_print_preset(Jalv*           jalv,
+                  const LilvNode* node,
+                  const LilvNode* title,
+                  void*           data)
+{
+	printf("%s (%s)\n", lilv_node_as_string(node), lilv_node_as_string(title));
+	return 0;
+}
+
+static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
-	char  sym[64];
-	float value;
-	if (sscanf(cmd, "%[a-zA-Z0-9_] = %f", sym, &value) == 2) {
+	char     sym[64];
+	uint32_t index;
+	float    value;
+	if (!strncmp(cmd, "help", 4)) {
+		fprintf(stderr,
+		        "Commands:\n"
+		        "  help              Display this help message\n"
+		        "  controls          Print settable control values\n"
+		        "  monitors          Print output control values\n"
+		        "  presets           Print available presets\n"
+		        "  preset URI        Set preset\n"
+		        "  set INDEX VALUE   Set control value by port index\n"
+		        "  set SYMBOL VALUE  Set control value by symbol\n"
+		        "  SYMBOL = VALUE    Set control value by symbol\n");
+	} else if (strcmp(cmd, "presets\n") == 0) {
+		jalv_unload_presets(jalv);
+		jalv_load_presets(jalv, jalv_print_preset, NULL);
+	} else if (sscanf(cmd, "preset %[a-zA-Z0-9_:/-.#]\n", sym) == 1) {
+		LilvNode* preset = lilv_new_uri(jalv->world, sym);
+		jalv_apply_preset(jalv, preset);
+		lilv_node_free(preset);
+		jalv_print_controls(jalv, true, false);
+	} else if (strcmp(cmd, "controls\n") == 0) {
+		jalv_print_controls(jalv, true, false);
+	} else if (strcmp(cmd, "monitors\n") == 0) {
+		jalv_print_controls(jalv, false, true);
+	} else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
+		if (index < jalv->num_ports) {
+			jalv->ports[index].control = value;
+			jalv_print_control(jalv, &jalv->ports[index], value);
+		} else {
+			fprintf(stderr, "error: port index out of range\n");
+		}
+	} else if (sscanf(cmd, "set %[a-zA-Z0-9_] %f", sym, &value) == 2 ||
+	           sscanf(cmd, "%[a-zA-Z0-9_] = %f", sym, &value) == 2) {
 		struct Port* port = NULL;
 		for (uint32_t i = 0; i < jalv->num_ports; ++i) {
 			struct Port* p = &jalv->ports[i];
@@ -153,10 +201,12 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		}
 		if (port) {
 			port->control = value;
-			printf("%-*s = %f\n", jalv->longest_sym, sym, value);
+			jalv_print_control(jalv, port, value);
 		} else {
-			fprintf(stderr, "error: no port `%s'\n", sym);
+			fprintf(stderr, "error: no control named `%s'\n", sym);
 		}
+	} else {
+		fprintf(stderr, "error: invalid command (try `help')\n");
 	}
 }
 
@@ -166,16 +216,17 @@ jalv_discover_ui(Jalv* jalv)
 	return jalv->opts.show_ui;
 }
 
-int
-jalv_open_ui(Jalv* jalv)
+static bool
+jalv_run_custom_ui(Jalv* jalv)
 {
+#ifdef HAVE_SUIL
 	const LV2UI_Idle_Interface* idle_iface = NULL;
 	const LV2UI_Show_Interface* show_iface = NULL;
 	if (jalv->ui && jalv->opts.show_ui) {
-		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), NULL);
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(), NULL);
 		idle_iface = (const LV2UI_Idle_Interface*)
 			suil_instance_extension_data(jalv->ui_instance, LV2_UI__idleInterface);
-		show_iface = (LV2UI_Show_Interface*)
+		show_iface = (const LV2UI_Show_Interface*)
 			suil_instance_extension_data(jalv->ui_instance, LV2_UI__showInterface);
 	}
 
@@ -183,7 +234,7 @@ jalv_open_ui(Jalv* jalv)
 		show_iface->show(suil_instance_get_handle(jalv->ui_instance));
 
 		// Drive idle interface until interrupted
-		while (!zix_sem_try_wait(jalv->done)) {
+		while (!zix_sem_try_wait(&jalv->done)) {
 			jalv_update(jalv);
 			if (idle_iface->idle(suil_instance_get_handle(jalv->ui_instance))) {
 				break;
@@ -192,10 +243,19 @@ jalv_open_ui(Jalv* jalv)
 		}
 
 		show_iface->hide(suil_instance_get_handle(jalv->ui_instance));
+		return true;
+	}
+#endif
 
-	} else if (!jalv->opts.non_interactive) {
+	return false;
+}
+
+int
+jalv_open_ui(Jalv* jalv)
+{
+	if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
 		// Primitive command prompt for setting control values
-		while (!zix_sem_try_wait(jalv->done)) {
+		while (!zix_sem_try_wait(&jalv->done)) {
 			char line[128];
 			printf("> ");
 			if (fgets(line, sizeof(line), stdin)) {
@@ -205,11 +265,11 @@ jalv_open_ui(Jalv* jalv)
 			}
 		}
 	} else {
-		zix_sem_wait(jalv->done);
+		zix_sem_wait(&jalv->done);
 	}
 
 	// Caller waits on the done sem, so increment it again to exit
-	zix_sem_post(jalv->done);
+	zix_sem_post(&jalv->done);
 
 	return 0;
 }
@@ -217,6 +277,6 @@ jalv_open_ui(Jalv* jalv)
 int
 jalv_close_ui(Jalv* jalv)
 {
-	zix_sem_post(jalv->done);
+	zix_sem_post(&jalv->done);
 	return 0;
 }

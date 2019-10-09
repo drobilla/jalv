@@ -13,6 +13,7 @@ dumping all communication between the plugin and its UI in a human readable
 format.
 
 To make it simple to test plugins in hosts that use different toolkits, there
-are several Jalv executables: jalv, jalv.gtk, jalv.gtkmm, and jalv.qt.
+are several Jalv executables: jalv, jalv.gtk, jalv.gtk3, jalv.gtkmm, jalv.qt4,
+and jalv.qt5.
 
  -- David Robillard <d@drobilla.net>

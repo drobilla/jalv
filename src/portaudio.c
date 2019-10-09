@@ -81,7 +81,7 @@ pa_process_cb(const void*                     inputs,
 				uint8_t* body;
 				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
-				if (jalv->has_ui && !port->old_api) {
+				if (jalv->has_ui) {
 					// Forward event to UI
 					jalv_send_to_ui(jalv, p, type, size, body);
 				}

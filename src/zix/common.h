@@ -52,6 +52,12 @@ extern "C" {
 #    include <stdbool.h>
 #endif
 
+#ifdef __GNUC__
+#define ZIX_UNUSED  __attribute__((__unused__))
+#else
+#define ZIX_UNUSED
+#endif
+
 typedef enum {
 	ZIX_STATUS_SUCCESS,
 	ZIX_STATUS_ERROR,

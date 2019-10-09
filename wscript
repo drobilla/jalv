@@ -7,7 +7,7 @@ from waflib import Options
 from waflib.extras import autowaf as autowaf
 
 # Version of this package (even if built as a child)
-JALV_VERSION = '1.6.1'
+JALV_VERSION = '1.6.2'
 
 # Variables for 'waf dist'
 APPNAME = 'jalv'
@@ -20,12 +20,11 @@ out = 'build'
 def options(ctx):
     ctx.load('compiler_c')
     ctx.load('compiler_cxx')
-    autowaf.set_options(ctx)
-    opt = ctx.get_option_group('Configuration options')
-    autowaf.add_flags(
-        opt,
+    ctx.add_flags(
+        ctx.configuration_options(),
         {'portaudio':       'use PortAudio backend, not JACK',
          'no-jack-session': 'do not build JACK session support',
+         'no-gui':          'do not build any GUIs',
          'no-gtk':          'do not build Gtk GUI',
          'no-gtkmm':        'do not build Gtkmm GUI',
          'no-gtk2':         'do not build Gtk2 GUI',
@@ -35,22 +34,18 @@ def options(ctx):
          'no-qt5':          'do not build Qt5 GUI'})
 
 def configure(conf):
-    autowaf.display_header('Jalv Configuration')
-    autowaf.set_line_just(conf, 45)
     conf.load('compiler_c', cache=True)
     conf.load('compiler_cxx', cache=True)
     conf.load('autowaf', cache=True)
     autowaf.set_c_lang(conf, 'c99')
 
-    autowaf.check_pkg(conf, 'lv2', atleast_version='1.14.0', uselib_store='LV2')
+    autowaf.check_pkg(conf, 'lv2', atleast_version='1.16.0', uselib_store='LV2')
     autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
                       atleast_version='0.24.0', mandatory=True)
     autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',
-                      atleast_version='0.14.0', mandatory=True)
+                      atleast_version='0.24.0', mandatory=True)
     autowaf.check_pkg(conf, 'sord-0', uselib_store='SORD',
-                      atleast_version='0.12.0', mandatory=True)
-    autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
-                      atleast_version='0.8.7', mandatory=True)
+                      atleast_version='0.14.0', mandatory=True)
     autowaf.check_pkg(conf, 'sratom-0', uselib_store='SRATOM',
                       atleast_version='0.6.0', mandatory=True)
     if Options.options.portaudio:
@@ -60,7 +55,7 @@ def configure(conf):
         autowaf.check_pkg(conf, 'jack', uselib_store='JACK',
                           atleast_version='0.120.0', mandatory=True)
 
-    if not Options.options.no_gtk:
+    if not Options.options.no_gui and not Options.options.no_gtk:
         if not Options.options.no_gtk2:
             autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
                               atleast_version='2.18.0', mandatory=False)
@@ -71,7 +66,7 @@ def configure(conf):
             autowaf.check_pkg(conf, 'gtk+-3.0', uselib_store='GTK3',
                               atleast_version='3.0.0', mandatory=False)
 
-    if not Options.options.no_qt:
+    if not Options.options.no_gui and not Options.options.no_qt:
         if not Options.options.no_qt4:
             autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
                               atleast_version='4.0.0', mandatory=False)
@@ -85,6 +80,12 @@ def configure(conf):
             if conf.env.HAVE_QT5:
                 if not conf.find_program('moc-qt5', var='MOC5', mandatory=False):
                     conf.find_program('moc', var='MOC5')
+
+    have_gui = (conf.env.HAVE_GTK2 or conf.env.HAVE_GTKMM2 or conf.env.HAVE_GTK3 or
+                conf.env.HAVE_QT4 or conf.env.HAVE_QT5)
+    if have_gui:
+        autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
+                          atleast_version='0.10.0')
 
     if conf.env.HAVE_JACK:
         autowaf.check_function(
@@ -118,6 +119,12 @@ def configure(conf):
                            header_name = 'sys/mman.h',
                            defines     = defines,
                            define_name = 'HAVE_MLOCK',
+                           mandatory   = False)
+
+    autowaf.check_function(conf, 'c', 'sigaction',
+                           header_name = 'signal.h',
+                           defines     = defines,
+                           define_name = 'HAVE_SIGACTION',
                            mandatory   = False)
 
     if conf.is_defined('HAVE_ISATTY') and conf.is_defined('HAVE_FILENO'):
@@ -155,6 +162,16 @@ def build(bld):
 
     if bld.env.HAVE_JACK:
         source += 'src/jack.c'
+
+        # Non-GUI internal JACK client library
+        obj = bld(features     = 'c cshlib',
+                  source       = source + ' src/jalv_console.c',
+                  target       = 'jalv',
+                  includes     = ['.', 'src'],
+                  lib          = ['pthread'],
+                  uselib       = libs,
+                  install_path = '${LIBDIR}/jack')
+        obj.env.cshlib_PATTERN = '%s.so'
     elif bld.env.HAVE_PORTAUDIO:
         source += 'src/portaudio.c'
 
@@ -164,8 +181,8 @@ def build(bld):
               target       = 'jalv',
               includes     = ['.', 'src'],
               lib          = ['pthread'],
+              uselib       = libs,
               install_path = '${BINDIR}')
-    autowaf.use_lib(bld, obj, libs)
 
     # Gtk2 version
     if bld.env.HAVE_GTK2:
@@ -174,8 +191,8 @@ def build(bld):
                   target       = 'jalv.gtk',
                   includes     = ['.', 'src'],
                   lib          = ['pthread', 'm'],
+                  uselib       = libs + ' GTK2',
                   install_path = '${BINDIR}')
-        autowaf.use_lib(bld, obj, libs + ' GTK2')
 
     # Gtk3 version
     if bld.env.HAVE_GTK3:
@@ -184,8 +201,8 @@ def build(bld):
                   target       = 'jalv.gtk3',
                   includes     = ['.', 'src'],
                   lib          = ['pthread', 'm'],
+                  uselib       = libs + ' GTK3',
                   install_path = '${BINDIR}')
-        autowaf.use_lib(bld, obj, libs + ' GTK3')
 
     # Gtkmm version
     if bld.env.HAVE_GTKMM2:
@@ -194,8 +211,8 @@ def build(bld):
                   target       = 'jalv.gtkmm',
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
+                  uselib       = libs + ' GTKMM2',
                   install_path = '${BINDIR}')
-        autowaf.use_lib(bld, obj, libs + ' GTKMM2')
 
     # Qt4 version
     if bld.env.HAVE_QT4:
@@ -207,8 +224,8 @@ def build(bld):
                   target       = 'jalv.qt4',
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
+                  uselib       = libs + ' QT4',
                   install_path = '${BINDIR}')
-        autowaf.use_lib(bld, obj, libs + ' QT4')
 
     # Qt5 version
     if bld.env.HAVE_QT5:
@@ -220,9 +237,9 @@ def build(bld):
                   target       = 'jalv.qt5',
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
+                  uselib       = libs + ' QT5',
                   install_path = '${BINDIR}',
                   cxxflags     = ['-fPIC'])
-        autowaf.use_lib(bld, obj, libs + ' QT5')
 
     # Man pages
     bld.install_files('${MANDIR}/man1', bld.path.ant_glob('doc/*.1'))
@@ -253,8 +270,12 @@ def posts(ctx):
     autowaf.news_to_posts(
         os.path.join(path, 'NEWS'),
         {'title'        : 'Jalv',
-         'description'  : autowaf.get_blurb(os.path.join(path, 'README')),
+         'description'  : autowaf.get_blurb(os.path.join(path, 'README.md')),
          'dist_pattern' : 'http://download.drobilla.net/jalv-%s.tar.bz2'},
         { 'Author' : 'drobilla',
           'Tags'   : 'Hacking, LAD, LV2, Jalv' },
         os.path.join(out, 'posts'))
+
+def dist(ctx):
+    ctx.base_path = ctx.path
+    ctx.excl = ctx.get_excl() + ' .gitmodules'

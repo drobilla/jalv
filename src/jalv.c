@@ -40,26 +40,26 @@
 #include "jalv_config.h"
 #include "jalv_internal.h"
 
-#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
-#include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
-#include "lv2/lv2plug.in/ns/ext/data-access/data-access.h"
-#include "lv2/lv2plug.in/ns/ext/event/event.h"
-#include "lv2/lv2plug.in/ns/ext/options/options.h"
-#include "lv2/lv2plug.in/ns/ext/parameters/parameters.h"
-#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
-#include "lv2/lv2plug.in/ns/ext/port-groups/port-groups.h"
-#include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
-#include "lv2/lv2plug.in/ns/ext/presets/presets.h"
-#include "lv2/lv2plug.in/ns/ext/state/state.h"
-#include "lv2/lv2plug.in/ns/ext/time/time.h"
-#include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
-#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
-#include "lv2/lv2plug.in/ns/ext/worker/worker.h"
-#include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
+#include "lv2/atom/atom.h"
+#include "lv2/buf-size/buf-size.h"
+#include "lv2/data-access/data-access.h"
+#include "lv2/options/options.h"
+#include "lv2/parameters/parameters.h"
+#include "lv2/patch/patch.h"
+#include "lv2/port-groups/port-groups.h"
+#include "lv2/port-props/port-props.h"
+#include "lv2/presets/presets.h"
+#include "lv2/state/state.h"
+#include "lv2/time/time.h"
+#include "lv2/ui/ui.h"
+#include "lv2/urid/urid.h"
+#include "lv2/worker/worker.h"
 
 #include "lilv/lilv.h"
 
+#ifdef HAVE_SUIL
 #include "suil/suil.h"
+#endif
 
 #include "lv2_evbuf.h"
 #include "worker.h"
@@ -75,6 +75,10 @@
 #    define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
+#ifndef ARRAY_SIZE
+#    define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
+#endif
+
 /* Size factor for UI ring buffers.  The ring size is a few times the size of
    an event output to give the UI a chance to keep up.  Experiments with Ingen,
    which can highly saturate its event output, led me to this value.  It
@@ -82,7 +86,7 @@
 */
 #define N_BUFFER_CYCLES 16
 
-ZixSem exit_sem;  /**< Exit semaphore */
+static ZixSem* exit_sem = NULL;  /**< Exit semaphore used by signal handler*/
 
 static LV2_URID
 map_uri(LV2_URID_Map_Handle handle,
@@ -106,65 +110,24 @@ unmap_uri(LV2_URID_Unmap_Handle handle,
 	return uri;
 }
 
-/**
-   Map function for URI map extension.
-*/
-static uint32_t
-uri_to_id(LV2_URI_Map_Callback_Data callback_data,
-          const char*               map,
-          const char*               uri)
-{
-	Jalv* jalv = (Jalv*)callback_data;
-	zix_sem_wait(&jalv->symap_lock);
-	const LV2_URID id = symap_map(jalv->symap, uri);
-	zix_sem_post(&jalv->symap_lock);
-	return id;
-}
-
 #define NS_EXT "http://lv2plug.in/ns/ext/"
 
-static LV2_URI_Map_Feature uri_map = { NULL, &uri_to_id };
-
-static LV2_Extension_Data_Feature ext_data = { NULL };
-
-LV2_Feature uri_map_feature      = { NS_EXT "uri-map", NULL };
-LV2_Feature map_feature          = { LV2_URID__map, NULL };
-LV2_Feature unmap_feature        = { LV2_URID__unmap, NULL };
-LV2_Feature make_path_feature    = { LV2_STATE__makePath, NULL };
-LV2_Feature sched_feature        = { LV2_WORKER__schedule, NULL };
-LV2_Feature state_sched_feature  = { LV2_WORKER__schedule, NULL };
-LV2_Feature safe_restore_feature = { LV2_STATE__threadSafeRestore, NULL };
-LV2_Feature log_feature          = { LV2_LOG__log, NULL };
-LV2_Feature options_feature      = { LV2_OPTIONS__options, NULL };
-LV2_Feature def_state_feature    = { LV2_STATE__loadDefaultState, NULL };
-
 /** These features have no data */
-static LV2_Feature buf_size_features[3] = {
+static const LV2_Feature static_features[] = {
+	{ LV2_STATE__loadDefaultState, NULL },
 	{ LV2_BUF_SIZE__powerOf2BlockLength, NULL },
 	{ LV2_BUF_SIZE__fixedBlockLength, NULL },
 	{ LV2_BUF_SIZE__boundedBlockLength, NULL } };
 
-const LV2_Feature* features[12] = {
-	&uri_map_feature, &map_feature, &unmap_feature,
-	&sched_feature,
-	&log_feature,
-	&options_feature,
-	&def_state_feature,
-	&safe_restore_feature,
-	&buf_size_features[0],
-	&buf_size_features[1],
-	&buf_size_features[2],
-	NULL
-};
-
 /** Return true iff Jalv supports the given feature. */
 static bool
-feature_is_supported(const char* uri)
+feature_is_supported(Jalv* jalv, const char* uri)
 {
 	if (!strcmp(uri, "http://lv2plug.in/ns/lv2core#isLive")) {
 		return true;
 	}
-	for (const LV2_Feature*const* f = features; *f; ++f) {
+
+	for (const LV2_Feature*const* f = jalv->feature_list; *f; ++f) {
 		if (!strcmp(uri, (*f)->URI)) {
 			return true;
 		}
@@ -213,12 +176,16 @@ create_port(Jalv*    jalv,
 		die("Mandatory port has unknown type (neither input nor output)");
 	}
 
+	const bool hidden = !jalv->opts.show_hidden &&
+	                    lilv_port_has_property(jalv->plugin,
+	                                           port->lilv_port,
+	                                           jalv->nodes.pprops_notOnGUI);
+
 	/* Set control values */
 	if (lilv_port_is_a(jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
 		port->type    = TYPE_CONTROL;
 		port->control = isnan(default_value) ? 0.0f : default_value;
-		if (jalv->opts.show_hidden ||
-		    !lilv_port_has_property(jalv->plugin, port->lilv_port, jalv->nodes.pprops_notOnGUI)) {
+		if (!hidden) {
 			add_control(&jalv->controls, new_port_control(jalv, port->index));
 		}
 	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
@@ -230,13 +197,8 @@ create_port(Jalv*    jalv,
 		port->type = TYPE_CV;
 #endif
 	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
-	                          jalv->nodes.ev_EventPort)) {
-		port->type = TYPE_EVENT;
-		port->old_api = true;
-	} else if (lilv_port_is_a(jalv->plugin, port->lilv_port,
 	                          jalv->nodes.atom_AtomPort)) {
 		port->type = TYPE_EVENT;
-		port->old_api = false;
 	} else if (!optional) {
 		die("Mandatory port has unknown data type");
 	}
@@ -249,13 +211,6 @@ create_port(Jalv*    jalv,
 			jalv->opts.buffer_size, port->buf_size * N_BUFFER_CYCLES);
 	}
 	lilv_node_free(min_size);
-
-	/* Update longest symbol for aligned console printing */
-	const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-	const size_t    len = strlen(lilv_node_as_string(sym));
-	if (len > jalv->longest_sym) {
-		jalv->longest_sym = len;
-	}
 }
 
 /**
@@ -299,7 +254,6 @@ jalv_allocate_port_buffers(Jalv* jalv)
 				: jalv->midi_buf_size;
 			port->evbuf = lv2_evbuf_new(
 				buf_size,
-				port->old_api ? LV2_EVBUF_EVENT : LV2_EVBUF_ATOM,
 				jalv->map.map(jalv->map.handle,
 				              lilv_node_as_string(jalv->nodes.atom_Chunk)),
 				jalv->map.map(jalv->map.handle,
@@ -344,13 +298,6 @@ jalv_control_by_symbol(Jalv* jalv, const char* sym)
 		}
 	}
 	return NULL;
-}
-
-static void
-print_control_value(Jalv* jalv, const struct Port* port, float value)
-{
-	const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-	printf("%-*s = %f\n", jalv->longest_sym, lilv_node_as_string(sym), value);
 }
 
 void
@@ -418,7 +365,7 @@ jalv_set_control(const ControlID* control,
 	Jalv* jalv = control->jalv;
 	if (control->type == PORT && type == jalv->forge.Float) {
 		struct Port* port = &control->jalv->ports[control->index];
-		port->control = *(float*)body;
+		port->control = *(const float*)body;
 	} else if (control->type == PROPERTY) {
 		// Copy forge since it is used by process thread
 		LV2_Atom_Forge       forge = jalv->forge;
@@ -445,6 +392,7 @@ jalv_set_control(const ControlID* control,
 void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 {
+#ifdef HAVE_SUIL
 	jalv->ui_host = suil_host_new(jalv_ui_write, jalv_ui_port_index, NULL, NULL);
 
 	const LV2_Feature parent_feature = {
@@ -454,18 +402,19 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 		NS_EXT "instance-access", lilv_instance_get_handle(jalv->instance)
 	};
 	const LV2_Feature data_feature = {
-		LV2_DATA_ACCESS_URI, &ext_data
+		LV2_DATA_ACCESS_URI, &jalv->features.ext_data
 	};
 	const LV2_Feature idle_feature = {
 		LV2_UI__idleInterface, NULL
 	};
 	const LV2_Feature* ui_features[] = {
-		&uri_map_feature, &map_feature, &unmap_feature,
+		&jalv->features.map_feature,
+		&jalv->features.unmap_feature,
 		&instance_feature,
 		&data_feature,
-		&log_feature,
+		&jalv->features.log_feature,
 		&parent_feature,
-		&options_feature,
+		&jalv->features.options_feature,
 		&idle_feature,
 		NULL
 	};
@@ -488,6 +437,7 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 
 	lilv_free(binary_path);
 	lilv_free(bundle_path);
+#endif
 }
 
 bool
@@ -515,13 +465,13 @@ jalv_ui_is_resizable(Jalv* jalv)
 }
 
 void
-jalv_ui_write(SuilController controller,
+jalv_ui_write(void* const    jalv_handle,
               uint32_t       port_index,
               uint32_t       buffer_size,
               uint32_t       protocol,
               const void*    buffer)
 {
-	Jalv* const jalv = (Jalv*)controller;
+	Jalv* const jalv = (Jalv*)jalv_handle;
 
 	if (protocol != 0 && protocol != jalv->urids.atom_eventTransfer) {
 		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
@@ -589,7 +539,7 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
 }
 
 uint32_t
-jalv_ui_port_index(SuilController controller, const char* symbol)
+jalv_ui_port_index(void* const controller, const char* symbol)
 {
 	Jalv* const  jalv = (Jalv*)controller;
 	struct Port* port = jalv_port_by_symbol(jalv, symbol);
@@ -675,8 +625,8 @@ jalv_run(Jalv* jalv, uint32_t nframes)
 
 	/* Check if it's time to send updates to the UI */
 	jalv->event_delta_t += nframes;
-	bool     send_ui_updates = false;
-	uint32_t update_frames   = jalv->sample_rate / jalv->ui_update_hz;
+	bool  send_ui_updates = false;
+	float update_frames   = jalv->sample_rate / jalv->ui_update_hz;
 	if (jalv->has_ui && (jalv->event_delta_t > update_frames)) {
 		send_ui_updates = true;
 		jalv->event_delta_t = 0;
@@ -689,7 +639,7 @@ bool
 jalv_update(Jalv* jalv)
 {
 	/* Check quit flag and close if set. */
-	if (zix_sem_try_wait(&exit_sem)) {
+	if (zix_sem_try_wait(&jalv->done)) {
 		jalv_close_ui(jalv);
 		return false;
 	}
@@ -722,15 +672,10 @@ jalv_update(Jalv* jalv)
 			free(str);
 		}
 
-		if (jalv->ui_instance) {
-			suil_instance_port_event(jalv->ui_instance, ev.index,
-			                         ev.size, ev.protocol, buf);
-		} else {
-			jalv_ui_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
-		}
+		jalv_ui_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
 
 		if (ev.protocol == 0 && jalv->opts.print_controls) {
-			print_control_value(jalv, &jalv->ports[ev.index], *(float*)buf);
+			jalv_print_control(jalv, &jalv->ports[ev.index], *(float*)buf);
 		}
 	}
 
@@ -754,195 +699,223 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
 	}
 
 	jalv_set_control(control, sizeof(float), jalv->urids.atom_Float, &val);
-	printf("%-*s = %f\n", jalv->longest_sym, sym, val);
+	printf("%s = %f\n", sym, val);
 
 	return true;
 }
 
 static void
-signal_handler(int ignored)
+signal_handler(ZIX_UNUSED int sig)
 {
-	zix_sem_post(&exit_sem);
+	zix_sem_post(exit_sem);
+}
+
+static void
+init_feature(LV2_Feature* const dest, const char* const URI, void* data)
+{
+	dest->URI = URI;
+	dest->data = data;
+}
+
+static void
+setup_signals(Jalv* const jalv)
+{
+	exit_sem = &jalv->done;
+
+#ifdef HAVE_SIGACTION
+	struct sigaction action;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags   = 0;
+	action.sa_handler = signal_handler;
+	sigaction(SIGINT, &action, NULL);
+	sigaction(SIGTERM, &action, NULL);
+#else
+	/* May not work in combination with fgets in the console interface */
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
+#endif
 }
 
 int
-main(int argc, char** argv)
+jalv_open(Jalv* const jalv, int argc, char** argv)
 {
-	Jalv jalv;
-	memset(&jalv, '\0', sizeof(Jalv));
-	jalv.prog_name     = argv[0];
-	jalv.block_length  = 4096;  /* Should be set by backend */
-	jalv.midi_buf_size = 1024;  /* Should be set by backend */
-	jalv.play_state    = JALV_PAUSED;
-	jalv.bpm           = 120.0f;
-	jalv.control_in    = (uint32_t)-1;
+	jalv->prog_name     = argv[0];
+	jalv->block_length  = 4096;  /* Should be set by backend */
+	jalv->midi_buf_size = 1024;  /* Should be set by backend */
+	jalv->play_state    = JALV_PAUSED;
+	jalv->bpm           = 120.0f;
+	jalv->control_in    = (uint32_t)-1;
 
+#ifdef HAVE_SUIL
 	suil_init(&argc, &argv, SUIL_ARG_NONE);
-	if (jalv_init(&argc, &argv, &jalv.opts)) {
-		return EXIT_FAILURE;
+#endif
+
+	if (jalv_init(&argc, &argv, &jalv->opts)) {
+		jalv_close(jalv);
+		return -1;
 	}
 
-	if (jalv.opts.uuid) {
-		printf("UUID: %s\n", jalv.opts.uuid);
+	if (jalv->opts.uuid) {
+		printf("UUID: %s\n", jalv->opts.uuid);
 	}
 
-	jalv.symap = symap_new();
-	zix_sem_init(&jalv.symap_lock, 1);
-	zix_sem_init(&jalv.work_lock, 1);
-	uri_map_feature.data  = &uri_map;
-	uri_map.callback_data = &jalv;
+	jalv->symap = symap_new();
+	zix_sem_init(&jalv->symap_lock, 1);
+	zix_sem_init(&jalv->work_lock, 1);
 
-	jalv.map.handle  = &jalv;
-	jalv.map.map     = map_uri;
-	map_feature.data = &jalv.map;
+	jalv->map.handle  = jalv;
+	jalv->map.map     = map_uri;
+	init_feature(&jalv->features.map_feature, LV2_URID__map, &jalv->map);
 
-	jalv.worker.jalv       = &jalv;
-	jalv.state_worker.jalv = &jalv;
+	jalv->worker.jalv       = jalv;
+	jalv->state_worker.jalv = jalv;
 
-	jalv.unmap.handle  = &jalv;
-	jalv.unmap.unmap   = unmap_uri;
-	unmap_feature.data = &jalv.unmap;
+	jalv->unmap.handle  = jalv;
+	jalv->unmap.unmap   = unmap_uri;
+	init_feature(&jalv->features.unmap_feature, LV2_URID__unmap, &jalv->unmap);
 
-	lv2_atom_forge_init(&jalv.forge, &jalv.map);
+	lv2_atom_forge_init(&jalv->forge, &jalv->map);
 
-	jalv.env = serd_env_new(NULL);
+	jalv->env = serd_env_new(NULL);
 	serd_env_set_prefix_from_strings(
-		jalv.env, (const uint8_t*)"patch", (const uint8_t*)LV2_PATCH_PREFIX);
+		jalv->env, (const uint8_t*)"patch", (const uint8_t*)LV2_PATCH_PREFIX);
 	serd_env_set_prefix_from_strings(
-		jalv.env, (const uint8_t*)"time", (const uint8_t*)LV2_TIME_PREFIX);
+		jalv->env, (const uint8_t*)"time", (const uint8_t*)LV2_TIME_PREFIX);
 	serd_env_set_prefix_from_strings(
-		jalv.env, (const uint8_t*)"xsd", (const uint8_t*)NS_XSD);
+		jalv->env, (const uint8_t*)"xsd", (const uint8_t*)NS_XSD);
 
-	jalv.sratom    = sratom_new(&jalv.map);
-	jalv.ui_sratom = sratom_new(&jalv.map);
-	sratom_set_env(jalv.sratom, jalv.env);
-	sratom_set_env(jalv.ui_sratom, jalv.env);
+	jalv->sratom    = sratom_new(&jalv->map);
+	jalv->ui_sratom = sratom_new(&jalv->map);
+	sratom_set_env(jalv->sratom, jalv->env);
+	sratom_set_env(jalv->ui_sratom, jalv->env);
 
-	jalv.midi_event_id = uri_to_id(
-		&jalv, "http://lv2plug.in/ns/ext/event", LV2_MIDI__MidiEvent);
-
-	jalv.urids.atom_Float           = symap_map(jalv.symap, LV2_ATOM__Float);
-	jalv.urids.atom_Int             = symap_map(jalv.symap, LV2_ATOM__Int);
-	jalv.urids.atom_Object          = symap_map(jalv.symap, LV2_ATOM__Object);
-	jalv.urids.atom_Path            = symap_map(jalv.symap, LV2_ATOM__Path);
-	jalv.urids.atom_String          = symap_map(jalv.symap, LV2_ATOM__String);
-	jalv.urids.atom_eventTransfer   = symap_map(jalv.symap, LV2_ATOM__eventTransfer);
-	jalv.urids.bufsz_maxBlockLength = symap_map(jalv.symap, LV2_BUF_SIZE__maxBlockLength);
-	jalv.urids.bufsz_minBlockLength = symap_map(jalv.symap, LV2_BUF_SIZE__minBlockLength);
-	jalv.urids.bufsz_sequenceSize   = symap_map(jalv.symap, LV2_BUF_SIZE__sequenceSize);
-	jalv.urids.log_Error            = symap_map(jalv.symap, LV2_LOG__Error);
-	jalv.urids.log_Trace            = symap_map(jalv.symap, LV2_LOG__Trace);
-	jalv.urids.log_Warning          = symap_map(jalv.symap, LV2_LOG__Warning);
-	jalv.urids.midi_MidiEvent       = symap_map(jalv.symap, LV2_MIDI__MidiEvent);
-	jalv.urids.param_sampleRate     = symap_map(jalv.symap, LV2_PARAMETERS__sampleRate);
-	jalv.urids.patch_Get            = symap_map(jalv.symap, LV2_PATCH__Get);
-	jalv.urids.patch_Put            = symap_map(jalv.symap, LV2_PATCH__Put);
-	jalv.urids.patch_Set            = symap_map(jalv.symap, LV2_PATCH__Set);
-	jalv.urids.patch_body           = symap_map(jalv.symap, LV2_PATCH__body);
-	jalv.urids.patch_property       = symap_map(jalv.symap, LV2_PATCH__property);
-	jalv.urids.patch_value          = symap_map(jalv.symap, LV2_PATCH__value);
-	jalv.urids.time_Position        = symap_map(jalv.symap, LV2_TIME__Position);
-	jalv.urids.time_bar             = symap_map(jalv.symap, LV2_TIME__bar);
-	jalv.urids.time_barBeat         = symap_map(jalv.symap, LV2_TIME__barBeat);
-	jalv.urids.time_beatUnit        = symap_map(jalv.symap, LV2_TIME__beatUnit);
-	jalv.urids.time_beatsPerBar     = symap_map(jalv.symap, LV2_TIME__beatsPerBar);
-	jalv.urids.time_beatsPerMinute  = symap_map(jalv.symap, LV2_TIME__beatsPerMinute);
-	jalv.urids.time_frame           = symap_map(jalv.symap, LV2_TIME__frame);
-	jalv.urids.time_speed           = symap_map(jalv.symap, LV2_TIME__speed);
-	jalv.urids.ui_updateRate        = symap_map(jalv.symap, LV2_UI__updateRate);
+	jalv->urids.atom_Float           = symap_map(jalv->symap, LV2_ATOM__Float);
+	jalv->urids.atom_Int             = symap_map(jalv->symap, LV2_ATOM__Int);
+	jalv->urids.atom_Object          = symap_map(jalv->symap, LV2_ATOM__Object);
+	jalv->urids.atom_Path            = symap_map(jalv->symap, LV2_ATOM__Path);
+	jalv->urids.atom_String          = symap_map(jalv->symap, LV2_ATOM__String);
+	jalv->urids.atom_eventTransfer   = symap_map(jalv->symap, LV2_ATOM__eventTransfer);
+	jalv->urids.bufsz_maxBlockLength = symap_map(jalv->symap, LV2_BUF_SIZE__maxBlockLength);
+	jalv->urids.bufsz_minBlockLength = symap_map(jalv->symap, LV2_BUF_SIZE__minBlockLength);
+	jalv->urids.bufsz_sequenceSize   = symap_map(jalv->symap, LV2_BUF_SIZE__sequenceSize);
+	jalv->urids.log_Error            = symap_map(jalv->symap, LV2_LOG__Error);
+	jalv->urids.log_Trace            = symap_map(jalv->symap, LV2_LOG__Trace);
+	jalv->urids.log_Warning          = symap_map(jalv->symap, LV2_LOG__Warning);
+	jalv->urids.midi_MidiEvent       = symap_map(jalv->symap, LV2_MIDI__MidiEvent);
+	jalv->urids.param_sampleRate     = symap_map(jalv->symap, LV2_PARAMETERS__sampleRate);
+	jalv->urids.patch_Get            = symap_map(jalv->symap, LV2_PATCH__Get);
+	jalv->urids.patch_Put            = symap_map(jalv->symap, LV2_PATCH__Put);
+	jalv->urids.patch_Set            = symap_map(jalv->symap, LV2_PATCH__Set);
+	jalv->urids.patch_body           = symap_map(jalv->symap, LV2_PATCH__body);
+	jalv->urids.patch_property       = symap_map(jalv->symap, LV2_PATCH__property);
+	jalv->urids.patch_value          = symap_map(jalv->symap, LV2_PATCH__value);
+	jalv->urids.time_Position        = symap_map(jalv->symap, LV2_TIME__Position);
+	jalv->urids.time_bar             = symap_map(jalv->symap, LV2_TIME__bar);
+	jalv->urids.time_barBeat         = symap_map(jalv->symap, LV2_TIME__barBeat);
+	jalv->urids.time_beatUnit        = symap_map(jalv->symap, LV2_TIME__beatUnit);
+	jalv->urids.time_beatsPerBar     = symap_map(jalv->symap, LV2_TIME__beatsPerBar);
+	jalv->urids.time_beatsPerMinute  = symap_map(jalv->symap, LV2_TIME__beatsPerMinute);
+	jalv->urids.time_frame           = symap_map(jalv->symap, LV2_TIME__frame);
+	jalv->urids.time_speed           = symap_map(jalv->symap, LV2_TIME__speed);
+	jalv->urids.ui_updateRate        = symap_map(jalv->symap, LV2_UI__updateRate);
 
 #ifdef _WIN32
-	jalv.temp_dir = jalv_strdup("jalvXXXXXX");
-	_mktemp(jalv.temp_dir);
+	jalv->temp_dir = jalv_strdup("jalvXXXXXX");
+	_mktemp(jalv->temp_dir);
 #else
 	char* templ = jalv_strdup("/tmp/jalv-XXXXXX");
-	jalv.temp_dir = jalv_strjoin(mkdtemp(templ), "/");
+	jalv->temp_dir = jalv_strjoin(mkdtemp(templ), "/");
 	free(templ);
 #endif
 
-	LV2_State_Make_Path make_path = { &jalv, jalv_make_path };
-	make_path_feature.data = &make_path;
+	jalv->features.make_path.handle = jalv;
+	jalv->features.make_path.path = jalv_make_path;
+	init_feature(&jalv->features.make_path_feature,
+	             LV2_STATE__makePath, &jalv->features.make_path);
 
-	LV2_Worker_Schedule sched = { &jalv.worker, jalv_worker_schedule };
-	sched_feature.data = &sched;
+	jalv->features.sched.handle = &jalv->worker;
+	jalv->features.sched.schedule_work = jalv_worker_schedule;
+	init_feature(&jalv->features.sched_feature,
+	             LV2_WORKER__schedule, &jalv->features.sched);
 
-	LV2_Worker_Schedule ssched = { &jalv.state_worker, jalv_worker_schedule };
-	state_sched_feature.data = &ssched;
+	jalv->features.ssched.handle = &jalv->state_worker;
+	jalv->features.ssched.schedule_work = jalv_worker_schedule;
+	init_feature(&jalv->features.state_sched_feature,
+	             LV2_WORKER__schedule, &jalv->features.ssched);
 
-	LV2_Log_Log llog = { &jalv, jalv_printf, jalv_vprintf };
-	log_feature.data = &llog;
+	jalv->features.llog.handle  = jalv;
+	jalv->features.llog.printf  = jalv_printf;
+	jalv->features.llog.vprintf = jalv_vprintf;
+	init_feature(&jalv->features.log_feature,
+	             LV2_LOG__log, &jalv->features.llog);
 
-	zix_sem_init(&exit_sem, 0);
-	jalv.done = &exit_sem;
+	zix_sem_init(&jalv->done, 0);
 
-	zix_sem_init(&jalv.paused, 0);
-	zix_sem_init(&jalv.worker.sem, 0);
-
-	signal(SIGINT, signal_handler);
-	signal(SIGTERM, signal_handler);
+	zix_sem_init(&jalv->paused, 0);
+	zix_sem_init(&jalv->worker.sem, 0);
 
 	/* Find all installed plugins */
 	LilvWorld* world = lilv_world_new();
 	lilv_world_load_all(world);
-	jalv.world = world;
+	jalv->world = world;
 	const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
 
 	/* Cache URIs for concepts we'll use */
-	jalv.nodes.atom_AtomPort          = lilv_new_uri(world, LV2_ATOM__AtomPort);
-	jalv.nodes.atom_Chunk             = lilv_new_uri(world, LV2_ATOM__Chunk);
-	jalv.nodes.atom_Float             = lilv_new_uri(world, LV2_ATOM__Float);
-	jalv.nodes.atom_Path              = lilv_new_uri(world, LV2_ATOM__Path);
-	jalv.nodes.atom_Sequence          = lilv_new_uri(world, LV2_ATOM__Sequence);
-	jalv.nodes.ev_EventPort           = lilv_new_uri(world, LV2_EVENT__EventPort);
-	jalv.nodes.lv2_AudioPort          = lilv_new_uri(world, LV2_CORE__AudioPort);
-	jalv.nodes.lv2_CVPort             = lilv_new_uri(world, LV2_CORE__CVPort);
-	jalv.nodes.lv2_ControlPort        = lilv_new_uri(world, LV2_CORE__ControlPort);
-	jalv.nodes.lv2_InputPort          = lilv_new_uri(world, LV2_CORE__InputPort);
-	jalv.nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);
-	jalv.nodes.lv2_connectionOptional = lilv_new_uri(world, LV2_CORE__connectionOptional);
-	jalv.nodes.lv2_control            = lilv_new_uri(world, LV2_CORE__control);
-	jalv.nodes.lv2_default            = lilv_new_uri(world, LV2_CORE__default);
-	jalv.nodes.lv2_enumeration        = lilv_new_uri(world, LV2_CORE__enumeration);
-	jalv.nodes.lv2_integer            = lilv_new_uri(world, LV2_CORE__integer);
-	jalv.nodes.lv2_maximum            = lilv_new_uri(world, LV2_CORE__maximum);
-	jalv.nodes.lv2_minimum            = lilv_new_uri(world, LV2_CORE__minimum);
-	jalv.nodes.lv2_name               = lilv_new_uri(world, LV2_CORE__name);
-	jalv.nodes.lv2_reportsLatency     = lilv_new_uri(world, LV2_CORE__reportsLatency);
-	jalv.nodes.lv2_sampleRate         = lilv_new_uri(world, LV2_CORE__sampleRate);
-	jalv.nodes.lv2_symbol             = lilv_new_uri(world, LV2_CORE__symbol);
-	jalv.nodes.lv2_toggled            = lilv_new_uri(world, LV2_CORE__toggled);
-	jalv.nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
-	jalv.nodes.pg_group               = lilv_new_uri(world, LV2_PORT_GROUPS__group);
-	jalv.nodes.pprops_logarithmic     = lilv_new_uri(world, LV2_PORT_PROPS__logarithmic);
-	jalv.nodes.pprops_notOnGUI        = lilv_new_uri(world, LV2_PORT_PROPS__notOnGUI);
-	jalv.nodes.pprops_rangeSteps      = lilv_new_uri(world, LV2_PORT_PROPS__rangeSteps);
-	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
-	jalv.nodes.pset_bank              = lilv_new_uri(world, LV2_PRESETS__bank);
-	jalv.nodes.rdfs_comment           = lilv_new_uri(world, LILV_NS_RDFS "comment");
-	jalv.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
-	jalv.nodes.rdfs_range             = lilv_new_uri(world, LILV_NS_RDFS "range");
-	jalv.nodes.rsz_minimumSize        = lilv_new_uri(world, LV2_RESIZE_PORT__minimumSize);
-	jalv.nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
-	jalv.nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
-	jalv.nodes.end                    = NULL;
+	jalv->nodes.atom_AtomPort          = lilv_new_uri(world, LV2_ATOM__AtomPort);
+	jalv->nodes.atom_Chunk             = lilv_new_uri(world, LV2_ATOM__Chunk);
+	jalv->nodes.atom_Float             = lilv_new_uri(world, LV2_ATOM__Float);
+	jalv->nodes.atom_Path              = lilv_new_uri(world, LV2_ATOM__Path);
+	jalv->nodes.atom_Sequence          = lilv_new_uri(world, LV2_ATOM__Sequence);
+	jalv->nodes.lv2_AudioPort          = lilv_new_uri(world, LV2_CORE__AudioPort);
+	jalv->nodes.lv2_CVPort             = lilv_new_uri(world, LV2_CORE__CVPort);
+	jalv->nodes.lv2_ControlPort        = lilv_new_uri(world, LV2_CORE__ControlPort);
+	jalv->nodes.lv2_InputPort          = lilv_new_uri(world, LV2_CORE__InputPort);
+	jalv->nodes.lv2_OutputPort         = lilv_new_uri(world, LV2_CORE__OutputPort);
+	jalv->nodes.lv2_connectionOptional = lilv_new_uri(world, LV2_CORE__connectionOptional);
+	jalv->nodes.lv2_control            = lilv_new_uri(world, LV2_CORE__control);
+	jalv->nodes.lv2_default            = lilv_new_uri(world, LV2_CORE__default);
+	jalv->nodes.lv2_enumeration        = lilv_new_uri(world, LV2_CORE__enumeration);
+	jalv->nodes.lv2_integer            = lilv_new_uri(world, LV2_CORE__integer);
+	jalv->nodes.lv2_maximum            = lilv_new_uri(world, LV2_CORE__maximum);
+	jalv->nodes.lv2_minimum            = lilv_new_uri(world, LV2_CORE__minimum);
+	jalv->nodes.lv2_name               = lilv_new_uri(world, LV2_CORE__name);
+	jalv->nodes.lv2_reportsLatency     = lilv_new_uri(world, LV2_CORE__reportsLatency);
+	jalv->nodes.lv2_sampleRate         = lilv_new_uri(world, LV2_CORE__sampleRate);
+	jalv->nodes.lv2_symbol             = lilv_new_uri(world, LV2_CORE__symbol);
+	jalv->nodes.lv2_toggled            = lilv_new_uri(world, LV2_CORE__toggled);
+	jalv->nodes.midi_MidiEvent         = lilv_new_uri(world, LV2_MIDI__MidiEvent);
+	jalv->nodes.pg_group               = lilv_new_uri(world, LV2_PORT_GROUPS__group);
+	jalv->nodes.pprops_logarithmic     = lilv_new_uri(world, LV2_PORT_PROPS__logarithmic);
+	jalv->nodes.pprops_notOnGUI        = lilv_new_uri(world, LV2_PORT_PROPS__notOnGUI);
+	jalv->nodes.pprops_rangeSteps      = lilv_new_uri(world, LV2_PORT_PROPS__rangeSteps);
+	jalv->nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
+	jalv->nodes.pset_bank              = lilv_new_uri(world, LV2_PRESETS__bank);
+	jalv->nodes.rdfs_comment           = lilv_new_uri(world, LILV_NS_RDFS "comment");
+	jalv->nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
+	jalv->nodes.rdfs_range             = lilv_new_uri(world, LILV_NS_RDFS "range");
+	jalv->nodes.rsz_minimumSize        = lilv_new_uri(world, LV2_RESIZE_PORT__minimumSize);
+	jalv->nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
+	jalv->nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
+	jalv->nodes.end                    = NULL;
 
 	/* Get plugin URI from loaded state or command line */
 	LilvState* state      = NULL;
 	LilvNode*  plugin_uri = NULL;
-	if (jalv.opts.load) {
+	if (jalv->opts.load) {
 		struct stat info;
-		stat(jalv.opts.load, &info);
+		stat(jalv->opts.load, &info);
 		if (S_ISDIR(info.st_mode)) {
-			char* path = jalv_strjoin(jalv.opts.load, "/state.ttl");
-			state = lilv_state_new_from_file(jalv.world, &jalv.map, NULL, path);
+			char* path = jalv_strjoin(jalv->opts.load, "/state.ttl");
+			state = lilv_state_new_from_file(jalv->world, &jalv->map, NULL, path);
 			free(path);
 		} else {
-			state = lilv_state_new_from_file(jalv.world, &jalv.map, NULL,
-			                                 jalv.opts.load);
+			state = lilv_state_new_from_file(jalv->world, &jalv->map, NULL,
+			                                 jalv->opts.load);
 		}
 		if (!state) {
-			fprintf(stderr, "Failed to load state from %s\n", jalv.opts.load);
-			return EXIT_FAILURE;
+			fprintf(stderr, "Failed to load state from %s\n", jalv->opts.load);
+			jalv_close(jalv);
+			return -2;
 		}
 		plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
 	} else if (argc > 1) {
@@ -951,262 +924,348 @@ main(int argc, char** argv)
 
 	if (!plugin_uri) {
 		fprintf(stderr, "Missing plugin URI, try lv2ls to list plugins\n");
-		return EXIT_FAILURE;
+		jalv_close(jalv);
+		return -3;
 	}
 
 	/* Find plugin */
 	printf("Plugin:       %s\n", lilv_node_as_string(plugin_uri));
-	jalv.plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
+	jalv->plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
 	lilv_node_free(plugin_uri);
-	if (!jalv.plugin) {
+	if (!jalv->plugin) {
 		fprintf(stderr, "Failed to find plugin\n");
-		lilv_world_free(world);
-		return EXIT_FAILURE;
+		jalv_close(jalv);
+		return -4;
 	}
 
 	/* Load preset, if specified */
-	if (jalv.opts.preset) {
-		LilvNode* preset = lilv_new_uri(jalv.world, jalv.opts.preset);
+	if (jalv->opts.preset) {
+		LilvNode* preset = lilv_new_uri(jalv->world, jalv->opts.preset);
 
-		jalv_load_presets(&jalv, NULL, NULL);
-		state = lilv_state_new_from_world(jalv.world, &jalv.map, preset);
-		jalv.preset = state;
+		jalv_load_presets(jalv, NULL, NULL);
+		state = lilv_state_new_from_world(jalv->world, &jalv->map, preset);
+		jalv->preset = state;
 		lilv_node_free(preset);
 		if (!state) {
-			fprintf(stderr, "Failed to find preset <%s>\n", jalv.opts.preset);
-			lilv_world_free(world);
-			return EXIT_FAILURE;
+			fprintf(stderr, "Failed to find preset <%s>\n", jalv->opts.preset);
+			jalv_close(jalv);
+			return -5;
 		}
 	}
-
-	/* Check that any required features are supported */
-	LilvNodes* req_feats = lilv_plugin_get_required_features(jalv.plugin);
-	LILV_FOREACH(nodes, f, req_feats) {
-		const char* uri = lilv_node_as_uri(lilv_nodes_get(req_feats, f));
-		if (!feature_is_supported(uri)) {
-			fprintf(stderr, "Feature %s is not supported\n", uri);
-			lilv_world_free(world);
-			return EXIT_FAILURE;
-		}
-	}
-	lilv_nodes_free(req_feats);
 
 	/* Check for thread-safe state restore() method. */
 	LilvNode* state_threadSafeRestore = lilv_new_uri(
-		jalv.world, LV2_STATE__threadSafeRestore);
-	if (lilv_plugin_has_feature(jalv.plugin, state_threadSafeRestore)) {
-		jalv.safe_restore = true;
+		jalv->world, LV2_STATE__threadSafeRestore);
+	if (lilv_plugin_has_feature(jalv->plugin, state_threadSafeRestore)) {
+		jalv->safe_restore = true;
 	}
 	lilv_node_free(state_threadSafeRestore);
 
 	if (!state) {
 		/* Not restoring state, load the plugin as a preset to get default */
 		state = lilv_state_new_from_world(
-			jalv.world, &jalv.map, lilv_plugin_get_uri(jalv.plugin));
+			jalv->world, &jalv->map, lilv_plugin_get_uri(jalv->plugin));
 	}
 
 	/* Get a plugin UI */
-	const char* native_ui_type_uri = jalv_native_ui_type(&jalv);
-	jalv.uis = lilv_plugin_get_uis(jalv.plugin);
-	if (!jalv.opts.generic_ui && native_ui_type_uri) {
-		const LilvNode* native_ui_type = lilv_new_uri(jalv.world, native_ui_type_uri);
-		LILV_FOREACH(uis, u, jalv.uis) {
-			const LilvUI* this_ui = lilv_uis_get(jalv.uis, u);
+	const char* native_ui_type_uri = jalv_native_ui_type();
+	jalv->uis = lilv_plugin_get_uis(jalv->plugin);
+	if (!jalv->opts.generic_ui && native_ui_type_uri) {
+#ifdef HAVE_SUIL
+		const LilvNode* native_ui_type = lilv_new_uri(jalv->world, native_ui_type_uri);
+		LILV_FOREACH(uis, u, jalv->uis) {
+			const LilvUI* this_ui = lilv_uis_get(jalv->uis, u);
 			if (lilv_ui_is_supported(this_ui,
 			                         suil_ui_supported,
 			                         native_ui_type,
-			                         &jalv.ui_type)) {
+			                         &jalv->ui_type)) {
 				/* TODO: Multiple UI support */
-				jalv.ui = this_ui;
+				jalv->ui = this_ui;
 				break;
 			}
 		}
-	} else if (!jalv.opts.generic_ui && jalv.opts.show_ui) {
-		jalv.ui = lilv_uis_get(jalv.uis, lilv_uis_begin(jalv.uis));
+#endif
+	} else if (!jalv->opts.generic_ui && jalv->opts.show_ui) {
+		jalv->ui = lilv_uis_get(jalv->uis, lilv_uis_begin(jalv->uis));
 	}
 
 	/* Create ringbuffers for UI if necessary */
-	if (jalv.ui) {
+	if (jalv->ui) {
 		fprintf(stderr, "UI:           %s\n",
-		        lilv_node_as_uri(lilv_ui_get_uri(jalv.ui)));
+		        lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
 	} else {
 		fprintf(stderr, "UI:           None\n");
 	}
 
 	/* Create port and control structures */
-	jalv_create_ports(&jalv);
-	jalv_create_controls(&jalv, true);
-	jalv_create_controls(&jalv, false);
+	jalv_create_ports(jalv);
+	jalv_create_controls(jalv, true);
+	jalv_create_controls(jalv, false);
 
-	if (!(jalv.backend = jalv_backend_init(&jalv))) {
-		die("Failed to connect to audio system");
+	if (!(jalv->backend = jalv_backend_init(jalv))) {
+		fprintf(stderr, "Failed to connect to audio system\n");
+		jalv_close(jalv);
+		return -6;
 	}
 
-	printf("Sample rate:  %u Hz\n", jalv.sample_rate);
-	printf("Block length: %u frames\n", jalv.block_length);
-	printf("MIDI buffers: %zu bytes\n", jalv.midi_buf_size);
+	printf("Sample rate:  %u Hz\n", (uint32_t)jalv->sample_rate);
+	printf("Block length: %u frames\n", jalv->block_length);
+	printf("MIDI buffers: %zu bytes\n", jalv->midi_buf_size);
 
-	if (jalv.opts.buffer_size == 0) {
+	if (jalv->opts.buffer_size == 0) {
 		/* The UI ring is fed by plugin output ports (usually one), and the UI
 		   updates roughly once per cycle.  The ring size is a few times the
 		   size of the MIDI output to give the UI a chance to keep up.  The UI
 		   should be able to keep up with 4 cycles, and tests show this works
 		   for me, but this value might need increasing to avoid overflows.
 		*/
-		jalv.opts.buffer_size = jalv.midi_buf_size * N_BUFFER_CYCLES;
+		jalv->opts.buffer_size = jalv->midi_buf_size * N_BUFFER_CYCLES;
 	}
 
-	if (jalv.opts.update_rate == 0.0) {
+	if (jalv->opts.update_rate == 0.0) {
 		/* Calculate a reasonable UI update frequency. */
-		jalv.ui_update_hz = (float)jalv.sample_rate / jalv.midi_buf_size * 2.0f;
-		jalv.ui_update_hz = MAX(25.0f, jalv.ui_update_hz);
+		jalv->ui_update_hz = jalv->sample_rate / jalv->midi_buf_size * 2.0f;
+		jalv->ui_update_hz = MAX(25.0f, jalv->ui_update_hz);
 	} else {
 		/* Use user-specified UI update rate. */
-		jalv.ui_update_hz = jalv.opts.update_rate;
-		jalv.ui_update_hz = MAX(1.0f, jalv.ui_update_hz);
+		jalv->ui_update_hz = jalv->opts.update_rate;
+		jalv->ui_update_hz = MAX(1.0f, jalv->ui_update_hz);
 	}
 
 	/* The UI can only go so fast, clamp to reasonable limits */
-	jalv.ui_update_hz     = MIN(60, jalv.ui_update_hz);
-	jalv.opts.buffer_size = MAX(4096, jalv.opts.buffer_size);
-	fprintf(stderr, "Comm buffers: %d bytes\n", jalv.opts.buffer_size);
-	fprintf(stderr, "Update rate:  %.01f Hz\n", jalv.ui_update_hz);
+	jalv->ui_update_hz     = MIN(60, jalv->ui_update_hz);
+	jalv->opts.buffer_size = MAX(4096, jalv->opts.buffer_size);
+	fprintf(stderr, "Comm buffers: %d bytes\n", jalv->opts.buffer_size);
+	fprintf(stderr, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
 
 	/* Build options array to pass to plugin */
-	const LV2_Options_Option options[] = {
-		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.param_sampleRate,
-		  sizeof(float), jalv.urids.atom_Float, &jalv.sample_rate },
-		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_minBlockLength,
-		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.block_length },
-		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_maxBlockLength,
-		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.block_length },
-		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_sequenceSize,
-		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.midi_buf_size },
-		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.ui_updateRate,
-		  sizeof(float), jalv.urids.atom_Float, &jalv.ui_update_hz },
+	const LV2_Options_Option options[ARRAY_SIZE(jalv->features.options)] = {
+		{ LV2_OPTIONS_INSTANCE, 0, jalv->urids.param_sampleRate,
+		  sizeof(float), jalv->urids.atom_Float, &jalv->sample_rate },
+		{ LV2_OPTIONS_INSTANCE, 0, jalv->urids.bufsz_minBlockLength,
+		  sizeof(int32_t), jalv->urids.atom_Int, &jalv->block_length },
+		{ LV2_OPTIONS_INSTANCE, 0, jalv->urids.bufsz_maxBlockLength,
+		  sizeof(int32_t), jalv->urids.atom_Int, &jalv->block_length },
+		{ LV2_OPTIONS_INSTANCE, 0, jalv->urids.bufsz_sequenceSize,
+		  sizeof(int32_t), jalv->urids.atom_Int, &jalv->midi_buf_size },
+		{ LV2_OPTIONS_INSTANCE, 0, jalv->urids.ui_updateRate,
+		  sizeof(float), jalv->urids.atom_Float, &jalv->ui_update_hz },
 		{ LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL }
 	};
+	memcpy(jalv->features.options, options, sizeof(jalv->features.options));
 
-	options_feature.data = (void*)&options;
+	init_feature(&jalv->features.options_feature,
+	             LV2_OPTIONS__options,
+	             (void*)jalv->features.options);
+
+	init_feature(&jalv->features.safe_restore_feature,
+	             LV2_STATE__threadSafeRestore,
+	             NULL);
 
 	/* Create Plugin <=> UI communication buffers */
-	jalv.ui_events     = zix_ring_new(jalv.opts.buffer_size);
-	jalv.plugin_events = zix_ring_new(jalv.opts.buffer_size);
-	zix_ring_mlock(jalv.ui_events);
-	zix_ring_mlock(jalv.plugin_events);
+	jalv->ui_events     = zix_ring_new(jalv->opts.buffer_size);
+	jalv->plugin_events = zix_ring_new(jalv->opts.buffer_size);
+	zix_ring_mlock(jalv->ui_events);
+	zix_ring_mlock(jalv->plugin_events);
+
+	/* Build feature list for passing to plugins */
+	const LV2_Feature* const features[] = {
+		&jalv->features.map_feature,
+		&jalv->features.unmap_feature,
+		&jalv->features.sched_feature,
+		&jalv->features.log_feature,
+		&jalv->features.options_feature,
+		&static_features[0],
+		&static_features[1],
+		&static_features[2],
+		&static_features[3],
+		NULL
+	};
+	jalv->feature_list = calloc(1, sizeof(features));
+	if (!jalv->feature_list) {
+		fprintf(stderr, "Failed to allocate feature list\n");
+		jalv_close(jalv);
+		return -7;
+	}
+	memcpy(jalv->feature_list, features, sizeof(features));
+
+	/* Check that any required features are supported */
+	LilvNodes* req_feats = lilv_plugin_get_required_features(jalv->plugin);
+	LILV_FOREACH(nodes, f, req_feats) {
+		const char* uri = lilv_node_as_uri(lilv_nodes_get(req_feats, f));
+		if (!feature_is_supported(jalv, uri)) {
+			fprintf(stderr, "Feature %s is not supported\n", uri);
+			jalv_close(jalv);
+			return -8;
+		}
+	}
+	lilv_nodes_free(req_feats);
 
 	/* Instantiate the plugin */
-	jalv.instance = lilv_plugin_instantiate(
-		jalv.plugin, jalv.sample_rate, features);
-	if (!jalv.instance) {
-		die("Failed to instantiate plugin.\n");
+	jalv->instance = lilv_plugin_instantiate(
+		jalv->plugin, jalv->sample_rate, jalv->feature_list);
+	if (!jalv->instance) {
+		fprintf(stderr, "Failed to instantiate plugin.\n");
+		jalv_close(jalv);
+		return -9;
 	}
 
-	ext_data.data_access = lilv_instance_get_descriptor(jalv.instance)->extension_data;
+	jalv->features.ext_data.data_access =
+		lilv_instance_get_descriptor(jalv->instance)->extension_data;
 
 	fprintf(stderr, "\n");
-	if (!jalv.buf_size_set) {
-		jalv_allocate_port_buffers(&jalv);
+	if (!jalv->buf_size_set) {
+		jalv_allocate_port_buffers(jalv);
 	}
 
 	/* Create workers if necessary */
-	if (lilv_plugin_has_extension_data(jalv.plugin, jalv.nodes.work_interface)) {
+	if (lilv_plugin_has_extension_data(jalv->plugin, jalv->nodes.work_interface)) {
 		const LV2_Worker_Interface* iface = (const LV2_Worker_Interface*)
-			lilv_instance_get_extension_data(jalv.instance, LV2_WORKER__interface);
+			lilv_instance_get_extension_data(jalv->instance, LV2_WORKER__interface);
 
-		jalv_worker_init(&jalv, &jalv.worker, iface, true);
-		if (jalv.safe_restore) {
-			jalv_worker_init(&jalv, &jalv.state_worker, iface, false);
+		jalv_worker_init(jalv, &jalv->worker, iface, true);
+		if (jalv->safe_restore) {
+			jalv_worker_init(jalv, &jalv->state_worker, iface, false);
 		}
 	}
 
 	/* Apply loaded state to plugin instance if necessary */
 	if (state) {
-		jalv_apply_state(&jalv, state);
+		jalv_apply_state(jalv, state);
 	}
 
-	if (jalv.opts.controls) {
-		for (char** c = jalv.opts.controls; *c; ++c) {
-			jalv_apply_control_arg(&jalv, *c);
+	if (jalv->opts.controls) {
+		for (char** c = jalv->opts.controls; *c; ++c) {
+			jalv_apply_control_arg(jalv, *c);
 		}
 	}
 
-	/* Set Jack callbacks */
-	jalv_backend_init(&jalv);
-
 	/* Create Jack ports and connect plugin ports to buffers */
-	for (uint32_t i = 0; i < jalv.num_ports; ++i) {
-		jalv_backend_activate_port(&jalv, i);
+	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+		jalv_backend_activate_port(jalv, i);
 	}
 
 	/* Print initial control values */
-	for (size_t i = 0; i < jalv.controls.n_controls; ++i) {
-		ControlID* control = jalv.controls.controls[i];
-		if (control->type == PORT) {// && control->value_type == jalv->forge.Float) {
-			struct Port* port = &jalv.ports[control->index];
-			print_control_value(&jalv, port, port->control);
+	for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+		ControlID* control = jalv->controls.controls[i];
+		if (control->type == PORT && control->is_writable) {
+			struct Port* port = &jalv->ports[control->index];
+			jalv_print_control(jalv, port, port->control);
 		}
 	}
 
 	/* Activate plugin */
-	lilv_instance_activate(jalv.instance);
+	lilv_instance_activate(jalv->instance);
 
 	/* Discover UI */
-	jalv.has_ui = jalv_discover_ui(&jalv);
+	jalv->has_ui = jalv_discover_ui(jalv);
 
 	/* Activate Jack */
-	jalv_backend_activate(&jalv);
-	jalv.play_state = JALV_RUNNING;
+	jalv_backend_activate(jalv);
+	jalv->play_state = JALV_RUNNING;
+
+	return 0;
+}
+
+int
+jalv_close(Jalv* const jalv)
+{
+	jalv->exit = true;
+
+	fprintf(stderr, "Exiting...\n");
+
+	/* Terminate the worker */
+	jalv_worker_finish(&jalv->worker);
+
+	/* Deactivate audio */
+	jalv_backend_deactivate(jalv);
+	for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+		if (jalv->ports[i].evbuf) {
+			lv2_evbuf_free(jalv->ports[i].evbuf);
+		}
+	}
+	jalv_backend_close(jalv);
+
+	/* Destroy the worker */
+	jalv_worker_destroy(&jalv->worker);
+
+	/* Deactivate plugin */
+#ifdef HAVE_SUIL
+	suil_instance_free(jalv->ui_instance);
+#endif
+	if (jalv->instance) {
+		lilv_instance_deactivate(jalv->instance);
+		lilv_instance_free(jalv->instance);
+	}
+
+	/* Clean up */
+	free(jalv->ports);
+	zix_ring_free(jalv->ui_events);
+	zix_ring_free(jalv->plugin_events);
+	for (LilvNode** n = (LilvNode**)&jalv->nodes; *n; ++n) {
+		lilv_node_free(*n);
+	}
+	symap_free(jalv->symap);
+	zix_sem_destroy(&jalv->symap_lock);
+#ifdef HAVE_SUIL
+	suil_host_free(jalv->ui_host);
+#endif
+
+	for (unsigned i = 0; i < jalv->controls.n_controls; ++i) {
+		ControlID* const control = jalv->controls.controls[i];
+		lilv_node_free(control->node);
+		lilv_node_free(control->symbol);
+		lilv_node_free(control->label);
+		lilv_node_free(control->group);
+		lilv_node_free(control->min);
+		lilv_node_free(control->max);
+		lilv_node_free(control->def);
+		free(control);
+	}
+	free(jalv->controls.controls);
+
+	if (jalv->sratom) {
+		sratom_free(jalv->sratom);
+	}
+	if (jalv->ui_sratom) {
+		sratom_free(jalv->ui_sratom);
+	}
+	lilv_uis_free(jalv->uis);
+	lilv_world_free(jalv->world);
+
+	zix_sem_destroy(&jalv->done);
+
+	remove(jalv->temp_dir);
+	free(jalv->temp_dir);
+	free(jalv->ui_event_buf);
+	free(jalv->feature_list);
+
+	free(jalv->opts.name);
+	free(jalv->opts.uuid);
+	free(jalv->opts.load);
+	free(jalv->opts.controls);
+
+	return 0;
+}
+
+int
+main(int argc, char** argv)
+{
+	Jalv jalv;
+	memset(&jalv, '\0', sizeof(Jalv));
+
+	if (jalv_open(&jalv, argc, argv)) {
+		return EXIT_FAILURE;
+	}
+
+	/* Set up signal handlers */
+	setup_signals(&jalv);
 
 	/* Run UI (or prompt at console) */
 	jalv_open_ui(&jalv);
 
 	/* Wait for finish signal from UI or signal handler */
-	zix_sem_wait(&exit_sem);
-	jalv.exit = true;
+	zix_sem_wait(&jalv.done);
 
-	fprintf(stderr, "Exiting...\n");
-
-	/* Terminate the worker */
-	jalv_worker_finish(&jalv.worker);
-
-	/* Deactivate audio */
-	jalv_backend_deactivate(&jalv);
-	for (uint32_t i = 0; i < jalv.num_ports; ++i) {
-		if (jalv.ports[i].evbuf) {
-			lv2_evbuf_free(jalv.ports[i].evbuf);
-		}
-	}
-	jalv_backend_close(&jalv);
-
-	/* Destroy the worker */
-	jalv_worker_destroy(&jalv.worker);
-
-	/* Deactivate plugin */
-	suil_instance_free(jalv.ui_instance);
-	lilv_instance_deactivate(jalv.instance);
-	lilv_instance_free(jalv.instance);
-
-	/* Clean up */
-	free(jalv.ports);
-	zix_ring_free(jalv.ui_events);
-	zix_ring_free(jalv.plugin_events);
-	for (LilvNode** n = (LilvNode**)&jalv.nodes; *n; ++n) {
-		lilv_node_free(*n);
-	}
-	symap_free(jalv.symap);
-	zix_sem_destroy(&jalv.symap_lock);
-	suil_host_free(jalv.ui_host);
-	sratom_free(jalv.sratom);
-	sratom_free(jalv.ui_sratom);
-	lilv_uis_free(jalv.uis);
-	lilv_world_free(world);
-
-	zix_sem_destroy(&exit_sem);
-
-	remove(jalv.temp_dir);
-	free(jalv.temp_dir);
-	free(jalv.ui_event_buf);
-
-	return 0;
+	return jalv_close(&jalv);
 }

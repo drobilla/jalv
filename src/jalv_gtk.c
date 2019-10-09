@@ -18,8 +18,8 @@
 
 #include <gtk/gtk.h>
 
-#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
-#include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
+#include "lv2/patch/patch.h"
+#include "lv2/port-props/port-props.h"
 
 #include "jalv_internal.h"
 
@@ -87,8 +87,7 @@ size_request(GtkWidget* widget, GtkRequisition* req)
 }
 
 static void
-on_window_destroy(GtkWidget* widget,
-                  gpointer   data)
+on_window_destroy(ZIX_UNUSED GtkWidget* widget, ZIX_UNUSED gpointer data)
 {
 	gtk_main_quit();
 }
@@ -140,7 +139,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(Jalv* jalv)
+jalv_native_ui_type(void)
 {
 #if GTK_MAJOR_VERSION == 2
 	return "http://lv2plug.in/ns/extensions/ui#GtkUI";
@@ -152,7 +151,7 @@ jalv_native_ui_type(Jalv* jalv)
 }
 
 static void
-on_save_activate(GtkWidget* widget, void* ptr)
+on_save_activate(ZIX_UNUSED GtkWidget* widget, void* ptr)
 {
 	Jalv* jalv = (Jalv*)ptr;
 	GtkWidget* dialog = gtk_file_chooser_dialog_new(
@@ -175,7 +174,7 @@ on_save_activate(GtkWidget* widget, void* ptr)
 }
 
 static void
-on_quit_activate(GtkWidget* widget, gpointer data)
+on_quit_activate(ZIX_UNUSED GtkWidget* widget, gpointer data)
 {
 	GtkWidget* window = (GtkWidget*)data;
 	gtk_widget_destroy(window);
@@ -234,7 +233,7 @@ on_preset_activate(GtkWidget* widget, gpointer data)
 }
 
 static void
-on_preset_destroy(gpointer data, GClosure* closure)
+on_preset_destroy(gpointer data, ZIX_UNUSED GClosure* closure)
 {
 	PresetRecord* record = (PresetRecord*)data;
 	lilv_node_free(record->preset);
@@ -277,9 +276,9 @@ pset_menu_free(PresetMenu* menu)
 }
 
 static gint
-menu_cmp(gconstpointer a, gconstpointer b, gpointer data)
+menu_cmp(gconstpointer a, gconstpointer b, ZIX_UNUSED gpointer data)
 {
-	return strcmp(((PresetMenu*)a)->label, ((PresetMenu*)b)->label);
+	return strcmp(((const PresetMenu*)a)->label, ((const PresetMenu*)b)->label);
 }
 
 static PresetMenu*
@@ -532,7 +531,10 @@ set_float_control(const ControlID* control, float value)
 }
 
 static double
-get_atom_double(Jalv* jalv, uint32_t size, LV2_URID type, const void* body)
+get_atom_double(Jalv*               jalv,
+                ZIX_UNUSED uint32_t size,
+                LV2_URID            type,
+                const void*         body)
 {
 	if (type == jalv->forge.Int || type == jalv->forge.Bool) {
 		return *(const int32_t*)body;
@@ -1003,10 +1005,10 @@ add_control_row(GtkWidget*  table,
 }
 
 static int
-control_group_cmp(const void* p1, const void* p2, void* data)
+control_group_cmp(const void* p1, const void* p2, ZIX_UNUSED void* data)
 {
-	const ControlID* control1 = *(const ControlID**)p1;
-	const ControlID* control2 = *(const ControlID**)p2;
+	const ControlID* control1 = *(const ControlID*const*)p1;
+	const ControlID* control2 = *(const ControlID*const*)p2;
 
 	const int cmp = (control1->group && control2->group)
 		? strcmp(lilv_node_as_string(control1->group),
@@ -1153,7 +1155,7 @@ build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
 }
 
 bool
-jalv_discover_ui(Jalv* jalv)
+jalv_discover_ui(ZIX_UNUSED Jalv* jalv)
 {
 	return TRUE;
 }
@@ -1184,7 +1186,7 @@ jalv_open_ui(Jalv* jalv)
 
 	/* Attempt to instantiate custom UI if necessary */
 	if (jalv->ui && !jalv->opts.generic_ui) {
-		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), alignment);
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(), alignment);
 	}
 
 	if (jalv->ui_instance) {
@@ -1225,12 +1227,12 @@ jalv_open_ui(Jalv* jalv)
 	gtk_main();
 	suil_instance_free(jalv->ui_instance);
 	jalv->ui_instance = NULL;
-	zix_sem_post(jalv->done);
+	zix_sem_post(&jalv->done);
 	return 0;
 }
 
 int
-jalv_close_ui(Jalv* jalv)
+jalv_close_ui(ZIX_UNUSED Jalv* jalv)
 {
 	gtk_main_quit();
 	return 0;

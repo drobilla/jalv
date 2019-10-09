@@ -20,7 +20,6 @@
    Particularly useful for implementing LV2 URI mapping.
 
    @see <a href="http://lv2plug.in/ns/ext/urid">LV2 URID</a>
-   @see <a href="http://lv2plug.in/ns/ext/uri-map">LV2 URI Map</a>
 */
 
 #ifndef SYMAP_H

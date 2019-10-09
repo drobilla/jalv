@@ -136,11 +136,6 @@ new_property_control(Jalv* jalv, const LilvNode* property)
 	id->is_integer = (id->value_type == jalv->forge.Int ||
 	                  id->value_type == jalv->forge.Long);
 
-	const size_t sym_len = strlen(lilv_node_as_string(id->symbol));
-	if (sym_len > jalv->longest_sym) {
-		jalv->longest_sym = sym_len;
-	}
-
 	if (!id->value_type) {
 		fprintf(stderr, "Unknown value type for property <%s>\n",
 		        lilv_node_as_string(property));

@@ -30,22 +30,9 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(Jalv* jalv)
+jalv_native_ui_type(void)
 {
 	return "http://lv2plug.in/ns/extensions/ui#GtkUI";
-}
-
-int
-jalv_ui_resize(Jalv* jalv, int width, int height)
-{
-	if (jalv->ui_instance) {
-		GtkWidget* widget = GTK_WIDGET(
-			suil_instance_get_widget(jalv->ui_instance));
-		if (widget) {
-			gtk_widget_set_size_request(GTK_WIDGET(widget), width, height);
-		}
-	}
-	return 0;
 }
 
 void
@@ -55,6 +42,10 @@ jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    protocol,
                    const void* buffer)
 {
+	if (jalv->ui_instance) {
+		suil_instance_port_event(jalv->ui_instance, port_index,
+		                         buffer_size, protocol, buffer);
+	}
 }
 
 bool
@@ -69,7 +60,7 @@ jalv_open_ui(Jalv* jalv)
 	Gtk::Window* window = new Gtk::Window();
 
 	if (jalv->ui) {
-		jalv_ui_instantiate(jalv, jalv_native_ui_type(jalv), NULL);
+		jalv_ui_instantiate(jalv, jalv_native_ui_type(), NULL);
 	}
 
 	if (jalv->ui_instance) {
@@ -93,7 +84,7 @@ jalv_open_ui(Jalv* jalv)
 
 	delete window;
 	delete jalv_gtk_main;
-	zix_sem_post(jalv->done);
+	zix_sem_post(&jalv->done);
 
 	return 0;
 }

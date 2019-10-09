@@ -68,6 +68,10 @@ symap_new(void)
 void
 symap_free(Symap* map)
 {
+	if (!map) {
+		return;
+	}
+
 	for (uint32_t i = 0; i < map->size; ++i) {
 		free(map->symbols[i]);
 	}

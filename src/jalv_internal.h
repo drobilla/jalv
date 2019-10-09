@@ -26,16 +26,20 @@
 
 #include "lilv/lilv.h"
 #include "serd/serd.h"
+#ifdef HAVE_SUIL
 #include "suil/suil.h"
+#endif
 
-#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
-#include "lv2/lv2plug.in/ns/ext/atom/forge.h"
-#include "lv2/lv2plug.in/ns/ext/log/log.h"
-#include "lv2/lv2plug.in/ns/ext/midi/midi.h"
-#include "lv2/lv2plug.in/ns/ext/resize-port/resize-port.h"
-#include "lv2/lv2plug.in/ns/ext/state/state.h"
-#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
-#include "lv2/lv2plug.in/ns/ext/worker/worker.h"
+#include "lv2/atom/atom.h"
+#include "lv2/atom/forge.h"
+#include "lv2/data-access/data-access.h"
+#include "lv2/log/log.h"
+#include "lv2/midi/midi.h"
+#include "lv2/options/options.h"
+#include "lv2/resize-port/resize-port.h"
+#include "lv2/state/state.h"
+#include "lv2/urid/urid.h"
+#include "lv2/worker/worker.h"
 
 #include "zix/ring.h"
 #include "zix/sem.h"
@@ -84,7 +88,6 @@ struct Port {
 	size_t          buf_size;   ///< Custom buffer size, or 0
 	uint32_t        index;      ///< Port index
 	float           control;    ///< For control ports, otherwise 0.0f
-	bool            old_api;    ///< True for event, false for atom
 };
 
 /* Controls */
@@ -212,7 +215,6 @@ typedef struct {
 	LilvNode* atom_Float;
 	LilvNode* atom_Path;
 	LilvNode* atom_Sequence;
-	LilvNode* ev_EventPort;
 	LilvNode* lv2_AudioPort;
 	LilvNode* lv2_CVPort;
 	LilvNode* lv2_ControlPort;
@@ -263,6 +265,23 @@ typedef struct {
 	bool                        threaded;   ///< Run work in another thread
 } JalvWorker;
 
+typedef struct {
+	LV2_Feature                map_feature;
+	LV2_Feature                unmap_feature;
+	LV2_State_Make_Path        make_path;
+	LV2_Feature                make_path_feature;
+	LV2_Worker_Schedule        sched;
+	LV2_Feature                sched_feature;
+	LV2_Worker_Schedule        ssched;
+	LV2_Feature                state_sched_feature;
+	LV2_Log_Log                llog;
+	LV2_Feature                log_feature;
+	LV2_Options_Option         options[6];
+	LV2_Feature                options_feature;
+	LV2_Feature                safe_restore_feature;
+	LV2_Extension_Data_Feature ext_data;
+} JalvFeatures;
+
 struct Jalv {
 	JalvOptions        opts;           ///< Command-line options
 	JalvURIDs          urids;          ///< URIDs
@@ -284,7 +303,7 @@ struct Jalv {
 	JalvWorker         worker;         ///< Worker thread implementation
 	JalvWorker         state_worker;   ///< Synchronous worker for state restore
 	ZixSem             work_lock;      ///< Lock for plugin work() method
-	ZixSem*            done;           ///< Exit semaphore
+	ZixSem             done;           ///< Exit semaphore
 	ZixSem             paused;         ///< Paused signal from process thread
 	JalvPlayState      play_state;     ///< Current play state
 	char*              temp_dir;       ///< Temporary plugin state directory
@@ -295,8 +314,10 @@ struct Jalv {
 	const LilvUI*      ui;             ///< Plugin UI (RDF data)
 	const LilvNode*    ui_type;        ///< Plugin UI type (unwrapped)
 	LilvInstance*      instance;       ///< Plugin instance (shared library)
+#ifdef HAVE_SUIL
 	SuilHost*          ui_host;        ///< Plugin UI host support
 	SuilInstance*      ui_instance;    ///< Plugin UI instance (shared library)
+#endif
 	void*              window;         ///< Window (if applicable)
 	struct Port*       ports;          ///< Port array of size num_ports
 	Controls           controls;       ///< Available plugin controls
@@ -304,12 +325,10 @@ struct Jalv {
 	size_t             midi_buf_size;  ///< Size of MIDI port buffers
 	uint32_t           control_in;     ///< Index of control input port
 	uint32_t           num_ports;      ///< Size of the two following arrays:
-	uint32_t           longest_sym;    ///< Longest port symbol
 	uint32_t           plugin_latency; ///< Latency reported by plugin (if any)
 	float              ui_update_hz;   ///< Frequency of UI updates
-	uint32_t           sample_rate;    ///< Sample rate
+	float              sample_rate;    ///< Sample rate
 	uint32_t           event_delta_t;  ///< Frames since last update sent to UI
-	uint32_t           midi_event_id;  ///< MIDI event class ID in event context
 	uint32_t           position;       ///< Transport position in frames
 	float              bpm;            ///< Transport tempo in beats per minute
 	bool               rolling;        ///< Transport speed (0=stop, 1=play)
@@ -318,10 +337,18 @@ struct Jalv {
 	bool               has_ui;         ///< True iff a control UI is present
 	bool               request_update; ///< True iff a plugin update is needed
 	bool               safe_restore;   ///< Plugin restore() is thread-safe
+	JalvFeatures       features;
+	const LV2_Feature** feature_list;
 };
 
 int
+jalv_open(Jalv* jalv, int argc, char** argv);
+
+int
 jalv_init(int* argc, char*** argv, JalvOptions* opts);
+
+int
+jalv_close(Jalv* jalv);
 
 JalvBackend*
 jalv_backend_init(Jalv* jalv);
@@ -361,7 +388,7 @@ jalv_set_control(const ControlID* control,
                  const void*      body);
 
 const char*
-jalv_native_ui_type(Jalv* jalv);
+jalv_native_ui_type(void);
 
 bool
 jalv_discover_ui(Jalv* jalv);
@@ -384,7 +411,7 @@ bool
 jalv_ui_is_resizable(Jalv* jalv);
 
 void
-jalv_ui_write(SuilController controller,
+jalv_ui_write(void* const    controller,
               uint32_t       port_index,
               uint32_t       buffer_size,
               uint32_t       protocol,
@@ -394,7 +421,7 @@ void
 jalv_apply_ui_events(Jalv* jalv, uint32_t nframes);
 
 uint32_t
-jalv_ui_port_index(SuilController controller, const char* symbol);
+jalv_ui_port_index(void* const controller, const char* symbol);
 
 void
 jalv_ui_port_event(Jalv*       jalv,
@@ -414,9 +441,6 @@ jalv_run(Jalv* jalv, uint32_t nframes);
 
 bool
 jalv_update(Jalv* jalv);
-
-int
-jalv_ui_resize(Jalv* jalv, int width, int height);
 
 typedef int (*PresetSink)(Jalv*           jalv,
                           const LilvNode* node,
@@ -461,6 +485,13 @@ atom_to_turtle(LV2_URID_Unmap* unmap,
                const SerdNode* subject,
                const SerdNode* predicate,
                const LV2_Atom* atom);
+
+static inline void
+jalv_print_control(Jalv* jalv, const struct Port* port, float value)
+{
+	const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
+	printf("%s = %f\n", lilv_node_as_string(sym), value);
+}
 
 static inline char*
 jalv_strdup(const char* str)
