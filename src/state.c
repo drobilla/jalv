@@ -105,6 +105,40 @@ jalv_save(Jalv* jalv, const char* dir)
 }
 
 int
+jalv_load_banks(Jalv* jalv)
+{
+	LilvNodes* banks = lilv_plugin_get_related(jalv->plugin,
+	                                             jalv->nodes.pset_bank);
+	LILV_FOREACH(nodes, i, banks) {
+		const LilvNode* bank = lilv_nodes_get(banks, i);
+		lilv_world_load_resource(jalv->world, bank);
+		LilvNodes* labels = lilv_world_find_nodes(
+			jalv->world, bank, jalv->nodes.rdfs_label, NULL);
+		if (labels) {
+			const LilvNode* label = lilv_nodes_get_first(labels);
+			char default_label_str[32];
+			sprintf(default_label_str,"Bank %d",i);
+			const char * label_str=default_label_str;
+			if (label) label_str=lilv_node_as_string(label);
+
+			printf("%s => %s \n",
+				label_str,
+				lilv_node_as_string(lilv_nodes_get(banks, i)));
+
+			lilv_nodes_free(labels);
+		} else {
+			fprintf(stderr, "Bank <%s> has no rdfs:label\n",
+				lilv_node_as_string(lilv_nodes_get(banks, i)));
+			printf(" Bank %d => %s\n", i,
+				lilv_node_as_string(lilv_nodes_get(bank, i)));
+		}
+	}
+	lilv_nodes_free(banks);
+
+	return 0;
+}
+
+int
 jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
 {
 	LilvNodes* presets = lilv_plugin_get_related(jalv->plugin,
@@ -117,6 +151,19 @@ jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
 			continue;
 		}
 		*/
+
+		//Get Bank
+		const char default_bank_str[1]="";
+		const char *bank_str=default_bank_str;
+		LilvNodes* banks = lilv_world_find_nodes(
+			jalv->world, preset, jalv->nodes.pset_bank, NULL);
+		if (banks) {
+			const LilvNode* bank = lilv_nodes_get_first(banks);
+			bank_str=lilv_node_as_string(bank);
+			lilv_nodes_free(banks);
+		}
+
+		//Get Preset Name
 		LilvNodes* labels = lilv_world_find_nodes(
 			jalv->world, preset, jalv->nodes.rdfs_label, NULL);
 		if (labels) {
@@ -130,16 +177,20 @@ jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
 			const char * label_str=default_label_str;
 			if (label) label_str=lilv_node_as_string(label);
 
-			printf("%s => %s \n",
+			printf("%s => %s, %s \n",
 				label_str,
-				lilv_node_as_string(lilv_nodes_get(presets, i)));
+				lilv_node_as_string(lilv_nodes_get(presets, i)),
+				bank_str
+				);
 
 			lilv_nodes_free(labels);
 		} else {
 			fprintf(stderr, "Preset <%s> has no rdfs:label\n",
 				lilv_node_as_string(lilv_nodes_get(presets, i)));
-			printf(" Preset %d => %s\n", i,
-				lilv_node_as_string(lilv_nodes_get(presets, i)));
+			printf(" Preset %d => %s, %s\n", i,
+				lilv_node_as_string(lilv_nodes_get(presets, i)),
+				bank_str
+				);
 		}
 	}
 	lilv_nodes_free(presets);

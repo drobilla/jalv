@@ -424,6 +424,9 @@ typedef int (*PresetSink)(Jalv*           jalv,
                           void*           data);
 
 int
+jalv_load_banks(Jalv* jalv);
+
+int
 jalv_load_presets(Jalv* jalv, PresetSink sink, void* data);
 
 int

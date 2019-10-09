@@ -204,7 +204,10 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 	char sym[255];
 	float value;
 
-	if (strcmp(cmd, "\\get_presets\n") == 0) {
+	if (strcmp(cmd, "\\get_banks\n") == 0) {
+		jalv_load_banks(jalv);
+	}
+	else if (strcmp(cmd, "\\get_presets\n") == 0) {
 		jalv_unload_presets(jalv);
 		jalv_load_presets(jalv,NULL,NULL);
 	}
