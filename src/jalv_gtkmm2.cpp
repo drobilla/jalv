@@ -14,11 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "jalv_internal.h"
+
 #include <gtkmm/button.h>
 #include <gtkmm/main.h>
 #include <gtkmm/window.h>
-
-#include "jalv_internal.h"
 
 Gtk::Main* jalv_gtk_main = NULL;
 

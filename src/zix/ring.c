@@ -14,9 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include "zix/ring.h"
 
 #ifdef HAVE_MLOCK
 #    include <sys/mman.h>
@@ -50,7 +48,9 @@
 #    define ZIX_READ_BARRIER()
 #endif
 
-#include "zix/ring.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 struct ZixRingImpl {
 	uint32_t write_head;  ///< Read index into buf

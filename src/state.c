@@ -14,13 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include "jalv_config.h"
+#include "jalv_internal.h"
 
 #ifdef HAVE_LV2_STATE
 #    include "lv2/lv2plug.in/ns/ext/state/state.h"
@@ -28,8 +23,13 @@
 
 #include "lilv/lilv.h"
 
-#include "jalv_config.h"
-#include "jalv_internal.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #define NS_JALV "http://drobilla.net/ns/jalv#"
 #define NS_RDF  "http://www.w3.org/1999/02/22-rdf-syntax-ns#"

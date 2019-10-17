@@ -14,14 +14,14 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <math.h>
-
-#include <gtk/gtk.h>
+#include "jalv_internal.h"
 
 #include "lv2/patch/patch.h"
 #include "lv2/port-props/port-props.h"
 
-#include "jalv_internal.h"
+#include <gtk/gtk.h>
+
+#include <math.h>
 
 #if GTK_MAJOR_VERSION == 3
 #if defined(__clang__)
@@ -1245,4 +1245,3 @@ jalv_close_ui(ZIX_UNUSED Jalv* jalv)
 #    pragma GCC diagnostic pop
 #endif
 #endif
-

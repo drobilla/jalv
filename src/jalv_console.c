@@ -19,15 +19,15 @@
 #define _BSD_SOURCE     1
 #define _DEFAULT_SOURCE 1
 
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "jalv_config.h"
 #include "jalv_internal.h"
 
 #include "lv2/ui/ui.h"
+
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 static int
 print_usage(const char* name, bool error)

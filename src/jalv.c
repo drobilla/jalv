@@ -17,28 +17,10 @@
 #define _POSIX_C_SOURCE 200809L /* for mkdtemp */
 #define _DARWIN_C_SOURCE        /* for mkdtemp on OSX */
 
-#include <assert.h>
-#include <math.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#ifndef __cplusplus
-#    include <stdbool.h>
-#endif
-
-#ifdef _WIN32
-#    include <io.h>  /* for _mktemp */
-#    define snprintf _snprintf
-#else
-#    include <unistd.h>
-#endif
-
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "lv2_evbuf.h"
+#include "worker.h"
 
 #include "lv2/atom/atom.h"
 #include "lv2/buf-size/buf-size.h"
@@ -61,8 +43,21 @@
 #include "suil/suil.h"
 #endif
 
-#include "lv2_evbuf.h"
-#include "worker.h"
+#ifdef _WIN32
+#    include <io.h>  /* for _mktemp */
+#    define snprintf _snprintf
+#else
+#    include <unistd.h>
+#endif
+
+#include <assert.h>
+#include <math.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #define NS_RDF "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 #define NS_XSD "http://www.w3.org/2001/XMLSchema#"

@@ -14,10 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <algorithm>
-#include <cmath>
-#include <cstdio>
-
 #include "jalv_internal.h"
 
 #include "lv2/patch/patch.h"
@@ -43,6 +39,10 @@
 #else
 #    include <QtGui>
 #endif
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
 
 #define CONTROL_WIDTH 150
 #define DIAL_STEPS    10000

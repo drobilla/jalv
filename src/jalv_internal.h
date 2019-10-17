@@ -17,15 +17,16 @@
 #ifndef JALV_INTERNAL_H
 #define JALV_INTERNAL_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_ISATTY
-#    include <unistd.h>
-#endif
+#include "lv2_evbuf.h"
+#include "symap.h"
+
+#include "zix/ring.h"
+#include "zix/sem.h"
+#include "zix/thread.h"
 
 #include "lilv/lilv.h"
 #include "serd/serd.h"
+#include "sratom/sratom.h"
 #ifdef HAVE_SUIL
 #include "suil/suil.h"
 #endif
@@ -41,14 +42,12 @@
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
 
-#include "zix/ring.h"
-#include "zix/sem.h"
-#include "zix/thread.h"
-
-#include "sratom/sratom.h"
-
-#include "lv2_evbuf.h"
-#include "symap.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef HAVE_ISATTY
+#    include <unistd.h>
+#endif
 
 #ifdef __clang__
 #    define REALTIME __attribute__((annotate("realtime")))
