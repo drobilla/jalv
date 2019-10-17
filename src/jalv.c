@@ -630,13 +630,13 @@ jalv_run(Jalv* jalv, uint32_t nframes)
 	return send_ui_updates;
 }
 
-bool
+int
 jalv_update(Jalv* jalv)
 {
 	/* Check quit flag and close if set. */
 	if (zix_sem_try_wait(&jalv->done)) {
 		jalv_close_ui(jalv);
-		return false;
+		return 0;
 	}
 
 	/* Emit UI events. */
@@ -674,7 +674,7 @@ jalv_update(Jalv* jalv)
 		}
 	}
 
-	return true;
+	return 1;
 }
 
 static bool

@@ -438,7 +438,7 @@ jalv_send_to_ui(Jalv*       jalv,
 bool
 jalv_run(Jalv* jalv, uint32_t nframes);
 
-bool
+int
 jalv_update(Jalv* jalv);
 
 typedef int (*PresetSink)(Jalv*           jalv,
