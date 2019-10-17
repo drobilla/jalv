@@ -16,22 +16,15 @@
 
 #include "jalv_internal.h"
 
+#include "lv2/core/attributes.h"
 #include "lv2/patch/patch.h"
 #include "lv2/port-props/port-props.h"
+
+LV2_DISABLE_DEPRECATION_WARNINGS
 
 #include <gtk/gtk.h>
 
 #include <math.h>
-
-#if GTK_MAJOR_VERSION == 3
-#if defined(__clang__)
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-#    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-#endif
 
 static GtkCheckMenuItem* active_preset_item = NULL;
 static bool              updating           = false;
@@ -1238,10 +1231,4 @@ jalv_close_ui(ZIX_UNUSED Jalv* jalv)
 	return 0;
 }
 
-#if GTK_MAJOR_VERSION == 3
-#if defined(__clang__)
-#    pragma clang diagnostic pop
-#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-#    pragma GCC diagnostic pop
-#endif
-#endif
+LV2_RESTORE_WARNINGS
