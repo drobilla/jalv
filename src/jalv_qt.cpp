@@ -612,7 +612,7 @@ build_control_widget(Jalv* jalv)
 		}
 	}
 
-	qSort(portContainers.begin(), portContainers.end(), portGroupLessThan);
+	std::sort(portContainers.begin(), portContainers.end(), portGroupLessThan);
 
 	QWidget*    grid       = new QWidget();
 	FlowLayout* flowLayout = new FlowLayout();
