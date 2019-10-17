@@ -299,6 +299,7 @@ private:
 	void    setRange(float min, float max);
 	QString getValueLabel(float value);
 	float   getValue();
+	int     stringWidth(const QString& str);
 
 	const LilvPlugin* plugin;
 	struct Port*      port;
@@ -464,7 +465,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	name = QString("%1").arg(lilv_node_as_string(nname));
 
 	// Handle long names
-	if (fontMetrics().width(name) > CONTROL_WIDTH) {
+	if (stringWidth(name) > CONTROL_WIDTH) {
 		setTitle(fontMetrics().elidedText(name, Qt::ElideRight, CONTROL_WIDTH));
 	} else {
 		setTitle(name);
@@ -513,7 +514,7 @@ QString
 Control::getValueLabel(float value)
 {
 	if (scaleMap[value]) {
-		if (fontMetrics().width(scaleMap[value]) > CONTROL_WIDTH) {
+		if (stringWidth(scaleMap[value]) > CONTROL_WIDTH) {
 			label->setToolTip(scaleMap[value]);
 			return fontMetrics().elidedText(QString(scaleMap[value]),
 			                                Qt::ElideRight,
@@ -557,6 +558,16 @@ Control::getValue()
 	} else {
 		return (float)dial->value() / steps;
 	}
+}
+
+int
+Control::stringWidth(const QString& str)
+{
+#if QT_VERSION >= 0x050B00
+	return fontMetrics().horizontalAdvance(str);
+#else
+	return fontMetrics().width(str);
+#endif
 }
 
 void
