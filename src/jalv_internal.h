@@ -530,7 +530,7 @@ jalv_vprintf(LV2_Log_Handle handle,
 static inline bool
 jalv_ansi_start(FILE* stream, int color)
 {
-#ifdef HAVE_ISATTY
+#if defined(HAVE_ISATTY) && defined(HAVE_FILENO)
 	if (isatty(fileno(stream))) {
 		return fprintf(stream, "\033[0;%dm", color);
 	}
