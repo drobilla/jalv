@@ -711,6 +711,12 @@ jalv_ui_scale_factor(Jalv*)
   return (float)QGuiApplication::primaryScreen()->devicePixelRatio();
 }
 
+LilvNode*
+jalv_select_plugin(Jalv*)
+{
+  return nullptr;
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {

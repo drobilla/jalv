@@ -402,6 +402,9 @@ jalv_ui_scale_factor(Jalv* jalv);
 int
 jalv_open_ui(Jalv* jalv);
 
+LilvNode*
+jalv_select_plugin(Jalv* jalv);
+
 void
 jalv_init_ui(Jalv* jalv);
 

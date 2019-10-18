@@ -1011,6 +1011,10 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   }
 
   if (!plugin_uri) {
+    plugin_uri = jalv_select_plugin(jalv);
+  }
+
+  if (!plugin_uri) {
     fprintf(stderr, "Missing plugin URI, try lv2ls to list plugins\n");
     jalv_close(jalv);
     return -3;

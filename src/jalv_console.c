@@ -291,6 +291,13 @@ jalv_ui_scale_factor(Jalv* ZIX_UNUSED(jalv))
   return 1.0f;
 }
 
+LilvNode*
+jalv_select_plugin(Jalv* jalv)
+{
+  (void)jalv;
+  return NULL;
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {

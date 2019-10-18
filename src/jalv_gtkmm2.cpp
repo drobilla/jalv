@@ -16,6 +16,7 @@
 
 #include "jalv_internal.h"
 
+#include "lilv/lilv.h"
 #include "lv2/core/attributes.h"
 #include "suil/suil.h"
 #include "zix/sem.h"
@@ -75,6 +76,12 @@ float
 jalv_ui_scale_factor(Jalv*)
 {
   return 1.0f;
+}
+
+LilvNode*
+jalv_select_plugin(Jalv*)
+{
+  return nullptr;
 }
 
 int
