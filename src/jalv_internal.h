@@ -341,7 +341,7 @@ struct Jalv {
 };
 
 int
-jalv_open(Jalv* jalv, int argc, char** argv);
+jalv_open(Jalv* jalv, int* argc, char*** argv);
 
 int
 jalv_init(int* argc, char*** argv, JalvOptions* opts);

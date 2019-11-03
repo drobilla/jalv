@@ -732,9 +732,9 @@ setup_signals(Jalv* const jalv)
 }
 
 int
-jalv_open(Jalv* const jalv, int argc, char** argv)
+jalv_open(Jalv* const jalv, int* argc, char*** argv)
 {
-	jalv->prog_name     = argv[0];
+	jalv->prog_name     = (*argv)[0];
 	jalv->block_length  = 4096;  /* Should be set by backend */
 	jalv->midi_buf_size = 1024;  /* Should be set by backend */
 	jalv->play_state    = JALV_PAUSED;
@@ -742,10 +742,10 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 	jalv->control_in    = (uint32_t)-1;
 
 #ifdef HAVE_SUIL
-	suil_init(&argc, &argv, SUIL_ARG_NONE);
+	suil_init(argc, argv, SUIL_ARG_NONE);
 #endif
 
-	if (jalv_init(&argc, &argv, &jalv->opts)) {
+	if (jalv_init(argc, argv, &jalv->opts)) {
 		jalv_close(jalv);
 		return -1;
 	}
@@ -913,8 +913,8 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 			return -2;
 		}
 		plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
-	} else if (argc > 1) {
-		plugin_uri = lilv_new_uri(world, argv[argc - 1]);
+	} else if (*argc > 1) {
+		plugin_uri = lilv_new_uri(world, (*argv)[*argc - 1]);
 	}
 
 	if (!plugin_uri) {
@@ -1249,7 +1249,7 @@ main(int argc, char** argv)
 	Jalv jalv;
 	memset(&jalv, '\0', sizeof(Jalv));
 
-	if (jalv_open(&jalv, argc, argv)) {
+	if (jalv_open(&jalv, &argc, &argv)) {
 		return EXIT_FAILURE;
 	}
 
