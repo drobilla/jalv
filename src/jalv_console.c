@@ -250,6 +250,12 @@ jalv_run_custom_ui(Jalv* jalv)
 	return false;
 }
 
+float
+jalv_ui_refresh_rate(Jalv* jalv)
+{
+	return 30.0f;
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {

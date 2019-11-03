@@ -392,6 +392,9 @@ jalv_native_ui_type(void);
 bool
 jalv_discover_ui(Jalv* jalv);
 
+float
+jalv_ui_refresh_rate(Jalv* jalv);
+
 int
 jalv_open_ui(Jalv* jalv);
 

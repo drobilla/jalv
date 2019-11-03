@@ -31,6 +31,7 @@
 #    include <QMainWindow>
 #    include <QMenu>
 #    include <QMenuBar>
+#    include <QScreen>
 #    include <QScrollArea>
 #    include <QStyle>
 #    include <QTimer>
@@ -671,6 +672,16 @@ bool
 jalv_discover_ui(Jalv* jalv)
 {
 	return true;
+}
+
+float
+jalv_ui_refresh_rate(Jalv* jalv)
+{
+#if QT_VERSION >= 0x050000
+	return (float)QGuiApplication::primaryScreen()->refreshRate();
+#else
+	return 30.0f;
+#endif
 }
 
 int

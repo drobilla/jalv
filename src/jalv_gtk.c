@@ -1153,6 +1153,19 @@ jalv_discover_ui(ZIX_UNUSED Jalv* jalv)
 	return TRUE;
 }
 
+float
+jalv_ui_refresh_rate(Jalv* jalv)
+{
+#if GTK_MAJOR_VERSION == 2
+	return 30.0f;
+#else
+	GdkDisplay* const display = gdk_display_get_default();
+	GdkMonitor* const monitor = gdk_display_get_primary_monitor(display);
+
+	return (float)gdk_monitor_get_refresh_rate(monitor);
+#endif
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {

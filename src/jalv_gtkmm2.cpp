@@ -58,6 +58,12 @@ jalv_discover_ui(Jalv* jalv)
 	return true;
 }
 
+float
+jalv_ui_refresh_rate(Jalv* jalv)
+{
+	return 30.0f;
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {

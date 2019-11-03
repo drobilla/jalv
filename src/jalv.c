@@ -1019,8 +1019,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
 	if (jalv->opts.update_rate == 0.0) {
 		/* Calculate a reasonable UI update frequency. */
-		jalv->ui_update_hz = jalv->sample_rate / jalv->midi_buf_size * 2.0f;
-		jalv->ui_update_hz = MAX(25.0f, jalv->ui_update_hz);
+		jalv->ui_update_hz = jalv_ui_refresh_rate(jalv);
 	} else {
 		/* Use user-specified UI update rate. */
 		jalv->ui_update_hz = jalv->opts.update_rate;
