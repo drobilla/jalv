@@ -1,126 +1,126 @@
 jalv (1.6.3) unstable;
 
-  * Use screen refresh rate with Gtk3 and Qt5
   * Support rdfs:label for port groups
+  * Use screen refresh rate with Gtk3 and Qt5
 
  -- David Robillard <d@drobilla.net>  Sun, 10 Nov 2019 10:17:25 +0000
 
 jalv (1.6.2) stable;
 
-  * Fix compilation with recent Gtkmm versions that require C++11
   * Add jalv -i option to ignore stdin for background use
   * Add several commands to console interface
   * Add support for running as an internal Jack client (thanks Timo Wischer)
-  * Make Suil dependency optional
-  * Remove support for deprecated event and uri-map extensions
+  * Add support for underscore in port names on command line (thanks Jośe
+    Fernando Moyano)
   * Fix Jack deactivation
+  * Fix compilation with recent Gtkmm versions that require C++11
   * Fix potential crash when closed with worker (thanks JP Cimalando)
   * Fix potential hang after Ctrl-c in console interface (thanks Laxmi Devi)
-  * Add support for underscore in port names on command line
-    (thanks Jośe Fernando Moyano)
+  * Make Suil dependency optional
+  * Remove support for deprecated event and uri-map extensions
 
- -- David Robillard <d@drobilla.net>  Thu, 06 Jun 2019 22:38:01 +0200
+ -- David Robillard <d@drobilla.net>  Thu, 06 Jun 2019 20:38:01 +0000
 
 jalv (1.6.0) stable;
 
-  * Support CV ports if Jack metadata is enabled (patch from Hanspeter Portner)
-  * Fix unreliable UI state initialization (patch from Hanspeter Portner)
+  * Add PortAudio backend (compile time option, audio only)
+  * Add Qt5 version
+  * Add command prompt to console version for changing controls
+  * Add generic Qt control UI from Amadeus Folego
+  * Add option to print plugin trace messages
+  * Allow Jack client name to be set from command line (thanks Adam Avramov)
+  * Exit GUI versions on interrupt
+  * Exit on Jack shutdown (patch from Robin Gareus)
   * Fix memory error on preset save resulting in odd bundle names
+  * Fix semaphore correctness issues
+  * Fix unreliable UI state initialization (patch from Hanspeter Portner)
   * Improve preset support
+  * Print colorful log if output is a terminal
+  * Report Jack latency (patch from Robin Gareus)
+  * Set Jack port order metadata
+  * Support CV ports if Jack metadata is enabled (patch from Hanspeter
+    Portner)
   * Support numeric and string plugin properties (event-based control)
   * Support thread-safe state restoration
   * Update UI when internal plugin state is changed during preset load
-  * Add generic Qt control UI from Amadeus Folego
-  * Add PortAudio backend (compile time option, audio only)
-  * Set Jack port order metadata
-  * Allow Jack client name to be set from command line (thanks Adam Avramov)
-  * Add command prompt to console version for changing controls
-  * Add option to print plugin trace messages
-  * Print colorful log if output is a terminal
-  * Exit on Jack shutdown (patch from Robin Gareus)
-  * Report Jack latency (patch from Robin Gareus)
-  * Exit GUI versions on interrupt
-  * Fix semaphore correctness issues
   * Use moc-qt4 if present for systems with multiple Qt versions
-  * Add Qt5 version
 
- -- David Robillard <d@drobilla.net>  Wed, 04 Jan 2017 12:24:58 -0500
+ -- David Robillard <d@drobilla.net>  Wed, 04 Jan 2017 17:24:58 +0000
 
 jalv (1.4.6) stable;
 
-  * Show newly saved presets in the preset menu
-  * Generate Qt moc nonsense at build time for broader compatibility
-  * Update for latest LV2 Atom Object simplifications
-  * Set port pretty names via new Jack metadata API
-  * Add support for data-access extension (based on patch by Filipe Coelho)
-  * Support new UI show/hide interface in console version
   * Add option to print control output changes to stdout
+  * Add support for data-access extension (based on patch by Filipe Coelho)
+  * Generate Qt moc nonsense at build time for broader compatibility
+  * Set port pretty names via new Jack metadata API
+  * Show newly saved presets in the preset menu
+  * Support new UI show/hide interface in console version
   * Support saving the same preset several times
+  * Update for latest LV2 Atom Object simplifications
   * Update man pages and console jalv help output for new options
   * Upgrade to waf 1.7.16
 
- -- David Robillard <d@drobilla.net>  Fri, 08 Aug 2014 18:30:28 -0400
+ -- David Robillard <d@drobilla.net>  Fri, 08 Aug 2014 22:30:28 +0000
 
 jalv (1.4.4) stable;
 
-  * Add -c option for setting controls from the command line
   * Add --no-menu option for jalv.gtk
+  * Add -c option for setting controls from the command line
   * Don't expose non-MIDI event ports to Jack
-  * Hide controls for ports with notOnGUI property in generic UI
-    (based on patch from Robin Gareus)
+  * Hide controls for ports with notOnGUI property in generic UI (based on
+    patch from Robin Gareus)
+  * Preset menu support for Qt (patch from Timo Westkämper)
   * Support ui:portMap feature to allow UIs to avoid hard-coded port indices
     (useful for compatibility and separately distributed UIs)
-  * Preset menu support for Qt (patch from Timo Westkämper)
 
- -- David Robillard <d@drobilla.net>  Sat, 04 Jan 2014 16:11:45 -0500
+ -- David Robillard <d@drobilla.net>  Sat, 04 Jan 2014 21:11:45 +0000
 
 jalv (1.4.2) stable;
 
-  * Fix crash when running "jalv" with bad command line arguments
-  * Fix potential crash with UIs and debug printing
-  * Fix parameter changes with Qt UI
-  * Nicer printing of atom messages with -d
   * Add command-line option to control UI update frequency
+  * Fix crash when running "jalv" with bad command line arguments
+  * Fix default setting for non-sequential enumeration ports (patch from Robin
+    Gareus)
+  * Fix parameter changes with Qt UI
+  * Fix potential crash with UIs and debug printing
+  * Nicer printing of atom messages with -d
   * Support rsz:minimumSize for atom and event ports
-  * Fix default setting for non-sequential enumeration ports
-    (patch from Robin Gareus)
-  * Work around Gtk bug for labels on sliders (patch from Robin Gareus)
   * Upgrade to waf 1.7.11
+  * Work around Gtk bug for labels on sliders (patch from Robin Gareus)
 
- -- David Robillard <d@drobilla.net>  Fri, 09 Aug 2013 10:40:20 -0400
+ -- David Robillard <d@drobilla.net>  Fri, 09 Aug 2013 14:40:20 +0000
 
 jalv (1.4.0) stable;
 
-  * Send time information to plugin when Jack tempo changes
-  * Group controls under headings if port group information is available
-  * Add spinbuttons for precisely setting control values
-  * Use a more efficient dense layout for controls
-  * Make URI map thread-safe, fixing occasional crashes for plugins with UIs
   * Add menu bar and pass parent widget in Qt version for true UI embedding
+  * Add spinbuttons for precisely setting control values
+  * Group controls under headings if port group information is available
+  * Make URI map thread-safe, fixing occasional crashes for plugins with UIs
+  * Send time information to plugin when Jack tempo changes
   * Support state:loadDefaultState
   * Update to waf 1.7.8 and autowaf r90
+  * Use a more efficient dense layout for controls
 
- -- David Robillard <d@drobilla.net>  Fri, 22 Feb 2013 22:35:22 -0500
+ -- David Robillard <d@drobilla.net>  Sat, 23 Feb 2013 03:35:22 +0000
 
 jalv (1.2.0) stable;
 
-  * Tune UI update rate and ring size based on JACK rate and MIDI buffer size
-    to handle the handle the maximum message rate the plugin can send.
-  * Support lv2:sampleRate control ports.
-  * Tolerate loading presets with port values that aren't xsd:decimal
+  * Add Gtk3 UI
+  * Fix Jack Session support
   * Notify plugins of Jack transport changes by sending events (an atom:Blank
     with properties from the LV2 time extension)
+  * Port to MinGW
   * Refuse to instantiate plugins which require unsupported features
   * Support LV2 buf-size extension (with all features)
-  * Add Gtk3 UI
-  * Port to MinGW
-  * Fix Jack Session support
+  * Support lv2:sampleRate control ports.
+  * Tolerate loading presets with port values that aren't xsd:decimal
+  * Tune UI update rate and ring size based on JACK rate and MIDI buffer size
+    to handle the handle the maximum message rate the plugin can send.
 
- -- David Robillard <d@drobilla.net>  Sun, 14 Oct 2012 18:38:53 -0400
+ -- David Robillard <d@drobilla.net>  Sun, 14 Oct 2012 22:38:53 +0000
 
 jalv (1.0.0) stable;
 
   * Initial release
 
- -- David Robillard <d@drobilla.net>  Thu, 19 Apr 2012 18:42:42 -0400
-
+ -- David Robillard <d@drobilla.net>  Thu, 19 Apr 2012 22:42:42 +0000
