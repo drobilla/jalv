@@ -1162,7 +1162,9 @@ jalv_ui_refresh_rate(Jalv* jalv)
 	GdkDisplay* const display = gdk_display_get_default();
 	GdkMonitor* const monitor = gdk_display_get_primary_monitor(display);
 
-	return (float)gdk_monitor_get_refresh_rate(monitor);
+	const float rate = (float)gdk_monitor_get_refresh_rate(monitor);
+
+	return rate < 30.0f ? 30.0f : rate;
 #endif
 }
 
