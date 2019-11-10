@@ -649,7 +649,6 @@ build_control_widget(Jalv* jalv)
 					        world, group, jalv->nodes.rdfs_label, NULL);
 				}
 
-				fprintf(stderr, "Group name: %p '%s'\n", groupName, lilv_node_as_string(groupName));
 				QGroupBox* groupBox = new QGroupBox(lilv_node_as_string(groupName));
 
 				groupLayout = new QHBoxLayout();
