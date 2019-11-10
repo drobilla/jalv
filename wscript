@@ -9,13 +9,16 @@ from waflib.extras import autowaf as autowaf
 # Version of this package (even if built as a child)
 JALV_VERSION = '1.6.3'
 
-# Variables for 'waf dist'
-APPNAME = 'jalv'
-VERSION = JALV_VERSION
+# Mandatory waf variables
+APPNAME = 'jalv'        # Package name for waf dist
+VERSION = JALV_VERSION  # Package version for waf dist
+top     = '.'           # Source directory
+out     = 'build'       # Build directory
 
-# Mandatory variables
-top = '.'
-out = 'build'
+# Release variables
+uri          = 'http://drobilla.net/sw/jalv'
+dist_pattern = 'http://download.drobilla.net/jalv-%d.%d.%d.tar.bz2'
+post_tags    = ['Hacking', 'LAD', 'LV2', 'Jalv']
 
 def options(ctx):
     ctx.load('compiler_c')
@@ -237,14 +240,6 @@ def build(bld):
     # Man pages
     bld.install_files('${MANDIR}/man1', bld.path.ant_glob('doc/*.1'))
 
-def upload_docs(ctx):
-    import glob
-    import os
-    for page in glob.glob('doc/*.[1-8]'):
-        os.system('mkdir -p build/doc')
-        os.system('soelim %s | pre-grohtml troff -man -wall -Thtml | post-grohtml > build/%s.html' % (page, page))
-        os.system('rsync -avz --delete -e ssh build/%s.html drobilla@drobilla.net:~/drobilla.net/man/' % page)
-
 def lint(ctx):
     "checks code for style issues"
     import subprocess
@@ -257,17 +252,6 @@ def lint(ctx):
            "-readability-else-after-return\" " +
            "$(find .. -name '*.c')")
     subprocess.call(cmd, cwd='build', shell=True)
-
-def posts(ctx):
-    path = str(ctx.path.abspath())
-    autowaf.news_to_posts(
-        os.path.join(path, 'NEWS'),
-        {'title'        : 'Jalv',
-         'description'  : autowaf.get_blurb(os.path.join(path, 'README.md')),
-         'dist_pattern' : 'http://download.drobilla.net/jalv-%s.tar.bz2'},
-        { 'Author' : 'drobilla',
-          'Tags'   : 'Hacking, LAD, LV2, Jalv' },
-        os.path.join(out, 'posts'))
 
 def dist(ctx):
     ctx.base_path = ctx.path
