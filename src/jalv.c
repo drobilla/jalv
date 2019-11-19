@@ -1037,126 +1037,129 @@ main(int argc, char** argv)
 	jalv_create_controls(&jalv, true);
 	jalv_create_controls(&jalv, false);
 
-	if (!(jalv.backend = jalv_backend_init(&jalv))) {
-		die("Failed to connect to audio system");
-	}
-
-	printf("Sample rate:  %u Hz\n", jalv.sample_rate);
-	printf("Block length: %u frames\n", jalv.block_length);
-	printf("MIDI buffers: %zu bytes\n", jalv.midi_buf_size);
-
-	if (jalv.opts.buffer_size == 0) {
-		/* The UI ring is fed by plugin output ports (usually one), and the UI
-		   updates roughly once per cycle.  The ring size is a few times the
-		   size of the MIDI output to give the UI a chance to keep up.  The UI
-		   should be able to keep up with 4 cycles, and tests show this works
-		   for me, but this value might need increasing to avoid overflows.
-		*/
-		jalv.opts.buffer_size = jalv.midi_buf_size * N_BUFFER_CYCLES;
-	}
-
-	if (jalv.opts.update_rate == 0.0) {
-		/* Calculate a reasonable UI update frequency. */
-		jalv.ui_update_hz = (float)jalv.sample_rate / jalv.midi_buf_size * 2.0f;
-		jalv.ui_update_hz = MAX(25.0f, jalv.ui_update_hz);
-	} else {
-		/* Use user-specified UI update rate. */
-		jalv.ui_update_hz = jalv.opts.update_rate;
-		jalv.ui_update_hz = MAX(1.0f, jalv.ui_update_hz);
-	}
-
-	/* The UI can only go so fast, clamp to reasonable limits */
-	jalv.ui_update_hz     = MIN(60, jalv.ui_update_hz);
-	jalv.opts.buffer_size = MAX(4096, jalv.opts.buffer_size);
-	fprintf(stderr, "Comm buffers: %d bytes\n", jalv.opts.buffer_size);
-	fprintf(stderr, "Update rate:  %.01f Hz\n", jalv.ui_update_hz);
-
-	/* Build options array to pass to plugin */
-	const LV2_Options_Option options[] = {
-		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.param_sampleRate,
-		  sizeof(float), jalv.urids.atom_Float, &jalv.sample_rate },
-		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_minBlockLength,
-		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.block_length },
-		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_maxBlockLength,
-		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.block_length },
-		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_sequenceSize,
-		  sizeof(int32_t), jalv.urids.atom_Int, &jalv.midi_buf_size },
-		{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.ui_updateRate,
-		  sizeof(float), jalv.urids.atom_Float, &jalv.ui_update_hz },
-		{ LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL }
-	};
-
-	options_feature.data = (void*)&options;
-
-	/* Create Plugin <=> UI communication buffers */
-	jalv.ui_events     = zix_ring_new(jalv.opts.buffer_size);
-	jalv.plugin_events = zix_ring_new(jalv.opts.buffer_size);
-	zix_ring_mlock(jalv.ui_events);
-	zix_ring_mlock(jalv.plugin_events);
-
-	/* Instantiate the plugin */
-	jalv.instance = lilv_plugin_instantiate(
-		jalv.plugin, jalv.sample_rate, features);
-	if (!jalv.instance) {
-		die("Failed to instantiate plugin.\n");
-	}
-
-	ext_data.data_access = lilv_instance_get_descriptor(jalv.instance)->extension_data;
-
-	fprintf(stderr, "\n");
-	if (!jalv.buf_size_set) {
-		jalv_allocate_port_buffers(&jalv);
-	}
-
-	/* Create workers if necessary */
-	if (lilv_plugin_has_extension_data(jalv.plugin, jalv.nodes.work_interface)) {
-		const LV2_Worker_Interface* iface = (const LV2_Worker_Interface*)
-			lilv_instance_get_extension_data(jalv.instance, LV2_WORKER__interface);
-
-		jalv_worker_init(&jalv, &jalv.worker, iface, true);
-		if (jalv.safe_restore) {
-			jalv_worker_init(&jalv, &jalv.state_worker, iface, false);
+	if (!jalv.opts.no_instance) {
+		if (!(jalv.backend = jalv_backend_init(&jalv))) {
+			die("Failed to connect to audio system");
 		}
-	}
 
-	/* Apply loaded state to plugin instance if necessary */
-	if (state) {
-		jalv_apply_state(&jalv, state);
-	}
+		printf("Sample rate:  %u Hz\n", jalv.sample_rate);
+		printf("Block length: %u frames\n", jalv.block_length);
+		printf("MIDI buffers: %zu bytes\n", jalv.midi_buf_size);
 
-	if (jalv.opts.controls) {
-		for (char** c = jalv.opts.controls; *c; ++c) {
-			jalv_apply_control_arg(&jalv, *c);
+		if (jalv.opts.buffer_size == 0) {
+			/* The UI ring is fed by plugin output ports (usually one), and the UI
+			updates roughly once per cycle.  The ring size is a few times the
+			size of the MIDI output to give the UI a chance to keep up.  The UI
+			should be able to keep up with 4 cycles, and tests show this works
+			for me, but this value might need increasing to avoid overflows.
+			*/
+			jalv.opts.buffer_size = jalv.midi_buf_size * N_BUFFER_CYCLES;
 		}
-	}
 
-	/* Set Jack callbacks */
-	jalv_backend_init(&jalv);
-
-	/* Create Jack ports and connect plugin ports to buffers */
-	for (uint32_t i = 0; i < jalv.num_ports; ++i) {
-		jalv_backend_activate_port(&jalv, i);
-	}
-
-
-	/* Print initial control values */
-	for (size_t i = 0; i < jalv.controls.n_controls; ++i) {
-		ControlID* control = jalv.controls.controls[i];
-		if (control->type == PORT) {// && control->value_type == jalv->forge.Float) {
-			struct Port* port = &jalv.ports[control->index];
-			print_control_value(&jalv, port, port->control);
+		if (jalv.opts.update_rate == 0.0) {
+			/* Calculate a reasonable UI update frequency. */
+			jalv.ui_update_hz = (float)jalv.sample_rate / jalv.midi_buf_size * 2.0f;
+			jalv.ui_update_hz = MAX(25.0f, jalv.ui_update_hz);
+		} else {
+			/* Use user-specified UI update rate. */
+			jalv.ui_update_hz = jalv.opts.update_rate;
+			jalv.ui_update_hz = MAX(1.0f, jalv.ui_update_hz);
 		}
+
+		/* The UI can only go so fast, clamp to reasonable limits */
+		jalv.ui_update_hz     = MIN(60, jalv.ui_update_hz);
+		jalv.opts.buffer_size = MAX(4096, jalv.opts.buffer_size);
+		fprintf(stderr, "Comm buffers: %d bytes\n", jalv.opts.buffer_size);
+		fprintf(stderr, "Update rate:  %.01f Hz\n", jalv.ui_update_hz);
+
+		/* Build options array to pass to plugin */
+		const LV2_Options_Option options[] = {
+			{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.param_sampleRate,
+			sizeof(float), jalv.urids.atom_Float, &jalv.sample_rate },
+			{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_minBlockLength,
+			sizeof(int32_t), jalv.urids.atom_Int, &jalv.block_length },
+			{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_maxBlockLength,
+			sizeof(int32_t), jalv.urids.atom_Int, &jalv.block_length },
+			{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.bufsz_sequenceSize,
+			sizeof(int32_t), jalv.urids.atom_Int, &jalv.midi_buf_size },
+			{ LV2_OPTIONS_INSTANCE, 0, jalv.urids.ui_updateRate,
+			sizeof(float), jalv.urids.atom_Float, &jalv.ui_update_hz },
+			{ LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL }
+		};
+
+		options_feature.data = (void*)&options;
+
+		/* Create Plugin <=> UI communication buffers */
+		jalv.ui_events     = zix_ring_new(jalv.opts.buffer_size);
+		jalv.plugin_events = zix_ring_new(jalv.opts.buffer_size);
+		zix_ring_mlock(jalv.ui_events);
+		zix_ring_mlock(jalv.plugin_events);
+
+		/* Instantiate the plugin */
+		jalv.instance = lilv_plugin_instantiate(
+			jalv.plugin, jalv.sample_rate, features);
+		if (!jalv.instance) {
+			die("Failed to instantiate plugin.\n");
+		}
+
+		ext_data.data_access = lilv_instance_get_descriptor(jalv.instance)->extension_data;
+
+		fprintf(stderr, "\n");
+		if (!jalv.buf_size_set) {
+			jalv_allocate_port_buffers(&jalv);
+		}
+
+		/* Create workers if necessary */
+		if (lilv_plugin_has_extension_data(jalv.plugin, jalv.nodes.work_interface)) {
+			const LV2_Worker_Interface* iface = (const LV2_Worker_Interface*)
+				lilv_instance_get_extension_data(jalv.instance, LV2_WORKER__interface);
+
+			jalv_worker_init(&jalv, &jalv.worker, iface, true);
+			if (jalv.safe_restore) {
+				jalv_worker_init(&jalv, &jalv.state_worker, iface, false);
+			}
+		}
+
+		/* Apply loaded state to plugin instance if necessary */
+		if (state) {
+			jalv_apply_state(&jalv, state);
+		}
+
+		if (jalv.opts.controls) {
+			for (char** c = jalv.opts.controls; *c; ++c) {
+				jalv_apply_control_arg(&jalv, *c);
+			}
+		}
+
+		/* Set Jack callbacks */
+		jalv_backend_init(&jalv);
+
+		/* Create Jack ports and connect plugin ports to buffers */
+		for (uint32_t i = 0; i < jalv.num_ports; ++i) {
+			jalv_backend_activate_port(&jalv, i);
+		}
+
+
+		/* Print initial control values */
+		for (size_t i = 0; i < jalv.controls.n_controls; ++i) {
+			ControlID* control = jalv.controls.controls[i];
+			if (control->type == PORT) {// && control->value_type == jalv->forge.Float) {
+				struct Port* port = &jalv.ports[control->index];
+				print_control_value(&jalv, port, port->control);
+			}
+		}
+
+		/* Activate plugin */
+		lilv_instance_activate(jalv.instance);
+
+
+		/* Discover UI */
+		jalv.has_ui = jalv_discover_ui(&jalv);
+
+		/* Activate Jack */
+		jalv_backend_activate(&jalv);
+		jalv.play_state = JALV_RUNNING;
 	}
-
-	/* Activate plugin */
-	lilv_instance_activate(jalv.instance);
-
-	/* Discover UI */
-	jalv.has_ui = jalv_discover_ui(&jalv);
-
-	/* Activate Jack */
-	jalv_backend_activate(&jalv);
-	jalv.play_state = JALV_RUNNING;
 
 	/* Run UI (or prompt at console) */
 	jalv_open_ui(&jalv);
@@ -1167,30 +1170,33 @@ main(int argc, char** argv)
 
 	fprintf(stderr, "Exiting...\n");
 
-	/* Terminate the worker */
-	jalv_worker_finish(&jalv.worker);
+	if (!jalv.opts.no_instance) {
+		/* Terminate the worker */
+		jalv_worker_finish(&jalv.worker);
 
-	/* Deactivate audio */
-	jalv_backend_deactivate(&jalv);
-	for (uint32_t i = 0; i < jalv.num_ports; ++i) {
-		if (jalv.ports[i].evbuf) {
-			lv2_evbuf_free(jalv.ports[i].evbuf);
+		/* Deactivate audio */
+		jalv_backend_deactivate(&jalv);
+		for (uint32_t i = 0; i < jalv.num_ports; ++i) {
+			if (jalv.ports[i].evbuf) {
+				lv2_evbuf_free(jalv.ports[i].evbuf);
+			}
 		}
+		jalv_backend_close(&jalv);
+
+		/* Destroy the worker */
+		jalv_worker_destroy(&jalv.worker);
+
+		/* Deactivate plugin */
+		suil_instance_free(jalv.ui_instance);
+		lilv_instance_deactivate(jalv.instance);
+		lilv_instance_free(jalv.instance);
+
+		/* Clean up */
+		free(jalv.ports);
+		zix_ring_free(jalv.ui_events);
+		zix_ring_free(jalv.plugin_events);
 	}
-	jalv_backend_close(&jalv);
 
-	/* Destroy the worker */
-	jalv_worker_destroy(&jalv.worker);
-
-	/* Deactivate plugin */
-	suil_instance_free(jalv.ui_instance);
-	lilv_instance_deactivate(jalv.instance);
-	lilv_instance_free(jalv.instance);
-
-	/* Clean up */
-	free(jalv.ports);
-	zix_ring_free(jalv.ui_events);
-	zix_ring_free(jalv.plugin_events);
 	for (LilvNode** n = (LilvNode**)&jalv.nodes; *n; ++n) {
 		lilv_node_free(*n);
 	}

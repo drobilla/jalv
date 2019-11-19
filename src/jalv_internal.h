@@ -172,6 +172,7 @@ typedef struct {
 	int      show_ui;           ///< Show non-embedded UI
 	int      print_controls;    ///< Print control changes to stdout
 	int      non_interactive;   ///< Do not listen for commands on stdin
+	int      no_instance;       ///< Do not create plugin instance. Only get plugin info.
 } JalvOptions;
 
 typedef struct {

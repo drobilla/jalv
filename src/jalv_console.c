@@ -46,6 +46,7 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -t           Print trace messages from plugin\n");
 	fprintf(os, "  -u UUID      UUID for Jack session restoration\n");
 	fprintf(os, "  -x           Exact JACK client name (exit if taken)\n");
+	fprintf(os, "  -z           Only get info. Don't create plugin instance.\n");
 	return error ? 1 : 0;
 }
 
@@ -121,6 +122,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 			opts->name = jalv_strdup((*argv)[a]);
 		} else if ((*argv)[a][1] == 'x') {
 			opts->name_exact = 1;
+		} else if ((*argv)[a][1] == 'z') {
+			opts->no_instance = 1;
 		} else {
 			fprintf(stderr, "Unknown option %s\n", (*argv)[a]);
 			return print_usage((*argv)[0], true);
