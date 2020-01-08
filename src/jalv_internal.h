@@ -237,6 +237,8 @@ typedef struct {
 	LilvNode* pprops_notOnGUI;
 	LilvNode* pprops_rangeSteps;
 	LilvNode* pset_Preset;
+	LilvNode* pset_preset;
+	LilvNode* pset_Bank;
 	LilvNode* pset_bank;
 	LilvNode* rdfs_comment;
 	LilvNode* rdfs_label;

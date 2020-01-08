@@ -108,7 +108,7 @@ int
 jalv_load_banks(Jalv* jalv)
 {
 	LilvNodes* banks = lilv_plugin_get_related(jalv->plugin,
-	                                             jalv->nodes.pset_bank);
+	                                             jalv->nodes.pset_Bank);
 	LILV_FOREACH(nodes, i, banks) {
 		const LilvNode* bank = lilv_nodes_get(banks, i);
 		lilv_world_load_resource(jalv->world, bank);

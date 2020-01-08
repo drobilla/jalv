@@ -917,6 +917,8 @@ main(int argc, char** argv)
 	jalv.nodes.pprops_notOnGUI        = lilv_new_uri(world, LV2_PORT_PROPS__notOnGUI);
 	jalv.nodes.pprops_rangeSteps      = lilv_new_uri(world, LV2_PORT_PROPS__rangeSteps);
 	jalv.nodes.pset_Preset            = lilv_new_uri(world, LV2_PRESETS__Preset);
+	jalv.nodes.pset_preset            = lilv_new_uri(world, LV2_PRESETS__preset);
+	jalv.nodes.pset_Bank              = lilv_new_uri(world, LV2_PRESETS__Bank);
 	jalv.nodes.pset_bank              = lilv_new_uri(world, LV2_PRESETS__bank);
 	jalv.nodes.rdfs_comment           = lilv_new_uri(world, LILV_NS_RDFS "comment");
 	jalv.nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
