@@ -411,6 +411,7 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 		&parent_feature,
 		&jalv->features.options_feature,
 		&idle_feature,
+		&jalv->features.request_value_feature,
 		NULL
 	};
 
@@ -843,6 +844,10 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	jalv->features.llog.vprintf = jalv_vprintf;
 	init_feature(&jalv->features.log_feature,
 	             LV2_LOG__log, &jalv->features.llog);
+
+	jalv->features.request_value.handle = jalv;
+	init_feature(&jalv->features.request_value_feature,
+	             LV2_UI__requestValue, &jalv->features.request_value);
 
 	zix_sem_init(&jalv->done, 0);
 

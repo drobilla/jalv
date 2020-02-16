@@ -42,7 +42,7 @@ def configure(conf):
     conf.load('autowaf', cache=True)
     autowaf.set_c_lang(conf, 'c99')
 
-    conf.check_pkg('lv2 >= 1.16.0', uselib_store='LV2')
+    conf.check_pkg('lv2 >= 1.17.2', uselib_store='LV2')
     conf.check_pkg('lilv-0 >= 0.24.0', uselib_store='LILV')
     conf.check_pkg('serd-0 >= 0.24.0', uselib_store='SERD')
     conf.check_pkg('sord-0 >= 0.14.0', uselib_store='SORD')

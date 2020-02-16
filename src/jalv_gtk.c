@@ -630,6 +630,42 @@ patch_put_get(Jalv*                   jalv,
 	return 0;
 }
 
+static LV2UI_Request_Value_Status
+on_request_value(LV2UI_Feature_Handle      handle,
+                 const LV2_URID            key,
+                 const LV2_URID            type,
+                 const LV2_Feature* const* features)
+{
+	Jalv*      jalv    = (Jalv*)handle;
+	ControlID* control = get_property_control(&jalv->controls, key);
+
+	if (!control) {
+		return LV2UI_REQUEST_VALUE_ERR_UNKNOWN;
+	} else if (control->value_type != jalv->forge.Path) {
+		return LV2UI_REQUEST_VALUE_ERR_UNSUPPORTED;
+	}
+
+	GtkWidget* dialog =
+	        gtk_file_chooser_dialog_new("Choose file",
+	                                    GTK_WINDOW(jalv->window),
+	                                    GTK_FILE_CHOOSER_ACTION_OPEN,
+	                                    GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+	                                    GTK_STOCK_OK, GTK_RESPONSE_OK,
+	                                    NULL);
+
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+		char* path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+		set_control(control, strlen(path), jalv->forge.Path, path);
+
+		g_free(path);
+	}
+
+	gtk_widget_destroy(dialog);
+
+	return 0;
+}
+
 static void
 property_changed(Jalv* jalv, LV2_URID key, const LV2_Atom* value)
 {
@@ -1196,6 +1232,8 @@ jalv_open_ui(Jalv* jalv)
 	if (jalv->ui && !jalv->opts.generic_ui) {
 		jalv_ui_instantiate(jalv, jalv_native_ui_type(), alignment);
 	}
+
+	jalv->features.request_value.request = on_request_value;
 
 	if (jalv->ui_instance) {
 		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(

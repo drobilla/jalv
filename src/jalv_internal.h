@@ -39,6 +39,7 @@
 #include "lv2/options/options.h"
 #include "lv2/resize-port/resize-port.h"
 #include "lv2/state/state.h"
+#include "lv2/ui/ui.h"
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
 
@@ -278,6 +279,8 @@ typedef struct {
 	LV2_Options_Option         options[6];
 	LV2_Feature                options_feature;
 	LV2_Feature                safe_restore_feature;
+	LV2UI_Request_Value        request_value;
+	LV2_Feature                request_value_feature;
 	LV2_Extension_Data_Feature ext_data;
 } JalvFeatures;
 
