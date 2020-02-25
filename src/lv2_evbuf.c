@@ -14,13 +14,13 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
+#include "lv2_evbuf.h"
 
 #include "lv2/atom/atom.h"
 
-#include "lv2_evbuf.h"
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 struct LV2_Evbuf_Impl {
 	uint32_t          capacity;

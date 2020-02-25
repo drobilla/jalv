@@ -7,15 +7,18 @@ from waflib import Options
 from waflib.extras import autowaf as autowaf
 
 # Version of this package (even if built as a child)
-JALV_VERSION = '1.6.2'
+JALV_VERSION = '1.6.4'
 
-# Variables for 'waf dist'
-APPNAME = 'jalv'
-VERSION = JALV_VERSION
+# Mandatory waf variables
+APPNAME = 'jalv'        # Package name for waf dist
+VERSION = JALV_VERSION  # Package version for waf dist
+top     = '.'           # Source directory
+out     = 'build'       # Build directory
 
-# Mandatory variables
-top = '.'
-out = 'build'
+# Release variables
+uri          = 'http://drobilla.net/sw/jalv'
+dist_pattern = 'http://download.drobilla.net/jalv-%d.%d.%d.tar.bz2'
+post_tags    = ['Hacking', 'LAD', 'LV2', 'Jalv']
 
 def options(ctx):
     ctx.load('compiler_c')
@@ -39,44 +42,39 @@ def configure(conf):
     conf.load('autowaf', cache=True)
     autowaf.set_c_lang(conf, 'c99')
 
-    autowaf.check_pkg(conf, 'lv2', atleast_version='1.16.0', uselib_store='LV2')
-    autowaf.check_pkg(conf, 'lilv-0', uselib_store='LILV',
-                      atleast_version='0.24.0', mandatory=True)
-    autowaf.check_pkg(conf, 'serd-0', uselib_store='SERD',
-                      atleast_version='0.24.0', mandatory=True)
-    autowaf.check_pkg(conf, 'sord-0', uselib_store='SORD',
-                      atleast_version='0.14.0', mandatory=True)
-    autowaf.check_pkg(conf, 'sratom-0', uselib_store='SRATOM',
-                      atleast_version='0.6.0', mandatory=True)
+    conf.check_pkg('lv2 >= 1.16.0', uselib_store='LV2')
+    conf.check_pkg('lilv-0 >= 0.24.0', uselib_store='LILV')
+    conf.check_pkg('serd-0 >= 0.24.0', uselib_store='SERD')
+    conf.check_pkg('sord-0 >= 0.14.0', uselib_store='SORD')
+    conf.check_pkg('sratom-0 >= 0.6.0', uselib_store='SRATOM')
     if Options.options.portaudio:
-        autowaf.check_pkg(conf, 'portaudio-2.0', uselib_store='PORTAUDIO',
-                          atleast_version='2.0.0', mandatory=False)
+        conf.check_pkg('portaudio-2.0 >= 2.0.0',
+                       uselib_store='PORTAUDIO', mandatory=False)
     else:
-        autowaf.check_pkg(conf, 'jack', uselib_store='JACK',
-                          atleast_version='0.120.0', mandatory=True)
+        conf.check_pkg('jack >= 0.120.0', uselib_store='JACK')
 
     if not Options.options.no_gui and not Options.options.no_gtk:
         if not Options.options.no_gtk2:
-            autowaf.check_pkg(conf, 'gtk+-2.0', uselib_store='GTK2',
-                              atleast_version='2.18.0', mandatory=False)
+            conf.check_pkg('gtk+-2.0 >= 2.18.0', uselib_store='GTK2',
+                           mandatory=False)
         if not Options.options.no_gtkmm:
-            autowaf.check_pkg(conf, 'gtkmm-2.4', uselib_store='GTKMM2',
-                              atleast_version='2.20.0', mandatory=False)
+            conf.check_pkg('gtkmm-2.4 >= 2.20.0', uselib_store='GTKMM2',
+                           mandatory=False)
         if not Options.options.no_gtk3:
-            autowaf.check_pkg(conf, 'gtk+-3.0', uselib_store='GTK3',
-                              atleast_version='3.0.0', mandatory=False)
+            conf.check_pkg('gtk+-3.0 >= 3.0.0', uselib_store='GTK3',
+                           mandatory=False)
 
     if not Options.options.no_gui and not Options.options.no_qt:
         if not Options.options.no_qt4:
-            autowaf.check_pkg(conf, 'QtGui', uselib_store='QT4',
-                              atleast_version='4.0.0', mandatory=False)
+            conf.check_pkg('QtGui >= 4.0.0', uselib_store='QT4',
+                           mandatory=False)
             if conf.env.HAVE_QT4:
                 if not conf.find_program('moc-qt4', var='MOC4', mandatory=False):
                     conf.find_program('moc', var='MOC4')
 
         if not Options.options.no_qt5:
-            autowaf.check_pkg(conf, 'Qt5Widgets', uselib_store='QT5',
-                              atleast_version='5.1.0', mandatory=False)
+            conf.check_pkg('Qt5Widgets >= 5.1.0', uselib_store='QT5',
+                           mandatory=False)
             if conf.env.HAVE_QT5:
                 if not conf.find_program('moc-qt5', var='MOC5', mandatory=False):
                     conf.find_program('moc', var='MOC5')
@@ -84,55 +82,53 @@ def configure(conf):
     have_gui = (conf.env.HAVE_GTK2 or conf.env.HAVE_GTKMM2 or conf.env.HAVE_GTK3 or
                 conf.env.HAVE_QT4 or conf.env.HAVE_QT5)
     if have_gui:
-        autowaf.check_pkg(conf, 'suil-0', uselib_store='SUIL',
-                          atleast_version='0.10.0')
+        conf.check_pkg('suil-0 >= 0.10.0', uselib_store='SUIL')
 
     if conf.env.HAVE_JACK:
-        autowaf.check_function(
-            conf, 'c', 'jack_port_type_get_buffer_size',
+        conf.check_function(
+            'c', 'jack_port_type_get_buffer_size',
             header_name = 'jack/jack.h',
             define_name = 'HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE',
             uselib      = 'JACK',
             mandatory   = False)
 
-        autowaf.check_function(conf, 'c', 'jack_set_property',
-                               header_name = 'jack/metadata.h',
-                               define_name = 'HAVE_JACK_METADATA',
-                               uselib      = 'JACK',
-                               mandatory   = False)
+        conf.check_function('c', 'jack_set_property',
+                            header_name = 'jack/metadata.h',
+                            define_name = 'HAVE_JACK_METADATA',
+                            uselib      = 'JACK',
+                            mandatory   = False)
 
     defines = ['_POSIX_C_SOURCE=200809L']
 
-    autowaf.check_function(conf, 'c', 'isatty',
-                           header_name = 'unistd.h',
-                           defines     = defines,
-                           define_name = 'HAVE_ISATTY',
-                           mandatory   = False)
+    conf.check_function('c', 'isatty',
+                        header_name = 'unistd.h',
+                        defines     = defines,
+                        define_name = 'HAVE_ISATTY',
+                        mandatory   = False)
 
-    autowaf.check_function(conf, 'c', 'fileno',
-                           header_name = 'stdio.h',
-                           defines     = defines,
-                           define_name = 'HAVE_FILENO',
-                           mandatory   = False)
+    conf.check_function('c', 'fileno',
+                        header_name = 'stdio.h',
+                        defines     = defines,
+                        define_name = 'HAVE_FILENO',
+                        mandatory   = False)
 
-    autowaf.check_function(conf, 'c', 'mlock',
-                           header_name = 'sys/mman.h',
-                           defines     = defines,
-                           define_name = 'HAVE_MLOCK',
-                           mandatory   = False)
+    conf.check_function('c', 'mlock',
+                        header_name = 'sys/mman.h',
+                        defines     = defines,
+                        define_name = 'HAVE_MLOCK',
+                        mandatory   = False)
 
-    autowaf.check_function(conf, 'c', 'sigaction',
-                           header_name = 'signal.h',
-                           defines     = defines,
-                           define_name = 'HAVE_SIGACTION',
-                           mandatory   = False)
+    conf.check_function('c', 'sigaction',
+                        header_name = 'signal.h',
+                        defines     = defines,
+                        define_name = 'HAVE_SIGACTION',
+                        mandatory   = False)
 
     if conf.is_defined('HAVE_ISATTY') and conf.is_defined('HAVE_FILENO'):
-        autowaf.define(conf, 'JALV_WITH_COLOR', 1)
         conf.env.append_unique('CFLAGS', ['-D_POSIX_C_SOURCE=200809L'])
 
     if not Options.options.no_jack_session:
-        autowaf.define(conf, 'JALV_JACK_SESSION', 1)
+        conf.define('JALV_JACK_SESSION', 1)
 
     conf.write_config_header('jalv_config.h', remove=False)
 
@@ -244,14 +240,6 @@ def build(bld):
     # Man pages
     bld.install_files('${MANDIR}/man1', bld.path.ant_glob('doc/*.1'))
 
-def upload_docs(ctx):
-    import glob
-    import os
-    for page in glob.glob('doc/*.[1-8]'):
-        os.system('mkdir -p build/doc')
-        os.system('soelim %s | pre-grohtml troff -man -wall -Thtml | post-grohtml > build/%s.html' % (page, page))
-        os.system('rsync -avz --delete -e ssh build/%s.html drobilla@drobilla.net:~/drobilla.net/man/' % page)
-
 def lint(ctx):
     "checks code for style issues"
     import subprocess
@@ -264,17 +252,6 @@ def lint(ctx):
            "-readability-else-after-return\" " +
            "$(find .. -name '*.c')")
     subprocess.call(cmd, cwd='build', shell=True)
-
-def posts(ctx):
-    path = str(ctx.path.abspath())
-    autowaf.news_to_posts(
-        os.path.join(path, 'NEWS'),
-        {'title'        : 'Jalv',
-         'description'  : autowaf.get_blurb(os.path.join(path, 'README.md')),
-         'dist_pattern' : 'http://download.drobilla.net/jalv-%s.tar.bz2'},
-        { 'Author' : 'drobilla',
-          'Tags'   : 'Hacking, LAD, LV2, Jalv' },
-        os.path.join(out, 'posts'))
 
 def dist(ctx):
     ctx.base_path = ctx.path

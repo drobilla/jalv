@@ -17,9 +17,9 @@
 #ifndef ZIX_RING_H
 #define ZIX_RING_H
 
-#include <stdint.h>
-
 #include "zix/common.h"
+
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

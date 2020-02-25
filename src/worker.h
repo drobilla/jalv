@@ -14,9 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "lv2/worker/worker.h"
-
 #include "jalv_internal.h"
+
+#include "lv2/worker/worker.h"
 
 void
 jalv_worker_init(Jalv*                       jalv,

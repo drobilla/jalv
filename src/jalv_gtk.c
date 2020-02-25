@@ -14,24 +14,17 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <math.h>
+#include "jalv_internal.h"
 
-#include <gtk/gtk.h>
-
+#include "lv2/core/attributes.h"
 #include "lv2/patch/patch.h"
 #include "lv2/port-props/port-props.h"
 
-#include "jalv_internal.h"
+LV2_DISABLE_DEPRECATION_WARNINGS
 
-#if GTK_MAJOR_VERSION == 3
-#if defined(__clang__)
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-#    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-#endif
+#include <gtk/gtk.h>
+
+#include <math.h>
 
 static GtkCheckMenuItem* active_preset_item = NULL;
 static bool              updating           = false;
@@ -1160,6 +1153,21 @@ jalv_discover_ui(ZIX_UNUSED Jalv* jalv)
 	return TRUE;
 }
 
+float
+jalv_ui_refresh_rate(Jalv* jalv)
+{
+#if GTK_MAJOR_VERSION == 2
+	return 30.0f;
+#else
+	GdkDisplay* const display = gdk_display_get_default();
+	GdkMonitor* const monitor = gdk_display_get_primary_monitor(display);
+
+	const float rate = (float)gdk_monitor_get_refresh_rate(monitor);
+
+	return rate < 30.0f ? 30.0f : rate;
+#endif
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {
@@ -1238,11 +1246,4 @@ jalv_close_ui(ZIX_UNUSED Jalv* jalv)
 	return 0;
 }
 
-#if GTK_MAJOR_VERSION == 3
-#if defined(__clang__)
-#    pragma clang diagnostic pop
-#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-#    pragma GCC diagnostic pop
-#endif
-#endif
-
+LV2_RESTORE_WARNINGS

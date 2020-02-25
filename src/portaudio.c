@@ -14,12 +14,12 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "jalv_internal.h"
+#include "worker.h"
+
 #include <stdio.h>
 #include <math.h>
 #include <portaudio.h>
-
-#include "jalv_internal.h"
-#include "worker.h"
 
 struct JalvBackend {
 	PaStream* stream;

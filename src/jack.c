@@ -14,7 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <ctype.h>
+#include "jalv_internal.h"
+#include "worker.h"
 
 #include <jack/jack.h>
 #include <jack/midiport.h>
@@ -25,8 +26,7 @@
 #    include <jack/metadata.h>
 #endif
 
-#include "jalv_internal.h"
-#include "worker.h"
+#include <ctype.h>
 
 struct JalvBackend {
 	jack_client_t* client;             ///< Jack client
@@ -552,7 +552,7 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
 		}
 	}
 
-	const int err = jalv_open(jalv, argc, argv);
+	const int err = jalv_open(jalv, &argc, &argv);
 	if (err) {
 		jalv_backend_close(jalv);
 		free(jalv);

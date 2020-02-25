@@ -14,10 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <algorithm>
-#include <cmath>
-#include <cstdio>
-
 #include "jalv_internal.h"
 
 #include "lv2/patch/patch.h"
@@ -35,6 +31,7 @@
 #    include <QMainWindow>
 #    include <QMenu>
 #    include <QMenuBar>
+#    include <QScreen>
 #    include <QScrollArea>
 #    include <QStyle>
 #    include <QTimer>
@@ -43,6 +40,10 @@
 #else
 #    include <QtGui>
 #endif
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
 
 #define CONTROL_WIDTH 150
 #define DIAL_STEPS    10000
@@ -299,6 +300,7 @@ private:
 	void    setRange(float min, float max);
 	QString getValueLabel(float value);
 	float   getValue();
+	int     stringWidth(const QString& str);
 
 	const LilvPlugin* plugin;
 	struct Port*      port;
@@ -464,7 +466,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	name = QString("%1").arg(lilv_node_as_string(nname));
 
 	// Handle long names
-	if (fontMetrics().width(name) > CONTROL_WIDTH) {
+	if (stringWidth(name) > CONTROL_WIDTH) {
 		setTitle(fontMetrics().elidedText(name, Qt::ElideRight, CONTROL_WIDTH));
 	} else {
 		setTitle(name);
@@ -513,7 +515,7 @@ QString
 Control::getValueLabel(float value)
 {
 	if (scaleMap[value]) {
-		if (fontMetrics().width(scaleMap[value]) > CONTROL_WIDTH) {
+		if (stringWidth(scaleMap[value]) > CONTROL_WIDTH) {
 			label->setToolTip(scaleMap[value]);
 			return fontMetrics().elidedText(QString(scaleMap[value]),
 			                                Qt::ElideRight,
@@ -557,6 +559,16 @@ Control::getValue()
 	} else {
 		return (float)dial->value() / steps;
 	}
+}
+
+int
+Control::stringWidth(const QString& str)
+{
+#if QT_VERSION >= 0x050B00
+	return fontMetrics().horizontalAdvance(str);
+#else
+	return fontMetrics().width(str);
+#endif
 }
 
 void
@@ -612,7 +624,7 @@ build_control_widget(Jalv* jalv)
 		}
 	}
 
-	qSort(portContainers.begin(), portContainers.end(), portGroupLessThan);
+	std::sort(portContainers.begin(), portContainers.end(), portGroupLessThan);
 
 	QWidget*    grid       = new QWidget();
 	FlowLayout* flowLayout = new FlowLayout();
@@ -632,6 +644,11 @@ build_control_widget(Jalv* jalv)
 				/* Group has changed */
 				LilvNode* groupName = lilv_world_get(
 					world, group, jalv->nodes.lv2_name, NULL);
+				if (!groupName) {
+					groupName = lilv_world_get(
+					        world, group, jalv->nodes.rdfs_label, NULL);
+				}
+
 				QGroupBox* groupBox = new QGroupBox(lilv_node_as_string(groupName));
 
 				groupLayout = new QHBoxLayout();
@@ -660,6 +677,16 @@ bool
 jalv_discover_ui(Jalv* jalv)
 {
 	return true;
+}
+
+float
+jalv_ui_refresh_rate(Jalv* jalv)
+{
+#if QT_VERSION >= 0x050000
+	return (float)QGuiApplication::primaryScreen()->refreshRate();
+#else
+	return 30.0f;
+#endif
 }
 
 int

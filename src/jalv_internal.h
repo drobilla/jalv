@@ -17,15 +17,16 @@
 #ifndef JALV_INTERNAL_H
 #define JALV_INTERNAL_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_ISATTY
-#    include <unistd.h>
-#endif
+#include "lv2_evbuf.h"
+#include "symap.h"
+
+#include "zix/ring.h"
+#include "zix/sem.h"
+#include "zix/thread.h"
 
 #include "lilv/lilv.h"
 #include "serd/serd.h"
+#include "sratom/sratom.h"
 #ifdef HAVE_SUIL
 #include "suil/suil.h"
 #endif
@@ -41,14 +42,12 @@
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
 
-#include "zix/ring.h"
-#include "zix/sem.h"
-#include "zix/thread.h"
-
-#include "sratom/sratom.h"
-
-#include "lv2_evbuf.h"
-#include "symap.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef HAVE_ISATTY
+#    include <unistd.h>
+#endif
 
 #ifdef __clang__
 #    define REALTIME __attribute__((annotate("realtime")))
@@ -342,7 +341,7 @@ struct Jalv {
 };
 
 int
-jalv_open(Jalv* jalv, int argc, char** argv);
+jalv_open(Jalv* jalv, int* argc, char*** argv);
 
 int
 jalv_init(int* argc, char*** argv, JalvOptions* opts);
@@ -393,6 +392,9 @@ jalv_native_ui_type(void);
 bool
 jalv_discover_ui(Jalv* jalv);
 
+float
+jalv_ui_refresh_rate(Jalv* jalv);
+
 int
 jalv_open_ui(Jalv* jalv);
 
@@ -439,7 +441,7 @@ jalv_send_to_ui(Jalv*       jalv,
 bool
 jalv_run(Jalv* jalv, uint32_t nframes);
 
-bool
+int
 jalv_update(Jalv* jalv);
 
 typedef int (*PresetSink)(Jalv*           jalv,
@@ -530,7 +532,7 @@ jalv_vprintf(LV2_Log_Handle handle,
 static inline bool
 jalv_ansi_start(FILE* stream, int color)
 {
-#ifdef HAVE_ISATTY
+#if defined(HAVE_ISATTY) && defined(HAVE_FILENO)
 	if (isatty(fileno(stream))) {
 		return fprintf(stream, "\033[0;%dm", color);
 	}

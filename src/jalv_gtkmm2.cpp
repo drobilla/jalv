@@ -14,11 +14,15 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "jalv_internal.h"
+
+#include "lv2/core/attributes.h"
+
+LV2_DISABLE_DEPRECATION_WARNINGS
 #include <gtkmm/button.h>
 #include <gtkmm/main.h>
 #include <gtkmm/window.h>
-
-#include "jalv_internal.h"
+LV2_RESTORE_WARNINGS
 
 Gtk::Main* jalv_gtk_main = NULL;
 
@@ -52,6 +56,12 @@ bool
 jalv_discover_ui(Jalv* jalv)
 {
 	return true;
+}
+
+float
+jalv_ui_refresh_rate(Jalv* jalv)
+{
+	return 30.0f;
 }
 
 int

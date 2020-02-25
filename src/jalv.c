@@ -17,28 +17,10 @@
 #define _POSIX_C_SOURCE 200809L /* for mkdtemp */
 #define _DARWIN_C_SOURCE        /* for mkdtemp on OSX */
 
-#include <assert.h>
-#include <math.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#ifndef __cplusplus
-#    include <stdbool.h>
-#endif
-
-#ifdef _WIN32
-#    include <io.h>  /* for _mktemp */
-#    define snprintf _snprintf
-#else
-#    include <unistd.h>
-#endif
-
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "lv2_evbuf.h"
+#include "worker.h"
 
 #include "lv2/atom/atom.h"
 #include "lv2/buf-size/buf-size.h"
@@ -61,8 +43,21 @@
 #include "suil/suil.h"
 #endif
 
-#include "lv2_evbuf.h"
-#include "worker.h"
+#ifdef _WIN32
+#    include <io.h>  /* for _mktemp */
+#    define snprintf _snprintf
+#else
+#    include <unistd.h>
+#endif
+
+#include <assert.h>
+#include <math.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #define NS_RDF "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 #define NS_XSD "http://www.w3.org/2001/XMLSchema#"
@@ -635,13 +630,13 @@ jalv_run(Jalv* jalv, uint32_t nframes)
 	return send_ui_updates;
 }
 
-bool
+int
 jalv_update(Jalv* jalv)
 {
 	/* Check quit flag and close if set. */
 	if (zix_sem_try_wait(&jalv->done)) {
 		jalv_close_ui(jalv);
-		return false;
+		return 0;
 	}
 
 	/* Emit UI events. */
@@ -679,7 +674,7 @@ jalv_update(Jalv* jalv)
 		}
 	}
 
-	return true;
+	return 1;
 }
 
 static bool
@@ -737,9 +732,9 @@ setup_signals(Jalv* const jalv)
 }
 
 int
-jalv_open(Jalv* const jalv, int argc, char** argv)
+jalv_open(Jalv* const jalv, int* argc, char*** argv)
 {
-	jalv->prog_name     = argv[0];
+	jalv->prog_name     = (*argv)[0];
 	jalv->block_length  = 4096;  /* Should be set by backend */
 	jalv->midi_buf_size = 1024;  /* Should be set by backend */
 	jalv->play_state    = JALV_PAUSED;
@@ -747,10 +742,10 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 	jalv->control_in    = (uint32_t)-1;
 
 #ifdef HAVE_SUIL
-	suil_init(&argc, &argv, SUIL_ARG_NONE);
+	suil_init(argc, argv, SUIL_ARG_NONE);
 #endif
 
-	if (jalv_init(&argc, &argv, &jalv->opts)) {
+	if (jalv_init(argc, argv, &jalv->opts)) {
 		jalv_close(jalv);
 		return -1;
 	}
@@ -918,8 +913,8 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 			return -2;
 		}
 		plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
-	} else if (argc > 1) {
-		plugin_uri = lilv_new_uri(world, argv[argc - 1]);
+	} else if (*argc > 1) {
+		plugin_uri = lilv_new_uri(world, (*argv)[*argc - 1]);
 	}
 
 	if (!plugin_uri) {
@@ -1024,8 +1019,7 @@ jalv_open(Jalv* const jalv, int argc, char** argv)
 
 	if (jalv->opts.update_rate == 0.0) {
 		/* Calculate a reasonable UI update frequency. */
-		jalv->ui_update_hz = jalv->sample_rate / jalv->midi_buf_size * 2.0f;
-		jalv->ui_update_hz = MAX(25.0f, jalv->ui_update_hz);
+		jalv->ui_update_hz = jalv_ui_refresh_rate(jalv);
 	} else {
 		/* Use user-specified UI update rate. */
 		jalv->ui_update_hz = jalv->opts.update_rate;
@@ -1254,7 +1248,7 @@ main(int argc, char** argv)
 	Jalv jalv;
 	memset(&jalv, '\0', sizeof(Jalv));
 
-	if (jalv_open(&jalv, argc, argv)) {
+	if (jalv_open(&jalv, &argc, &argv)) {
 		return EXIT_FAILURE;
 	}
 
