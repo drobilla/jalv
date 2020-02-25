@@ -155,7 +155,7 @@ jalv_print_preset(Jalv*           jalv,
 static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
-	char     sym[64];
+	char     sym[255];
 	uint32_t index;
 	float    value;
 	if (!strncmp(cmd, "help", 4)) {
@@ -174,6 +174,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		jalv_load_presets(jalv, jalv_print_preset, NULL);
 	} else if (sscanf(cmd, "preset %[a-zA-Z0-9_:/-.#]\n", sym) == 1) {
 		LilvNode* preset = lilv_new_uri(jalv->world, sym);
+		lilv_world_load_resource(jalv->world, preset);
 		jalv_apply_preset(jalv, preset);
 		lilv_node_free(preset);
 		jalv_print_controls(jalv, true, false);
