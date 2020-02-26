@@ -1,3 +1,4 @@
+
 [submodule "waflib"]
-        path = waflib
-        url = https://github.com/drobilla/autowaf.git
+	path = waflib
+	url = https://github.com/drobilla/autowaf.git
