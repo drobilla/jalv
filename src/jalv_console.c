@@ -155,7 +155,7 @@ jalv_print_preset(Jalv*           jalv,
 static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
-	char     sym[255];
+	char     sym[512];
 	uint32_t index;
 	float    value;
 	if (!strncmp(cmd, "help", 4)) {
@@ -263,7 +263,7 @@ jalv_open_ui(Jalv* jalv)
 	if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
 		// Primitive command prompt for setting control values
 		while (!zix_sem_try_wait(&jalv->done)) {
-			char line[128];
+			char line[512];
 			printf("> ");
 			if (fgets(line, sizeof(line), stdin)) {
 				jalv_process_command(jalv, line);
