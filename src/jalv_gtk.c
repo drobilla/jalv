@@ -656,7 +656,7 @@ on_request_value(LV2UI_Feature_Handle      handle,
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		char* path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
-		set_control(control, strlen(path), jalv->forge.Path, path);
+		set_control(control, strlen(path) + 1, jalv->forge.Path, path);
 
 		g_free(path);
 	}
@@ -812,7 +812,7 @@ file_changed(GtkFileChooserButton* widget,
 	const char* filename = gtk_file_chooser_get_filename(
 		GTK_FILE_CHOOSER(widget));
 
-	set_control(control, strlen(filename), jalv->forge.Path, filename);
+	set_control(control, strlen(filename) + 1, jalv->forge.Path, filename);
 }
 
 static Controller*
