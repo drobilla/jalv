@@ -155,7 +155,7 @@ jalv_print_preset(Jalv*           jalv,
 static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
-	char     sym[64];
+	char     sym[1024];
 	uint32_t index;
 	float    value;
 	if (!strncmp(cmd, "help", 4)) {
@@ -172,7 +172,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 	} else if (strcmp(cmd, "presets\n") == 0) {
 		jalv_unload_presets(jalv);
 		jalv_load_presets(jalv, jalv_print_preset, NULL);
-	} else if (sscanf(cmd, "preset %[a-zA-Z0-9_:/-.#]\n", sym) == 1) {
+	} else if (sscanf(cmd, "preset %1023[a-zA-Z0-9_:/-.#]\n", sym) == 1) {
 		LilvNode* preset = lilv_new_uri(jalv->world, sym);
 		jalv_apply_preset(jalv, preset);
 		lilv_node_free(preset);
@@ -188,8 +188,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		} else {
 			fprintf(stderr, "error: port index out of range\n");
 		}
-	} else if (sscanf(cmd, "set %[a-zA-Z0-9_] %f", sym, &value) == 2 ||
-	           sscanf(cmd, "%[a-zA-Z0-9_] = %f", sym, &value) == 2) {
+	} else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2 ||
+	           sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
 		struct Port* port = NULL;
 		for (uint32_t i = 0; i < jalv->num_ports; ++i) {
 			struct Port* p = &jalv->ports[i];
