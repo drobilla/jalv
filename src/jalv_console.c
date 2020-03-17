@@ -262,7 +262,7 @@ jalv_open_ui(Jalv* jalv)
 	if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
 		// Primitive command prompt for setting control values
 		while (!zix_sem_try_wait(&jalv->done)) {
-			char line[128];
+			char line[1024];
 			printf("> ");
 			if (fgets(line, sizeof(line), stdin)) {
 				jalv_process_command(jalv, line);
