@@ -125,17 +125,36 @@ void
 jalv_worker_emit_responses(JalvWorker* worker, LilvInstance* instance)
 {
 	if (worker->responses) {
-		uint32_t read_space = zix_ring_read_space(worker->responses);
-		while (read_space) {
+		uint32_t read_space = 0;
+		while (read_space = zix_ring_read_space(worker->responses)) {
 			uint32_t size = 0;
-			zix_ring_read(worker->responses, (char*)&size, sizeof(size));
+			if (zix_ring_peek(worker->responses, (char*)&size, sizeof(size)) <= 0) {
+				fprintf(stderr, "error: Response buffer corrupted (req %lu avail %u)\n",
+					sizeof(size), read_space);
+				break;
+			}
 
-			zix_ring_read(worker->responses, (char*)worker->response, size);
+			const uint32_t packet_size = sizeof(size) + size;
+			if (read_space < packet_size) {
+				fprintf(stderr, "warning: Try to read bigger response (%u) than data available (%u). Retry later.\n",
+					packet_size, read_space);
+				break;
+			}
+
+			if (zix_ring_skip(worker->responses, sizeof(size)) <= 0) {
+				fprintf(stderr, "error: Response buffer corrupted on skip (req %lu avail %u)\n",
+					sizeof(size), read_space);
+				break;
+			}
+
+			if (zix_ring_read(worker->responses, (char*)worker->response, size) <= 0) {
+				fprintf(stderr, "error: Response buffer corrupted on read response (req %u avail %u)\n",
+					size, zix_ring_read_space(worker->responses));
+				break;
+			}
 
 			worker->iface->work_response(
 				instance->lv2_handle, size, worker->response);
-
-			read_space -= sizeof(size) + size;
 		}
 	}
 }
