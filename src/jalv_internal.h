@@ -224,6 +224,7 @@ typedef struct {
 	LilvNode* lv2_control;
 	LilvNode* lv2_default;
 	LilvNode* lv2_enumeration;
+	LilvNode* lv2_extensionData;
 	LilvNode* lv2_integer;
 	LilvNode* lv2_maximum;
 	LilvNode* lv2_minimum;
@@ -243,6 +244,7 @@ typedef struct {
 	LilvNode* rdfs_label;
 	LilvNode* rdfs_range;
 	LilvNode* rsz_minimumSize;
+	LilvNode* ui_showInterface;
 	LilvNode* work_interface;
 	LilvNode* work_schedule;
 	LilvNode* end;  ///< NULL terminator for easy freeing of entire structure

@@ -875,6 +875,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	jalv->nodes.lv2_control            = lilv_new_uri(world, LV2_CORE__control);
 	jalv->nodes.lv2_default            = lilv_new_uri(world, LV2_CORE__default);
 	jalv->nodes.lv2_enumeration        = lilv_new_uri(world, LV2_CORE__enumeration);
+	jalv->nodes.lv2_extensionData      = lilv_new_uri(world, LV2_CORE__extensionData);
 	jalv->nodes.lv2_integer            = lilv_new_uri(world, LV2_CORE__integer);
 	jalv->nodes.lv2_maximum            = lilv_new_uri(world, LV2_CORE__maximum);
 	jalv->nodes.lv2_minimum            = lilv_new_uri(world, LV2_CORE__minimum);
@@ -894,6 +895,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	jalv->nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
 	jalv->nodes.rdfs_range             = lilv_new_uri(world, LILV_NS_RDFS "range");
 	jalv->nodes.rsz_minimumSize        = lilv_new_uri(world, LV2_RESIZE_PORT__minimumSize);
+	jalv->nodes.ui_showInterface       = lilv_new_uri(world, LV2_UI__showInterface);
 	jalv->nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
 	jalv->nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
 	jalv->nodes.end                    = NULL;
