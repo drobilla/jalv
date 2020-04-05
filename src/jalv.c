@@ -732,6 +732,56 @@ setup_signals(Jalv* const jalv)
 #endif
 }
 
+static const LilvUI*
+jalv_select_custom_ui(const Jalv* const jalv)
+{
+	const char* const native_ui_type_uri = jalv_native_ui_type();
+
+#ifdef HAVE_SUIL
+	if (native_ui_type_uri) {
+		// Try to find an embeddable UI
+		LilvNode* native_type = lilv_new_uri(jalv->world, native_ui_type_uri);
+
+		LILV_FOREACH (uis, u, jalv->uis) {
+			const LilvUI*   ui        = lilv_uis_get(jalv->uis, u);
+			const LilvNode* type      = NULL;
+			const bool      supported = lilv_ui_is_supported(
+                    ui, suil_ui_supported, native_type, &type);
+
+			if (supported) {
+				lilv_node_free(native_type);
+				return ui;
+			}
+		}
+
+		lilv_node_free(native_type);
+	}
+#endif
+
+	if (!native_ui_type_uri && jalv->opts.show_ui) {
+		// Try to find a UI with ui:showInterface
+		LILV_FOREACH (uis, u, jalv->uis) {
+			const LilvUI*   ui      = lilv_uis_get(jalv->uis, u);
+			const LilvNode* ui_node = lilv_ui_get_uri(ui);
+
+			lilv_world_load_resource(jalv->world, ui_node);
+
+			const bool supported = lilv_world_ask(jalv->world,
+			                                      ui_node,
+			                                      jalv->nodes.lv2_extensionData,
+			                                      jalv->nodes.ui_showInterface);
+
+			lilv_world_unload_resource(jalv->world, ui_node);
+
+			if (supported) {
+				return ui;
+			}
+		}
+	}
+
+	return NULL;
+}
+
 int
 jalv_open(Jalv* const jalv, int* argc, char*** argv)
 {
@@ -970,25 +1020,23 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	}
 
 	/* Get a plugin UI */
-	const char* native_ui_type_uri = jalv_native_ui_type();
 	jalv->uis = lilv_plugin_get_uis(jalv->plugin);
-	if (!jalv->opts.generic_ui && native_ui_type_uri) {
-#ifdef HAVE_SUIL
-		const LilvNode* native_ui_type = lilv_new_uri(jalv->world, native_ui_type_uri);
-		LILV_FOREACH(uis, u, jalv->uis) {
-			const LilvUI* this_ui = lilv_uis_get(jalv->uis, u);
-			if (lilv_ui_is_supported(this_ui,
-			                         suil_ui_supported,
-			                         native_ui_type,
-			                         &jalv->ui_type)) {
-				/* TODO: Multiple UI support */
-				jalv->ui = this_ui;
-				break;
+	if (!jalv->opts.generic_ui) {
+		if ((jalv->ui = jalv_select_custom_ui(jalv))) {
+			const char* host_type_uri = jalv_native_ui_type();
+			if (host_type_uri) {
+				LilvNode* host_type = lilv_new_uri(jalv->world, host_type_uri);
+
+				if (!lilv_ui_is_supported(jalv->ui,
+				                          suil_ui_supported,
+				                          host_type,
+				                          &jalv->ui_type)) {
+					jalv->ui = NULL;
+				}
+
+				lilv_node_free(host_type);
 			}
 		}
-#endif
-	} else if (!jalv->opts.generic_ui && jalv->opts.show_ui) {
-		jalv->ui = lilv_uis_get(jalv->uis, lilv_uis_begin(jalv->uis));
 	}
 
 	/* Create ringbuffers for UI if necessary */
