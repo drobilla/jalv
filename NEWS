@@ -3,7 +3,7 @@ jalv (1.6.4) stable;
   * Support rdfs:label for port groups
   * Use screen refresh rate with Gtk3 and Qt5
 
- -- David Robillard <d@drobilla.net>  Sun, 10 Nov 2019 22:56:49 +0100
+ -- David Robillard <d@drobilla.net>  Sun, 10 Nov 2019 21:56:49 +0000
 
 jalv (1.6.2) stable;
 
