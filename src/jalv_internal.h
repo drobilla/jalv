@@ -17,6 +17,8 @@
 #ifndef JALV_INTERNAL_H
 #define JALV_INTERNAL_H
 
+#define _POSIX_C_SOURCE 200809L
+
 #include "lv2_evbuf.h"
 #include "symap.h"
 

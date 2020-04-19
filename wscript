@@ -124,9 +124,6 @@ def configure(conf):
                         define_name = 'HAVE_SIGACTION',
                         mandatory   = False)
 
-    if conf.is_defined('HAVE_ISATTY') and conf.is_defined('HAVE_FILENO'):
-        conf.env.append_unique('CFLAGS', ['-D_POSIX_C_SOURCE=200809L'])
-
     if not Options.options.no_jack_session:
         conf.define('JALV_JACK_SESSION', 1)
 
