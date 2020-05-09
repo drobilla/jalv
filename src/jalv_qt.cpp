@@ -728,6 +728,8 @@ jalv_open_ui(Jalv* jalv)
 	win->setCentralWidget(widget);
 	app->connect(app, SIGNAL(lastWindowClosed()), app, SLOT(quit()));
 
+	jalv_init_ui(jalv);
+
 	win->show();
 	if (jalv->ui_instance && !jalv_ui_is_resizable(jalv)) {
 		widget->setMinimumSize(widget->width(), widget->height());
