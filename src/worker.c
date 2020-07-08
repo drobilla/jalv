@@ -22,10 +22,6 @@ jalv_worker_respond(LV2_Worker_Respond_Handle handle,
                     const void*               data)
 {
 	JalvWorker* worker = (JalvWorker*)handle;
-	if (zix_ring_write_space(worker->responses) < (sizeof(size) + size)) {
-		return LV2_WORKER_ERR_NO_SPACE;
-	}
-
 	zix_ring_write(worker->responses, (const char*)&size, sizeof(size));
 	zix_ring_write(worker->responses, (const char*)data, size);
 	return LV2_WORKER_SUCCESS;
