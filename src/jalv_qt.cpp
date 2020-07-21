@@ -715,8 +715,8 @@ jalv_open_ui(Jalv* jalv)
 		QWidget* controlWidget = build_control_widget(jalv);
 
 		widget = new QScrollArea();
-		((QScrollArea*)widget)->setWidget(controlWidget);
-		((QScrollArea*)widget)->setWidgetResizable(true);
+		static_cast<QScrollArea*>(widget)->setWidget(controlWidget);
+		static_cast<QScrollArea*>(widget)->setWidgetResizable(true);
 		widget->setMinimumWidth(800);
 		widget->setMinimumHeight(600);
 	}

@@ -74,14 +74,16 @@ jalv_open_ui(Jalv* jalv)
 	}
 
 	if (jalv->ui_instance) {
-		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(
-			jalv->ui_instance);
+		GtkWidget* widget = static_cast<GtkWidget*>(
+		    suil_instance_get_widget(jalv->ui_instance));
+
 		Gtk::Widget* widgetmm = Glib::wrap(widget);
 		window->add(*Gtk::manage(widgetmm));
 		widgetmm->show_all();
 
 		g_timeout_add(1000 / jalv->ui_update_hz,
-		              (GSourceFunc)jalv_update, jalv);
+		              reinterpret_cast<GSourceFunc>(jalv_update),
+		              jalv);
 	} else {
 		Gtk::Button* button = Gtk::manage(new Gtk::Button("Close"));
 		window->add(*Gtk::manage(button));
