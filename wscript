@@ -42,6 +42,72 @@ def configure(conf):
     conf.load('autowaf', cache=True)
     autowaf.set_c_lang(conf, 'c99')
 
+    if Options.options.ultra_strict:
+        autowaf.add_compiler_flags(conf.env, 'c', {
+            'clang': [
+                '-Wno-bad-function-cast',
+                '-Wno-missing-noreturn',
+            ],
+            'gcc': [
+                '-Wno-bad-function-cast',
+                '-Wno-c++-compat',
+            ],
+        })
+
+        autowaf.add_compiler_flags(conf.env, '*', {
+            'clang': [
+                '-Wno-atomic-implicit-seq-cst',
+                '-Wno-c99-extensions',
+                '-Wno-cast-align',
+                '-Wno-cast-qual',
+                '-Wno-disabled-macro-expansion',
+                '-Wno-documentation-unknown-command',
+                '-Wno-double-promotion',
+                '-Wno-float-conversion',
+                '-Wno-float-equal',
+                '-Wno-format-nonliteral',
+                '-Wno-implicit-fallthrough',
+                '-Wno-implicit-float-conversion',
+                '-Wno-implicit-int-float-conversion',
+                '-Wno-padded',
+                '-Wno-redundant-parens',
+                '-Wno-reserved-id-macro',
+                '-Wno-shorten-64-to-32',
+                '-Wno-sign-conversion',
+                '-Wno-switch-enum',
+                '-Wno-unused-macros',
+                '-Wno-unused-parameter',
+                '-Wno-vla',
+            ],
+            'gcc': [
+                '-Wno-cast-align',
+                '-Wno-cast-qual',
+                '-Wno-conversion',
+                '-Wno-double-promotion',
+                '-Wno-float-conversion',
+                '-Wno-float-equal',
+                '-Wno-padded',
+                '-Wno-pedantic',
+                '-Wno-stack-protector',
+                '-Wno-switch-enum',
+                '-Wno-unused-macros',
+                '-Wno-unused-parameter',
+                '-Wno-vla',
+            ],
+        })
+
+        autowaf.add_compiler_flags(conf.env, 'cxx', {
+            'clang': [
+                '-Wno-extra-semi-stmt',
+                '-Wno-old-style-cast',
+                '-Wno-weak-vtables',
+                '-Wno-zero-as-null-pointer-constant',
+            ],
+            'gcc': [
+                '-Wno-effc++',
+            ],
+        })
+
     conf.check_pkg('lv2 >= 1.17.2', uselib_store='LV2')
     conf.check_pkg('lilv-0 >= 0.24.0', uselib_store='LILV')
     conf.check_pkg('serd-0 >= 0.24.0', uselib_store='SERD')
