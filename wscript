@@ -90,12 +90,20 @@ def configure(conf):
             header_name = 'jack/jack.h',
             define_name = 'HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE',
             uselib      = 'JACK',
+            return_type = 'size_t',
+            arg_types   = 'jack_client_t*,const char*',
             mandatory   = False)
 
         conf.check_function('c', 'jack_set_property',
                             header_name = 'jack/metadata.h',
                             define_name = 'HAVE_JACK_METADATA',
                             uselib      = 'JACK',
+                            return_type = 'int',
+                            arg_types   = '''jack_client_t*,
+                                             jack_uuid_t,
+                                             const char*,
+                                             const char*,
+                                             const char*''',
                             mandatory   = False)
 
     defines = ['_POSIX_C_SOURCE=200809L']
@@ -104,24 +112,34 @@ def configure(conf):
                         header_name = 'unistd.h',
                         defines     = defines,
                         define_name = 'HAVE_ISATTY',
+                        return_type = 'int',
+                        arg_types   = 'int',
                         mandatory   = False)
 
     conf.check_function('c', 'fileno',
                         header_name = 'stdio.h',
                         defines     = defines,
                         define_name = 'HAVE_FILENO',
+                        return_type = 'int',
+                        arg_types   = 'FILE*',
                         mandatory   = False)
 
     conf.check_function('c', 'mlock',
                         header_name = 'sys/mman.h',
                         defines     = defines,
                         define_name = 'HAVE_MLOCK',
+                        return_type = 'int',
+                        arg_types   = 'const void*,size_t',
                         mandatory   = False)
 
     conf.check_function('c', 'sigaction',
                         header_name = 'signal.h',
                         defines     = defines,
                         define_name = 'HAVE_SIGACTION',
+                        return_type = 'int',
+                        arg_types   = '''int,
+                                         const struct sigaction*,
+                                         struct sigaction*''',
                         mandatory   = False)
 
     if not Options.options.no_jack_session:
