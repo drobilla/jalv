@@ -177,7 +177,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					{ 0, jalv->urids.patch_Get } };
 				lv2_evbuf_write(&iter, 0, 0,
 				                get.atom.type, get.atom.size,
-				                (const uint8_t*)LV2_ATOM_BODY(&get));
+				                (const uint8_t*)LV2_ATOM_BODY_CONST(&get));
 			}
 
 			if (port->sys_port) {
