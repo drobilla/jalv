@@ -49,31 +49,45 @@ def configure(conf):
     conf.check_pkg('sratom-0 >= 0.6.0', uselib_store='SRATOM')
     if Options.options.portaudio:
         conf.check_pkg('portaudio-2.0 >= 2.0.0',
-                       uselib_store='PORTAUDIO', mandatory=False)
+                       uselib_store='PORTAUDIO',
+                       system=True,
+                       mandatory=False)
     else:
-        conf.check_pkg('jack >= 0.120.0', uselib_store='JACK')
+        conf.check_pkg('jack >= 0.120.0',
+                       uselib_store='JACK',
+                       system=True)
 
     if not Options.options.no_gui and not Options.options.no_gtk:
         if not Options.options.no_gtk2:
-            conf.check_pkg('gtk+-2.0 >= 2.18.0', uselib_store='GTK2',
+            conf.check_pkg('gtk+-2.0 >= 2.18.0',
+                           uselib_store='GTK2',
+                           system=True,
                            mandatory=False)
         if not Options.options.no_gtkmm:
-            conf.check_pkg('gtkmm-2.4 >= 2.20.0', uselib_store='GTKMM2',
+            conf.check_pkg('gtkmm-2.4 >= 2.20.0',
+                           uselib_store='GTKMM2',
+                           system=True,
                            mandatory=False)
         if not Options.options.no_gtk3:
-            conf.check_pkg('gtk+-3.0 >= 3.0.0', uselib_store='GTK3',
+            conf.check_pkg('gtk+-3.0 >= 3.0.0',
+                           uselib_store='GTK3',
+                           system=True,
                            mandatory=False)
 
     if not Options.options.no_gui and not Options.options.no_qt:
         if not Options.options.no_qt4:
-            conf.check_pkg('QtGui >= 4.0.0', uselib_store='QT4',
+            conf.check_pkg('QtGui >= 4.0.0',
+                           uselib_store='QT4',
+                           system=True,
                            mandatory=False)
             if conf.env.HAVE_QT4:
                 if not conf.find_program('moc-qt4', var='MOC4', mandatory=False):
                     conf.find_program('moc', var='MOC4')
 
         if not Options.options.no_qt5:
-            conf.check_pkg('Qt5Widgets >= 5.1.0', uselib_store='QT5',
+            conf.check_pkg('Qt5Widgets >= 5.1.0',
+                           uselib_store='QT5',
+                           system=True,
                            mandatory=False)
             if conf.env.HAVE_QT5:
                 if not conf.find_program('moc-qt5', var='MOC5', mandatory=False):
