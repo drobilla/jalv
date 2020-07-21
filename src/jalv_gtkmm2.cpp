@@ -24,7 +24,7 @@ LV2_DISABLE_DEPRECATION_WARNINGS
 #include <gtkmm/window.h>
 LV2_RESTORE_WARNINGS
 
-Gtk::Main* jalv_gtk_main = nullptr;
+static Gtk::Main* jalv_gtk_main = nullptr;
 
 int
 jalv_init(int* argc, char*** argv, JalvOptions* opts)
