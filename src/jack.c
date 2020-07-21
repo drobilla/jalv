@@ -496,7 +496,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 	if (port->sys_port) {
 		// Set port order to index
 		char index_str[16];
-		snprintf(index_str, sizeof(index_str), "%d", port_index);
+		snprintf(index_str, sizeof(index_str), "%u", port_index);
 		jack_set_property(client, jack_port_uuid(port->sys_port),
 		                  "http://jackaudio.org/metadata/order", index_str,
 		                  "http://www.w3.org/2001/XMLSchema#integer");

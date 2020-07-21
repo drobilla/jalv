@@ -470,13 +470,13 @@ jalv_ui_write(void* const    jalv_handle,
 	Jalv* const jalv = (Jalv*)jalv_handle;
 
 	if (protocol != 0 && protocol != jalv->urids.atom_eventTransfer) {
-		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
+		fprintf(stderr, "UI write with unsupported protocol %u (%s)\n",
 		        protocol, unmap_uri(jalv, protocol));
 		return;
 	}
 
 	if (port_index >= jalv->num_ports) {
-		fprintf(stderr, "UI write to out of range port index %d\n",
+		fprintf(stderr, "UI write to out of range port index %u\n",
 		        port_index);
 		return;
 	}
@@ -528,7 +528,7 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
 			lv2_evbuf_write(&e, nframes, 0, atom->type, atom->size,
 			                (const uint8_t*)LV2_ATOM_BODY_CONST(atom));
 		} else {
-			fprintf(stderr, "error: Unknown control change protocol %d\n",
+			fprintf(stderr, "error: Unknown control change protocol %u\n",
 			        ev.protocol);
 		}
 	}
@@ -1093,7 +1093,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	/* The UI can only go so fast, clamp to reasonable limits */
 	jalv->ui_update_hz     = MIN(60, jalv->ui_update_hz);
 	jalv->opts.buffer_size = MAX(4096, jalv->opts.buffer_size);
-	fprintf(stderr, "Comm buffers: %d bytes\n", jalv->opts.buffer_size);
+	fprintf(stderr, "Comm buffers: %u bytes\n", jalv->opts.buffer_size);
 	fprintf(stderr, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
 
 	/* Build options array to pass to plugin */
