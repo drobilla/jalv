@@ -58,6 +58,12 @@
 #    define REALTIME
 #endif
 
+#ifdef __GNUC__
+#    define JALV_LOG_FUNC(fmt, arg1) __attribute__((format(printf, fmt, arg1)))
+#else
+#    define JALV_LOG_FUNC(fmt, arg1)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -526,11 +532,13 @@ jalv_strjoin(const char* a, const char* b)
 	return out;
 }
 
+JALV_LOG_FUNC(3, 4)
 int
 jalv_printf(LV2_Log_Handle handle,
             LV2_URID       type,
             const char*    fmt, ...);
 
+JALV_LOG_FUNC(3, 0)
 int
 jalv_vprintf(LV2_Log_Handle handle,
              LV2_URID       type,
