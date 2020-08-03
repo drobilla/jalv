@@ -68,7 +68,6 @@ def configure(conf):
                 '-Wno-format-nonliteral',
                 '-Wno-implicit-fallthrough',
                 '-Wno-implicit-float-conversion',
-                '-Wno-implicit-int-float-conversion',
                 '-Wno-padded',
                 '-Wno-redundant-parens',
                 '-Wno-reserved-id-macro',
