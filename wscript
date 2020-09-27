@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-import os
-import subprocess
-
 from waflib import Options
 from waflib.extras import autowaf as autowaf
 
@@ -20,6 +17,7 @@ uri          = 'http://drobilla.net/sw/jalv'
 dist_pattern = 'http://download.drobilla.net/jalv-%d.%d.%d.tar.bz2'
 post_tags    = ['Hacking', 'LAD', 'LV2', 'Jalv']
 
+
 def options(ctx):
     ctx.load('compiler_c')
     ctx.load('compiler_cxx')
@@ -35,6 +33,7 @@ def options(ctx):
          'no-qt':           'do not build Qt GUI',
          'no-qt4':          'do not build Qt4 GUI',
          'no-qt5':          'do not build Qt5 GUI'})
+
 
 def configure(conf):
     conf.load('compiler_c', cache=True)
@@ -146,7 +145,8 @@ def configure(conf):
                            system=True,
                            mandatory=False)
             if conf.env.HAVE_QT4:
-                if not conf.find_program('moc-qt4', var='MOC4', mandatory=False):
+                if not conf.find_program('moc-qt4', var='MOC4',
+                                         mandatory=False):
                     conf.find_program('moc', var='MOC4')
 
         if not Options.options.no_qt5:
@@ -155,11 +155,16 @@ def configure(conf):
                            system=True,
                            mandatory=False)
             if conf.env.HAVE_QT5:
-                if not conf.find_program('moc-qt5', var='MOC5', mandatory=False):
+                if not conf.find_program('moc-qt5', var='MOC5',
+                                         mandatory=False):
                     conf.find_program('moc', var='MOC5')
 
-    have_gui = (conf.env.HAVE_GTK2 or conf.env.HAVE_GTKMM2 or conf.env.HAVE_GTK3 or
-                conf.env.HAVE_QT4 or conf.env.HAVE_QT5)
+    have_gui = (conf.env.HAVE_GTK2 or
+                conf.env.HAVE_GTKMM2 or
+                conf.env.HAVE_GTK3 or
+                conf.env.HAVE_QT4 or
+                conf.env.HAVE_QT5)
+
     if have_gui:
         conf.check_pkg('suil-0 >= 0.10.0', uselib_store='SUIL')
 
@@ -236,6 +241,7 @@ def configure(conf):
          'Qt 4.0 support': bool(conf.env.HAVE_QT4),
          'Qt 5.0 support': bool(conf.env.HAVE_QT5),
          'Color output': bool(conf.env.JALV_WITH_COLOR)})
+
 
 def build(bld):
     libs   = 'LILV SUIL JACK SERD SORD SRATOM LV2 PORTAUDIO'
@@ -334,6 +340,7 @@ def build(bld):
     # Man pages
     bld.install_files('${MANDIR}/man1', bld.path.ant_glob('doc/*.1'))
 
+
 def lint(ctx):
     "checks code for style issues"
     import subprocess
@@ -346,6 +353,7 @@ def lint(ctx):
            "-readability-else-after-return\" " +
            "$(find .. -name '*.c')")
     subprocess.call(cmd, cwd='build', shell=True)
+
 
 def dist(ctx):
     ctx.base_path = ctx.path
