@@ -22,22 +22,33 @@
 #include "lv2_evbuf.h"
 #include "worker.h"
 
+#include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
+#include "lv2/atom/forge.h"
+#include "lv2/atom/util.h"
 #include "lv2/buf-size/buf-size.h"
+#include "lv2/core/lv2.h"
 #include "lv2/data-access/data-access.h"
+#include "lv2/log/log.h"
+#include "lv2/midi/midi.h"
 #include "lv2/options/options.h"
 #include "lv2/parameters/parameters.h"
 #include "lv2/patch/patch.h"
 #include "lv2/port-groups/port-groups.h"
 #include "lv2/port-props/port-props.h"
 #include "lv2/presets/presets.h"
+#include "lv2/resize-port/resize-port.h"
 #include "lv2/state/state.h"
 #include "lv2/time/time.h"
 #include "lv2/ui/ui.h"
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
-
-#include "lilv/lilv.h"
+#include "serd/serd.h"
+#include "sratom/sratom.h"
+#include "symap.h"
+#include "zix/common.h"
+#include "zix/ring.h"
+#include "zix/sem.h"
 
 #ifdef HAVE_SUIL
 #include "suil/suil.h"
@@ -46,18 +57,17 @@
 #ifdef _WIN32
 #    include <io.h>  /* for _mktemp */
 #    define snprintf _snprintf
-#else
-#    include <unistd.h>
 #endif
 
 #include <assert.h>
 #include <math.h>
 #include <signal.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 #define NS_RDF "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 #define NS_XSD "http://www.w3.org/2001/XMLSchema#"

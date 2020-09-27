@@ -27,8 +27,6 @@
 
 #include <stdint.h>
 
-struct SymapImpl;
-
 typedef struct SymapImpl Symap;
 
 /**

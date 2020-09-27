@@ -16,34 +16,51 @@
 
 #include "jalv_internal.h"
 
-#include "lv2/patch/patch.h"
-#include "lv2/port-props/port-props.h"
+#include "lilv/lilv.h"
+#include "suil/suil.h"
+#include "zix/sem.h"
 
-#include <qglobal.h>
+#include <QtGlobal>
 
 #if QT_VERSION >= 0x050000
 #    include <QAction>
 #    include <QApplication>
 #    include <QDial>
+#    include <QFontMetrics>
 #    include <QGroupBox>
+#    include <QGuiApplication>
+#    include <QHBoxLayout>
+#    include <QKeySequence>
 #    include <QLabel>
 #    include <QLayout>
+#    include <QLayoutItem>
+#    include <QList>
 #    include <QMainWindow>
 #    include <QMenu>
 #    include <QMenuBar>
+#    include <QObject>
+#    include <QPoint>
+#    include <QRect>
 #    include <QScreen>
 #    include <QScrollArea>
+#    include <QSize>
+#    include <QSizePolicy>
+#    include <QString>
 #    include <QStyle>
 #    include <QTimer>
+#    include <QVBoxLayout>
 #    include <QWidget>
-#    include <QWindow>
+#    include <QtCore>
 #else
 #    include <QtGui>
 #endif
 
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
+#include <cstdint>
+#include <cstring>
+#include <map>
+#include <vector>
 
 #define CONTROL_WIDTH 150
 #define DIAL_STEPS    10000

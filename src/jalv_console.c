@@ -22,10 +22,15 @@
 #include "jalv_config.h"
 #include "jalv_internal.h"
 
+#include "lilv/lilv.h"
 #include "lv2/ui/ui.h"
+#include "suil/suil.h"
+#include "zix/sem.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 

@@ -17,12 +17,19 @@
 #include "jalv_internal.h"
 
 #include "lv2/core/attributes.h"
+#include "suil/suil.h"
+#include "zix/sem.h"
 
 LV2_DISABLE_DEPRECATION_WARNINGS
+#include <glib.h>
 #include <gtkmm/button.h>
 #include <gtkmm/main.h>
+#include <gtkmm/object.h>
+#include <gtkmm/widget.h>
 #include <gtkmm/window.h>
 LV2_RESTORE_WARNINGS
+
+#include <stdint.h>
 
 static Gtk::Main* jalv_gtk_main = nullptr;
 

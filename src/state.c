@@ -14,22 +14,21 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "jalv_config.h"
 #include "jalv_internal.h"
 
-#ifdef HAVE_LV2_STATE
-#    include "lv2/lv2plug.in/ns/ext/state/state.h"
-#endif
-
 #include "lilv/lilv.h"
+#include "lv2/atom/forge.h"
+#include "lv2/core/lv2.h"
+#include "lv2/state/state.h"
+#include "lv2/urid/urid.h"
+#include "zix/common.h"
+#include "zix/ring.h"
+#include "zix/sem.h"
 
-#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 char*
 jalv_make_path(LV2_State_Make_Path_Handle handle,

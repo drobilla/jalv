@@ -15,10 +15,20 @@
 */
 
 #include "jalv_internal.h"
-#include "worker.h"
+#include "lv2_evbuf.h"
+
+#include "lilv/lilv.h"
+#include "lv2/atom/atom.h"
+#include "lv2/atom/forge.h"
+#include "sratom/sratom.h"
+#include "zix/ring.h"
+#include "zix/sem.h"
 
 #include <jack/jack.h>
 #include <jack/midiport.h>
+#include <jack/transport.h>
+#include <jack/types.h>
+
 #ifdef JALV_JACK_SESSION
 #    include <jack/session.h>
 #endif
@@ -27,6 +37,11 @@
 #endif
 
 #include <ctype.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 struct JalvBackend {
 	jack_client_t* client;             ///< Jack client

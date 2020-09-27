@@ -17,8 +17,6 @@
 #ifndef ZIX_RING_H
 #define ZIX_RING_H
 
-#include "zix/common.h"
-
 #include <stdint.h>
 
 #ifdef __cplusplus

@@ -16,6 +16,17 @@
 
 #include "jalv_internal.h"
 
+#include "lilv/lilv.h"
+#include "lv2/atom/atom.h"
+#include "lv2/atom/forge.h"
+#include "lv2/urid/urid.h"
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 int
 scale_point_cmp(const ScalePoint* a, const ScalePoint* b)
 {

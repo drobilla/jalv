@@ -16,15 +16,33 @@
 
 #include "jalv_internal.h"
 
+#include "lilv/lilv.h"
+#include "lv2/atom/atom.h"
+#include "lv2/atom/forge.h"
+#include "lv2/atom/util.h"
 #include "lv2/core/attributes.h"
-#include "lv2/patch/patch.h"
-#include "lv2/port-props/port-props.h"
+#include "lv2/core/lv2.h"
+#include "lv2/ui/ui.h"
+#include "lv2/urid/urid.h"
+#include "suil/suil.h"
+#include "zix/common.h"
+#include "zix/sem.h"
 
 LV2_DISABLE_DEPRECATION_WARNINGS
 
+#include <gdk/gdk.h>
+#include <glib-object.h>
+#include <glib.h>
+#include <gobject/gclosure.h>
 #include <gtk/gtk.h>
 
+#include <float.h>
 #include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static GtkCheckMenuItem* active_preset_item = NULL;
 static bool              updating           = false;

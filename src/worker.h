@@ -16,7 +16,11 @@
 
 #include "jalv_internal.h"
 
+#include "lilv/lilv.h"
 #include "lv2/worker/worker.h"
+
+#include <stdbool.h>
+#include <stdint.h>
 
 void
 jalv_worker_init(Jalv*                       jalv,

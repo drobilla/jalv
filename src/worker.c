@@ -16,6 +16,15 @@
 
 #include "worker.h"
 
+#include "lv2/worker/worker.h"
+#include "zix/common.h"
+#include "zix/ring.h"
+#include "zix/sem.h"
+#include "zix/thread.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+
 static LV2_Worker_Status
 jalv_worker_respond(LV2_Worker_Respond_Handle handle,
                     uint32_t                  size,

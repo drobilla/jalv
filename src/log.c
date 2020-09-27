@@ -16,6 +16,13 @@
 
 #include "jalv_internal.h"
 
+#include "lv2/log/log.h"
+#include "lv2/urid/urid.h"
+
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+
 int
 jalv_printf(LV2_Log_Handle handle,
             LV2_URID       type,
