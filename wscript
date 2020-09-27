@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from waflib import Options
+from waflib import Build, Logs, Options
 from waflib.extras import autowaf as autowaf
 
 # Version of this package (even if built as a child)
@@ -40,6 +40,12 @@ def configure(conf):
     conf.load('compiler_cxx', cache=True)
     conf.load('autowaf', cache=True)
     autowaf.set_c_lang(conf, 'c99')
+
+    if Options.options.strict:
+        # Check for programs used by lint target
+        conf.find_program("flake8", var="FLAKE8", mandatory=False)
+        conf.find_program("clang-tidy", var="CLANG_TIDY", mandatory=False)
+        conf.find_program("iwyu_tool", var="IWYU_TOOL", mandatory=False)
 
     if Options.options.ultra_strict:
         autowaf.add_compiler_flags(conf.env, 'c', {
@@ -341,18 +347,67 @@ def build(bld):
     bld.install_files('${MANDIR}/man1', bld.path.ant_glob('doc/*.1'))
 
 
+class LintContext(Build.BuildContext):
+    fun = cmd = 'lint'
+
+
 def lint(ctx):
     "checks code for style issues"
+    import os
     import subprocess
-    cmd = ("clang-tidy -p=. -header-filter=src/ -checks=\"*," +
-           "-clang-analyzer-alpha.*," +
-           "-google-readability-todo," +
-           "-llvm-header-guard," +
-           "-llvm-include-order," +
-           "-misc-unused-parameters," +
-           "-readability-else-after-return\" " +
-           "$(find .. -name '*.c')")
-    subprocess.call(cmd, cwd='build', shell=True)
+    import sys
+
+    st = 0
+
+    if "FLAKE8" in ctx.env:
+        Logs.info("Running flake8")
+        st = subprocess.call([ctx.env.FLAKE8[0],
+                              "wscript",
+                              "--ignore",
+                              "E101,E129,W191,E221,W504,E251,E241,E741"])
+    else:
+        Logs.warn("Not running flake8")
+
+    if "IWYU_TOOL" in ctx.env:
+        Logs.info("Running include-what-you-use")
+
+        qt_mapping_file = "/usr/share/include-what-you-use/qt5_11.imp"
+        extra_args = []
+        if os.path.exists(qt_mapping_file):
+            extra_args += ["--", "-Xiwyu", "--mapping_file=" + qt_mapping_file]
+
+        cmd = [ctx.env.IWYU_TOOL[0], "-o", "clang", "-p", "build"] + extra_args
+        output = subprocess.check_output(cmd).decode('utf-8')
+        if 'error: ' in output:
+            sys.stdout.write(output)
+            st += 1
+    else:
+        Logs.warn("Not running include-what-you-use")
+
+    if "CLANG_TIDY" in ctx.env and "clang" in ctx.env.CXX[0]:
+        Logs.info("Running clang-tidy")
+
+        import json
+
+        with open('build/compile_commands.json', 'r') as db:
+            commands = json.load(db)
+            files = [c['file'] for c in commands]
+
+        for step_files in zip(*(iter(files),) * Options.options.jobs):
+            procs = []
+            for f in step_files:
+                cmd = [ctx.env.CLANG_TIDY[0], '--quiet', '-p=.', f]
+                procs += [subprocess.Popen(cmd, cwd='build')]
+
+            for proc in procs:
+                proc.communicate()
+                st += proc.returncode
+    else:
+        Logs.warn("Not running clang-tidy")
+
+    if st != 0:
+        Logs.warn("Lint checks failed")
+        sys.exit(st)
 
 
 def dist(ctx):
