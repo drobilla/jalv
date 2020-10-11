@@ -128,7 +128,8 @@ static const LV2_Feature static_features[] = {
 static bool
 feature_is_supported(Jalv* jalv, const char* uri)
 {
-	if (!strcmp(uri, "http://lv2plug.in/ns/lv2core#isLive")) {
+	if (!strcmp(uri, "http://lv2plug.in/ns/lv2core#isLive") ||
+	    !strcmp(uri, "http://lv2plug.in/ns/lv2core#inPlaceBroken")) {
 		return true;
 	}
 

@@ -1,9 +1,10 @@
 jalv (1.6.5) unstable;
 
-  * Support port events for ui:showInterface UIs
   * Add a command line argument to select a specific UI
+  * Explicitly support lv2:inPlaceBroken
+  * Support port events for ui:showInterface UIs
 
- -- David Robillard <d@drobilla.net>  Sun, 05 Apr 2020 11:14:53 +0000
+ -- David Robillard <d@drobilla.net>  Sun, 11 Oct 2020 10:16:00 +0000
 
 jalv (1.6.4) stable;
 
