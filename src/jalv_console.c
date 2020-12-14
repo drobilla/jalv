@@ -50,7 +50,6 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -p           Print control output changes to stdout\n");
 	fprintf(os, "  -s           Show plugin UI if possible\n");
 	fprintf(os, "  -t           Print trace messages from plugin\n");
-	fprintf(os, "  -u UUID      UUID for Jack session restoration\n");
 	fprintf(os, "  -x           Exact JACK client name (exit if taken)\n");
 	return error ? 1 : 0;
 }
@@ -86,12 +85,6 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 				return 1;
 			}
 			opts->ui_uri = jalv_strdup((*argv)[a]);
-		} else if ((*argv)[a][1] == 'u') {
-			if (++a == *argc) {
-				fprintf(stderr, "Missing argument for -u\n");
-				return 1;
-			}
-			opts->uuid = jalv_strdup((*argv)[a]);
 		} else if ((*argv)[a][1] == 'l') {
 			if (++a == *argc) {
 				fprintf(stderr, "Missing argument for -l\n");

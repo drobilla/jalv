@@ -169,7 +169,6 @@ typedef struct {
 typedef struct {
 	char*    name;              ///< Client name
 	int      name_exact;        ///< Exit if name is taken
-	char*    uuid;              ///< Session UUID
 	char*    load;              ///< Path for state to load
 	char*    preset;            ///< URI of preset to load
 	char**   controls;          ///< Control values

@@ -107,8 +107,6 @@ int
 jalv_init(int* argc, char*** argv, JalvOptions* opts)
 {
 	GOptionEntry entries[] = {
-		{ "uuid", 'u', 0, G_OPTION_ARG_STRING, &opts->uuid,
-		  "UUID for Jack session restoration", "UUID" },
 		{ "load", 'l', 0, G_OPTION_ARG_STRING, &opts->load,
 		  "Load state from save directory", "DIR" },
 		{ "preset", 'p', 0, G_OPTION_ARG_STRING, &opts->preset,

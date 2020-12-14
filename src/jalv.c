@@ -821,10 +821,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 		return -1;
 	}
 
-	if (jalv->opts.uuid) {
-		printf("UUID: %s\n", jalv->opts.uuid);
-	}
-
 	jalv->symap = symap_new();
 	zix_sem_init(&jalv->symap_lock, 1);
 	zix_sem_init(&jalv->work_lock, 1);
@@ -1310,7 +1306,6 @@ jalv_close(Jalv* const jalv)
 	free(jalv->feature_list);
 
 	free(jalv->opts.name);
-	free(jalv->opts.uuid);
 	free(jalv->opts.load);
 	free(jalv->opts.controls);
 

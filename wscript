@@ -24,7 +24,6 @@ def options(ctx):
     ctx.add_flags(
         ctx.configuration_options(),
         {'portaudio':       'use PortAudio backend, not JACK',
-         'no-jack-session': 'do not build JACK session support',
          'no-gui':          'do not build any GUIs',
          'no-gtk':          'do not build Gtk GUI',
          'no-gtkmm':        'do not build Gtkmm GUI',
@@ -231,9 +230,6 @@ def configure(conf):
                                          const struct sigaction*,
                                          struct sigaction*''',
                         mandatory   = False)
-
-    if not Options.options.no_jack_session:
-        conf.define('JALV_JACK_SESSION', 1)
 
     conf.write_config_header('jalv_config.h', remove=False)
 

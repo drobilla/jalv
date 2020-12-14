@@ -29,9 +29,6 @@
 #include <jack/transport.h>
 #include <jack/types.h>
 
-#ifdef JALV_JACK_SESSION
-#    include <jack/session.h>
-#endif
 #ifdef HAVE_JACK_METADATA
 #    include <jack/metadata.h>
 #endif
@@ -309,34 +306,6 @@ jack_latency_cb(jack_latency_callback_mode_t mode, void* data)
 	}
 }
 
-#ifdef JALV_JACK_SESSION
-static void
-jack_session_cb(jack_session_event_t* event, void* arg)
-{
-	Jalv* const jalv = (Jalv*)arg;
-
-	#define MAX_CMD_LEN 256
-	event->command_line = (char*)malloc(MAX_CMD_LEN);
-	snprintf(event->command_line, MAX_CMD_LEN, "%s -u %s -l \"${SESSION_DIR}\"",
-	         jalv->prog_name,
-	         event->client_uuid);
-
-	switch (event->type) {
-	case JackSessionSave:
-	case JackSessionSaveTemplate:
-		jalv_save(jalv, event->session_dir);
-		break;
-	case JackSessionSaveAndQuit:
-		jalv_save(jalv, event->session_dir);
-		jalv_close_ui(jalv);
-		break;
-	}
-
-	jack_session_reply(jalv->backend->client, event);
-	jack_session_event_free(event);
-}
-#endif /* JALV_JACK_SESSION */
-
 static jack_client_t*
 jack_create_client(Jalv* jalv)
 {
@@ -360,17 +329,6 @@ jack_create_client(Jalv* jalv)
 	}
 
 	/* Connect to JACK */
-#ifdef JALV_JACK_SESSION
-	if (jalv->opts.uuid) {
-		client = jack_client_open(
-			jack_name,
-			(jack_options_t)(JackSessionID |
-			                 (jalv->opts.name_exact ? JackUseExactName : 0)),
-			NULL,
-			jalv->opts.uuid);
-	}
-#endif
-
 	if (!client) {
 		client = jack_client_open(
 			jack_name,
@@ -410,9 +368,6 @@ jalv_backend_init(Jalv* jalv)
 	jack_set_buffer_size_callback(client, &jack_buffer_size_cb, arg);
 	jack_on_shutdown(client, &jack_shutdown_cb, arg);
 	jack_set_latency_callback(client, &jack_latency_cb, arg);
-#ifdef JALV_JACK_SESSION
-	jack_set_session_callback(client, &jack_session_cb, arg);
-#endif
 
 	if (jalv->backend) {
 		/* Internal JACK client, jalv->backend->is_internal_client was already
