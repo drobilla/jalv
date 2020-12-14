@@ -318,14 +318,13 @@ public:
 
 	void setValue(float value);
 
-	QDial* dial;
-
 private:
 	void    setRange(float min, float max);
 	QString getValueLabel(float value);
 	float   getValue();
 	int     stringWidth(const QString& str);
 
+	QDial*            dial;
 	const LilvPlugin* plugin;
 	struct Port*      port;
 
