@@ -510,8 +510,7 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
 	/* Build full command line with "program" name for building argv */
 	const size_t cmd_len = strlen("jalv ") + args_len;
 	char* const  cmd     = (char*)calloc(cmd_len + 1, 1);
-	strcat(cmd, "jalv ");
-	strcat(cmd, load_init);
+	snprintf(cmd, cmd_len + 1, "jalv %s", load_init);
 
 	/* Build argv */
 	int         argc = 0;

@@ -14,7 +14,6 @@ Checks: >
   -cert-err34-c,
   -clang-analyzer-core.CallAndMessage,
   -clang-analyzer-optin.cplusplus.VirtualCall,
-  -clang-analyzer-security.insecureAPI.strcpy,
   -cppcoreguidelines-avoid-non-const-global-variables,
   -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-owning-memory,
