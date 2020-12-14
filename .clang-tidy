@@ -4,7 +4,6 @@ Checks: >
   -*-magic-numbers,
   -*-named-parameter,
   -*-narrowing-conversions,
-  -*-special-member-functions,
   -*-uppercase-literal-suffix,
   -*-use-auto,
   -bugprone-branch-clone,
