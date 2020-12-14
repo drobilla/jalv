@@ -236,8 +236,11 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			     lv2_evbuf_is_valid(i);
 			     i = lv2_evbuf_next(i)) {
 				// Get event from LV2 buffer
-				uint32_t frames, subframes, type, size;
-				uint8_t* body;
+				uint32_t frames    = 0;
+				uint32_t subframes = 0;
+				uint32_t type      = 0;
+				uint32_t size      = 0;
+				uint8_t* body      = NULL;
 				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
 				if (buf && type == jalv->urids.midi_MidiEvent) {

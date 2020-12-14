@@ -165,8 +165,8 @@ static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
 	char     sym[1024];
-	uint32_t index;
-	float    value;
+	uint32_t index = 0;
+	float    value = 0.0f;
 	if (!strncmp(cmd, "help", 4)) {
 		fprintf(stderr,
 		        "Commands:\n"

@@ -20,7 +20,6 @@ Checks: >
   -clang-analyzer-optin.cplusplus.VirtualCall,
   -clang-analyzer-security.insecureAPI.strcpy,
   -cppcoreguidelines-avoid-non-const-global-variables,
-  -cppcoreguidelines-init-variables,
   -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-owning-memory,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,

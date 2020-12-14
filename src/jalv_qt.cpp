@@ -115,7 +115,7 @@ FlowLayout::FlowLayout(int margin, int hSpacing, int vSpacing)
 
 FlowLayout::~FlowLayout()
 {
-	QLayoutItem* item;
+	QLayoutItem* item = nullptr;
 	while ((item = takeAt(0))) {
 		delete item;
 	}
@@ -203,8 +203,8 @@ FlowLayout::sizeHint() const
 QSize
 FlowLayout::minimumSize() const
 {
-	QSize        size;
-	QLayoutItem* item;
+	QSize        size = {};
+	QLayoutItem* item = nullptr;
 	foreach (item, itemList) {
 		size = size.expandedTo(item->minimumSize());
 	}
@@ -215,7 +215,10 @@ FlowLayout::minimumSize() const
 int
 FlowLayout::doLayout(const QRect &rect, bool testOnly) const
 {
-	int left, top, right, bottom;
+	int left   = 0;
+	int top    = 0;
+	int right  = 0;
+	int bottom = 0;
 	getContentsMargins(&left, &top, &right, &bottom);
 
 	QRect effectiveRect = rect.adjusted(+left, +top, -right, -bottom);
@@ -223,7 +226,7 @@ FlowLayout::doLayout(const QRect &rect, bool testOnly) const
 	int   y             = effectiveRect.y();
 	int   lineHeight    = 0;
 
-	QLayoutItem* item;
+	QLayoutItem* item = nullptr;
 	foreach (item, itemList) {
 		QWidget* wid = item->widget();
 
@@ -418,9 +421,9 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	JalvNodes*      nodes    = &portContainer.jalv->nodes;
 	const LilvPort* lilvPort = port->lilv_port;
 
-	LilvNode* nmin;
-	LilvNode* nmax;
-	LilvNode* ndef;
+	LilvNode* nmin = nullptr;
+	LilvNode* nmax = nullptr;
+	LilvNode* ndef = nullptr;
 	lilv_port_get_range(plugin, lilvPort, &ndef, &nmin, &nmax);
 
 	LilvNode* stepsNode = lilv_port_get(plugin, lilvPort, nodes->pprops_rangeSteps);
@@ -511,7 +514,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 void
 Control::setValue(float value)
 {
-	float step;
+	float step = 0.0f;
 
 	if (isInteger) {
 		step = value;
@@ -725,7 +728,7 @@ jalv_open_ui(Jalv* jalv)
 		jalv_ui_instantiate(jalv, jalv_native_ui_type(), win);
 	}
 
-	QWidget* widget;
+	QWidget* widget = nullptr;
 	if (jalv->ui_instance) {
 		widget = (QWidget*)suil_instance_get_widget(jalv->ui_instance);
 	} else {

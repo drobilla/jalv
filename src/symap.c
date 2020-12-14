@@ -107,7 +107,7 @@ symap_search(const Symap* map, const char* sym, bool* exact)
 	uint32_t lower = 0;
 	uint32_t upper = map->size - 1;
 	uint32_t i     = upper;
-	int      cmp;
+	int      cmp   = 0;
 
 	while (upper >= lower) {
 		i   = lower + ((upper - lower) / 2);
@@ -133,7 +133,7 @@ symap_search(const Symap* map, const char* sym, bool* exact)
 uint32_t
 symap_try_map(Symap* map, const char* sym)
 {
-	bool           exact;
+	bool           exact = false;
 	const uint32_t index = symap_search(map, sym, &exact);
 	if (exact) {
 		assert(!strcmp(map->symbols[map->index[index]], sym));
@@ -146,7 +146,7 @@ symap_try_map(Symap* map, const char* sym)
 uint32_t
 symap_map(Symap* map, const char* sym)
 {
-	bool           exact;
+	bool           exact = false;
 	const uint32_t index = symap_search(map, sym, &exact);
 	if (exact) {
 		assert(!strcmp(map->symbols[map->index[index] - 1], sym));

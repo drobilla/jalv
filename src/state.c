@@ -133,7 +133,7 @@ set_port_value(const char* port_symbol,
 		return;
 	}
 
-	float fvalue;
+	float fvalue = 0.0f;
 	if (type == jalv->forge.Float) {
 		fvalue = *(const float*)value;
 	} else if (type == jalv->forge.Double) {
