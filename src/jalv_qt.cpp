@@ -347,7 +347,7 @@ private:
 extern "C" {
 
 int
-jalv_init(int* argc, char*** argv, JalvOptions* opts)
+jalv_init(int* argc, char*** argv, JalvOptions*)
 {
 	app = new QApplication(*argc, *argv, true);
 	app->setStyleSheet("QGroupBox::title { subcontrol-position: top center }");
@@ -388,7 +388,7 @@ class Timer : public QTimer
 public:
 	explicit Timer(Jalv* jalv) : _jalv(jalv) {}
 
-	void timerEvent(QTimerEvent* e) override {
+	void timerEvent(QTimerEvent*) override {
 		jalv_update(_jalv);
 	}
 
@@ -592,7 +592,7 @@ Control::stringWidth(const QString& str)
 }
 
 void
-Control::dialChanged(int dialValue)
+Control::dialChanged(int)
 {
 	float value = getValue();
 
@@ -694,13 +694,13 @@ build_control_widget(Jalv* jalv)
 }
 
 bool
-jalv_discover_ui(Jalv* jalv)
+jalv_discover_ui(Jalv*)
 {
 	return true;
 }
 
 float
-jalv_ui_refresh_rate(Jalv* jalv)
+jalv_ui_refresh_rate(Jalv*)
 {
 #if QT_VERSION >= 0x050000
 	return (float)QGuiApplication::primaryScreen()->refreshRate();
@@ -770,7 +770,7 @@ jalv_open_ui(Jalv* jalv)
 }
 
 int
-jalv_close_ui(Jalv* jalv)
+jalv_close_ui(Jalv*)
 {
 	app->quit();
 	return 0;

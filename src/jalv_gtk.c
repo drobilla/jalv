@@ -651,8 +651,8 @@ patch_put_get(Jalv*                   jalv,
 static LV2UI_Request_Value_Status
 on_request_value(LV2UI_Feature_Handle      handle,
                  const LV2_URID            key,
-                 const LV2_URID            type,
-                 const LV2_Feature* const* features)
+                 const LV2_URID            ZIX_UNUSED(type),
+                 const LV2_Feature* const* ZIX_UNUSED(features))
 {
 	Jalv*      jalv    = (Jalv*)handle;
 	ControlID* control = get_property_control(&jalv->controls, key);
@@ -1208,7 +1208,7 @@ jalv_discover_ui(Jalv* ZIX_UNUSED(jalv))
 }
 
 float
-jalv_ui_refresh_rate(Jalv* jalv)
+jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 {
 #if GTK_MAJOR_VERSION == 2
 	return 30.0f;

@@ -25,6 +25,7 @@
 #include "lilv/lilv.h"
 #include "lv2/ui/ui.h"
 #include "suil/suil.h"
+#include "zix/common.h"
 #include "zix/sem.h"
 
 #include <stdbool.h>
@@ -152,10 +153,10 @@ jalv_print_controls(Jalv* jalv, bool writable, bool readable)
 }
 
 static int
-jalv_print_preset(Jalv*           jalv,
+jalv_print_preset(Jalv*           ZIX_UNUSED(jalv),
                   const LilvNode* node,
                   const LilvNode* title,
-                  void*           data)
+                  void*           ZIX_UNUSED(data))
 {
 	printf("%s (%s)\n", lilv_node_as_string(node), lilv_node_as_string(title));
 	return 0;
@@ -260,7 +261,7 @@ jalv_run_custom_ui(Jalv* jalv)
 }
 
 float
-jalv_ui_refresh_rate(Jalv* jalv)
+jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 {
 	return 30.0f;
 }

@@ -36,7 +36,6 @@ Checks: >
   -llvm-header-guard,
   -llvmlibc-*,
   -misc-no-recursion,
-  -misc-unused-parameters,
   -modernize-return-braced-init-list,
   -modernize-use-trailing-return-type,
   -modernize-use-using,

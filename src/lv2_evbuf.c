@@ -158,6 +158,8 @@ lv2_evbuf_write(LV2_Evbuf_Iterator* iter,
                 uint32_t            size,
                 const uint8_t*      data)
 {
+	(void)subframes;
+
 	LV2_Atom_Sequence* aseq = &iter->evbuf->buf;
 	if (iter->evbuf->capacity - sizeof(LV2_Atom) - aseq->atom.size <
 	    sizeof(LV2_Atom_Event) + size) {

@@ -34,7 +34,7 @@ LV2_RESTORE_WARNINGS
 static Gtk::Main* jalv_gtk_main = nullptr;
 
 int
-jalv_init(int* argc, char*** argv, JalvOptions* opts)
+jalv_init(int* argc, char*** argv, JalvOptions*)
 {
 	jalv_gtk_main = new Gtk::Main(*argc, *argv);
 	return 0;
@@ -60,13 +60,13 @@ jalv_ui_port_event(Jalv*       jalv,
 }
 
 bool
-jalv_discover_ui(Jalv* jalv)
+jalv_discover_ui(Jalv*)
 {
 	return true;
 }
 
 float
-jalv_ui_refresh_rate(Jalv* jalv)
+jalv_ui_refresh_rate(Jalv*)
 {
 	return 30.0f;
 }
@@ -111,7 +111,7 @@ jalv_open_ui(Jalv* jalv)
 }
 
 int
-jalv_close_ui(Jalv* jalv)
+jalv_close_ui(Jalv*)
 {
 	Gtk::Main::quit();
 	return 0;
