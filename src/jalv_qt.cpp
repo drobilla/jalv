@@ -70,12 +70,12 @@ static QApplication* app = nullptr;
 class FlowLayout : public QLayout
 {
 public:
-	FlowLayout(QWidget* parent,
-	           int      margin   = -1,
-	           int      hSpacing = -1,
-	           int      vSpacing = -1);
+	explicit FlowLayout(QWidget* parent,
+	                    int      margin   = -1,
+	                    int      hSpacing = -1,
+	                    int      vSpacing = -1);
 
-	FlowLayout(int margin = -1, int hSpacing = -1, int vSpacing = -1);
+	explicit FlowLayout(int margin = -1, int hSpacing = -1, int vSpacing = -1);
 
 	~FlowLayout() override;
 
@@ -308,7 +308,7 @@ class Control : public QGroupBox
 	Q_OBJECT
 
 public:
-	Control(PortContainer portContainer, QWidget* parent = nullptr);
+	explicit Control(PortContainer portContainer, QWidget* parent = nullptr);
 
 	Q_SLOT void dialChanged(int value);
 
