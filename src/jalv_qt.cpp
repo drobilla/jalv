@@ -417,11 +417,16 @@ add_preset_to_menu(Jalv*           jalv,
 }
 
 Control::Control(PortContainer portContainer, QWidget* parent)
-	: QGroupBox(parent)
-	, dial(new QDial())
-	, plugin(portContainer.jalv->plugin)
-	, port(portContainer.port)
-	, label(new QLabel())
+    : QGroupBox(parent)
+    , dial(new QDial())
+    , plugin(portContainer.jalv->plugin)
+    , port(portContainer.port)
+    , label(new QLabel())
+    , max(1.0f)
+    , min(0.0f)
+    , isInteger(false)
+    , isEnum(false)
+    , isLogarithmic(false)
 {
 	JalvNodes*      nodes    = &portContainer.jalv->nodes;
 	const LilvPort* lilvPort = port->lilv_port;

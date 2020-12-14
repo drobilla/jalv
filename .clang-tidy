@@ -3,7 +3,6 @@ Checks: >
   -*-deprecated-headers,
   -*-else-after-return,
   -*-magic-numbers,
-  -*-member-init,
   -*-named-parameter,
   -*-narrowing-conversions,
   -*-non-private-member-variables-in-classes,
