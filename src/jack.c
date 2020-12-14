@@ -14,6 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "jalv_config.h"
 #include "jalv_internal.h"
 #include "lv2_evbuf.h"
 

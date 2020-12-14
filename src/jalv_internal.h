@@ -19,6 +19,7 @@
 
 #define _POSIX_C_SOURCE 200809L
 
+#include "jalv_config.h"
 #include "lv2_evbuf.h"
 #include "symap.h"
 
@@ -35,22 +36,25 @@
 
 #include "lv2/atom/atom.h"
 #include "lv2/atom/forge.h"
+#include "lv2/core/lv2.h"
 #include "lv2/data-access/data-access.h"
 #include "lv2/log/log.h"
-#include "lv2/midi/midi.h"
 #include "lv2/options/options.h"
-#include "lv2/resize-port/resize-port.h"
 #include "lv2/state/state.h"
 #include "lv2/ui/ui.h"
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #ifdef HAVE_ISATTY
 #    include <unistd.h>
 #endif
+
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef __clang__
 #    define REALTIME __attribute__((annotate("realtime")))
@@ -67,6 +71,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct Jalv;
 
 typedef struct JalvBackend JalvBackend;
 

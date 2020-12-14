@@ -336,9 +336,9 @@ private:
 };
 
 #if QT_VERSION >= 0x050000
-#    include "jalv_qt5_meta.hpp"
+#    include "jalv_qt5_meta.hpp" // IWYU pragma: keep
 #else
-#    include "jalv_qt4_meta.hpp"
+#    include "jalv_qt4_meta.hpp" // IWYU pragma: keep
 #endif
 
 extern "C" {
