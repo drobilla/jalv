@@ -71,11 +71,11 @@ class FlowLayout : public QLayout
 {
 public:
 	explicit FlowLayout(QWidget* parent,
-	                    int      margin   = -1,
-	                    int      hSpacing = -1,
-	                    int      vSpacing = -1);
+	                    int      margin,
+	                    int      hSpacing,
+	                    int      vSpacing);
 
-	explicit FlowLayout(int margin = -1, int hSpacing = -1, int vSpacing = -1);
+	explicit FlowLayout(int margin, int hSpacing, int vSpacing);
 
 	~FlowLayout() override;
 
@@ -234,13 +234,17 @@ FlowLayout::doLayout(const QRect &rect, bool testOnly) const
 		if (spaceX == -1) {
 			spaceX = wid->style()->layoutSpacing(QSizePolicy::PushButton,
 			                                     QSizePolicy::PushButton,
-			                                     Qt::Horizontal);
+			                                     Qt::Horizontal,
+			                                     nullptr,
+			                                     nullptr);
 		}
 		int spaceY = verticalSpacing();
 		if (spaceY == -1) {
 			spaceY = wid->style()->layoutSpacing(QSizePolicy::PushButton,
 			                                     QSizePolicy::PushButton,
-			                                     Qt::Vertical);
+			                                     Qt::Vertical,
+			                                     nullptr,
+			                                     nullptr);
 		}
 
 		int nextX = x + item->sizeHint().width() + spaceX;
@@ -277,7 +281,7 @@ FlowLayout::smartSpacing(QStyle::PixelMetric pm) const
 
 class PresetAction : public QAction
 {
-	Q_OBJECT
+	Q_OBJECT // NOLINT
 
 public:
 	PresetAction(QObject* parent, Jalv* jalv, LilvNode* preset)
@@ -305,10 +309,10 @@ typedef struct {
 
 class Control : public QGroupBox
 {
-	Q_OBJECT
+	Q_OBJECT // NOLINT
 
 public:
-	explicit Control(PortContainer portContainer, QWidget* parent = nullptr);
+	explicit Control(PortContainer portContainer, QWidget* parent);
 
 	Q_SLOT void dialChanged(int value);
 
@@ -647,7 +651,7 @@ build_control_widget(Jalv* jalv)
 	std::sort(portContainers.begin(), portContainers.end(), portGroupLessThan);
 
 	QWidget*    grid       = new QWidget();
-	FlowLayout* flowLayout = new FlowLayout();
+	FlowLayout* flowLayout = new FlowLayout(-1, -1, -1);
 	QLayout*    layout     = flowLayout;
 
 	LilvNode*    lastGroup   = nullptr;
@@ -656,7 +660,7 @@ build_control_widget(Jalv* jalv)
 		PortContainer portContainer = portContainers[i];
 		Port*         port          = portContainer.port;
 
-		Control*  control = new Control(portContainer);
+		Control*  control = new Control(portContainer, nullptr);
 		LilvNode* group   = lilv_port_get(
 			plugin, port->lilv_port, jalv->nodes.pg_group);
 		if (group) {

@@ -27,7 +27,6 @@ Checks: >
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-type-static-cast-downcast,
   -fuchsia-default-arguments-calls,
-  -fuchsia-default-arguments-declarations,
   -google-readability-todo,
   -hicpp-multiway-paths-covered,
   -hicpp-signed-bitwise,
