@@ -1272,7 +1272,8 @@ jalv_open_ui(Jalv* jalv)
 		gtk_container_add(GTK_CONTAINER(alignment), scroll_win);
 		gtk_widget_show_all(vbox);
 
-		GtkRequisition controls_size, box_size;
+		GtkRequisition controls_size = {0, 0};
+		GtkRequisition box_size      = {0, 0};
 		size_request(GTK_WIDGET(controls), &controls_size);
 		size_request(GTK_WIDGET(vbox), &box_size);
 
