@@ -1,5 +1,5 @@
 /*
-  Copyright 2011-2017 David Robillard <http://drobilla.net>
+  Copyright 2011 David Robillard <http://drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,6 +16,9 @@
 
 #include "zix/ring.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #ifdef HAVE_MLOCK
 #    include <sys/mman.h>
 #    define ZIX_MLOCK(ptr, size) mlock((ptr), (size))
@@ -27,30 +30,18 @@
 #    define ZIX_MLOCK(ptr, size)
 #endif
 
-#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
-#    include <stdatomic.h>
-#    define ZIX_WRITE_BARRIER() atomic_thread_fence(memory_order_release)
-#    define ZIX_READ_BARRIER() atomic_thread_fence(memory_order_acquire)
-#elif defined(__APPLE__) /* Pre 10.12 */
-#    include <libkern/OSAtomic.h>
-#    define ZIX_WRITE_BARRIER() OSMemoryBarrier()
-#    define ZIX_READ_BARRIER() OSMemoryBarrier()
-#elif defined(_WIN32)
+#if defined(_MSC_VER)
 #    include <windows.h>
-#    define ZIX_WRITE_BARRIER() MemoryBarrier()
 #    define ZIX_READ_BARRIER() MemoryBarrier()
-#elif (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1)
-#    define ZIX_WRITE_BARRIER() __sync_synchronize()
-#    define ZIX_READ_BARRIER() __sync_synchronize()
+#    define ZIX_WRITE_BARRIER() MemoryBarrier()
+#elif defined(__GNUC__)
+#    define ZIX_READ_BARRIER() __atomic_thread_fence(__ATOMIC_ACQUIRE)
+#    define ZIX_WRITE_BARRIER() __atomic_thread_fence(__ATOMIC_RELEASE)
 #else
 #    pragma message("warning: No memory barriers, possible SMP bugs")
-#    define ZIX_WRITE_BARRIER()
 #    define ZIX_READ_BARRIER()
+#    define ZIX_WRITE_BARRIER()
 #endif
-
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
 struct ZixRingImpl {
 	uint32_t write_head;  ///< Read index into buf
@@ -65,11 +56,11 @@ next_power_of_two(uint32_t size)
 {
 	// http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
 	size--;
-	size |= size >> 1;
-	size |= size >> 2;
-	size |= size >> 4;
-	size |= size >> 8;
-	size |= size >> 16;
+	size |= size >> 1u;
+	size |= size >> 2u;
+	size |= size >> 4u;
+	size |= size >> 8u;
+	size |= size >> 16u;
 	size++;
 	return size;
 }
@@ -89,10 +80,8 @@ zix_ring_new(uint32_t size)
 void
 zix_ring_free(ZixRing* ring)
 {
-	if (ring) {
-		free(ring->buf);
-		free(ring);
-	}
+	free(ring->buf);
+	free(ring);
 }
 
 void
@@ -184,9 +173,9 @@ zix_ring_read(ZixRing* ring, void* dst, uint32_t size)
 		ZIX_READ_BARRIER();
 		ring->read_head = (r + size) & ring->size_mask;
 		return size;
-	} else {
-		return 0;
 	}
+
+	return 0;
 }
 
 uint32_t

@@ -712,7 +712,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
 }
 
 static void
-signal_handler(ZIX_UNUSED int sig)
+signal_handler(int ZIX_UNUSED(sig))
 {
 	zix_sem_post(exit_sem);
 }

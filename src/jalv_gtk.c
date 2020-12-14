@@ -98,7 +98,7 @@ size_request(GtkWidget* widget, GtkRequisition* req)
 }
 
 static void
-on_window_destroy(ZIX_UNUSED GtkWidget* widget, ZIX_UNUSED gpointer data)
+on_window_destroy(GtkWidget* ZIX_UNUSED(widget), gpointer ZIX_UNUSED(data))
 {
 	gtk_main_quit();
 }
@@ -162,7 +162,7 @@ jalv_native_ui_type(void)
 }
 
 static void
-on_save_activate(ZIX_UNUSED GtkWidget* widget, void* ptr)
+on_save_activate(GtkWidget* ZIX_UNUSED(widget), void* ptr)
 {
 	Jalv* jalv = (Jalv*)ptr;
 	GtkWidget* dialog = gtk_file_chooser_dialog_new(
@@ -185,7 +185,7 @@ on_save_activate(ZIX_UNUSED GtkWidget* widget, void* ptr)
 }
 
 static void
-on_quit_activate(ZIX_UNUSED GtkWidget* widget, gpointer data)
+on_quit_activate(GtkWidget* ZIX_UNUSED(widget), gpointer data)
 {
 	GtkWidget* window = (GtkWidget*)data;
 	gtk_widget_destroy(window);
@@ -244,7 +244,7 @@ on_preset_activate(GtkWidget* widget, gpointer data)
 }
 
 static void
-on_preset_destroy(gpointer data, ZIX_UNUSED GClosure* closure)
+on_preset_destroy(gpointer data, GClosure* ZIX_UNUSED(closure))
 {
 	PresetRecord* record = (PresetRecord*)data;
 	lilv_node_free(record->preset);
@@ -287,7 +287,7 @@ pset_menu_free(PresetMenu* menu)
 }
 
 static gint
-menu_cmp(gconstpointer a, gconstpointer b, ZIX_UNUSED gpointer data)
+menu_cmp(gconstpointer a, gconstpointer b, gpointer ZIX_UNUSED(data))
 {
 	return strcmp(((const PresetMenu*)a)->label, ((const PresetMenu*)b)->label);
 }
@@ -542,10 +542,10 @@ set_float_control(const ControlID* control, float value)
 }
 
 static double
-get_atom_double(Jalv*               jalv,
-                ZIX_UNUSED uint32_t size,
-                LV2_URID            type,
-                const void*         body)
+get_atom_double(Jalv*       jalv,
+                uint32_t    ZIX_UNUSED(size),
+                LV2_URID    type,
+                const void* body)
 {
 	if (type == jalv->forge.Int || type == jalv->forge.Bool) {
 		return *(const int32_t*)body;
@@ -1052,7 +1052,7 @@ add_control_row(GtkWidget*  table,
 }
 
 static int
-control_group_cmp(const void* p1, const void* p2, ZIX_UNUSED void* data)
+control_group_cmp(const void* p1, const void* p2, void* ZIX_UNUSED(data))
 {
 	const ControlID* control1 = *(const ControlID*const*)p1;
 	const ControlID* control2 = *(const ControlID*const*)p2;
@@ -1202,7 +1202,7 @@ build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
 }
 
 bool
-jalv_discover_ui(ZIX_UNUSED Jalv* jalv)
+jalv_discover_ui(Jalv* ZIX_UNUSED(jalv))
 {
 	return TRUE;
 }
@@ -1296,7 +1296,7 @@ jalv_open_ui(Jalv* jalv)
 }
 
 int
-jalv_close_ui(ZIX_UNUSED Jalv* jalv)
+jalv_close_ui(Jalv* ZIX_UNUSED(jalv))
 {
 	gtk_main_quit();
 	return 0;

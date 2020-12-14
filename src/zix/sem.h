@@ -25,13 +25,15 @@
 #    include <limits.h>
 #    include <windows.h>
 #else
-#    include <semaphore.h>
 #    include <errno.h>
+#    include <semaphore.h>
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdbool.h>
 
 /**
    @addtogroup zix
@@ -39,6 +41,8 @@ extern "C" {
    @name Semaphore
    @{
 */
+
+struct ZixSemImpl;
 
 /**
    A counting semaphore.
@@ -148,7 +152,7 @@ static inline ZixStatus
 zix_sem_init(ZixSem* sem, unsigned initial)
 {
 	sem->sem = CreateSemaphore(NULL, initial, LONG_MAX, NULL);
-	return (sem->sem) ? ZIX_STATUS_ERROR : ZIX_STATUS_SUCCESS;
+	return (sem->sem) ? ZIX_STATUS_SUCCESS : ZIX_STATUS_ERROR;
 }
 
 static inline void

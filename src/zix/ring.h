@@ -17,6 +17,8 @@
 #ifndef ZIX_RING_H
 #define ZIX_RING_H
 
+#include "zix/common.h"
+
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -44,12 +46,14 @@ typedef struct ZixRingImpl ZixRing;
 
    At most `size` - 1 bytes may be stored in the ring at once.
 */
+ZIX_MALLOC_API
 ZixRing*
 zix_ring_new(uint32_t size);
 
 /**
    Destroy a ring.
 */
+ZIX_API
 void
 zix_ring_free(ZixRing* ring);
 
@@ -62,6 +66,7 @@ zix_ring_free(ZixRing* ring);
    ring to be truly real-time safe).
 
 */
+ZIX_API
 void
 zix_ring_mlock(ZixRing* ring);
 
@@ -71,48 +76,56 @@ zix_ring_mlock(ZixRing* ring);
    This function is NOT thread-safe, it may only be called when there are no
    readers or writers.
 */
+ZIX_API
 void
 zix_ring_reset(ZixRing* ring);
 
 /**
    Return the number of bytes of space available for reading.
 */
+ZIX_CONST_API
 uint32_t
 zix_ring_read_space(const ZixRing* ring);
 
 /**
    Return the number of bytes of space available for writing.
 */
+ZIX_CONST_API
 uint32_t
 zix_ring_write_space(const ZixRing* ring);
 
 /**
    Return the capacity (i.e. total write space when empty).
 */
+ZIX_CONST_API
 uint32_t
 zix_ring_capacity(const ZixRing* ring);
 
 /**
    Read from the ring without advancing the read head.
 */
+ZIX_API
 uint32_t
 zix_ring_peek(ZixRing* ring, void* dst, uint32_t size);
 
 /**
    Read from the ring and advance the read head.
 */
+ZIX_API
 uint32_t
 zix_ring_read(ZixRing* ring, void* dst, uint32_t size);
 
 /**
    Skip data in the ring (advance read head without reading).
 */
+ZIX_API
 uint32_t
 zix_ring_skip(ZixRing* ring, uint32_t size);
 
 /**
    Write data to the ring.
 */
+ZIX_API
 uint32_t
 zix_ring_write(ZixRing* ring, const void* src, uint32_t size);
 

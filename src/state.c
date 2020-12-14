@@ -120,11 +120,11 @@ jalv_unload_presets(Jalv* jalv)
 }
 
 static void
-set_port_value(const char*         port_symbol,
-               void*               user_data,
-               const void*         value,
-               ZIX_UNUSED uint32_t size,
-               uint32_t            type)
+set_port_value(const char* port_symbol,
+               void*       user_data,
+               const void* value,
+               uint32_t    ZIX_UNUSED(size),
+               uint32_t    type)
 {
 	Jalv*        jalv = (Jalv*)user_data;
 	struct Port* port = jalv_port_by_symbol(jalv, port_symbol);

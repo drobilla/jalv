@@ -70,7 +70,7 @@ worker_func(void* data)
 }
 
 void
-jalv_worker_init(ZIX_UNUSED Jalv*            jalv,
+jalv_worker_init(Jalv*                       ZIX_UNUSED(jalv),
                  JalvWorker*                 worker,
                  const LV2_Worker_Interface* iface,
                  bool                        threaded)

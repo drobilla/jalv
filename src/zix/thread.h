@@ -26,10 +26,10 @@
 #    include <pthread.h>
 #endif
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
-#else
-#    include <stdbool.h>
 #endif
 
 /**
@@ -80,6 +80,8 @@ zix_thread_create(ZixThread* thread,
 static inline ZixStatus
 zix_thread_join(ZixThread thread, void** retval)
 {
+	(void)retval;
+
 	return WaitForSingleObject(thread, INFINITE)
 		? ZIX_STATUS_SUCCESS : ZIX_STATUS_ERROR;
 }
@@ -99,17 +101,13 @@ zix_thread_create(ZixThread* thread,
 	const int ret = pthread_create(thread, NULL, function, arg);
 	pthread_attr_destroy(&attr);
 
-	if (ret == EAGAIN) {
-		return ZIX_STATUS_NO_MEM;
-	} else if (ret == EINVAL) {
-		return ZIX_STATUS_BAD_ARG;
-	} else if (ret == EPERM) {
-		return ZIX_STATUS_BAD_PERMS;
-	} else if (ret) {
-		return ZIX_STATUS_ERROR;
+	switch (ret) {
+	case EAGAIN: return ZIX_STATUS_NO_MEM;
+	case EINVAL: return ZIX_STATUS_BAD_ARG;
+	case EPERM:  return ZIX_STATUS_BAD_PERMS;
 	}
 
-	return ZIX_STATUS_SUCCESS;
+	return ret ? ZIX_STATUS_ERROR : ZIX_STATUS_SUCCESS;
 }
 
 static inline ZixStatus
