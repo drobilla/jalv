@@ -519,10 +519,10 @@ static void
 set_float_control(const ControlID* control, float value)
 {
 	if (control->value_type == control->jalv->forge.Int) {
-		const int32_t ival = lrint(value);
+		const int32_t ival = lrintf(value);
 		set_control(control, sizeof(ival), control->jalv->forge.Int, &ival);
 	} else if (control->value_type == control->jalv->forge.Long) {
-		const int64_t lval = lrint(value);
+		const int64_t lval = lrintf(value);
 		set_control(control, sizeof(lval), control->jalv->forge.Long, &lval);
 	} else if (control->value_type == control->jalv->forge.Float) {
 		set_control(control, sizeof(value), control->jalv->forge.Float, &value);
@@ -856,7 +856,7 @@ make_combo(ControlID* record, float value)
 		                   0, point->value,
 		                   1, point->label,
 		                   -1);
-		if (fabs(value - point->value) < FLT_EPSILON) {
+		if (fabsf(value - point->value) < FLT_EPSILON) {
 			active = i;
 		}
 	}

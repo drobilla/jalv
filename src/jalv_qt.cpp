@@ -522,7 +522,7 @@ Control::setValue(float value)
 		step = (std::find(scalePoints.begin(), scalePoints.end(), value)
 		        - scalePoints.begin());
 	} else if (isLogarithmic) {
-		step = steps * log(value / min) / log(max / min);
+		step = steps * logf(value / min) / logf(max / min);
 	} else {
 		step = value * steps;
 	}
@@ -575,7 +575,7 @@ Control::getValue()
 	} else if (isInteger) {
 		return dial->value();
 	} else if (isLogarithmic) {
-		return min * pow(max / min, (float)dial->value() / (steps - 1));
+		return min * powf(max / min, (float)dial->value() / (steps - 1));
 	} else {
 		return (float)dial->value() / steps;
 	}
