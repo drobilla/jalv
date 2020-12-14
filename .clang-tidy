@@ -1,6 +1,5 @@
 Checks: >
   *,
-  -*-deprecated-headers,
   -*-else-after-return,
   -*-magic-numbers,
   -*-named-parameter,
