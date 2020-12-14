@@ -432,17 +432,17 @@ bool
 jalv_ui_is_resizable(Jalv* jalv);
 
 void
-jalv_ui_write(void* const    controller,
-              uint32_t       port_index,
-              uint32_t       buffer_size,
-              uint32_t       protocol,
-              const void*    buffer);
+jalv_ui_write(void*       controller,
+              uint32_t    port_index,
+              uint32_t    buffer_size,
+              uint32_t    protocol,
+              const void* buffer);
 
 void
 jalv_apply_ui_events(Jalv* jalv, uint32_t nframes);
 
 uint32_t
-jalv_ui_port_index(void* const controller, const char* symbol);
+jalv_ui_port_index(void* controller, const char* symbol);
 
 void
 jalv_ui_port_event(Jalv*       jalv,
