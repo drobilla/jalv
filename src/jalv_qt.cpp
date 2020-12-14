@@ -380,9 +380,10 @@ jalv_ui_port_event(Jalv*       jalv,
 		suil_instance_port_event(jalv->ui_instance, port_index,
 		                         buffer_size, protocol, buffer);
 	} else {
-		Control* control = (Control*)jalv->ports[port_index].widget;
+		Control* control =
+		    static_cast<Control*>(jalv->ports[port_index].widget);
 		if (control) {
-			control->setValue(*(const float*)buffer);
+			control->setValue(*static_cast<const float*>(buffer));
 		}
 	}
 }
@@ -406,7 +407,7 @@ add_preset_to_menu(Jalv*           jalv,
                    const LilvNode* title,
                    void*           data)
 {
-	QMenu*      menu  = (QMenu*)data;
+	QMenu*      menu  = static_cast<QMenu*>(data);
 	const char* label = lilv_node_as_string(title);
 
 	QAction* action = new PresetAction(menu, jalv, lilv_node_duplicate(node));
@@ -618,7 +619,7 @@ portGroupLessThan(const PortContainer &p1, const PortContainer &p2)
 
 	const int cmp = (group1 && group2)
 		? strcmp(lilv_node_as_string(group1), lilv_node_as_string(group2))
-		: ((intptr_t)group1 - (intptr_t)group2);
+		: (intptr_t(group1) - intptr_t(group2));
 
 	lilv_node_free(group2);
 	lilv_node_free(group1);
@@ -734,7 +735,8 @@ jalv_open_ui(Jalv* jalv)
 
 	QWidget* widget = nullptr;
 	if (jalv->ui_instance) {
-		widget = (QWidget*)suil_instance_get_widget(jalv->ui_instance);
+		widget =
+		    static_cast<QWidget*>(suil_instance_get_widget(jalv->ui_instance));
 	} else {
 		QWidget* controlWidget = build_control_widget(jalv);
 
