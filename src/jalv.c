@@ -244,7 +244,8 @@ jalv_create_ports(Jalv* jalv)
 		} else {
 			fprintf(stderr,
 			        "warning: Non-event port %u has lv2:control designation, "
-			        "ignored\n");
+			        "ignored\n",
+			        index);
 		}
 	}
 
