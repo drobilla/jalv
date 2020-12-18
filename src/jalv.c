@@ -238,7 +238,14 @@ jalv_create_ports(Jalv* jalv)
 	const LilvPort* control_input = lilv_plugin_get_port_by_designation(
 		jalv->plugin, jalv->nodes.lv2_InputPort, jalv->nodes.lv2_control);
 	if (control_input) {
-		jalv->control_in = lilv_port_get_index(jalv->plugin, control_input);
+		const uint32_t index = lilv_port_get_index(jalv->plugin, control_input);
+		if (jalv->ports[index].type == TYPE_EVENT) {
+			jalv->control_in = index;
+		} else {
+			fprintf(stderr,
+			        "warning: Non-event port %u has lv2:control designation, "
+			        "ignored\n");
+		}
 	}
 
 	free(default_values);
