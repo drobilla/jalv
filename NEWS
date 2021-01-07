@@ -1,4 +1,4 @@
-jalv (1.6.5) unstable;
+jalv (1.6.6) stable;
 
   * Add a command line argument to select a specific UI
   * Explicitly support lv2:inPlaceBroken
@@ -6,7 +6,7 @@ jalv (1.6.5) unstable;
   * Remove Jack session support
   * Support port events for ui:showInterface UIs
 
- -- David Robillard <d@drobilla.net>  Fri, 18 Dec 2020 20:45:03 +0000
+ -- David Robillard <d@drobilla.net>  Thu, 07 Jan 2021 22:05:38 +0000
 
 jalv (1.6.4) stable;
 
