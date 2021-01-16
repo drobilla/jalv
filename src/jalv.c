@@ -1273,8 +1273,10 @@ jalv_close(Jalv* const jalv)
 
 	/* Clean up */
 	free(jalv->ports);
-	zix_ring_free(jalv->ui_events);
-	zix_ring_free(jalv->plugin_events);
+	if (jalv->ui_events)
+		zix_ring_free(jalv->ui_events);
+	if (jalv->plugin_events)
+		zix_ring_free(jalv->plugin_events);
 	for (LilvNode** n = (LilvNode**)&jalv->nodes; *n; ++n) {
 		lilv_node_free(*n);
 	}
