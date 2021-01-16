@@ -1,3 +1,9 @@
+jalv (1.6.7) unstable;
+
+  * Fix crash when running jalv without arguments
+
+ -- David Robillard <d@drobilla.net>  Sat, 16 Jan 2021 18:34:23 +0000
+
 jalv (1.6.6) stable;
 
   * Add a command line argument to select a specific UI

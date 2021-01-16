@@ -1,5 +1,5 @@
 /*
-  Copyright 2011-2014 David Robillard <d@drobilla.net>
+  Copyright 2011-2020 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -135,7 +135,7 @@ zix_ring_write(ZixRing* ring, const void* src, uint32_t size);
 */
 
 #ifdef __cplusplus
-}  /* extern "C" */
+} /* extern "C" */
 #endif
 
-#endif  /* ZIX_RING_H */
+#endif /* ZIX_RING_H */
