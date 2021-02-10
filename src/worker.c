@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -15,6 +15,15 @@
 */
 
 #include "worker.h"
+
+#include "lv2/worker/worker.h"
+#include "zix/common.h"
+#include "zix/ring.h"
+#include "zix/sem.h"
+#include "zix/thread.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 static LV2_Worker_Status
 jalv_worker_respond(LV2_Worker_Respond_Handle handle,
@@ -61,7 +70,7 @@ worker_func(void* data)
 }
 
 void
-jalv_worker_init(ZIX_UNUSED Jalv*            jalv,
+jalv_worker_init(Jalv*                       ZIX_UNUSED(jalv),
                  JalvWorker*                 worker,
                  const LV2_Worker_Interface* iface,
                  bool                        threaded)

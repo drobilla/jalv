@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -22,22 +22,33 @@
 #include "lv2_evbuf.h"
 #include "worker.h"
 
+#include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
+#include "lv2/atom/forge.h"
+#include "lv2/atom/util.h"
 #include "lv2/buf-size/buf-size.h"
+#include "lv2/core/lv2.h"
 #include "lv2/data-access/data-access.h"
+#include "lv2/log/log.h"
+#include "lv2/midi/midi.h"
 #include "lv2/options/options.h"
 #include "lv2/parameters/parameters.h"
 #include "lv2/patch/patch.h"
 #include "lv2/port-groups/port-groups.h"
 #include "lv2/port-props/port-props.h"
 #include "lv2/presets/presets.h"
+#include "lv2/resize-port/resize-port.h"
 #include "lv2/state/state.h"
 #include "lv2/time/time.h"
 #include "lv2/ui/ui.h"
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
-
-#include "lilv/lilv.h"
+#include "serd/serd.h"
+#include "sratom/sratom.h"
+#include "symap.h"
+#include "zix/common.h"
+#include "zix/ring.h"
+#include "zix/sem.h"
 
 #ifdef HAVE_SUIL
 #include "suil/suil.h"
@@ -46,18 +57,17 @@
 #ifdef _WIN32
 #    include <io.h>  /* for _mktemp */
 #    define snprintf _snprintf
-#else
-#    include <unistd.h>
 #endif
 
 #include <assert.h>
 #include <math.h>
 #include <signal.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 #define NS_RDF "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 #define NS_XSD "http://www.w3.org/2001/XMLSchema#"
@@ -118,7 +128,8 @@ static const LV2_Feature static_features[] = {
 static bool
 feature_is_supported(Jalv* jalv, const char* uri)
 {
-	if (!strcmp(uri, "http://lv2plug.in/ns/lv2core#isLive")) {
+	if (!strcmp(uri, "http://lv2plug.in/ns/lv2core#isLive") ||
+	    !strcmp(uri, "http://lv2plug.in/ns/lv2core#inPlaceBroken")) {
 		return true;
 	}
 
@@ -227,7 +238,15 @@ jalv_create_ports(Jalv* jalv)
 	const LilvPort* control_input = lilv_plugin_get_port_by_designation(
 		jalv->plugin, jalv->nodes.lv2_InputPort, jalv->nodes.lv2_control);
 	if (control_input) {
-		jalv->control_in = lilv_port_get_index(jalv->plugin, control_input);
+		const uint32_t index = lilv_port_get_index(jalv->plugin, control_input);
+		if (jalv->ports[index].type == TYPE_EVENT) {
+			jalv->control_in = index;
+		} else {
+			fprintf(stderr,
+			        "warning: Non-event port %u has lv2:control designation, "
+			        "ignored\n",
+			        index);
+		}
 	}
 
 	free(default_values);
@@ -411,6 +430,7 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 		&parent_feature,
 		&jalv->features.options_feature,
 		&idle_feature,
+		&jalv->features.request_value_feature,
 		NULL
 	};
 
@@ -469,13 +489,13 @@ jalv_ui_write(void* const    jalv_handle,
 	Jalv* const jalv = (Jalv*)jalv_handle;
 
 	if (protocol != 0 && protocol != jalv->urids.atom_eventTransfer) {
-		fprintf(stderr, "UI write with unsupported protocol %d (%s)\n",
+		fprintf(stderr, "UI write with unsupported protocol %u (%s)\n",
 		        protocol, unmap_uri(jalv, protocol));
 		return;
 	}
 
 	if (port_index >= jalv->num_ports) {
-		fprintf(stderr, "UI write to out of range port index %d\n",
+		fprintf(stderr, "UI write to out of range port index %u\n",
 		        port_index);
 		return;
 	}
@@ -527,7 +547,7 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
 			lv2_evbuf_write(&e, nframes, 0, atom->type, atom->size,
 			                (const uint8_t*)LV2_ATOM_BODY_CONST(atom));
 		} else {
-			fprintf(stderr, "error: Unknown control change protocol %d\n",
+			fprintf(stderr, "error: Unknown control change protocol %u\n",
 			        ev.protocol);
 		}
 	}
@@ -700,7 +720,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
 }
 
 static void
-signal_handler(ZIX_UNUSED int sig)
+signal_handler(int ZIX_UNUSED(sig))
 {
 	zix_sem_post(exit_sem);
 }
@@ -731,6 +751,65 @@ setup_signals(Jalv* const jalv)
 #endif
 }
 
+static const LilvUI*
+jalv_select_custom_ui(const Jalv* const jalv)
+{
+	const char* const native_ui_type_uri = jalv_native_ui_type();
+
+	if (jalv->opts.ui_uri) {
+		// Specific UI explicitly requested by user
+		LilvNode*       uri  = lilv_new_uri(jalv->world, jalv->opts.ui_uri);
+		const LilvUI*   ui   = lilv_uis_get_by_uri(jalv->uis, uri);
+
+		lilv_node_free(uri);
+		return ui;
+	}
+
+#ifdef HAVE_SUIL
+	if (native_ui_type_uri) {
+		// Try to find an embeddable UI
+		LilvNode* native_type = lilv_new_uri(jalv->world, native_ui_type_uri);
+
+		LILV_FOREACH (uis, u, jalv->uis) {
+			const LilvUI*   ui        = lilv_uis_get(jalv->uis, u);
+			const LilvNode* type      = NULL;
+			const bool      supported = lilv_ui_is_supported(
+                    ui, suil_ui_supported, native_type, &type);
+
+			if (supported) {
+				lilv_node_free(native_type);
+				return ui;
+			}
+		}
+
+		lilv_node_free(native_type);
+	}
+#endif
+
+	if (!native_ui_type_uri && jalv->opts.show_ui) {
+		// Try to find a UI with ui:showInterface
+		LILV_FOREACH (uis, u, jalv->uis) {
+			const LilvUI*   ui      = lilv_uis_get(jalv->uis, u);
+			const LilvNode* ui_node = lilv_ui_get_uri(ui);
+
+			lilv_world_load_resource(jalv->world, ui_node);
+
+			const bool supported = lilv_world_ask(jalv->world,
+			                                      ui_node,
+			                                      jalv->nodes.lv2_extensionData,
+			                                      jalv->nodes.ui_showInterface);
+
+			lilv_world_unload_resource(jalv->world, ui_node);
+
+			if (supported) {
+				return ui;
+			}
+		}
+	}
+
+	return NULL;
+}
+
 int
 jalv_open(Jalv* const jalv, int* argc, char*** argv)
 {
@@ -748,10 +827,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	if (jalv_init(argc, argv, &jalv->opts)) {
 		jalv_close(jalv);
 		return -1;
-	}
-
-	if (jalv->opts.uuid) {
-		printf("UUID: %s\n", jalv->opts.uuid);
 	}
 
 	jalv->symap = symap_new();
@@ -844,6 +919,10 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	init_feature(&jalv->features.log_feature,
 	             LV2_LOG__log, &jalv->features.llog);
 
+	jalv->features.request_value.handle = jalv;
+	init_feature(&jalv->features.request_value_feature,
+	             LV2_UI__requestValue, &jalv->features.request_value);
+
 	zix_sem_init(&jalv->done, 0);
 
 	zix_sem_init(&jalv->paused, 0);
@@ -870,6 +949,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	jalv->nodes.lv2_control            = lilv_new_uri(world, LV2_CORE__control);
 	jalv->nodes.lv2_default            = lilv_new_uri(world, LV2_CORE__default);
 	jalv->nodes.lv2_enumeration        = lilv_new_uri(world, LV2_CORE__enumeration);
+	jalv->nodes.lv2_extensionData      = lilv_new_uri(world, LV2_CORE__extensionData);
 	jalv->nodes.lv2_integer            = lilv_new_uri(world, LV2_CORE__integer);
 	jalv->nodes.lv2_maximum            = lilv_new_uri(world, LV2_CORE__maximum);
 	jalv->nodes.lv2_minimum            = lilv_new_uri(world, LV2_CORE__minimum);
@@ -889,6 +969,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	jalv->nodes.rdfs_label             = lilv_new_uri(world, LILV_NS_RDFS "label");
 	jalv->nodes.rdfs_range             = lilv_new_uri(world, LILV_NS_RDFS "range");
 	jalv->nodes.rsz_minimumSize        = lilv_new_uri(world, LV2_RESIZE_PORT__minimumSize);
+	jalv->nodes.ui_showInterface       = lilv_new_uri(world, LV2_UI__showInterface);
 	jalv->nodes.work_interface         = lilv_new_uri(world, LV2_WORKER__interface);
 	jalv->nodes.work_schedule          = lilv_new_uri(world, LV2_WORKER__schedule);
 	jalv->nodes.end                    = NULL;
@@ -963,25 +1044,23 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	}
 
 	/* Get a plugin UI */
-	const char* native_ui_type_uri = jalv_native_ui_type();
 	jalv->uis = lilv_plugin_get_uis(jalv->plugin);
-	if (!jalv->opts.generic_ui && native_ui_type_uri) {
-#ifdef HAVE_SUIL
-		const LilvNode* native_ui_type = lilv_new_uri(jalv->world, native_ui_type_uri);
-		LILV_FOREACH(uis, u, jalv->uis) {
-			const LilvUI* this_ui = lilv_uis_get(jalv->uis, u);
-			if (lilv_ui_is_supported(this_ui,
-			                         suil_ui_supported,
-			                         native_ui_type,
-			                         &jalv->ui_type)) {
-				/* TODO: Multiple UI support */
-				jalv->ui = this_ui;
-				break;
+	if (!jalv->opts.generic_ui) {
+		if ((jalv->ui = jalv_select_custom_ui(jalv))) {
+			const char* host_type_uri = jalv_native_ui_type();
+			if (host_type_uri) {
+				LilvNode* host_type = lilv_new_uri(jalv->world, host_type_uri);
+
+				if (!lilv_ui_is_supported(jalv->ui,
+				                          suil_ui_supported,
+				                          host_type,
+				                          &jalv->ui_type)) {
+					jalv->ui = NULL;
+				}
+
+				lilv_node_free(host_type);
 			}
 		}
-#endif
-	} else if (!jalv->opts.generic_ui && jalv->opts.show_ui) {
-		jalv->ui = lilv_uis_get(jalv->uis, lilv_uis_begin(jalv->uis));
 	}
 
 	/* Create ringbuffers for UI if necessary */
@@ -1029,7 +1108,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	/* The UI can only go so fast, clamp to reasonable limits */
 	jalv->ui_update_hz     = MIN(60, jalv->ui_update_hz);
 	jalv->opts.buffer_size = MAX(4096, jalv->opts.buffer_size);
-	fprintf(stderr, "Comm buffers: %d bytes\n", jalv->opts.buffer_size);
+	fprintf(stderr, "Comm buffers: %u bytes\n", jalv->opts.buffer_size);
 	fprintf(stderr, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
 
 	/* Build options array to pass to plugin */
@@ -1235,7 +1314,6 @@ jalv_close(Jalv* const jalv)
 	free(jalv->feature_list);
 
 	free(jalv->opts.name);
-	free(jalv->opts.uuid);
 	free(jalv->opts.load);
 	free(jalv->opts.controls);
 

@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,19 +14,32 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "jalv_config.h"
 #include "jalv_internal.h"
-#include "worker.h"
+#include "lv2_evbuf.h"
+
+#include "lilv/lilv.h"
+#include "lv2/atom/atom.h"
+#include "lv2/atom/forge.h"
+#include "sratom/sratom.h"
+#include "zix/ring.h"
+#include "zix/sem.h"
 
 #include <jack/jack.h>
 #include <jack/midiport.h>
-#ifdef JALV_JACK_SESSION
-#    include <jack/session.h>
-#endif
+#include <jack/transport.h>
+#include <jack/types.h>
+
 #ifdef HAVE_JACK_METADATA
 #    include <jack/metadata.h>
 #endif
 
 #include <ctype.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 struct JalvBackend {
 	jack_client_t* client;             ///< Jack client
@@ -177,7 +190,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 					{ 0, jalv->urids.patch_Get } };
 				lv2_evbuf_write(&iter, 0, 0,
 				                get.atom.type, get.atom.size,
-				                (const uint8_t*)LV2_ATOM_BODY(&get));
+				                (const uint8_t*)LV2_ATOM_BODY_CONST(&get));
 			}
 
 			if (port->sys_port) {
@@ -223,8 +236,11 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 			     lv2_evbuf_is_valid(i);
 			     i = lv2_evbuf_next(i)) {
 				// Get event from LV2 buffer
-				uint32_t frames, subframes, type, size;
-				uint8_t* body;
+				uint32_t frames    = 0;
+				uint32_t subframes = 0;
+				uint32_t type      = 0;
+				uint32_t size      = 0;
+				uint8_t* body      = NULL;
 				lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
 				if (buf && type == jalv->urids.midi_MidiEvent) {
@@ -294,34 +310,6 @@ jack_latency_cb(jack_latency_callback_mode_t mode, void* data)
 	}
 }
 
-#ifdef JALV_JACK_SESSION
-static void
-jack_session_cb(jack_session_event_t* event, void* arg)
-{
-	Jalv* const jalv = (Jalv*)arg;
-
-	#define MAX_CMD_LEN 256
-	event->command_line = (char*)malloc(MAX_CMD_LEN);
-	snprintf(event->command_line, MAX_CMD_LEN, "%s -u %s -l \"${SESSION_DIR}\"",
-	         jalv->prog_name,
-	         event->client_uuid);
-
-	switch (event->type) {
-	case JackSessionSave:
-	case JackSessionSaveTemplate:
-		jalv_save(jalv, event->session_dir);
-		break;
-	case JackSessionSaveAndQuit:
-		jalv_save(jalv, event->session_dir);
-		jalv_close_ui(jalv);
-		break;
-	}
-
-	jack_session_reply(jalv->backend->client, event);
-	jack_session_event_free(event);
-}
-#endif /* JALV_JACK_SESSION */
-
 static jack_client_t*
 jack_create_client(Jalv* jalv)
 {
@@ -345,17 +333,6 @@ jack_create_client(Jalv* jalv)
 	}
 
 	/* Connect to JACK */
-#ifdef JALV_JACK_SESSION
-	if (jalv->opts.uuid) {
-		client = jack_client_open(
-			jack_name,
-			(jack_options_t)(JackSessionID |
-			                 (jalv->opts.name_exact ? JackUseExactName : 0)),
-			NULL,
-			jalv->opts.uuid);
-	}
-#endif
-
 	if (!client) {
 		client = jack_client_open(
 			jack_name,
@@ -395,9 +372,6 @@ jalv_backend_init(Jalv* jalv)
 	jack_set_buffer_size_callback(client, &jack_buffer_size_cb, arg);
 	jack_on_shutdown(client, &jack_shutdown_cb, arg);
 	jack_set_latency_callback(client, &jack_latency_cb, arg);
-#ifdef JALV_JACK_SESSION
-	jack_set_session_callback(client, &jack_session_cb, arg);
-#endif
 
 	if (jalv->backend) {
 		/* Internal JACK client, jalv->backend->is_internal_client was already
@@ -496,7 +470,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 	if (port->sys_port) {
 		// Set port order to index
 		char index_str[16];
-		snprintf(index_str, sizeof(index_str), "%d", port_index);
+		snprintf(index_str, sizeof(index_str), "%u", port_index);
 		jack_set_property(client, jack_port_uuid(port->sys_port),
 		                  "http://jackaudio.org/metadata/order", index_str,
 		                  "http://www.w3.org/2001/XMLSchema#integer");
@@ -536,8 +510,7 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
 	/* Build full command line with "program" name for building argv */
 	const size_t cmd_len = strlen("jalv ") + args_len;
 	char* const  cmd     = (char*)calloc(cmd_len + 1, 1);
-	strcat(cmd, "jalv ");
-	strcat(cmd, load_init);
+	snprintf(cmd, cmd_len + 1, "jalv %s", load_init);
 
 	/* Build argv */
 	int         argc = 0;

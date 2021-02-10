@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2017 David Robillard <http://drobilla.net>
+  Copyright 2007-2017 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,15 +16,33 @@
 
 #include "jalv_internal.h"
 
+#include "lilv/lilv.h"
+#include "lv2/atom/atom.h"
+#include "lv2/atom/forge.h"
+#include "lv2/atom/util.h"
 #include "lv2/core/attributes.h"
-#include "lv2/patch/patch.h"
-#include "lv2/port-props/port-props.h"
+#include "lv2/core/lv2.h"
+#include "lv2/ui/ui.h"
+#include "lv2/urid/urid.h"
+#include "suil/suil.h"
+#include "zix/common.h"
+#include "zix/sem.h"
 
 LV2_DISABLE_DEPRECATION_WARNINGS
 
+#include <gdk/gdk.h>
+#include <glib-object.h>
+#include <glib.h>
+#include <gobject/gclosure.h>
 #include <gtk/gtk.h>
 
+#include <float.h>
 #include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static GtkCheckMenuItem* active_preset_item = NULL;
 static bool              updating           = false;
@@ -80,7 +98,7 @@ size_request(GtkWidget* widget, GtkRequisition* req)
 }
 
 static void
-on_window_destroy(ZIX_UNUSED GtkWidget* widget, ZIX_UNUSED gpointer data)
+on_window_destroy(GtkWidget* ZIX_UNUSED(widget), gpointer ZIX_UNUSED(data))
 {
 	gtk_main_quit();
 }
@@ -89,14 +107,14 @@ int
 jalv_init(int* argc, char*** argv, JalvOptions* opts)
 {
 	GOptionEntry entries[] = {
-		{ "uuid", 'u', 0, G_OPTION_ARG_STRING, &opts->uuid,
-		  "UUID for Jack session restoration", "UUID" },
 		{ "load", 'l', 0, G_OPTION_ARG_STRING, &opts->load,
 		  "Load state from save directory", "DIR" },
 		{ "preset", 'p', 0, G_OPTION_ARG_STRING, &opts->preset,
 		  "Load state from preset", "URI" },
 		{ "dump", 'd', 0, G_OPTION_ARG_NONE, &opts->dump,
 		  "Dump plugin <=> UI communication", NULL },
+		{ "ui-uri", 'U', 0, G_OPTION_ARG_STRING, &opts->ui_uri,
+		  "Load the UI with the given URI", "URI" },
 		{ "trace", 't', 0, G_OPTION_ARG_NONE, &opts->trace,
 		  "Print trace messages from plugin", NULL },
 		{ "show-hidden", 's', 0, G_OPTION_ARG_NONE, &opts->show_hidden,
@@ -144,7 +162,7 @@ jalv_native_ui_type(void)
 }
 
 static void
-on_save_activate(ZIX_UNUSED GtkWidget* widget, void* ptr)
+on_save_activate(GtkWidget* ZIX_UNUSED(widget), void* ptr)
 {
 	Jalv* jalv = (Jalv*)ptr;
 	GtkWidget* dialog = gtk_file_chooser_dialog_new(
@@ -167,7 +185,7 @@ on_save_activate(ZIX_UNUSED GtkWidget* widget, void* ptr)
 }
 
 static void
-on_quit_activate(ZIX_UNUSED GtkWidget* widget, gpointer data)
+on_quit_activate(GtkWidget* ZIX_UNUSED(widget), gpointer data)
 {
 	GtkWidget* window = (GtkWidget*)data;
 	gtk_widget_destroy(window);
@@ -226,7 +244,7 @@ on_preset_activate(GtkWidget* widget, gpointer data)
 }
 
 static void
-on_preset_destroy(gpointer data, ZIX_UNUSED GClosure* closure)
+on_preset_destroy(gpointer data, GClosure* ZIX_UNUSED(closure))
 {
 	PresetRecord* record = (PresetRecord*)data;
 	lilv_node_free(record->preset);
@@ -269,7 +287,7 @@ pset_menu_free(PresetMenu* menu)
 }
 
 static gint
-menu_cmp(gconstpointer a, gconstpointer b, ZIX_UNUSED gpointer data)
+menu_cmp(gconstpointer a, gconstpointer b, gpointer ZIX_UNUSED(data))
 {
 	return strcmp(((const PresetMenu*)a)->label, ((const PresetMenu*)b)->label);
 }
@@ -501,10 +519,10 @@ static void
 set_float_control(const ControlID* control, float value)
 {
 	if (control->value_type == control->jalv->forge.Int) {
-		const int32_t ival = lrint(value);
+		const int32_t ival = lrintf(value);
 		set_control(control, sizeof(ival), control->jalv->forge.Int, &ival);
 	} else if (control->value_type == control->jalv->forge.Long) {
-		const int64_t lval = lrint(value);
+		const int64_t lval = lrintf(value);
 		set_control(control, sizeof(lval), control->jalv->forge.Long, &lval);
 	} else if (control->value_type == control->jalv->forge.Float) {
 		set_control(control, sizeof(value), control->jalv->forge.Float, &value);
@@ -524,10 +542,10 @@ set_float_control(const ControlID* control, float value)
 }
 
 static double
-get_atom_double(Jalv*               jalv,
-                ZIX_UNUSED uint32_t size,
-                LV2_URID            type,
-                const void*         body)
+get_atom_double(Jalv*       jalv,
+                uint32_t    ZIX_UNUSED(size),
+                LV2_URID    type,
+                const void* body)
 {
 	if (type == jalv->forge.Int || type == jalv->forge.Bool) {
 		return *(const int32_t*)body;
@@ -626,6 +644,42 @@ patch_put_get(Jalv*                   jalv,
 		fprintf(stderr, "patch:Put body is not an object\n");
 		return 1;
 	}
+
+	return 0;
+}
+
+static LV2UI_Request_Value_Status
+on_request_value(LV2UI_Feature_Handle      handle,
+                 const LV2_URID            key,
+                 const LV2_URID            ZIX_UNUSED(type),
+                 const LV2_Feature* const* ZIX_UNUSED(features))
+{
+	Jalv*      jalv    = (Jalv*)handle;
+	ControlID* control = get_property_control(&jalv->controls, key);
+
+	if (!control) {
+		return LV2UI_REQUEST_VALUE_ERR_UNKNOWN;
+	} else if (control->value_type != jalv->forge.Path) {
+		return LV2UI_REQUEST_VALUE_ERR_UNSUPPORTED;
+	}
+
+	GtkWidget* dialog =
+	        gtk_file_chooser_dialog_new("Choose file",
+	                                    GTK_WINDOW(jalv->window),
+	                                    GTK_FILE_CHOOSER_ACTION_OPEN,
+	                                    GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+	                                    GTK_STOCK_OK, GTK_RESPONSE_OK,
+	                                    NULL);
+
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+		char* path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+		set_control(control, strlen(path) + 1, jalv->forge.Path, path);
+
+		g_free(path);
+	}
+
+	gtk_widget_destroy(dialog);
 
 	return 0;
 }
@@ -776,7 +830,7 @@ file_changed(GtkFileChooserButton* widget,
 	const char* filename = gtk_file_chooser_get_filename(
 		GTK_FILE_CHOOSER(widget));
 
-	set_control(control, strlen(filename), jalv->forge.Path, filename);
+	set_control(control, strlen(filename) + 1, jalv->forge.Path, filename);
 }
 
 static Controller*
@@ -802,7 +856,7 @@ make_combo(ControlID* record, float value)
 		                   0, point->value,
 		                   1, point->label,
 		                   -1);
-		if (fabs(value - point->value) < FLT_EPSILON) {
+		if (fabsf(value - point->value) < FLT_EPSILON) {
 			active = i;
 		}
 	}
@@ -998,7 +1052,7 @@ add_control_row(GtkWidget*  table,
 }
 
 static int
-control_group_cmp(const void* p1, const void* p2, ZIX_UNUSED void* data)
+control_group_cmp(const void* p1, const void* p2, void* ZIX_UNUSED(data))
 {
 	const ControlID* control1 = *(const ControlID*const*)p1;
 	const ControlID* control2 = *(const ControlID*const*)p2;
@@ -1148,13 +1202,13 @@ build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
 }
 
 bool
-jalv_discover_ui(ZIX_UNUSED Jalv* jalv)
+jalv_discover_ui(Jalv* ZIX_UNUSED(jalv))
 {
 	return TRUE;
 }
 
 float
-jalv_ui_refresh_rate(Jalv* jalv)
+jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 {
 #if GTK_MAJOR_VERSION == 2
 	return 30.0f;
@@ -1197,6 +1251,8 @@ jalv_open_ui(Jalv* jalv)
 		jalv_ui_instantiate(jalv, jalv_native_ui_type(), alignment);
 	}
 
+	jalv->features.request_value.request = on_request_value;
+
 	if (jalv->ui_instance) {
 		GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(
 			jalv->ui_instance);
@@ -1216,7 +1272,8 @@ jalv_open_ui(Jalv* jalv)
 		gtk_container_add(GTK_CONTAINER(alignment), scroll_win);
 		gtk_widget_show_all(vbox);
 
-		GtkRequisition controls_size, box_size;
+		GtkRequisition controls_size = {0, 0};
+		GtkRequisition box_size      = {0, 0};
 		size_request(GTK_WIDGET(controls), &controls_size);
 		size_request(GTK_WIDGET(vbox), &box_size);
 
@@ -1240,7 +1297,7 @@ jalv_open_ui(Jalv* jalv)
 }
 
 int
-jalv_close_ui(ZIX_UNUSED Jalv* jalv)
+jalv_close_ui(Jalv* ZIX_UNUSED(jalv))
 {
 	gtk_main_quit();
 	return 0;

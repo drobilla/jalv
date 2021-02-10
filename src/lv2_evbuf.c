@@ -1,5 +1,5 @@
 /*
-  Copyright 2008-2018 David Robillard <http://drobilla.net>
+  Copyright 2008-2018 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -112,7 +112,7 @@ lv2_evbuf_next(LV2_Evbuf_Iterator iter)
 
 	LV2_Evbuf* evbuf  = iter.evbuf;
 	uint32_t   offset = iter.offset;
-	uint32_t   size;
+	uint32_t   size   = 0;
 	size = ((LV2_Atom_Event*)
 	        ((char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, &evbuf->buf.atom)
 	         + offset))->body.size;
@@ -158,6 +158,8 @@ lv2_evbuf_write(LV2_Evbuf_Iterator* iter,
                 uint32_t            size,
                 const uint8_t*      data)
 {
+	(void)subframes;
+
 	LV2_Atom_Sequence* aseq = &iter->evbuf->buf;
 	if (iter->evbuf->capacity - sizeof(LV2_Atom) - aseq->atom.size <
 	    sizeof(LV2_Atom_Event) + size) {

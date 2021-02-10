@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,27 +14,21 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "jalv_config.h"
 #include "jalv_internal.h"
 
-#ifdef HAVE_LV2_STATE
-#    include "lv2/lv2plug.in/ns/ext/state/state.h"
-#endif
-
 #include "lilv/lilv.h"
+#include "lv2/atom/forge.h"
+#include "lv2/core/lv2.h"
+#include "lv2/state/state.h"
+#include "lv2/urid/urid.h"
+#include "zix/common.h"
+#include "zix/ring.h"
+#include "zix/sem.h"
 
-#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#define NS_JALV "http://drobilla.net/ns/jalv#"
-#define NS_RDF  "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-#define NS_RDFS "http://www.w3.org/2000/01/rdf-schema#"
-#define NS_XSD  "http://www.w3.org/2001/XMLSchema#"
 
 char*
 jalv_make_path(LV2_State_Make_Path_Handle handle,
@@ -126,11 +120,11 @@ jalv_unload_presets(Jalv* jalv)
 }
 
 static void
-set_port_value(const char*         port_symbol,
-               void*               user_data,
-               const void*         value,
-               ZIX_UNUSED uint32_t size,
-               uint32_t            type)
+set_port_value(const char* port_symbol,
+               void*       user_data,
+               const void* value,
+               uint32_t    ZIX_UNUSED(size),
+               uint32_t    type)
 {
 	Jalv*        jalv = (Jalv*)user_data;
 	struct Port* port = jalv_port_by_symbol(jalv, port_symbol);
@@ -139,7 +133,7 @@ set_port_value(const char*         port_symbol,
 		return;
 	}
 
-	float fvalue;
+	float fvalue = 0.0f;
 	if (type == jalv->forge.Float) {
 		fvalue = *(const float*)value;
 	} else if (type == jalv->forge.Double) {

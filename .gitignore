@@ -1,2 +1,5 @@
+build/**
+.waf-*
+.lock-waf*
 __pycache__
 build

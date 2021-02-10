@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -22,10 +22,16 @@
 #include "jalv_config.h"
 #include "jalv_internal.h"
 
+#include "lilv/lilv.h"
 #include "lv2/ui/ui.h"
+#include "suil/suil.h"
+#include "zix/common.h"
+#include "zix/sem.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -38,24 +44,28 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -b SIZE      Buffer size for plugin <=> UI communication\n");
 	fprintf(os, "  -c SYM=VAL   Set control value (e.g. \"vol=1.4\")\n");
 	fprintf(os, "  -d           Dump plugin <=> UI communication\n");
+	fprintf(os, "  -U URI       Load the UI with the given URI\n");
 	fprintf(os, "  -h           Display this help and exit\n");
 	fprintf(os, "  -l DIR       Load state from save directory\n");
 	fprintf(os, "  -n NAME      JACK client name\n");
 	fprintf(os, "  -p           Print control output changes to stdout\n");
 	fprintf(os, "  -s           Show plugin UI if possible\n");
 	fprintf(os, "  -t           Print trace messages from plugin\n");
-	fprintf(os, "  -u UUID      UUID for Jack session restoration\n");
 	fprintf(os, "  -x           Exact JACK client name (exit if taken)\n");
 	return error ? 1 : 0;
 }
 
 void
-jalv_ui_port_event(ZIX_UNUSED Jalv*       jalv,
-                   ZIX_UNUSED uint32_t    port_index,
-                   ZIX_UNUSED uint32_t    buffer_size,
-                   ZIX_UNUSED uint32_t    protocol,
-                   ZIX_UNUSED const void* buffer)
+jalv_ui_port_event(Jalv*       jalv,
+                   uint32_t    port_index,
+                   uint32_t    buffer_size,
+                   uint32_t    protocol,
+                   const void* buffer)
 {
+	if (jalv->ui_instance) {
+		suil_instance_port_event(jalv->ui_instance, port_index,
+		                         buffer_size, protocol, buffer);
+	}
 }
 
 int
@@ -70,12 +80,12 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 			opts->show_ui = true;
 		} else if ((*argv)[a][1] == 'p') {
 			opts->print_controls = true;
-		} else if ((*argv)[a][1] == 'u') {
+		} else if ((*argv)[a][1] == 'U') {
 			if (++a == *argc) {
-				fprintf(stderr, "Missing argument for -u\n");
+				fprintf(stderr, "Missing argument for -U\n");
 				return 1;
 			}
-			opts->uuid = jalv_strdup((*argv)[a]);
+			opts->ui_uri = jalv_strdup((*argv)[a]);
 		} else if ((*argv)[a][1] == 'l') {
 			if (++a == *argc) {
 				fprintf(stderr, "Missing argument for -l\n");
@@ -143,10 +153,10 @@ jalv_print_controls(Jalv* jalv, bool writable, bool readable)
 }
 
 static int
-jalv_print_preset(Jalv*           jalv,
+jalv_print_preset(Jalv*           ZIX_UNUSED(jalv),
                   const LilvNode* node,
                   const LilvNode* title,
-                  void*           data)
+                  void*           ZIX_UNUSED(data))
 {
 	printf("%s (%s)\n", lilv_node_as_string(node), lilv_node_as_string(title));
 	return 0;
@@ -155,9 +165,9 @@ jalv_print_preset(Jalv*           jalv,
 static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
-	char     sym[512];
-	uint32_t index;
-	float    value;
+	char     sym[1024];
+	uint32_t index = 0;
+	float    value = 0.0f;
 	if (!strncmp(cmd, "help", 4)) {
 		fprintf(stderr,
 		        "Commands:\n"
@@ -172,7 +182,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 	} else if (strcmp(cmd, "presets\n") == 0) {
 		jalv_unload_presets(jalv);
 		jalv_load_presets(jalv, jalv_print_preset, NULL);
-	} else if (sscanf(cmd, "preset %[a-zA-Z0-9_:/-.#]\n", sym) == 1) {
+	} else if (sscanf(cmd, "preset %1023[a-zA-Z0-9_:/-.#]\n", sym) == 1) {
 		LilvNode* preset = lilv_new_uri(jalv->world, sym);
 		lilv_world_load_resource(jalv->world, preset);
 		jalv_apply_preset(jalv, preset);
@@ -189,8 +199,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		} else {
 			fprintf(stderr, "error: port index out of range\n");
 		}
-	} else if (sscanf(cmd, "set %[a-zA-Z0-9_] %f", sym, &value) == 2 ||
-	           sscanf(cmd, "%[a-zA-Z0-9_] = %f", sym, &value) == 2) {
+	} else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2 ||
+	           sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
 		struct Port* port = NULL;
 		for (uint32_t i = 0; i < jalv->num_ports; ++i) {
 			struct Port* p = &jalv->ports[i];
@@ -252,7 +262,7 @@ jalv_run_custom_ui(Jalv* jalv)
 }
 
 float
-jalv_ui_refresh_rate(Jalv* jalv)
+jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 {
 	return 30.0f;
 }
@@ -263,7 +273,7 @@ jalv_open_ui(Jalv* jalv)
 	if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
 		// Primitive command prompt for setting control values
 		while (!zix_sem_try_wait(&jalv->done)) {
-			char line[512];
+			char line[1024];
 			printf("> ");
 			if (fgets(line, sizeof(line), stdin)) {
 				jalv_process_command(jalv, line);

@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,7 +16,11 @@
 
 #include "jalv_internal.h"
 
+#include "lilv/lilv.h"
 #include "lv2/worker/worker.h"
+
+#include <stdbool.h>
+#include <stdint.h>
 
 void
 jalv_worker_init(Jalv*                       jalv,

@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <http://drobilla.net>
+  Copyright 2007-2016 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -17,6 +17,9 @@
 #ifndef JALV_INTERNAL_H
 #define JALV_INTERNAL_H
 
+#define _POSIX_C_SOURCE 200809L
+
+#include "jalv_config.h"
 #include "lv2_evbuf.h"
 #include "symap.h"
 
@@ -33,21 +36,25 @@
 
 #include "lv2/atom/atom.h"
 #include "lv2/atom/forge.h"
+#include "lv2/core/lv2.h"
 #include "lv2/data-access/data-access.h"
 #include "lv2/log/log.h"
-#include "lv2/midi/midi.h"
 #include "lv2/options/options.h"
-#include "lv2/resize-port/resize-port.h"
 #include "lv2/state/state.h"
+#include "lv2/ui/ui.h"
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #ifdef HAVE_ISATTY
 #    include <unistd.h>
 #endif
+
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef __clang__
 #    define REALTIME __attribute__((annotate("realtime")))
@@ -55,9 +62,17 @@
 #    define REALTIME
 #endif
 
+#ifdef __GNUC__
+#    define JALV_LOG_FUNC(fmt, arg1) __attribute__((format(printf, fmt, arg1)))
+#else
+#    define JALV_LOG_FUNC(fmt, arg1)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct Jalv;
 
 typedef struct JalvBackend JalvBackend;
 
@@ -160,7 +175,6 @@ typedef struct {
 typedef struct {
 	char*    name;              ///< Client name
 	int      name_exact;        ///< Exit if name is taken
-	char*    uuid;              ///< Session UUID
 	char*    load;              ///< Path for state to load
 	char*    preset;            ///< URI of preset to load
 	char**   controls;          ///< Control values
@@ -174,6 +188,7 @@ typedef struct {
 	int      show_ui;           ///< Show non-embedded UI
 	int      print_controls;    ///< Print control changes to stdout
 	int      non_interactive;   ///< Do not listen for commands on stdin
+	char*    ui_uri;            ///< URI of UI to load
 } JalvOptions;
 
 typedef struct {
@@ -223,6 +238,7 @@ typedef struct {
 	LilvNode* lv2_control;
 	LilvNode* lv2_default;
 	LilvNode* lv2_enumeration;
+	LilvNode* lv2_extensionData;
 	LilvNode* lv2_integer;
 	LilvNode* lv2_maximum;
 	LilvNode* lv2_minimum;
@@ -242,6 +258,7 @@ typedef struct {
 	LilvNode* rdfs_label;
 	LilvNode* rdfs_range;
 	LilvNode* rsz_minimumSize;
+	LilvNode* ui_showInterface;
 	LilvNode* work_interface;
 	LilvNode* work_schedule;
 	LilvNode* end;  ///< NULL terminator for easy freeing of entire structure
@@ -278,6 +295,8 @@ typedef struct {
 	LV2_Options_Option         options[6];
 	LV2_Feature                options_feature;
 	LV2_Feature                safe_restore_feature;
+	LV2UI_Request_Value        request_value;
+	LV2_Feature                request_value_feature;
 	LV2_Extension_Data_Feature ext_data;
 } JalvFeatures;
 
@@ -413,17 +432,17 @@ bool
 jalv_ui_is_resizable(Jalv* jalv);
 
 void
-jalv_ui_write(void* const    controller,
-              uint32_t       port_index,
-              uint32_t       buffer_size,
-              uint32_t       protocol,
-              const void*    buffer);
+jalv_ui_write(void*       jalv_handle,
+              uint32_t    port_index,
+              uint32_t    buffer_size,
+              uint32_t    protocol,
+              const void* buffer);
 
 void
 jalv_apply_ui_events(Jalv* jalv, uint32_t nframes);
 
 uint32_t
-jalv_ui_port_index(void* const controller, const char* symbol);
+jalv_ui_port_index(void* controller, const char* symbol);
 
 void
 jalv_ui_port_event(Jalv*       jalv,
@@ -518,11 +537,13 @@ jalv_strjoin(const char* a, const char* b)
 	return out;
 }
 
+JALV_LOG_FUNC(3, 4)
 int
 jalv_printf(LV2_Log_Handle handle,
             LV2_URID       type,
             const char*    fmt, ...);
 
+JALV_LOG_FUNC(3, 0)
 int
 jalv_vprintf(LV2_Log_Handle handle,
              LV2_URID       type,
