@@ -180,6 +180,7 @@ typedef struct {
 	char**   controls;          ///< Control values
 	uint32_t buffer_size;       ///< Plugin <= >UI communication buffer size
 	double   update_rate;       ///< UI update rate in Hz
+	double   scale_factor;      ///< UI scale factor
 	int      dump;              ///< Dump communication iff true
 	int      trace;             ///< Print trace log iff true
 	int      generic_ui;        ///< Use generic UI iff true
@@ -220,6 +221,7 @@ typedef struct {
 	LV2_URID time_beatsPerMinute;
 	LV2_URID time_frame;
 	LV2_URID time_speed;
+	LV2_URID ui_scaleFactor;
 	LV2_URID ui_updateRate;
 } JalvURIDs;
 
@@ -292,7 +294,7 @@ typedef struct {
 	LV2_Feature                state_sched_feature;
 	LV2_Log_Log                llog;
 	LV2_Feature                log_feature;
-	LV2_Options_Option         options[6];
+	LV2_Options_Option         options[7];
 	LV2_Feature                options_feature;
 	LV2_Feature                safe_restore_feature;
 	LV2UI_Request_Value        request_value;
@@ -345,6 +347,7 @@ struct Jalv {
 	uint32_t           num_ports;      ///< Size of the two following arrays:
 	uint32_t           plugin_latency; ///< Latency reported by plugin (if any)
 	float              ui_update_hz;   ///< Frequency of UI updates
+	float              ui_scale_factor; ///< UI scale factor
 	float              sample_rate;    ///< Sample rate
 	uint32_t           event_delta_t;  ///< Frames since last update sent to UI
 	uint32_t           position;       ///< Transport position in frames
@@ -413,6 +416,9 @@ jalv_discover_ui(Jalv* jalv);
 
 float
 jalv_ui_refresh_rate(Jalv* jalv);
+
+float
+jalv_ui_scale_factor(Jalv* jalv);
 
 int
 jalv_open_ui(Jalv* jalv);

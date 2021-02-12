@@ -708,6 +708,12 @@ jalv_ui_refresh_rate(Jalv*)
 	return (float)QGuiApplication::primaryScreen()->refreshRate();
 }
 
+float
+jalv_ui_scale_factor(Jalv*)
+{
+	return (float)QGuiApplication::primaryScreen()->devicePixelRatio();
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {

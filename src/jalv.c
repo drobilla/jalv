@@ -887,6 +887,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 	jalv->urids.time_beatsPerMinute  = symap_map(jalv->symap, LV2_TIME__beatsPerMinute);
 	jalv->urids.time_frame           = symap_map(jalv->symap, LV2_TIME__frame);
 	jalv->urids.time_speed           = symap_map(jalv->symap, LV2_TIME__speed);
+	jalv->urids.ui_scaleFactor       = symap_map(jalv->symap, LV2_UI__scaleFactor);
 	jalv->urids.ui_updateRate        = symap_map(jalv->symap, LV2_UI__updateRate);
 
 #ifdef _WIN32
@@ -1105,11 +1106,20 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 		jalv->ui_update_hz = MAX(1.0f, jalv->ui_update_hz);
 	}
 
+	if (jalv->opts.scale_factor == 0.0) {
+		/* Calculate the monitor's scale factor. */
+		jalv->ui_scale_factor = jalv_ui_scale_factor(jalv);
+	} else {
+		/* Use user-specified UI scale factor. */
+		jalv->ui_scale_factor = jalv->opts.scale_factor;
+	}
+
 	/* The UI can only go so fast, clamp to reasonable limits */
 	jalv->ui_update_hz     = MIN(60, jalv->ui_update_hz);
 	jalv->opts.buffer_size = MAX(4096, jalv->opts.buffer_size);
 	fprintf(stderr, "Comm buffers: %u bytes\n", jalv->opts.buffer_size);
 	fprintf(stderr, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
+	fprintf(stderr, "Scale factor: %.01f\n", jalv->ui_scale_factor);
 
 	/* Build options array to pass to plugin */
 	const LV2_Options_Option options[ARRAY_SIZE(jalv->features.options)] = {
@@ -1123,6 +1133,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 		  sizeof(int32_t), jalv->urids.atom_Int, &jalv->midi_buf_size },
 		{ LV2_OPTIONS_INSTANCE, 0, jalv->urids.ui_updateRate,
 		  sizeof(float), jalv->urids.atom_Float, &jalv->ui_update_hz },
+		{ LV2_OPTIONS_INSTANCE, 0, jalv->urids.ui_scaleFactor,
+		  sizeof(float), jalv->urids.atom_Float, &jalv->ui_scale_factor },
 		{ LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL }
 	};
 	memcpy(jalv->features.options, options, sizeof(jalv->features.options));

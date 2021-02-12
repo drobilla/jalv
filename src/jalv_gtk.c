@@ -127,6 +127,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "Buffer size for plugin <=> UI communication", "SIZE"},
 		{ "update-frequency", 'r', 0, G_OPTION_ARG_DOUBLE, &opts->update_rate,
 		  "UI update frequency", NULL},
+		{ "scale-factor", 0, 0, G_OPTION_ARG_DOUBLE, &opts->scale_factor,
+		  "UI scale factor", NULL},
 		{ "control", 'c', 0, G_OPTION_ARG_STRING_ARRAY, &opts->controls,
 		  "Set control value (e.g. \"vol=1.4\")", NULL},
 		{ "print-controls", 'p', 0, G_OPTION_ARG_NONE, &opts->print_controls,
@@ -1219,6 +1221,19 @@ jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 	const float rate = (float)gdk_monitor_get_refresh_rate(monitor);
 
 	return rate < 30.0f ? 30.0f : rate;
+#endif
+}
+
+float
+jalv_ui_scale_factor(Jalv* ZIX_UNUSED(jalv))
+{
+#if GTK_MAJOR_VERSION == 2
+	return 1.0f;
+#else
+	GdkDisplay* const display = gdk_display_get_default();
+	GdkMonitor* const monitor = gdk_display_get_primary_monitor(display);
+
+	return (float)gdk_monitor_get_scale_factor(monitor);
 #endif
 }
 

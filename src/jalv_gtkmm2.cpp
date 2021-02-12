@@ -71,6 +71,12 @@ jalv_ui_refresh_rate(Jalv*)
 	return 30.0f;
 }
 
+float
+jalv_ui_scale_factor(Jalv*)
+{
+	return 1.0f;
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {

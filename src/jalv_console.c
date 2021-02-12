@@ -266,6 +266,12 @@ jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 	return 30.0f;
 }
 
+float
+jalv_ui_scale_factor(Jalv* ZIX_UNUSED(jalv))
+{
+	return 1.0f;
+}
+
 int
 jalv_open_ui(Jalv* jalv)
 {
