@@ -30,7 +30,6 @@ def options(ctx):
          'no-gtk2':         'do not build Gtk2 GUI',
          'no-gtk3':         'do not build Gtk3 GUI',
          'no-qt':           'do not build Qt GUI',
-         'no-qt4':          'do not build Qt4 GUI',
          'no-qt5':          'do not build Qt5 GUI'})
 
 
@@ -144,16 +143,6 @@ def configure(conf):
                            mandatory=False)
 
     if not Options.options.no_gui and not Options.options.no_qt:
-        if not Options.options.no_qt4:
-            conf.check_pkg('QtGui >= 4.0.0',
-                           uselib_store='QT4',
-                           system=True,
-                           mandatory=False)
-            if conf.env.HAVE_QT4:
-                if not conf.find_program('moc-qt4', var='MOC4',
-                                         mandatory=False):
-                    conf.find_program('moc', var='MOC4')
-
         if not Options.options.no_qt5:
             conf.check_pkg('Qt5Widgets >= 5.1.0',
                            uselib_store='QT5',
@@ -167,7 +156,6 @@ def configure(conf):
     have_gui = (conf.env.HAVE_GTK2 or
                 conf.env.HAVE_GTKMM2 or
                 conf.env.HAVE_GTK3 or
-                conf.env.HAVE_QT4 or
                 conf.env.HAVE_QT5)
 
     if have_gui:
@@ -240,7 +228,6 @@ def configure(conf):
          'Gtk 2.0 support': bool(conf.env.HAVE_GTK2),
          'Gtk 3.0 support': bool(conf.env.HAVE_GTK3),
          'Gtkmm 2.0 support': bool(conf.env.HAVE_GTKMM2),
-         'Qt 4.0 support': bool(conf.env.HAVE_QT4),
          'Qt 5.0 support': bool(conf.env.HAVE_QT5),
          'Color output': bool(conf.env.JALV_WITH_COLOR)})
 
@@ -310,19 +297,6 @@ def build(bld):
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
                   uselib       = libs + ' GTKMM2',
-                  install_path = '${BINDIR}')
-
-    # Qt4 version
-    if bld.env.HAVE_QT4:
-        obj = bld(rule = '${MOC4} ${SRC} > ${TGT}',
-                  source = 'src/jalv_qt.cpp',
-                  target = 'jalv_qt4_meta.hpp')
-        obj = bld(features     = 'c cxx cxxprogram',
-                  source       = source + ' src/jalv_qt.cpp',
-                  target       = 'jalv.qt4',
-                  includes     = ['.', 'src'],
-                  lib          = ['pthread'],
-                  uselib       = libs + ' QT4',
                   install_path = '${BINDIR}')
 
     # Qt5 version

@@ -22,38 +22,34 @@
 
 #include <QtGlobal>
 
-#if QT_VERSION >= 0x050000
-#    include <QAction>
-#    include <QApplication>
-#    include <QDial>
-#    include <QFontMetrics>
-#    include <QGroupBox>
-#    include <QGuiApplication>
-#    include <QHBoxLayout>
-#    include <QKeySequence>
-#    include <QLabel>
-#    include <QLayout>
-#    include <QLayoutItem>
-#    include <QList>
-#    include <QMainWindow>
-#    include <QMenu>
-#    include <QMenuBar>
-#    include <QObject>
-#    include <QPoint>
-#    include <QRect>
-#    include <QScreen>
-#    include <QScrollArea>
-#    include <QSize>
-#    include <QSizePolicy>
-#    include <QString>
-#    include <QStyle>
-#    include <QTimer>
-#    include <QVBoxLayout>
-#    include <QWidget>
-#    include <QtCore>
-#else
-#    include <QtGui>
-#endif
+#include <QAction>
+#include <QApplication>
+#include <QDial>
+#include <QFontMetrics>
+#include <QGroupBox>
+#include <QGuiApplication>
+#include <QHBoxLayout>
+#include <QKeySequence>
+#include <QLabel>
+#include <QLayout>
+#include <QLayoutItem>
+#include <QList>
+#include <QMainWindow>
+#include <QMenu>
+#include <QMenuBar>
+#include <QObject>
+#include <QPoint>
+#include <QRect>
+#include <QScreen>
+#include <QScrollArea>
+#include <QSize>
+#include <QSizePolicy>
+#include <QString>
+#include <QStyle>
+#include <QTimer>
+#include <QVBoxLayout>
+#include <QWidget>
+#include <QtCore>
 
 #include <algorithm>
 #include <cmath>
@@ -347,11 +343,7 @@ private:
 	std::map<float, const char*> scaleMap;
 };
 
-#if QT_VERSION >= 0x050000
-#    include "jalv_qt5_meta.hpp" // IWYU pragma: keep
-#else
-#    include "jalv_qt4_meta.hpp" // IWYU pragma: keep
-#endif
+#include "jalv_qt5_meta.hpp" // IWYU pragma: keep
 
 extern "C" {
 
@@ -367,11 +359,7 @@ jalv_init(int* argc, char*** argv, JalvOptions*)
 const char*
 jalv_native_ui_type(void)
 {
-#if QT_VERSION >= 0x050000
 	return "http://lv2plug.in/ns/extensions/ui#Qt5UI";
-#else
-	return "http://lv2plug.in/ns/extensions/ui#Qt4UI";
-#endif
 }
 
 void
@@ -717,11 +705,7 @@ jalv_discover_ui(Jalv*)
 float
 jalv_ui_refresh_rate(Jalv*)
 {
-#if QT_VERSION >= 0x050000
 	return (float)QGuiApplication::primaryScreen()->refreshRate();
-#else
-	return 30.0f;
-#endif
 }
 
 int
