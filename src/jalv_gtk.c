@@ -1355,10 +1355,11 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 	} else if (strcmp(cmd, "presets\n") == 0) {
 		jalv_unload_presets(jalv);
 		jalv_load_presets(jalv, jalv_print_preset, NULL);
-	} else if (sscanf(cmd, "preset %1023[a-zA-Z0-9_:/-.#]\n", sym) == 1) {
+	} else if (sscanf(cmd, "preset %1023[-a-zA-Z0-9_:/.#%%]", sym) == 1) {
 		LilvNode* preset = lilv_new_uri(jalv->world, sym);
 		lilv_world_load_resource(jalv->world, preset);
 		jalv_apply_preset(jalv, preset);
+		set_window_title(jalv);
 		lilv_node_free(preset);
 		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "controls\n") == 0) {
