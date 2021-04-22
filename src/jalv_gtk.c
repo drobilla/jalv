@@ -1228,8 +1228,6 @@ pthread_t init_cli_thread();
 int
 jalv_open_ui(Jalv* jalv)
 {
-	init_cli_thread(jalv);
-	
 	GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	jalv->window = window;
 
@@ -1294,7 +1292,9 @@ jalv_open_ui(Jalv* jalv)
 
 	gtk_window_present(GTK_WINDOW(window));
 
+	init_cli_thread(jalv);
 	gtk_main();
+
 	suil_instance_free(jalv->ui_instance);
 	jalv->ui_instance = NULL;
 	zix_sem_post(&jalv->done);
@@ -1355,7 +1355,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 	} else if (strcmp(cmd, "presets\n") == 0) {
 		jalv_unload_presets(jalv);
 		jalv_load_presets(jalv, jalv_print_preset, NULL);
-	} else if (sscanf(cmd, "preset %1023[-a-zA-Z0-9_:/.#%%]", sym) == 1) {
+	} else if (sscanf(cmd, "preset %1023[-a-zA-Z0-9_:/.%%#]", sym) == 1) {
 		LilvNode* preset = lilv_new_uri(jalv->world, sym);
 		lilv_world_load_resource(jalv->world, preset);
 		jalv_apply_preset(jalv, preset);
@@ -1410,6 +1410,9 @@ void * cli_thread(void *arg) {
 }
 
 pthread_t init_cli_thread(Jalv* jalv) {
+	//Drop stderr output
+	stderr = fopen("/dev/null", "w");
+
 	pthread_t tid;
 	int err=pthread_create(&tid, NULL, &cli_thread, jalv);
 	if (err != 0) {
