@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <pthread.h>
+
 #include "jalv_internal.h"
 
 #include "lilv/lilv.h"
@@ -724,6 +726,27 @@ jalv_ui_refresh_rate(Jalv*)
 #endif
 }
 
+static void
+set_window_title(Jalv* jalv)
+{
+	LilvNode* name = lilv_plugin_get_name(jalv->plugin);
+	const char* plugin = lilv_node_as_string(name);
+	QMainWindow* win = (QMainWindow*) jalv->window;
+	if (jalv->preset) {
+		const char* preset_label = lilv_state_get_label(jalv->preset);
+		char *title = (char *)malloc(strlen(plugin)+strlen(preset_label)+4);
+		sprintf(title, "%s - %s", plugin, preset_label);
+		win->setWindowTitle(title);
+		free(title);
+	} else {
+		win->setWindowTitle(plugin);
+	}
+	lilv_node_free(name);
+}
+
+
+pthread_t init_cli_thread(Jalv* jalv);
+
 int
 jalv_open_ui(Jalv* jalv)
 {
@@ -757,9 +780,8 @@ jalv_open_ui(Jalv* jalv)
 		widget->setMinimumHeight(600);
 	}
 
-	LilvNode* name = lilv_plugin_get_name(jalv->plugin);
-	win->setWindowTitle(lilv_node_as_string(name));
-	lilv_node_free(name);
+	jalv->window = win;
+	set_window_title(jalv);
 
 	win->setCentralWidget(widget);
 	app->connect(app, SIGNAL(lastWindowClosed()), app, SLOT(quit()));
@@ -780,6 +802,7 @@ jalv_open_ui(Jalv* jalv)
 	Timer* timer = new Timer(jalv);
 	timer->start(1000 / jalv->ui_update_hz);
 
+	init_cli_thread(jalv);
 	int ret = app->exec();
 	zix_sem_post(&jalv->done);
 	return ret;
@@ -790,6 +813,122 @@ jalv_close_ui(Jalv*)
 {
 	app->quit();
 	return 0;
+}
+
+//************************************************************
+
+static void
+jalv_print_controls(Jalv* jalv, bool writable, bool readable)
+{
+	for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+		ControlID* const control = jalv->controls.controls[i];
+		if ((control->is_writable && writable) ||
+		    (control->is_readable && readable)) {
+			struct Port* const port = &jalv->ports[control->index];
+			printf("%s = %f\n",
+			       lilv_node_as_string(control->symbol),
+			       port->control);
+		}
+	}
+}
+
+static int
+jalv_print_preset(Jalv*           ZIX_UNUSED(jalv),
+                  const LilvNode* node,
+                  const LilvNode* title,
+                  void*           ZIX_UNUSED(data))
+{
+	printf("%s (%s)\n", lilv_node_as_string(node), lilv_node_as_string(title));
+	return 0;
+}
+
+static void
+jalv_process_command(Jalv* jalv, const char* cmd)
+{
+	char     sym[1024];
+	uint32_t index = 0;
+	float    value = 0.0f;
+	if (!strncmp(cmd, "help", 4)) {
+		fprintf(stderr,
+		        "Commands:\n"
+		        "  help              Display this help message\n"
+		        "  controls          Print settable control values\n"
+		        "  monitors          Print output control values\n"
+		        "  presets           Print available presets\n"
+		        "  preset URI        Set preset\n"
+		        "  set INDEX VALUE   Set control value by port index\n"
+		        "  set SYMBOL VALUE  Set control value by symbol\n"
+		        "  SYMBOL = VALUE    Set control value by symbol\n");
+	} else if (strcmp(cmd, "presets\n") == 0) {
+		jalv_unload_presets(jalv);
+		jalv_load_presets(jalv, jalv_print_preset, NULL);
+	} else if (sscanf(cmd, "preset %1023[-a-zA-Z0-9_:/.%%#]", sym) == 1) {
+		LilvNode* preset = lilv_new_uri(jalv->world, sym);
+		lilv_world_load_resource(jalv->world, preset);
+		jalv_apply_preset(jalv, preset);
+		set_window_title(jalv);
+		lilv_node_free(preset);
+		jalv_print_controls(jalv, true, false);
+	} else if (strcmp(cmd, "controls\n") == 0) {
+		jalv_print_controls(jalv, true, false);
+	} else if (strcmp(cmd, "monitors\n") == 0) {
+		jalv_print_controls(jalv, false, true);
+	} else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
+		if (index < jalv->num_ports) {
+			jalv->ports[index].control = value;
+			jalv_print_control(jalv, &jalv->ports[index], value);
+		} else {
+			fprintf(stderr, "error: port index out of range\n");
+		}
+	} else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2 ||
+	           sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
+		struct Port* port = NULL;
+		for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+			struct Port* p = &jalv->ports[i];
+			const LilvNode* s = lilv_port_get_symbol(jalv->plugin, p->lilv_port);
+			if (!strcmp(lilv_node_as_string(s), sym)) {
+				port = p;
+				break;
+			}
+		}
+		if (port) {
+			port->control = value;
+			jalv_print_control(jalv, port, value);
+		} else {
+			fprintf(stderr, "error: no control named `%s'\n", sym);
+		}
+	} else {
+		fprintf(stderr, "error: invalid command (try `help')\n");
+	}
+}
+
+
+void * cli_thread(void *arg) {
+	while (1) {
+		char line[1024];
+		printf("> ");
+		if (fgets(line, sizeof(line), stdin)) {
+			jalv_process_command((Jalv*) arg, line);
+		} else {
+			break;
+		}
+	}
+	return NULL;
+}
+
+pthread_t init_cli_thread(Jalv* jalv) {
+	//Drop stderr output
+	stderr = fopen("/dev/null", "w");
+
+	pthread_t tid;
+	int err=pthread_create(&tid, NULL, &cli_thread, jalv);
+	if (err != 0) {
+		printf("Can't create CLI thread :[%s]", strerror(err));
+		return 0;
+	} else {
+		printf("CLI thread created successfully\n");
+		return tid;
+	}
 }
 
 }  // extern "C"

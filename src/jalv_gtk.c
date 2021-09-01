@@ -1223,7 +1223,7 @@ jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 #endif
 }
 
-pthread_t init_cli_thread();
+pthread_t init_cli_thread(Jalv* jalv);
 
 int
 jalv_open_ui(Jalv* jalv)
