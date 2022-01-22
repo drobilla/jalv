@@ -397,7 +397,13 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 		"_Save", GTK_RESPONSE_ACCEPT,
 		NULL);
 
-	char* dot_lv2 = g_build_filename(g_get_home_dir(), ".lv2", NULL);
+	char* dot_lv2;
+	char cwd[256];
+	if (getcwd(cwd, sizeof(cwd)-1) != NULL) {
+		dot_lv2 = g_build_filename(cwd, ".lv2", NULL);
+	} else {
+		dot_lv2 = g_build_filename(g_get_home_dir(), ".lv2", NULL);
+	}
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), dot_lv2);
 	free(dot_lv2);
 
