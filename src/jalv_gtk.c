@@ -136,6 +136,8 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		  "JACK client name", NULL},
 		{ "exact-jack-name", 'x', 0, G_OPTION_ARG_NONE, &opts->name_exact,
 		  "Exact JACK client name (exit if taken)", NULL },
+		{ "preset-path", 'P', 0, G_OPTION_ARG_NONE, &opts->preset_path,
+		  "Default path to save presets", "./lv2" },
 		{ 0, 0, 0, G_OPTION_ARG_NONE, 0, 0, 0 } };
 	GError* error = NULL;
 	const int err = gtk_init_with_args(
@@ -1345,8 +1347,12 @@ static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
 	char     sym[1024];
+	char     path[1024];
+	char     uri[1024];
+	char     name[256];
 	uint32_t index = 0;
 	float    value = 0.0f;
+	int      count;
 	if (!strncmp(cmd, "help", 4)) {
 		fprintf(stderr,
 		        "Commands:\n"
@@ -1355,12 +1361,23 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		        "  monitors          Print output control values\n"
 		        "  presets           Print available presets\n"
 		        "  preset URI        Set preset\n"
+				"  save preset LABEL Save as preset\n"
+				"      optional parameters: PATH FILENAME URI\n"
 		        "  set INDEX VALUE   Set control value by port index\n"
 		        "  set SYMBOL VALUE  Set control value by symbol\n"
 		        "  SYMBOL = VALUE    Set control value by symbol\n");
 	} else if (strcmp(cmd, "presets\n") == 0) {
 		jalv_unload_presets(jalv);
 		jalv_load_presets(jalv, jalv_print_preset, NULL);
+	} else if ((count = sscanf(cmd, "save preset %s %s %s", &sym, &path, &name, &uri)) > 0) {
+		if (count < 2)
+			sprintf(path, "%s", jalv->opts.preset_path);
+		if (count < 3)
+			sprintf(name, "%s.ttl", sym);
+		if (count < 4)
+			jalv_save_preset(jalv, path, NULL, sym, name);
+		else
+			jalv_save_preset(jalv, path, uri, sym, name);
 	} else if (sscanf(cmd, "preset %1023[-a-zA-Z0-9_:/.%%#]", sym) == 1) {
 		LilvNode* preset = lilv_new_uri(jalv->world, sym);
 		lilv_world_load_resource(jalv->world, preset);
