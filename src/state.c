@@ -21,6 +21,7 @@
 #include "lv2/core/lv2.h"
 #include "lv2/state/state.h"
 #include "lv2/urid/urid.h"
+#include "lv2/presets/presets.h"
 #include "zix/common.h"
 #include "zix/ring.h"
 #include "zix/sem.h"
@@ -29,6 +30,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 char*
 jalv_make_path(LV2_State_Make_Path_Handle handle,
@@ -215,18 +217,66 @@ jalv_save_preset(Jalv*       jalv,
                  const char* label,
                  const char* filename)
 {
+	if(!label)
+		return 1;
+
+	const char* preset_name = NULL;
+	char bank_name[1024];
+	char full_dir[1024];
+	char full_filename[1024];
+	memset(bank_name, 0, sizeof(bank_name));
+
+	for(int i = 0; i < strlen(label); ++i) {
+		if(label[i] == '/') {
+			preset_name = label + i + 1;
+			break;
+		}
+		bank_name[i] = label[i];
+	}
+
+	if(!preset_name) {
+		preset_name = label;
+		bank_name[0] = '\0';
+	}
+
+	char* plugin_name = NULL;
+	LilvNode* name = lilv_plugin_get_name(jalv->plugin);
+	plugin_name = jalv_strdup(lilv_node_as_string(name));
+	lilv_node_free(name);
+	if(dir)
+		if(strlen(bank_name))
+			sprintf(full_dir, "%s/%s-%s", dir, plugin_name, bank_name);
+		else
+			sprintf(full_dir, "%s", dir);
+	else
+		if(strlen(bank_name))
+			sprintf(full_dir, "./%s-%s", plugin_name, bank_name);
+		else
+			sprintf(full_dir, ".");
+
+	if(filename)
+		sprintf(full_filename, "%s", filename);
+	else
+		sprintf(full_filename, "%s.ttl", preset_name);
+
 	LilvState* const state = lilv_state_new_from_instance(
 		jalv->plugin, jalv->instance, &jalv->map,
-		jalv->temp_dir, dir, dir, dir,
+		jalv->temp_dir, full_dir, full_dir, full_dir,
 		get_port_value, jalv,
 		LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE, NULL);
 
-	if (label) {
-		lilv_state_set_label(state, label);
+	lilv_state_set_label(state, preset_name);
+
+	if(strlen(bank_name)) {
+//		const LV2_URID atom_urid = jalv->map.map(jalv, LV2_ATOM__URID);
+		const LV2_URID bank_urid = jalv->map.map(jalv, bank_name);
+		const LV2_URID bank_key_urid = jalv->map.map(jalv, LV2_PRESETS__bank);
+		lilv_state_set_metadata(state, bank_key_urid, &bank_urid, sizeof(bank_urid), atom_urid, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE);
+		//!@todo Get the bank URI - we need to create the bank if it does not exist
 	}
 
 	int ret = lilv_state_save(
-		jalv->world, &jalv->map, &jalv->unmap, state, uri, dir, filename);
+		jalv->world, &jalv->map, &jalv->unmap, state, uri, full_dir, full_filename);
 
 	lilv_state_free(jalv->preset);
 	jalv->preset = state;

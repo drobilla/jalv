@@ -52,7 +52,6 @@ print_usage(const char* name, bool error)
 	fprintf(os, "  -s           Show plugin UI if possible\n");
 	fprintf(os, "  -t           Print trace messages from plugin\n");
 	fprintf(os, "  -x           Exact JACK client name (exit if taken)\n");
-	fprintf(os, "  -P PATH      Default path to save presets\n");
 	return error ? 1 : 0;
 }
 
@@ -122,13 +121,6 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 			}
 			free(opts->name);
 			opts->name = jalv_strdup((*argv)[a]);
-		} else if ((*argv)[a][1] == 'P') {
-			if (++a == *argc) {
-				fprintf(stderr, "Missing argument for -P\n");
-				return 1;
-			}
-			free(opts->preset_path);
-			opts->preset_path = jalv_strdup((*argv)[a]);
 		} else if ((*argv)[a][1] == 'x') {
 			opts->name_exact = 1;
 		} else {
@@ -190,7 +182,6 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		        "  presets           Print available presets\n"
 		        "  preset URI        Set preset\n"
 				"  save preset LABEL Save as preset\n"
-				"      optional parameters: PATH FILENAME URI\n"
 		        "  set INDEX VALUE   Set control value by port index\n"
 		        "  set SYMBOL VALUE  Set control value by symbol\n"
 		        "  SYMBOL = VALUE    Set control value by symbol\n");
@@ -203,15 +194,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		jalv_apply_preset(jalv, preset);
 		lilv_node_free(preset);
 		jalv_print_controls(jalv, true, false);
-	} else if ((count = sscanf(cmd, "save preset %s %s %s", &sym, &path, &name, &uri)) > 0) {
-		if (count < 2)
-			sprintf(path, "%s", jalv->opts.preset_path);
-		if (count < 3)
-			sprintf(name, "%s.ttl", sym);
-		if (count < 4)
-			jalv_save_preset(jalv, path, NULL, sym, name);
-		else
-			jalv_save_preset(jalv, path, uri, sym, name);
+	} else if (sscanf(cmd, "save preset %s", sym) == 1) {
+			jalv_save_preset(jalv, NULL, NULL, sym, NULL);
 	} else if (strcmp(cmd, "controls\n") == 0) {
 		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "monitors\n") == 0) {
