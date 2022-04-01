@@ -167,9 +167,6 @@ static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
 	char     sym[1024];
-	char     path[1024];
-	char     uri[1024];
-	char     name[256];
 	uint32_t index = 0;
 	float    value = 0.0f;
 	int      count;
@@ -181,7 +178,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		        "  monitors          Print output control values\n"
 		        "  presets           Print available presets\n"
 		        "  preset URI        Set preset\n"
-				"  save preset LABEL Save as preset\n"
+				"  save preset LABEL Save preset (LABEL=optional_bank/preset)\n"
 		        "  set INDEX VALUE   Set control value by port index\n"
 		        "  set SYMBOL VALUE  Set control value by symbol\n"
 		        "  SYMBOL = VALUE    Set control value by symbol\n");
@@ -194,8 +191,15 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		jalv_apply_preset(jalv, preset);
 		lilv_node_free(preset);
 		jalv_print_controls(jalv, true, false);
-	} else if (sscanf(cmd, "save preset %s", sym) == 1) {
-			jalv_save_preset(jalv, NULL, NULL, sym, NULL);
+	} else if (sscanf(cmd, "save preset %s", sym) > 0) {
+		for(int i = 0; i < sizeof(sym); ++i) {
+			if(cmd[i + 12] == '\0' || cmd[i + 12] == '\r' || cmd[i + 12] == '\n') {
+				sym[i] = '\0';
+				break;
+			}
+			sym[i] = cmd[i + 12];
+		}
+		jalv_save_preset(jalv, NULL, NULL, sym, NULL);
 	} else if (strcmp(cmd, "controls\n") == 0) {
 		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "monitors\n") == 0) {
