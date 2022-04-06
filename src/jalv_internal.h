@@ -177,6 +177,7 @@ typedef struct {
 	int      name_exact;        ///< Exit if name is taken
 	char*    load;              ///< Path for state to load
 	char*    preset;            ///< URI of preset to load
+	char*    preset_path;       ///< Default path to save presets
 	char**   controls;          ///< Control values
 	uint32_t buffer_size;       ///< Plugin <= >UI communication buffer size
 	double   update_rate;       ///< UI update rate in Hz
