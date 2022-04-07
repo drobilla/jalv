@@ -358,8 +358,16 @@ private:
 extern "C" {
 
 int
-jalv_init(int* argc, char*** argv, JalvOptions*)
+jalv_init(int* argc, char*** argv, JalvOptions* opts)
 {
+	
+	char cwd[256];
+	if (getcwd(cwd, sizeof(cwd)-1) != NULL) {
+		opts->preset_path = jalv_strdup(cwd);
+	} else {
+		opts->preset_path = jalv_strdup("./");
+	}
+
 	app = new QApplication(*argc, *argv, true);
 	app->setStyleSheet("QGroupBox::title { subcontrol-position: top center }");
 
@@ -846,6 +854,7 @@ static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
 	char     sym[1024];
+	char     sym2[1024];
 	char     path[1024];
 	char     uri[1024];
 	char     name[256];
@@ -859,8 +868,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		        "  controls          Print settable control values\n"
 		        "  monitors          Print output control values\n"
 		        "  presets           Print available presets\n"
-				"  save preset LABEL Save as preset\n"
-				"      optional parameters: PATH FILENAME URI\n"
+		        "  save preset LABEL, [BANK_URI]\n"
+		        "                    Save preset (BANK_URI is optional)\n"
 		        "  preset URI        Set preset\n"
 		        "  set INDEX VALUE   Set control value by port index\n"
 		        "  set SYMBOL VALUE  Set control value by symbol\n"
@@ -868,15 +877,6 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 	} else if (strcmp(cmd, "presets\n") == 0) {
 		jalv_unload_presets(jalv);
 		jalv_load_presets(jalv, jalv_print_preset, NULL);
-	} else if ((count = sscanf(cmd, "save preset %s %s %s", &sym, &path, &name, &uri)) > 0) {
-		if (count < 2)
-			sprintf(path, "%s", jalv->opts.preset_path);
-		if (count < 3)
-			sprintf(name, "%s.ttl", sym);
-		if (count < 4)
-			jalv_save_preset(jalv, path, NULL, sym, name);
-		else
-			jalv_save_preset(jalv, path, uri, sym, name);
 	} else if (sscanf(cmd, "preset %1023[-a-zA-Z0-9_:/.%%#]", sym) == 1) {
 		LilvNode* preset = lilv_new_uri(jalv->world, sym);
 		lilv_world_load_resource(jalv->world, preset);
@@ -884,6 +884,16 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		set_window_title(jalv);
 		lilv_node_free(preset);
 		jalv_print_controls(jalv, true, false);
+	} else if ((count=sscanf(cmd, "save preset %1023[-a-zA-Z0-9_:/.%%#] %1023[-a-zA-Z0-9_:/.%%#]", sym, sym2)) >= 1) {
+		char dir_preset[1024];
+		char fname_preset[1024];
+		sprintf(dir_preset, "%s/%s.presets.lv2", jalv->opts.preset_path, jalv_get_plugin_name(jalv));
+		sprintf(fname_preset, "%s.ttl", sym);
+		if (count==2) {
+			jalv_save_bank_preset(jalv, dir_preset, sym2, NULL, sym, fname_preset);
+		} else {
+			jalv_save_preset(jalv, dir_preset, NULL, sym, fname_preset);
+		}
 	} else if (strcmp(cmd, "controls\n") == 0) {
 		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "monitors\n") == 0) {

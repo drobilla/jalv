@@ -79,7 +79,6 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 		opts->preset_path = jalv_strdup(cwd);
 	} else {
 		opts->preset_path = jalv_strdup("./");
-		//g_get_home_dir()
 	}
 
 	for (; a < *argc && (*argv)[a][0] == '-'; ++a) {
