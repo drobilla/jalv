@@ -210,38 +210,6 @@ jalv_apply_preset(Jalv* jalv, const LilvNode* preset)
 	return 0;
 }
 
-/**
-   Fix symbol names to match LV2 spec, i.e. a-z A-Z _ 0-9 (except for first char)
-   symbol: c-string symbol
-   additional_chars: c-string containing additional allowable characters
-   returns: Quantity of characters converted
-   note: Converts invalid characters to underscore within the passed symbol
-*/
-int
-fix_symbol(char* symbol, const char* additional_chars)
-{
-	printf("fix_symbol('%s', '%s')\n", symbol, additional_chars);
-	int ret = 0;
-	for (uint32_t i = 0; i < strlen(symbol); ++i) {
-		uint32_t bad_char = 1;
-		if (symbol[i] >= 'a' && symbol[i] <= 'z' || symbol[i] >= 'A' && symbol[i] <= 'Z' || symbol[i] == '_' || i > 0 && symbol[i] >= '0' && symbol[i] <= '9') {
-			bad_char = 0;
-		} else {
-			for (uint32_t j = 0; j < strlen(additional_chars); ++j)
-				if (symbol[i] == additional_chars[j]) {
-					bad_char = 0;
-					break;
-				}
-		}
-		if (bad_char) {
-			symbol[i] = '_';
-			++ret;
-		}
-	}
-	printf("%d chars changed: '%s'\n", ret, symbol);
-	return ret;
-}
-
 int
 jalv_save_preset(Jalv*       jalv,
                  const char* dir,
@@ -249,72 +217,52 @@ jalv_save_preset(Jalv*       jalv,
                  const char* label,
                  const char* filename)
 {
-	if(!label)
-		return 1;
-
-	const char* preset_name = NULL;
-	char bank_name[1024];
-	char full_dir[1024];
-	char full_filename[1024];
-
-	for(int i = 0; i < strlen(label); ++i) {
-		if(label[i] == '/') {
-			if(i + 1 < strlen(label))
-				preset_name = label + i + 1;
-			bank_name[i] = '\0';
-			break;
-		}
-		bank_name[i] = label[i];
-	}
-
-	if(!preset_name) {
-		// Not found '/' so no bank specified
-		preset_name = label;
-		bank_name[0] = '\0';
-	}
-	fix_symbol(bank_name, "");
-
-	char* plugin_name;
-	LilvNode* name = lilv_plugin_get_name(jalv->plugin);
-	plugin_name = jalv_strdup(lilv_node_as_string(name));
-	lilv_node_free(name);
-
-	if(dir)
-		if(strlen(bank_name))
-			sprintf(full_dir, "%s/%s_%s", dir, plugin_name, bank_name);
-		else
-			sprintf(full_dir, "%s", dir);
-	else
-		if(strlen(bank_name))
-			sprintf(full_dir, "./%s_%s", plugin_name, bank_name);
-		else
-			sprintf(full_dir, ".");
-
-	if(filename)
-		sprintf(full_filename, "%s", filename);
-	else
-		sprintf(full_filename, "%s.ttl", preset_name);
-
-	fix_symbol(full_filename, ".");
-	fix_symbol(full_dir, "./");
-
 	LilvState* const state = lilv_state_new_from_instance(
 		jalv->plugin, jalv->instance, &jalv->map,
-		jalv->temp_dir, full_dir, full_dir, full_dir,
+		jalv->temp_dir, dir, dir, dir,
 		get_port_value, jalv,
 		LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE, NULL);
 
-	lilv_state_set_label(state, preset_name);
+	if (label) {
+		lilv_state_set_label(state, label);
+	}
 
-	if(strlen(bank_name)) {
-		const LV2_URID atom_urid = jalv->map.map(jalv, LV2_ATOM__URID);
-		const LV2_URID bank_urid = jalv->map.map(jalv, bank_name);
+	int ret = lilv_state_save(
+		jalv->world, &jalv->map, &jalv->unmap, state, uri, dir, filename);
+
+	lilv_state_free(jalv->preset);
+	jalv->preset = state;
+
+	return ret;
+}
+
+int
+jalv_save_bank_preset(Jalv*  jalv,
+                 const char* dir,
+                 const char* uri_bank,
+                 const char* uri_preset,
+                 const char* label_preset,
+                 const char* filename)
+{
+	LilvState* const state = lilv_state_new_from_instance(
+		jalv->plugin, jalv->instance, &jalv->map,
+		jalv->temp_dir, dir, dir, dir,
+		get_port_value, jalv,
+		LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE, NULL);
+
+	if (label_preset) {
+		lilv_state_set_label(state, label_preset);
+	}
+
+	if (uri_bank) {
 		const LV2_URID bank_key_urid = jalv->map.map(jalv, LV2_PRESETS__bank);
+		const LV2_URID bank_urid = jalv->map.map(jalv, uri_bank);
+		const LV2_URID atom_urid = jalv->map.map(jalv, LV2_ATOM__URID);
 		lilv_state_set_metadata(state, bank_key_urid, &bank_urid, sizeof(bank_urid), atom_urid, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE);
 	}
 
 	int ret = lilv_state_save(
-		jalv->world, &jalv->map, &jalv->unmap, state, uri, full_dir, full_filename);
+		jalv->world, &jalv->map, &jalv->unmap, state, uri_preset, dir, filename);
 
 	lilv_state_free(jalv->preset);
 	jalv->preset = state;

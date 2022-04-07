@@ -93,6 +93,38 @@
 
 static ZixSem* exit_sem = NULL;  /**< Exit semaphore used by signal handler*/
 
+/**
+   Fix symbol names to match LV2 spec, i.e. a-z A-Z _ 0-9 (except for first char)
+   symbol: c-string symbol
+   extra_allowed_chars: c-string containing additional allowable characters
+   returns: Quantity of characters converted
+   note: Converts invalid characters to underscore within the passed symbol
+*/
+int
+fix_symbol(char* symbol, const char* extra_allowed_chars)
+{
+	//fprintf(stderr, "fix_symbol('%s', '%s')\n", symbol, additional_chars);
+	int ret = 0;
+	for (uint32_t i = 0; i < strlen(symbol); ++i) {
+		uint32_t bad_char = 1;
+		if (symbol[i] >= 'a' && symbol[i] <= 'z' || symbol[i] >= 'A' && symbol[i] <= 'Z' || symbol[i] == '_' || i > 0 && symbol[i] >= '0' && symbol[i] <= '9') {
+			bad_char = 0;
+		} else {
+			for (uint32_t j = 0; j < strlen(extra_allowed_chars); ++j)
+				if (symbol[i] == extra_allowed_chars[j]) {
+					bad_char = 0;
+					break;
+				}
+		}
+		if (bad_char) {
+			symbol[i] = '_';
+			++ret;
+		}
+	}
+	//fprintf(stderr, "%d chars changed: '%s'\n", ret, symbol);
+	return ret;
+}
+
 static LV2_URID
 map_uri(LV2_URID_Map_Handle handle,
         const char*         uri)
@@ -1318,6 +1350,16 @@ jalv_close(Jalv* const jalv)
 	free(jalv->opts.controls);
 
 	return 0;
+}
+
+char*
+jalv_get_plugin_name(Jalv* jalv)
+{
+	char* plugin_name;
+	LilvNode* name = lilv_plugin_get_name(jalv->plugin);
+	plugin_name = jalv_strdup(lilv_node_as_string(name));
+	lilv_node_free(name);
+	return plugin_name;
 }
 
 int

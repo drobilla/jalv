@@ -369,6 +369,9 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts);
 int
 jalv_close(Jalv* jalv);
 
+char*
+jalv_get_plugin_name(Jalv* jalv);
+
 JalvBackend*
 jalv_backend_init(Jalv* jalv);
 
@@ -488,6 +491,14 @@ jalv_save_preset(Jalv*       jalv,
                  const char* label,
                  const char* filename);
 
+int
+jalv_save_bank_preset(Jalv*  jalv,
+                 const char* dir,
+                 const char* uri_bank,
+                 const char* uri_preset,
+                 const char* label_preset,
+                 const char* filename);
+
 void
 jalv_save(Jalv* jalv, const char* dir);
 
@@ -507,6 +518,9 @@ atom_to_turtle(LV2_URID_Unmap* unmap,
                const SerdNode* subject,
                const SerdNode* predicate,
                const LV2_Atom* atom);
+
+int
+fix_symbol(char* symbol, const char* extra_allowed_chars);
 
 static inline void
 jalv_print_control(Jalv* jalv, const struct Port* port, float value)
