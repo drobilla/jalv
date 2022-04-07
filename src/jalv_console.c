@@ -211,7 +211,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 			label_preset = bank_uri;
 			bank_uri = NULL;
 		}
-		sprintf(dir_preset, "%s/%s.presets.lv2", jalv->opts.preset_path, plugin_name);
+		sprintf(dir_preset, "%s/%s.presets.lv2/", jalv->opts.preset_path, plugin_name);
 		sprintf(fname_preset, "%s.ttl", label_preset);
 		jalv_fix_filename(fname_preset);
 		if (bank_uri) {
@@ -219,6 +219,13 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		} else {
 			jalv_save_preset(jalv, dir_preset, NULL, label_preset, fname_preset);
 		}
+		//Print saved preset uri
+		printf("file://%s%s\n", dir_preset, fname_preset);
+		// Reload bundle into the world
+		LilvNode* ldir = lilv_new_file_uri(jalv->world, NULL, dir_preset);
+		lilv_world_unload_bundle(jalv->world, ldir);
+		lilv_world_load_bundle(jalv->world, ldir);
+		lilv_node_free(ldir);
 		free(plugin_name);
 	} else if (strcmp(cmd, "controls\n") == 0) {
 		jalv_print_controls(jalv, true, false);
