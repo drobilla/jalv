@@ -45,6 +45,7 @@ LV2_DISABLE_DEPRECATION_WARNINGS
 #include <string.h>
 #include <pthread.h>
 
+static GtkWidget* gtk_pset_menu = NULL;
 static GtkCheckMenuItem* active_preset_item = NULL;
 static bool              updating           = false;
 
@@ -1202,6 +1203,9 @@ build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
 	jalv_load_presets(jalv, add_preset_to_menu, &menu);
 	finish_menu(&menu);
 
+	//Save pset_menu as global for rebuilding from CLI
+	gtk_pset_menu = pset_menu;
+	
 	g_signal_connect(G_OBJECT(quit), "activate",
 	                 G_CALLBACK(on_quit_activate), window);
 
@@ -1355,9 +1359,6 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 {
 	char     sym[1024];
 	char     sym2[1024];
-	char     path[1024];
-	char     uri[1024];
-	char     name[256];
 	uint32_t index = 0;
 	float    value = 0.0f;
 	int      count;
@@ -1369,7 +1370,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		        "  monitors          Print output control values\n"
 		        "  presets           Print available presets\n"
 		        "  preset URI        Set preset\n"
-		        "  save preset LABEL, [BANK_URI]\n"
+		        "  save preset [BANK_URI,] LABEL\n"
 		        "                    Save preset (BANK_URI is optional)\n"
 		        "  set INDEX VALUE   Set control value by port index\n"
 		        "  set SYMBOL VALUE  Set control value by symbol\n"
@@ -1384,16 +1385,36 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		set_window_title(jalv);
 		lilv_node_free(preset);
 		jalv_print_controls(jalv, true, false);
-	} else if ((count=sscanf(cmd, "save preset %1023[-a-zA-Z0-9_:/.%%#] %1023[-a-zA-Z0-9_:/.%%#]", sym, sym2)) >= 1) {
+	} else if (sscanf(cmd, "save preset %1023[-a-zA-Z0-9_:/.%%#, ]", sym) == 1) {
 		char dir_preset[1024];
 		char fname_preset[1024];
-		sprintf(dir_preset, "%s/%s.presets.lv2", jalv->opts.preset_path, jalv_get_plugin_name(jalv));
-		sprintf(fname_preset, "%s.ttl", sym);
-		if (count==2) {
-			jalv_save_bank_preset(jalv, dir_preset, sym2, NULL, sym, fname_preset);
-		} else {
-			jalv_save_preset(jalv, dir_preset, NULL, sym, fname_preset);
+		char *plugin_name = jalv_get_plugin_name(jalv);
+		char *saveptr = sym;
+		char *bank_uri = strtok_r(sym, ",", &saveptr);
+		char *label_preset = strtok_r(NULL, ",", &saveptr);
+		if (!label_preset) {
+			label_preset = bank_uri;
+			bank_uri = NULL;
 		}
+		sprintf(dir_preset, "%s/%s.presets.lv2", jalv->opts.preset_path, plugin_name);
+		sprintf(fname_preset, "%s.ttl", label_preset);
+		jalv_fix_filename(fname_preset);
+		if (bank_uri) {
+			jalv_save_bank_preset(jalv, dir_preset, bank_uri, NULL, label_preset, fname_preset);
+		} else {
+			jalv_save_preset(jalv, dir_preset, NULL, label_preset, fname_preset);
+		}
+		free(plugin_name);
+		
+		// Reload bundle into the world
+		LilvNode* ldir = lilv_new_file_uri(jalv->world, NULL, dir_preset);
+		lilv_world_unload_bundle(jalv->world, ldir);
+		lilv_world_load_bundle(jalv->world, ldir);
+		lilv_node_free(ldir);
+
+		// Rebuild preset menu and update window title
+		rebuild_preset_menu(jalv, GTK_CONTAINER(gtk_pset_menu));
+		set_window_title(jalv);
 	} else if (strcmp(cmd, "controls\n") == 0) {
 		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "monitors\n") == 0) {

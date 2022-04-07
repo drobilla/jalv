@@ -101,7 +101,7 @@ static ZixSem* exit_sem = NULL;  /**< Exit semaphore used by signal handler*/
    note: Converts invalid characters to underscore within the passed symbol
 */
 int
-fix_symbol(char* symbol, const char* extra_allowed_chars)
+jalv_fix_symbol(char* symbol, const char* extra_allowed_chars)
 {
 	//fprintf(stderr, "fix_symbol('%s', '%s')\n", symbol, additional_chars);
 	int ret = 0;
@@ -124,6 +124,28 @@ fix_symbol(char* symbol, const char* extra_allowed_chars)
 	//fprintf(stderr, "%d chars changed: '%s'\n", ret, symbol);
 	return ret;
 }
+
+/**
+   Fix file names: a-z A-Z _ - . 0-9
+   fname: c-string Filename to fix
+   returns: Quantity of characters converted
+   note: Converts invalid characters to underscore within the passed var
+*/
+int
+jalv_fix_filename(char* fname)
+{
+	int ret = 0;
+	for (uint32_t i = 0; i < strlen(fname); ++i) {
+		uint32_t bad_char = 1;
+		if (!(fname[i] >= 'a' && fname[i] <= 'z' || fname[i] >= 'A' && fname[i] <= 'Z' || fname[i] >= '0' && fname[i] <= '9' || fname[i] == '_' || fname[i] == '-' || fname[i] == '.')) {
+			fname[i] = '_';
+			++ret;
+		}
+	}
+	//fprintf(stderr, "%d chars changed: '%s'\n", ret, filename);
+	return ret;
+}
+
 
 static LV2_URID
 map_uri(LV2_URID_Map_Handle handle,

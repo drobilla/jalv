@@ -186,7 +186,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		        "  monitors          Print output control values\n"
 		        "  presets           Print available presets\n"
 		        "  preset URI        Set preset\n"
-		        "  save preset LABEL, [BANK_URI]\n"
+		        "  save preset [BANK_URI,] LABEL\n"
 		        "                    Save preset (BANK_URI is optional)\n"
 		        "  set INDEX VALUE   Set control value by port index\n"
 		        "  set SYMBOL VALUE  Set control value by symbol\n"
@@ -200,16 +200,26 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		jalv_apply_preset(jalv, preset);
 		lilv_node_free(preset);
 		jalv_print_controls(jalv, true, false);
-	} else if ((count=sscanf(cmd, "save preset %1023[-a-zA-Z0-9_:/.%%#] %1023[-a-zA-Z0-9_:/.%%#]", sym, sym2)) >= 1) {
+	} else if (sscanf(cmd, "save preset %1023[-a-zA-Z0-9_:/.%%#, ]", sym) == 1) {
 		char dir_preset[1024];
 		char fname_preset[1024];
-		sprintf(dir_preset, "%s/%s.presets.lv2", jalv->opts.preset_path, jalv_get_plugin_name(jalv));
-		sprintf(fname_preset, "%s.ttl", sym);
-		if (count==2) {
-			jalv_save_bank_preset(jalv, dir_preset, sym2, NULL, sym, fname_preset);
-		} else {
-			jalv_save_preset(jalv, dir_preset, NULL, sym, fname_preset);
+		char *plugin_name = jalv_get_plugin_name(jalv);
+		char *saveptr = sym;
+		char *bank_uri = strtok_r(sym, ",", &saveptr);
+		char *label_preset = strtok_r(NULL, ",", &saveptr);
+		if (!label_preset) {
+			label_preset = bank_uri;
+			bank_uri = NULL;
 		}
+		sprintf(dir_preset, "%s/%s.presets.lv2", jalv->opts.preset_path, plugin_name);
+		sprintf(fname_preset, "%s.ttl", label_preset);
+		jalv_fix_filename(fname_preset);
+		if (bank_uri) {
+			jalv_save_bank_preset(jalv, dir_preset, bank_uri, NULL, label_preset, fname_preset);
+		} else {
+			jalv_save_preset(jalv, dir_preset, NULL, label_preset, fname_preset);
+		}
+		free(plugin_name);
 	} else if (strcmp(cmd, "controls\n") == 0) {
 		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "monitors\n") == 0) {

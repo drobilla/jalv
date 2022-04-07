@@ -519,15 +519,18 @@ atom_to_turtle(LV2_URID_Unmap* unmap,
                const SerdNode* predicate,
                const LV2_Atom* atom);
 
-int
-fix_symbol(char* symbol, const char* extra_allowed_chars);
-
 static inline void
 jalv_print_control(Jalv* jalv, const struct Port* port, float value)
 {
 	const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
 	printf("%s = %f\n", lilv_node_as_string(sym), value);
 }
+
+int
+jalv_fix_symbol(char* symbol, const char* extra_allowed_chars);
+
+int
+jalv_fix_filename(char* fname);
 
 static inline char*
 jalv_strdup(const char* str)
