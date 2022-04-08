@@ -372,6 +372,9 @@ jalv_close(Jalv* jalv);
 char*
 jalv_get_plugin_name(Jalv* jalv);
 
+char*
+jalv_get_working_dir();
+
 JalvBackend*
 jalv_backend_init(Jalv* jalv);
 
@@ -498,6 +501,9 @@ jalv_save_bank_preset(Jalv*  jalv,
                  const char* uri_preset,
                  const char* label_preset,
                  const char* filename);
+
+void
+jalv_command_save_preset(Jalv* jalv, char* sym);
 
 void
 jalv_save(Jalv* jalv, const char* dir);

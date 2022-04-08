@@ -1384,12 +1384,26 @@ jalv_get_plugin_name(Jalv* jalv)
 	return plugin_name;
 }
 
+char*
+jalv_get_working_dir()
+{
+	char cwd[256];
+	char* env_cwd = getenv("CWD");
+	if (env_cwd != NULL) {
+		return jalv_strdup(env_cwd);
+	} else if (getcwd(cwd, sizeof(cwd)-1) != NULL) {
+		return jalv_strdup(cwd);
+	} else {
+		return jalv_strdup("./");
+	}
+}
+
 int
 main(int argc, char** argv)
 {
 	Jalv jalv;
 	memset(&jalv, '\0', sizeof(Jalv));
-
+	
 	if (jalv_open(&jalv, &argc, &argv)) {
 		return EXIT_FAILURE;
 	}

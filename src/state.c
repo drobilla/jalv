@@ -283,3 +283,35 @@ jalv_delete_current_preset(Jalv* jalv)
 	jalv->preset = NULL;
 	return 0;
 }
+
+void
+jalv_command_save_preset(Jalv* jalv, char* sym)
+{
+	char dir_preset[1024];
+	char fname_preset[1024];
+	char *plugin_name = jalv_get_plugin_name(jalv);
+	char *saveptr = sym;
+	char *bank_uri = strtok_r(sym, ",", &saveptr);
+	char *label_preset = strtok_r(NULL, ",", &saveptr);
+	if (!label_preset) {
+		label_preset = bank_uri;
+		bank_uri = NULL;
+	}
+	jalv_fix_filename(plugin_name);
+	sprintf(dir_preset, "%s/%s.presets.lv2/", jalv->opts.preset_path, plugin_name);
+	sprintf(fname_preset, "%s.ttl", label_preset);
+	jalv_fix_filename(fname_preset);
+	if (bank_uri) {
+		jalv_save_bank_preset(jalv, dir_preset, bank_uri, NULL, label_preset, fname_preset);
+	} else {
+		jalv_save_preset(jalv, dir_preset, NULL, label_preset, fname_preset);
+	}
+	//Print saved preset uri
+	printf("file://%s%s\n", dir_preset, fname_preset);
+	// Reload bundle into the world
+	LilvNode* ldir = lilv_new_file_uri(jalv->world, NULL, dir_preset);
+	lilv_world_unload_bundle(jalv->world, ldir);
+	lilv_world_load_bundle(jalv->world, ldir);
+	lilv_node_free(ldir);
+	free(plugin_name);
+}

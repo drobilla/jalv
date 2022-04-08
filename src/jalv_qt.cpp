@@ -360,13 +360,7 @@ extern "C" {
 int
 jalv_init(int* argc, char*** argv, JalvOptions* opts)
 {
-	
-	char cwd[256];
-	if (getcwd(cwd, sizeof(cwd)-1) != NULL) {
-		opts->preset_path = jalv_strdup(cwd);
-	} else {
-		opts->preset_path = jalv_strdup("./");
-	}
+	opts->preset_path = jalv_get_working_dir();
 
 	app = new QApplication(*argc, *argv, true);
 	app->setStyleSheet("QGroupBox::title { subcontrol-position: top center }");
@@ -882,33 +876,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		lilv_node_free(preset);
 		jalv_print_controls(jalv, true, false);
 	} else if (sscanf(cmd, "save preset %1023[-a-zA-Z0-9_:/.%%#, ]", sym) == 1) {
-		char dir_preset[1024];
-		char fname_preset[1024];
-		char *plugin_name = jalv_get_plugin_name(jalv);
-		char *saveptr = sym;
-		char *bank_uri = strtok_r(sym, ",", &saveptr);
-		char *label_preset = strtok_r(NULL, ",", &saveptr);
-		if (!label_preset) {
-			label_preset = bank_uri;
-			bank_uri = NULL;
-		}
-		jalv_fix_filename(plugin_name);
-		sprintf(dir_preset, "%s/%s.presets.lv2/", jalv->opts.preset_path, plugin_name);
-		sprintf(fname_preset, "%s.ttl", label_preset);
-		jalv_fix_filename(fname_preset);
-		if (bank_uri) {
-			jalv_save_bank_preset(jalv, dir_preset, bank_uri, NULL, label_preset, fname_preset);
-		} else {
-			jalv_save_preset(jalv, dir_preset, NULL, label_preset, fname_preset);
-		}
-		//Print saved preset uri
-		printf("file://%s%s\n", dir_preset, fname_preset);
-		// Reload bundle into the world
-		LilvNode* ldir = lilv_new_file_uri(jalv->world, NULL, dir_preset);
-		lilv_world_unload_bundle(jalv->world, ldir);
-		lilv_world_load_bundle(jalv->world, ldir);
-		lilv_node_free(ldir);
-		free(plugin_name);
+		jalv_command_save_preset(jalv,sym);
 	} else if (strcmp(cmd, "controls\n") == 0) {
 		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "monitors\n") == 0) {
