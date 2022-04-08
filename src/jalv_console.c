@@ -211,6 +211,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 			label_preset = bank_uri;
 			bank_uri = NULL;
 		}
+		jalv_fix_filename(plugin_name);
 		sprintf(dir_preset, "%s/%s.presets.lv2/", jalv->opts.preset_path, plugin_name);
 		sprintf(fname_preset, "%s.ttl", label_preset);
 		jalv_fix_filename(fname_preset);
