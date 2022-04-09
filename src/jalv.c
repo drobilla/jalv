@@ -1388,7 +1388,7 @@ char*
 jalv_get_working_dir()
 {
 	char cwd[256];
-	char* env_cwd = getenv("CWD");
+	char* env_cwd = getenv("PWD");
 	if (env_cwd != NULL) {
 		return jalv_strdup(env_cwd);
 	} else if (getcwd(cwd, sizeof(cwd)-1) != NULL) {
