@@ -32,7 +32,6 @@ Checks: >
   -misc-no-recursion,
   -modernize-return-braced-init-list,
   -modernize-use-trailing-return-type,
-  -modernize-use-using,
   -readability-function-cognitive-complexity,
   -readability-implicit-bool-conversion,
   -readability-non-const-parameter,

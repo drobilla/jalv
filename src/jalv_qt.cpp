@@ -306,10 +306,10 @@ private:
 	LilvNode* _preset;
 };
 
-typedef struct {
+struct PortContainer {
 	Jalv*        jalv;
 	struct Port* port;
-} PortContainer;
+};
 
 class Control : public QGroupBox
 {
