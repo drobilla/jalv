@@ -665,7 +665,7 @@ control_changed(Jalv*       jalv,
   if (!isnan(fvalue)) {
     if (GTK_IS_COMBO_BOX(widget)) {
       GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
-      GValue        value = {0, {{0}}};
+      GValue        value = G_VALUE_INIT;
       GtkTreeIter   i;
       bool          valid = gtk_tree_model_get_iter_first(model, &i);
       while (valid) {
@@ -896,7 +896,7 @@ combo_changed(GtkComboBox* box, gpointer data)
   GtkTreeIter iter;
   if (gtk_combo_box_get_active_iter(box, &iter)) {
     GtkTreeModel* model = gtk_combo_box_get_model(box);
-    GValue        value = {0, {{0}}};
+    GValue        value = G_VALUE_INIT;
 
     gtk_tree_model_get_value(model, &iter, 0, &value);
     const double v = g_value_get_float(&value);
