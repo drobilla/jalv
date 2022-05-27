@@ -115,6 +115,11 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
 {
   JalvWorker* worker = (JalvWorker*)handle;
   Jalv*       jalv   = worker->jalv;
+
+  if (!size) {
+    return LV2_WORKER_ERR_UNKNOWN;
+  }
+
   if (worker->threaded) {
     // Schedule a request to be executed by the worker thread
     zix_ring_write(worker->requests, (const char*)&size, sizeof(size));
@@ -127,6 +132,7 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
       jalv->instance->lv2_handle, jalv_worker_respond, worker, size, data);
     zix_sem_post(&jalv->work_lock);
   }
+
   return LV2_WORKER_SUCCESS;
 }
 
