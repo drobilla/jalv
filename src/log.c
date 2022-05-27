@@ -24,44 +24,39 @@
 #include <stdio.h>
 
 int
-jalv_printf(LV2_Log_Handle handle,
-            LV2_URID       type,
-            const char*    fmt, ...)
+jalv_printf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, ...)
 {
-	va_list args;
-	va_start(args, fmt);
-	const int ret = jalv_vprintf(handle, type, fmt, args);
-	va_end(args);
-	return ret;
+  va_list args;
+  va_start(args, fmt);
+  const int ret = jalv_vprintf(handle, type, fmt, args);
+  va_end(args);
+  return ret;
 }
 
 int
-jalv_vprintf(LV2_Log_Handle handle,
-             LV2_URID       type,
-             const char*    fmt,
-             va_list        ap)
+jalv_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap)
 {
-	// TODO: Lock
-	Jalv* jalv  = (Jalv*)handle;
-	bool  fancy = true;
-	if (type == jalv->urids.log_Trace && jalv->opts.trace) {
-		jalv_ansi_start(stderr, 32);
-		fprintf(stderr, "trace: ");
-	} else if (type == jalv->urids.log_Error) {
-		jalv_ansi_start(stderr, 31);
-		fprintf(stderr, "error: ");
-	} else if (type == jalv->urids.log_Warning) {
-		jalv_ansi_start(stderr, 33);
-		fprintf(stderr, "warning: ");
-	} else {
-		fancy = false;
-	}
+  // TODO: Lock
+  Jalv* jalv  = (Jalv*)handle;
+  bool  fancy = true;
+  if (type == jalv->urids.log_Trace && jalv->opts.trace) {
+    jalv_ansi_start(stderr, 32);
+    fprintf(stderr, "trace: ");
+  } else if (type == jalv->urids.log_Error) {
+    jalv_ansi_start(stderr, 31);
+    fprintf(stderr, "error: ");
+  } else if (type == jalv->urids.log_Warning) {
+    jalv_ansi_start(stderr, 33);
+    fprintf(stderr, "warning: ");
+  } else {
+    fancy = false;
+  }
 
-	const int st = vfprintf(stderr, fmt, ap);
+  const int st = vfprintf(stderr, fmt, ap);
 
-	if (fancy) {
-		jalv_ansi_reset(stderr);
-	}
+  if (fancy) {
+    jalv_ansi_reset(stderr);
+  }
 
-	return st;
+  return st;
 }

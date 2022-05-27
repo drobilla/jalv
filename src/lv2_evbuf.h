@@ -22,7 +22,7 @@
 #ifdef __cplusplus
 extern "C" {
 #else
-#include <stdbool.h>
+#  include <stdbool.h>
 #endif
 
 /**
@@ -34,8 +34,8 @@ typedef struct LV2_Evbuf_Impl LV2_Evbuf;
    An iterator over an LV2_Evbuf.
 */
 typedef struct {
-	LV2_Evbuf* evbuf;
-	uint32_t   offset;
+  LV2_Evbuf* evbuf;
+  uint32_t   offset;
 } LV2_Evbuf_Iterator;
 
 /**

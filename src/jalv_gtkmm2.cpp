@@ -36,14 +36,14 @@ static Gtk::Main* jalv_gtk_main = nullptr;
 int
 jalv_init(int* argc, char*** argv, JalvOptions*)
 {
-	jalv_gtk_main = new Gtk::Main(*argc, *argv);
-	return 0;
+  jalv_gtk_main = new Gtk::Main(*argc, *argv);
+  return 0;
 }
 
 const char*
 jalv_native_ui_type(void)
 {
-	return "http://lv2plug.in/ns/extensions/ui#GtkUI";
+  return "http://lv2plug.in/ns/extensions/ui#GtkUI";
 }
 
 void
@@ -53,72 +53,72 @@ jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    protocol,
                    const void* buffer)
 {
-	if (jalv->ui_instance) {
-		suil_instance_port_event(jalv->ui_instance, port_index,
-		                         buffer_size, protocol, buffer);
-	}
+  if (jalv->ui_instance) {
+    suil_instance_port_event(
+      jalv->ui_instance, port_index, buffer_size, protocol, buffer);
+  }
 }
 
 bool
 jalv_discover_ui(Jalv*)
 {
-	return true;
+  return true;
 }
 
 float
 jalv_ui_refresh_rate(Jalv*)
 {
-	return 30.0f;
+  return 30.0f;
 }
 
 float
 jalv_ui_scale_factor(Jalv*)
 {
-	return 1.0f;
+  return 1.0f;
 }
 
 int
 jalv_open_ui(Jalv* jalv)
 {
-	auto* const window = new Gtk::Window();
+  auto* const window = new Gtk::Window();
 
-	if (jalv->ui) {
-		jalv_ui_instantiate(jalv, jalv_native_ui_type(), nullptr);
-	}
+  if (jalv->ui) {
+    jalv_ui_instantiate(jalv, jalv_native_ui_type(), nullptr);
+  }
 
-	if (jalv->ui_instance) {
-		auto* const widget = static_cast<GtkWidget*>(
-		    suil_instance_get_widget(jalv->ui_instance));
+  if (jalv->ui_instance) {
+    auto* const widget =
+      static_cast<GtkWidget*>(suil_instance_get_widget(jalv->ui_instance));
 
-		Gtk::Widget* widgetmm = Glib::wrap(widget);
-		window->add(*Gtk::manage(widgetmm));
-		widgetmm->show_all();
+    Gtk::Widget* widgetmm = Glib::wrap(widget);
+    window->add(*Gtk::manage(widgetmm));
+    widgetmm->show_all();
 
-		g_timeout_add(1000 / jalv->ui_update_hz,
-		              reinterpret_cast<GSourceFunc>(jalv_update),
-		              jalv);
-	} else {
-		Gtk::Button* button = Gtk::manage(new Gtk::Button("Close"));
-		window->add(*Gtk::manage(button));
-	}
+    g_timeout_add(1000 / jalv->ui_update_hz,
+                  reinterpret_cast<GSourceFunc>(jalv_update),
+                  jalv);
+  } else {
+    Gtk::Button* button = Gtk::manage(new Gtk::Button("Close"));
+    window->add(*Gtk::manage(button));
+  }
 
-	jalv_init_ui(jalv);
+  jalv_init_ui(jalv);
 
-	window->set_resizable(jalv_ui_is_resizable(jalv));
-	window->show_all();
+  window->set_resizable(jalv_ui_is_resizable(jalv));
+  window->show_all();
 
-	Gtk::Main::run(*window);
+  Gtk::Main::run(*window);
 
-	delete window;
-	delete jalv_gtk_main;
-	zix_sem_post(&jalv->done);
+  delete window;
+  delete jalv_gtk_main;
+  zix_sem_post(&jalv->done);
 
-	return 0;
+  return 0;
 }
 
 int
 jalv_close_ui(Jalv*)
 {
-	Gtk::Main::quit();
-	return 0;
+  Gtk::Main::quit();
+  return 0;
 }
