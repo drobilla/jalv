@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from waflib import Build, Logs, Options
+import os
+
+from waflib import Build, Logs, Options, Utils
 from waflib.extras import autowaf as autowaf
 
 # Version of this package (even if built as a child)
@@ -290,6 +292,15 @@ def build(bld):
                   lib          = ['pthread', 'm'],
                   uselib       = libs + ' GTK3',
                   install_path = '${BINDIR}')
+
+        bld(features         = 'subst',
+            source           = 'jalv.desktop.in',
+            target           = 'jalv.desktop',
+            install_path     = '${DATADIR}/applications',
+            chmod            = Utils.O644,
+            BINDIR           = os.path.normpath(bld.env.BINDIR),
+            APP_INSTALL_NAME = 'jalv.gtk3',
+            APP_HUMAN_NAME   = 'Jalv')
 
     # Gtkmm version
     if bld.env.HAVE_GTKMM2:
