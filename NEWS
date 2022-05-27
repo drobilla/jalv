@@ -1,5 +1,6 @@
 jalv (1.6.7) unstable;
 
+  * Add Gtk plugin selector UI and desktop file
   * Add missing option in console help output
   * Add version option to console executable
   * Build Qt and Gtkmm versions as C++14
@@ -9,7 +10,7 @@ jalv (1.6.7) unstable;
   * Flush stdout after printing control values in console interface
   * Remove Qt4 support
 
- -- David Robillard <d@drobilla.net>  Fri, 27 May 2022 18:42:52 +0000
+ -- David Robillard <d@drobilla.net>  Fri, 27 May 2022 22:56:00 +0000
 
 jalv (1.6.6) stable;
 
