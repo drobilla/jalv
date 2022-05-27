@@ -860,7 +860,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   sratom_set_env(jalv->sratom, jalv->env);
   sratom_set_env(jalv->ui_sratom, jalv->env);
 
-#define MAP_URI(uri) symap_map(jalv->symap, (uri));
+#define MAP_URI(uri) symap_map(jalv->symap, (uri))
 
   jalv->urids.atom_Float           = MAP_URI(LV2_ATOM__Float);
   jalv->urids.atom_Int             = MAP_URI(LV2_ATOM__Int);
