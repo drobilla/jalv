@@ -1,5 +1,5 @@
 /*
-  Copyright 2011-2014 David Robillard <d@drobilla.net>
+  Copyright 2011-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -100,7 +100,9 @@ symap_search(const Symap* map, const char* sym, bool* exact)
 	*exact = false;
 	if (map->size == 0) {
 		return 0;  // Empty map, insert at 0
-	} else if (strcmp(map->symbols[map->index[map->size - 1] - 1], sym) < 0) {
+	}
+
+	if (strcmp(map->symbols[map->index[map->size - 1] - 1], sym) < 0) {
 		return map->size;  // Greater than last element, append
 	}
 
@@ -116,7 +118,9 @@ symap_search(const Symap* map, const char* sym, bool* exact)
 		if (cmp == 0) {
 			*exact = true;
 			return i;
-		} else if (cmp > 0) {
+		}
+
+		if (cmp > 0) {
 			if (i == 0) {
 				break;  // Avoid underflow
 			}
@@ -178,9 +182,12 @@ symap_unmap(Symap* map, uint32_t id)
 {
 	if (id == 0) {
 		return NULL;
-	} else if (id <= map->size) {
+	}
+
+	if (id <= map->size) {
 		return map->symbols[id - 1];
 	}
+
 	return NULL;
 }
 

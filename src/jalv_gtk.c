@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2017 David Robillard <d@drobilla.net>
+  Copyright 2007-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -551,13 +551,20 @@ get_atom_double(Jalv*       jalv,
 {
 	if (type == jalv->forge.Int || type == jalv->forge.Bool) {
 		return *(const int32_t*)body;
-	} else if (type == jalv->forge.Long) {
+	}
+
+	if (type == jalv->forge.Long) {
 		return *(const int64_t*)body;
-	} else if (type == jalv->forge.Float) {
+	}
+
+	if (type == jalv->forge.Float) {
 		return *(const float*)body;
-	} else if (type == jalv->forge.Double) {
+	}
+
+	if (type == jalv->forge.Double) {
 		return *(const double*)body;
 	}
+
 	return NAN;
 }
 
@@ -623,7 +630,9 @@ patch_set_get(Jalv*                  jalv,
 	if (!*property) {
 		fprintf(stderr, "patch:Set message with no property\n");
 		return 1;
-	} else if ((*property)->atom.type != jalv->forge.URID) {
+	}
+
+	if ((*property)->atom.type != jalv->forge.URID) {
 		fprintf(stderr, "patch:Set property is not a URID\n");
 		return 1;
 	}
@@ -642,7 +651,9 @@ patch_put_get(Jalv*                   jalv,
 	if (!*body) {
 		fprintf(stderr, "patch:Put message with no body\n");
 		return 1;
-	} else if (!lv2_atom_forge_is_object_type(&jalv->forge, (*body)->atom.type)) {
+	}
+
+	if (!lv2_atom_forge_is_object_type(&jalv->forge, (*body)->atom.type)) {
 		fprintf(stderr, "patch:Put body is not an object\n");
 		return 1;
 	}
@@ -661,7 +672,9 @@ on_request_value(LV2UI_Feature_Handle      handle,
 
 	if (!control) {
 		return LV2UI_REQUEST_VALUE_ERR_UNKNOWN;
-	} else if (control->value_type != jalv->forge.Path) {
+	}
+
+	if (control->value_type != jalv->forge.Path) {
 		return LV2UI_REQUEST_VALUE_ERR_UNSUPPORTED;
 	}
 
@@ -710,16 +723,22 @@ jalv_ui_port_event(Jalv*       jalv,
 		suil_instance_port_event(jalv->ui_instance, port_index,
 		                         buffer_size, protocol, buffer);
 		return;
-	} else if (protocol == 0 && (Controller*)jalv->ports[port_index].widget) {
+	}
+
+	if (protocol == 0 && (Controller*)jalv->ports[port_index].widget) {
 		control_changed(jalv,
 		                (Controller*)jalv->ports[port_index].widget,
 		                buffer_size,
 		                jalv->forge.Float,
 		                buffer);
 		return;
-	} else if (protocol == 0) {
+	}
+
+	if (protocol == 0) {
 		return;  // No widget (probably notOnGUI)
-	} else if (protocol != jalv->urids.atom_eventTransfer) {
+	}
+
+	if (protocol != jalv->urids.atom_eventTransfer) {
 		fprintf(stderr, "Unknown port event protocol\n");
 		return;
 	}
@@ -1140,14 +1159,14 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 		gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 0, 0, 8, 8);
 		gtk_container_add(GTK_CONTAINER(alignment), port_table);
 		return alignment;
-	} else {
-		gtk_widget_destroy(port_table);
-		GtkWidget* button = gtk_button_new_with_label("Close");
-		g_signal_connect_swapped(button, "clicked",
-		                         G_CALLBACK(gtk_widget_destroy), window);
-		gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
-		return button;
 	}
+
+	gtk_widget_destroy(port_table);
+	GtkWidget* button = gtk_button_new_with_label("Close");
+	g_signal_connect_swapped(button, "clicked",
+	                         G_CALLBACK(gtk_widget_destroy), window);
+	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
+	return button;
 }
 
 static void

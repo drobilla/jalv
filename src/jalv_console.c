@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <d@drobilla.net>
+  Copyright 2007-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -76,7 +76,9 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 	for (; a < *argc && (*argv)[a][0] == '-'; ++a) {
 		if ((*argv)[a][1] == 'h') {
 			return print_usage((*argv)[0], true);
-		} else if ((*argv)[a][1] == 's') {
+		}
+
+		if ((*argv)[a][1] == 's') {
 			opts->show_ui = true;
 		} else if ((*argv)[a][1] == 'p') {
 			opts->print_controls = true;

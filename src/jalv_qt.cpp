@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <d@drobilla.net>
+  Copyright 2007-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -134,9 +134,9 @@ FlowLayout::horizontalSpacing() const
 {
 	if (m_hSpace >= 0) {
 		return m_hSpace;
-	} else {
-		return smartSpacing(QStyle::PM_LayoutHorizontalSpacing);
 	}
+
+	return smartSpacing(QStyle::PM_LayoutHorizontalSpacing);
 }
 
 int
@@ -144,9 +144,9 @@ FlowLayout::verticalSpacing() const
 {
 	if (m_vSpace >= 0) {
 		return m_vSpace;
-	} else {
-		return smartSpacing(QStyle::PM_LayoutVerticalSpacing);
 	}
+
+	return smartSpacing(QStyle::PM_LayoutVerticalSpacing);
 }
 
 int
@@ -166,9 +166,9 @@ FlowLayout::takeAt(int index)
 {
 	if (index >= 0 && index < itemList.size()) {
 		return itemList.takeAt(index);
-	} else {
-		return nullptr;
 	}
+
+	return nullptr;
 }
 
 Qt::Orientations
@@ -273,12 +273,14 @@ FlowLayout::smartSpacing(QStyle::PixelMetric pm) const
 	QObject* parent = this->parent();
 	if (!parent) {
 		return -1;
-	} else if (parent->isWidgetType()) {
+	}
+
+	if (parent->isWidgetType()) {
 		QWidget* pw = static_cast<QWidget*>(parent);
 		return pw->style()->pixelMetric(pm, nullptr, pw);
-	} else {
-		return static_cast<QLayout*>(parent)->spacing();
 	}
+
+	return static_cast<QLayout*>(parent)->spacing();
 }
 
 class PresetAction : public QAction
@@ -575,13 +577,17 @@ Control::getValue()
 {
 	if (isEnum) {
 		return scalePoints[dial->value()];
-	} else if (isInteger) {
-		return dial->value();
-	} else if (isLogarithmic) {
-		return min * powf(max / min, (float)dial->value() / (steps - 1));
-	} else {
-		return (float)dial->value() / steps;
 	}
+
+	if (isInteger) {
+		return dial->value();
+	}
+
+	if (isLogarithmic) {
+		return min * powf(max / min, (float)dial->value() / (steps - 1));
+	}
+
+	return (float)dial->value() / steps;
 }
 
 int

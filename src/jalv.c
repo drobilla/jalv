@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <d@drobilla.net>
+  Copyright 2007-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -614,10 +614,10 @@ jalv_send_to_ui(Jalv*       jalv,
 		zix_ring_write(jalv->plugin_events, evbuf, sizeof(evbuf));
 		zix_ring_write(jalv->plugin_events, (const char*)body, size);
 		return true;
-	} else {
-		fprintf(stderr, "Plugin => UI buffer overflow!\n");
-		return false;
 	}
+
+	fprintf(stderr, "Plugin => UI buffer overflow!\n");
+	return false;
 }
 
 bool

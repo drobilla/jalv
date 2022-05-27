@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <d@drobilla.net>
+  Copyright 2007-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -32,9 +32,12 @@ scale_point_cmp(const ScalePoint* a, const ScalePoint* b)
 {
 	if (a->value < b->value) {
 		return -1;
-	} else if (a->value == b->value) {
+	}
+
+	if (a->value == b->value) {
 		return 0;
 	}
+
 	return 1;
 }
 
