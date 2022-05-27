@@ -1347,12 +1347,8 @@ jalv_close(Jalv* const jalv)
   }
   free(jalv->controls.controls);
 
-  if (jalv->sratom) {
-    sratom_free(jalv->sratom);
-  }
-  if (jalv->ui_sratom) {
-    sratom_free(jalv->ui_sratom);
-  }
+  sratom_free(jalv->sratom);
+  sratom_free(jalv->ui_sratom);
   lilv_uis_free(jalv->uis);
   lilv_world_free(jalv->world);
 
