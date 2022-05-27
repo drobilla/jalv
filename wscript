@@ -161,8 +161,7 @@ def configure(conf):
                 conf.env.HAVE_GTK3 or
                 conf.env.HAVE_QT5)
 
-    if have_gui:
-        conf.check_pkg('suil-0 >= 0.10.0', uselib_store='SUIL')
+    conf.check_pkg('suil-0 >= 0.10.0', uselib_store='SUIL')
 
     if conf.env.HAVE_JACK:
         conf.check_function(
