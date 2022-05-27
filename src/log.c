@@ -14,10 +14,17 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#define _POSIX_C_SOURCE 200809L
+
+#include "jalv_config.h"
 #include "jalv_internal.h"
 
 #include "lv2/log/log.h"
 #include "lv2/urid/urid.h"
+
+#ifdef HAVE_ISATTY
+#  include <unistd.h>
+#endif
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -59,4 +66,26 @@ jalv_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap)
   }
 
   return st;
+}
+
+bool
+jalv_ansi_start(FILE* stream, int color)
+{
+#if defined(HAVE_ISATTY) && defined(HAVE_FILENO)
+  if (isatty(fileno(stream))) {
+    return fprintf(stream, "\033[0;%dm", color);
+  }
+#endif
+  return 0;
+}
+
+void
+jalv_ansi_reset(FILE* stream)
+{
+#ifdef HAVE_ISATTY
+  if (isatty(fileno(stream))) {
+    fprintf(stream, "\033[0m");
+    fflush(stream);
+  }
+#endif
 }

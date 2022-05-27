@@ -17,8 +17,6 @@
 #ifndef JALV_INTERNAL_H
 #define JALV_INTERNAL_H
 
-#define _POSIX_C_SOURCE 200809L
-
 #include "jalv_config.h"
 #include "lv2_evbuf.h"
 #include "symap.h"
@@ -44,10 +42,6 @@
 #include "lv2/ui/ui.h"
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
-
-#ifdef HAVE_ISATTY
-#  include <unistd.h>
-#endif
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -531,27 +525,11 @@ JALV_LOG_FUNC(3, 0)
 int
 jalv_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap);
 
-static inline bool
-jalv_ansi_start(FILE* stream, int color)
-{
-#if defined(HAVE_ISATTY) && defined(HAVE_FILENO)
-  if (isatty(fileno(stream))) {
-    return fprintf(stream, "\033[0;%dm", color);
-  }
-#endif
-  return 0;
-}
+bool
+jalv_ansi_start(FILE* stream, int color);
 
-static inline void
-jalv_ansi_reset(FILE* stream)
-{
-#ifdef HAVE_ISATTY
-  if (isatty(fileno(stream))) {
-    fprintf(stream, "\033[0m");
-    fflush(stream);
-  }
-#endif
-}
+void
+jalv_ansi_reset(FILE* stream);
 
 #ifdef __cplusplus
 } // extern "C"
