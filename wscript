@@ -28,7 +28,6 @@ def options(ctx):
         {'portaudio':       'use PortAudio backend, not JACK',
          'no-gui':          'do not build any GUIs',
          'no-gtk':          'do not build Gtk GUI',
-         'no-gtkmm':        'do not build Gtkmm GUI',
          'no-gtk2':         'do not build Gtk2 GUI',
          'no-gtk3':         'do not build Gtk3 GUI',
          'no-qt':           'do not build Qt GUI',
@@ -136,11 +135,6 @@ def configure(conf):
                            uselib_store='GTK2',
                            system=True,
                            mandatory=False)
-        if not Options.options.no_gtkmm:
-            conf.check_pkg('gtkmm-2.4 >= 2.20.0',
-                           uselib_store='GTKMM2',
-                           system=True,
-                           mandatory=False)
         if not Options.options.no_gtk3:
             conf.check_pkg('gtk+-3.0 >= 3.0.0',
                            uselib_store='GTK3',
@@ -158,10 +152,7 @@ def configure(conf):
                                          mandatory=False):
                     conf.find_program('moc', var='MOC5')
 
-    have_gui = (conf.env.HAVE_GTK2 or
-                conf.env.HAVE_GTKMM2 or
-                conf.env.HAVE_GTK3 or
-                conf.env.HAVE_QT5)
+    have_gui = (conf.env.HAVE_GTK2 or conf.env.HAVE_GTK3 or conf.env.HAVE_QT5)
 
     conf.check_pkg('suil-0 >= 0.10.0', uselib_store='SUIL')
 
@@ -231,7 +222,6 @@ def configure(conf):
          'Jack metadata support': conf.is_defined('HAVE_JACK_METADATA'),
          'Gtk 2.0 support': bool(conf.env.HAVE_GTK2),
          'Gtk 3.0 support': bool(conf.env.HAVE_GTK3),
-         'Gtkmm 2.0 support': bool(conf.env.HAVE_GTKMM2),
          'Qt 5.0 support': bool(conf.env.HAVE_QT5),
          'Color output': bool(conf.env.JALV_WITH_COLOR)})
 
@@ -301,16 +291,6 @@ def build(bld):
             BINDIR           = os.path.normpath(bld.env.BINDIR),
             APP_INSTALL_NAME = 'jalv.gtk3',
             APP_HUMAN_NAME   = 'Jalv')
-
-    # Gtkmm version
-    if bld.env.HAVE_GTKMM2:
-        obj = bld(features     = 'c cxx cxxprogram',
-                  source       = source + ' src/jalv_gtkmm2.cpp',
-                  target       = 'jalv.gtkmm',
-                  includes     = ['.', 'src'],
-                  lib          = ['pthread'],
-                  uselib       = libs + ' GTKMM2',
-                  install_path = '${BINDIR}')
 
     # Qt5 version
     if bld.env.HAVE_QT5:

@@ -14,6 +14,6 @@ testing.  It runs plugins from the command line with no user interaction, is
 light enough to run with tools like sanitizers or valgrind, and is capable of
 dumping all communication between the plugin and its UI in a human readable
 format.  Plugin UIs can be tested in different host toolkits by using different
-executables: jalv, jalv.gtk, jalv.gtk3, jalv.gtkmm, and jalv.qt5.
+executables: jalv, jalv.gtk, jalv.gtk3, and jalv.qt5.
 
  -- David Robillard <d@drobilla.net>
