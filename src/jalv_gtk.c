@@ -47,7 +47,7 @@ LV2_DISABLE_DEPRECATION_WARNINGS
 static GtkCheckMenuItem* active_preset_item = NULL;
 static bool              updating           = false;
 
-/** Widget for a control. */
+/// Widget for a control
 typedef struct {
   GtkSpinButton* spin;
   GtkWidget*     control;
@@ -1186,14 +1186,14 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 {
   GtkWidget* port_table = gtk_table_new(jalv->num_ports, 3, false);
 
-  /* Make an array of controls sorted by group */
+  // Make an array of controls sorted by group
   GArray* controls = g_array_new(FALSE, TRUE, sizeof(ControlID*));
   for (unsigned i = 0; i < jalv->controls.n_controls; ++i) {
     g_array_append_vals(controls, &jalv->controls.controls[i], 1);
   }
   g_array_sort_with_data(controls, control_group_cmp, jalv);
 
-  /* Add controls in group order */
+  // Add controls in group order
   LilvNode* last_group = NULL;
   int       n_rows     = 0;
   for (size_t i = 0; i < controls->len; ++i) {
@@ -1201,7 +1201,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
     Controller* controller = NULL;
     LilvNode*   group      = record->group;
 
-    /* Check group and add new heading if necessary */
+    // Check group and add new heading if necessary
     if (group && !lilv_node_equals(group, last_group)) {
       LilvNode* group_name =
         lilv_world_get(jalv->world, group, jalv->nodes.lv2_name, NULL);
@@ -1221,7 +1221,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
     }
     last_group = group;
 
-    /* Make control widget */
+    // Make control widget
     if (record->value_type == jalv->forge.String) {
       controller = make_entry(record);
     } else if (record->value_type == jalv->forge.Path) {
@@ -1236,14 +1236,14 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
       jalv->ports[record->index].widget = controller;
     }
     if (controller) {
-      /* Add row to table for this controller */
+      // Add row to table for this controller
       add_control_row(port_table,
                       n_rows++,
                       (record->label ? lilv_node_as_string(record->label)
                                      : lilv_node_as_uri(record->node)),
                       controller);
 
-      /* Set tooltip text from comment, if available */
+      // Set tooltip text from comment, if available
       LilvNode* comment = lilv_world_get(
         jalv->world, record->node, jalv->nodes.rdfs_comment, NULL);
       if (comment) {
@@ -1378,12 +1378,12 @@ jalv_open_ui(Jalv* jalv)
     build_menu(jalv, window, vbox);
   }
 
-  /* Create/show alignment to contain UI (whether custom or generic) */
+  // Create/show alignment to contain UI (whether custom or generic)
   GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);
   gtk_box_pack_start(GTK_BOX(vbox), alignment, TRUE, TRUE, 0);
   gtk_widget_show(alignment);
 
-  /* Attempt to instantiate custom UI if necessary */
+  // Attempt to instantiate custom UI if necessary
   if (jalv->ui && !jalv->opts.generic_ui) {
     jalv_ui_instantiate(jalv, jalv_native_ui_type(), alignment);
   }

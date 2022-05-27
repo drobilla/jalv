@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <d@drobilla.net>
+  Copyright 2007-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -46,15 +46,15 @@ struct JalvBackend {
   bool           is_internal_client; ///< Running inside jackd
 };
 
-/** Internal Jack client initialization entry point */
+/// Internal Jack client initialization entry point
 int
 jack_initialize(jack_client_t* client, const char* load_init);
 
-/** Internal Jack client finalization entry point */
+/// Internal Jack client finalization entry point
 void
 jack_finish(void* arg);
 
-/** Jack buffer size callback. */
+/// Jack buffer size callback
 static int
 jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 {
@@ -69,7 +69,7 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
   return 0;
 }
 
-/** Jack shutdown callback. */
+/// Jack shutdown callback
 static void
 jack_shutdown_cb(void* data)
 {
@@ -78,19 +78,19 @@ jack_shutdown_cb(void* data)
   zix_sem_post(&jalv->done);
 }
 
-/** Jack process callback. */
+/// Jack process callback
 static REALTIME int
 jack_process_cb(jack_nframes_t nframes, void* data)
 {
   Jalv* const    jalv   = (Jalv*)data;
   jack_client_t* client = jalv->backend->client;
 
-  /* Get Jack transport position */
+  // Get Jack transport position
   jack_position_t pos;
   const bool      rolling =
     (jack_transport_query(client, &pos) == JackTransportRolling);
 
-  /* If transport state is not as expected, then something has changed */
+  // If transport state is not as expected, then something has changed
   const bool xport_changed =
     (rolling != jalv->rolling || pos.frame != jalv->position ||
      pos.beats_per_minute != jalv->bpm);
@@ -98,7 +98,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   uint8_t   pos_buf[256];
   LV2_Atom* lv2_pos = (LV2_Atom*)pos_buf;
   if (xport_changed) {
-    /* Build an LV2 position object to report change to plugin */
+    // Build an LV2 position object to report change to plugin
     lv2_atom_forge_set_buffer(&jalv->forge, pos_buf, sizeof(pos_buf));
     LV2_Atom_Forge*      forge = &jalv->forge;
     LV2_Atom_Forge_Frame frame;
@@ -137,7 +137,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     }
   }
 
-  /* Update transport state to expected values for next cycle */
+  // Update transport state to expected values for next cycle
   jalv->position = rolling ? pos.frame + nframes : pos.frame;
   jalv->bpm      = pos.beats_per_minute;
   jalv->rolling  = rolling;
@@ -164,23 +164,23 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     break;
   }
 
-  /* Prepare port buffers */
+  // Prepare port buffers
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
     struct Port* port = &jalv->ports[p];
     if (port->type == TYPE_AUDIO && port->sys_port) {
-      /* Connect plugin port directly to Jack port buffer */
+      // Connect plugin port directly to Jack port buffer
       lilv_instance_connect_port(
         jalv->instance, p, jack_port_get_buffer(port->sys_port, nframes));
 #ifdef HAVE_JACK_METADATA
     } else if (port->type == TYPE_CV && port->sys_port) {
-      /* Connect plugin port directly to Jack port buffer */
+      // Connect plugin port directly to Jack port buffer
       lilv_instance_connect_port(
         jalv->instance, p, jack_port_get_buffer(port->sys_port, nframes));
 #endif
     } else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
       lv2_evbuf_reset(port->evbuf, true);
 
-      /* Write transport change event if applicable */
+      // Write transport change event if applicable
       LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
       if (xport_changed) {
         lv2_evbuf_write(&iter,
@@ -192,7 +192,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       }
 
       if (jalv->request_update) {
-        /* Plugin state has changed, request an update */
+        // Plugin state has changed, request an update
         const LV2_Atom_Object get = {
           {sizeof(LV2_Atom_Object_Body), jalv->urids.atom_Object},
           {0, jalv->urids.patch_Get}};
@@ -205,7 +205,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       }
 
       if (port->sys_port) {
-        /* Write Jack MIDI input */
+        // Write Jack MIDI input
         void* buf = jack_port_get_buffer(port->sys_port, nframes);
         for (uint32_t i = 0; i < jack_midi_get_event_count(buf); ++i) {
           jack_midi_event_t ev;
@@ -215,16 +215,16 @@ jack_process_cb(jack_nframes_t nframes, void* data)
         }
       }
     } else if (port->type == TYPE_EVENT) {
-      /* Clear event output for plugin to write to */
+      // Clear event output for plugin to write to
       lv2_evbuf_reset(port->evbuf, false);
     }
   }
   jalv->request_update = false;
 
-  /* Run plugin for this cycle */
+  // Run plugin for this cycle
   const bool send_ui_updates = jalv_run(jalv, nframes);
 
-  /* Deliver MIDI output and UI events */
+  // Deliver MIDI output and UI events
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
     struct Port* const port = &jalv->ports[p];
     if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
@@ -279,7 +279,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   return 0;
 }
 
-/** Calculate latency assuming all ports depend on each other. */
+/// Calculate latency assuming all ports depend on each other
 static void
 jack_latency_cb(jack_latency_callback_mode_t mode, void* data)
 {
@@ -287,7 +287,7 @@ jack_latency_cb(jack_latency_callback_mode_t mode, void* data)
   const enum PortFlow flow =
     ((mode == JackCaptureLatency) ? FLOW_INPUT : FLOW_OUTPUT);
 
-  /* First calculate the min/max latency of all feeding ports */
+  // First calculate the min/max latency of all feeding ports
   uint32_t             ports_found = 0;
   jack_latency_range_t range       = {UINT32_MAX, 0};
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
@@ -309,11 +309,11 @@ jack_latency_cb(jack_latency_callback_mode_t mode, void* data)
     range.min = 0;
   }
 
-  /* Add the plugin's own latency */
+  // Add the plugin's own latency
   range.min += jalv->plugin_latency;
   range.max += jalv->plugin_latency;
 
-  /* Tell Jack about it */
+  // Tell Jack about it
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
     struct Port* port = &jalv->ports[p];
     if (port->sys_port && port->flow == flow) {
@@ -327,24 +327,24 @@ jack_create_client(Jalv* jalv)
 {
   jack_client_t* client = NULL;
 
-  /* Determine the name of the JACK client */
+  // Determine the name of the JACK client
   char* jack_name = NULL;
   if (jalv->opts.name) {
-    /* Name given on command line */
+    // Name given on command line
     jack_name = jalv_strdup(jalv->opts.name);
   } else {
-    /* Use plugin name */
+    // Use plugin name
     LilvNode* name = lilv_plugin_get_name(jalv->plugin);
     jack_name      = jalv_strdup(lilv_node_as_string(name));
     lilv_node_free(name);
   }
 
-  /* Truncate client name to suit JACK if necessary */
+  // Truncate client name to suit JACK if necessary
   if (strlen(jack_name) >= (unsigned)jack_client_name_size() - 1) {
     jack_name[jack_client_name_size() - 1] = '\0';
   }
 
-  /* Connect to JACK */
+  // Connect to JACK
   if (!client) {
     client = jack_client_open(
       jack_name,
@@ -369,7 +369,7 @@ jalv_backend_init(Jalv* jalv)
 
   printf("JACK Name:    %s\n", jack_get_client_name(client));
 
-  /* Set audio engine properties */
+  // Set audio engine properties
   jalv->sample_rate   = (float)jack_get_sample_rate(client);
   jalv->block_length  = jack_get_buffer_size(client);
   jalv->midi_buf_size = 4096;
@@ -378,7 +378,7 @@ jalv_backend_init(Jalv* jalv)
     jack_port_type_get_buffer_size(client, JACK_DEFAULT_MIDI_TYPE);
 #endif
 
-  /* Set JACK callbacks */
+  // Set JACK callbacks
   void* const arg = (void*)jalv;
   jack_set_process_callback(client, &jack_process_cb, arg);
   jack_set_buffer_size_callback(client, &jack_buffer_size_cb, arg);
@@ -386,12 +386,12 @@ jalv_backend_init(Jalv* jalv)
   jack_set_latency_callback(client, &jack_latency_cb, arg);
 
   if (jalv->backend) {
-    /* Internal JACK client, jalv->backend->is_internal_client was already
-       set in jack_initialize() when allocating the backend */
+    /* Internal JACK client, jalv->backend->is_internal_client was already set
+       in jack_initialize() when allocating the backend. */
     return jalv->backend;
   }
 
-  /* External JACK client, allocate and return opaque backend */
+  // External JACK client, allocate and return opaque backend
   JalvBackend* backend        = (JalvBackend*)calloc(1, sizeof(JalvBackend));
   backend->client             = client;
   backend->is_internal_client = false;
@@ -433,17 +433,17 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 
   const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
 
-  /* Connect unsupported ports to NULL (known to be optional by this point) */
+  // Connect unsupported ports to NULL (known to be optional by this point)
   if (port->flow == FLOW_UNKNOWN || port->type == TYPE_UNKNOWN) {
     lilv_instance_connect_port(jalv->instance, port_index, NULL);
     return;
   }
 
-  /* Build Jack flags for port */
+  // Build Jack flags for port
   enum JackPortFlags jack_flags =
     (port->flow == FLOW_INPUT) ? JackPortIsInput : JackPortIsOutput;
 
-  /* Connect the port based on its type */
+  // Connect the port based on its type
   switch (port->type) {
   case TYPE_CONTROL:
     lilv_instance_connect_port(jalv->instance, port_index, &port->control);
@@ -524,12 +524,12 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
   jalv->backend->client             = client;
   jalv->backend->is_internal_client = true;
 
-  /* Build full command line with "program" name for building argv */
+  // Build full command line with "program" name for building argv
   const size_t cmd_len = strlen("jalv ") + args_len;
   char* const  cmd     = (char*)calloc(cmd_len + 1, 1);
   snprintf(cmd, cmd_len + 1, "jalv %s", load_init);
 
-  /* Build argv */
+  // Build argv
   int    argc = 0;
   char** argv = NULL;
   char*  tok  = cmd;

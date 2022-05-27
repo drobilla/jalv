@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <d@drobilla.net>
+  Copyright 2007-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -94,9 +94,9 @@ struct Port {
   float           control;   ///< For control ports, otherwise 0.0f
 };
 
-/* Controls */
+// Controls
 
-/** Type of plugin control. */
+/// Type of plugin control
 typedef enum {
   PORT,    ///< Control port
   PROPERTY ///< Property (set via atom message)
@@ -107,11 +107,11 @@ typedef struct {
   char* label;
 } ScalePoint;
 
-/** Order scale points by value. */
+/// Order scale points by value
 int
 scale_point_cmp(const ScalePoint* a, const ScalePoint* b);
 
-/** Plugin control. */
+/// Plugin control
 typedef struct {
   Jalv*       jalv;
   ControlType type;
@@ -153,9 +153,7 @@ add_control(Controls* controls, ControlID* control);
 ControlID*
 get_property_control(const Controls* controls, LV2_URID property);
 
-/**
-   Control change event, sent through ring buffers for UI updates.
-*/
+/// Control change event, sent through ring buffers for UI updates
 typedef struct {
   uint32_t index;
   uint32_t protocol;
@@ -370,7 +368,7 @@ jalv_backend_deactivate(Jalv* jalv);
 void
 jalv_backend_close(Jalv* jalv);
 
-/** Expose a port to the system (if applicable) and connect it to its buffer. */
+/// Expose a port to the system (if applicable) and connect it to its buffer
 void
 jalv_backend_activate_port(Jalv* jalv, uint32_t port_index);
 

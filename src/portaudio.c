@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <d@drobilla.net>
+  Copyright 2007-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -35,7 +35,7 @@ pa_process_cb(const void*                     inputs,
 {
   Jalv* jalv = (Jalv*)handle;
 
-  /* Prepare port buffers */
+  // Prepare port buffers
   uint32_t in_index  = 0;
   uint32_t out_index = 0;
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
@@ -52,7 +52,7 @@ pa_process_cb(const void*                     inputs,
       lv2_evbuf_reset(port->evbuf, true);
 
       if (jalv->request_update) {
-        /* Plugin state has changed, request an update */
+        // Plugin state has changed, request an update
         const LV2_Atom_Object get = {
           {sizeof(LV2_Atom_Object_Body), jalv->urids.atom_Object},
           {0, jalv->urids.patch_Get}};
@@ -65,16 +65,16 @@ pa_process_cb(const void*                     inputs,
                         (const uint8_t*)LV2_ATOM_BODY(&get));
       }
     } else if (port->type == TYPE_EVENT) {
-      /* Clear event output for plugin to write to */
+      // Clear event output for plugin to write to
       lv2_evbuf_reset(port->evbuf, false);
     }
   }
   jalv->request_update = false;
 
-  /* Run plugin for this cycle */
+  // Run plugin for this cycle
   const bool send_ui_updates = jalv_run(jalv, nframes);
 
-  /* Deliver UI events */
+  // Deliver UI events
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
     struct Port* const port = &jalv->ports[p];
     if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {

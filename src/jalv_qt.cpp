@@ -661,7 +661,7 @@ build_control_widget(Jalv* jalv)
       lilv_port_get(plugin, port->lilv_port, jalv->nodes.pg_group);
     if (group) {
       if (!lilv_node_equals(group, lastGroup)) {
-        /* Group has changed */
+        // Group has changed
         LilvNode* groupName =
           lilv_world_get(world, group, jalv->nodes.lv2_name, nullptr);
         if (!groupName) {

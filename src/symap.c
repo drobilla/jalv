@@ -38,20 +38,13 @@
 */
 
 struct SymapImpl {
-  /**
-     Unsorted array of strings, such that the symbol for ID i is found
-     at symbols[i - 1].
-  */
+  /// Unsorted array of strings, so symbols[i] is the symbol for ID i
   char** symbols;
 
-  /**
-     Array of IDs, sorted by corresponding string in `symbols`.
-  */
+  /// Array of IDs, sorted by corresponding string in `symbols`
   uint32_t* index;
 
-  /**
-     Number of symbols (number of items in `symbols` and `index`).
-  */
+  /// Number of symbols (number of items in `symbols` and `index`)
   uint32_t size;
 };
 
@@ -160,11 +153,11 @@ symap_map(Symap* map, const char* sym)
   const uint32_t id  = ++map->size;
   char* const    str = symap_strdup(sym);
 
-  /* Append new symbol to symbols array */
+  // Append new symbol to symbols array
   map->symbols         = (char**)realloc(map->symbols, map->size * sizeof(str));
   map->symbols[id - 1] = str;
 
-  /* Insert new index element into sorted index */
+  // Insert new index element into sorted index
   map->index = (uint32_t*)realloc(map->index, map->size * sizeof(uint32_t));
   if (index < map->size - 1) {
     memmove(map->index + index + 1,
@@ -237,4 +230,4 @@ main()
   return 0;
 }
 
-#endif /* STANDALONE */
+#endif // STANDALONE

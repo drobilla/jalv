@@ -72,7 +72,7 @@ new_port_control(Jalv* jalv, uint32_t index)
 
   lilv_port_get_range(plug, lport, &id->def, &id->min, &id->max);
   if (lilv_port_has_property(plug, lport, jalv->nodes.lv2_sampleRate)) {
-    /* Adjust range for lv2:sampleRate controls */
+    // Adjust range for lv2:sampleRate controls
     if (lilv_node_is_float(id->min) || lilv_node_is_int(id->min)) {
       const float min = lilv_node_as_float(id->min) * jalv->sample_rate;
       lilv_node_free(id->min);
@@ -85,7 +85,7 @@ new_port_control(Jalv* jalv, uint32_t index)
     }
   }
 
-  /* Get scale points */
+  // Get scale points
   LilvScalePoints* sp = lilv_port_get_scale_points(plug, lport);
   if (sp) {
     id->points =
@@ -102,7 +102,7 @@ new_port_control(Jalv* jalv, uint32_t index)
           strdup(lilv_node_as_string(lilv_scale_point_get_label(p)));
         ++np;
       }
-      /* TODO: Non-float scale points? */
+      // TODO: Non-float scale points?
     }
 
     qsort(id->points,
