@@ -1,9 +1,10 @@
 jalv (1.6.7) unstable;
 
+  * Build Qt and Gtkmm versions as C++14
   * Fix crash when running jalv without arguments
   * Remove Qt4 support
 
- -- David Robillard <d@drobilla.net>  Mon, 15 Feb 2021 15:18:55 +0000
+ -- David Robillard <d@drobilla.net>  Fri, 27 May 2022 16:34:40 +0000
 
 jalv (1.6.6) stable;
 
