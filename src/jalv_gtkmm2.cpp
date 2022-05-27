@@ -1,5 +1,5 @@
 /*
-  Copyright 2007-2016 David Robillard <d@drobilla.net>
+  Copyright 2007-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -80,14 +80,14 @@ jalv_ui_scale_factor(Jalv*)
 int
 jalv_open_ui(Jalv* jalv)
 {
-	Gtk::Window* window = new Gtk::Window();
+	auto* const window = new Gtk::Window();
 
 	if (jalv->ui) {
 		jalv_ui_instantiate(jalv, jalv_native_ui_type(), nullptr);
 	}
 
 	if (jalv->ui_instance) {
-		GtkWidget* widget = static_cast<GtkWidget*>(
+		auto* const widget = static_cast<GtkWidget*>(
 		    suil_instance_get_widget(jalv->ui_instance));
 
 		Gtk::Widget* widgetmm = Glib::wrap(widget);

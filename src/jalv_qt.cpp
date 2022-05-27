@@ -276,7 +276,7 @@ FlowLayout::smartSpacing(QStyle::PixelMetric pm) const
 	}
 
 	if (parent->isWidgetType()) {
-		QWidget* pw = static_cast<QWidget*>(parent);
+		auto* const pw = static_cast<QWidget*>(parent);
 		return pw->style()->pixelMetric(pm, nullptr, pw);
 	}
 
@@ -375,7 +375,7 @@ jalv_ui_port_event(Jalv*       jalv,
 		suil_instance_port_event(jalv->ui_instance, port_index,
 		                         buffer_size, protocol, buffer);
 	} else {
-		Control* control =
+		auto* const control =
 		    static_cast<Control*>(jalv->ports[port_index].widget);
 		if (control) {
 			control->setValue(*static_cast<const float*>(buffer));
@@ -402,7 +402,7 @@ add_preset_to_menu(Jalv*           jalv,
                    const LilvNode* title,
                    void*           data)
 {
-	QMenu*      menu  = static_cast<QMenu*>(data);
+	auto* const menu  = static_cast<QMenu*>(data);
 	const char* label = lilv_node_as_string(title);
 
 	QAction* action = new PresetAction(menu, jalv, lilv_node_duplicate(node));
@@ -479,7 +479,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	setValue(defaultValue);
 
 	// Fill layout
-	QVBoxLayout* layout = new QVBoxLayout();
+	auto* const layout = new QVBoxLayout();
 	layout->addWidget(label, 0, Qt::AlignHCenter);
 	layout->addWidget(dial, 0, Qt::AlignHCenter);
 	setLayout(layout);
@@ -500,7 +500,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 	// Set tooltip if comment is available
 	LilvNode* comment = lilv_port_get(plugin, lilvPort, nodes->rdfs_comment);
 	if (comment) {
-		QString* tooltip = new QString();
+		auto* const tooltip = new QString();
 		tooltip->append(lilv_node_as_string(comment));
 		setToolTip(*tooltip);
 	}
@@ -652,8 +652,8 @@ build_control_widget(Jalv* jalv)
 
 	std::sort(portContainers.begin(), portContainers.end(), portGroupLessThan);
 
-	QWidget*    grid       = new QWidget();
-	FlowLayout* flowLayout = new FlowLayout(-1, -1, -1);
+	auto* const grid       = new QWidget();
+	auto* const flowLayout = new FlowLayout(-1, -1, -1);
 	QLayout*    layout     = flowLayout;
 
 	LilvNode*    lastGroup   = nullptr;
@@ -662,8 +662,8 @@ build_control_widget(Jalv* jalv)
 		PortContainer portContainer = portContainers[i];
 		Port*         port          = portContainer.port;
 
-		Control*  control = new Control(portContainer, nullptr);
-		LilvNode* group   = lilv_port_get(
+		auto* const control = new Control(portContainer, nullptr);
+		LilvNode*   group   = lilv_port_get(
 			plugin, port->lilv_port, jalv->nodes.pg_group);
 		if (group) {
 			if (!lilv_node_equals(group, lastGroup)) {
@@ -675,7 +675,8 @@ build_control_widget(Jalv* jalv)
 					        world, group, jalv->nodes.rdfs_label, nullptr);
 				}
 
-				QGroupBox* groupBox = new QGroupBox(lilv_node_as_string(groupName));
+				auto* const groupBox =
+				    new QGroupBox(lilv_node_as_string(groupName));
 
 				groupLayout = new QHBoxLayout();
 				groupBox->setLayout(groupLayout);
@@ -720,10 +721,10 @@ jalv_ui_scale_factor(Jalv*)
 int
 jalv_open_ui(Jalv* jalv)
 {
-	QMainWindow* win          = new QMainWindow();
-	QMenu*       file_menu    = win->menuBar()->addMenu("&File");
-	QMenu*       presets_menu = win->menuBar()->addMenu("&Presets");
-	QAction*     quit_action  = new QAction("&Quit", win);
+	auto* const win          = new QMainWindow();
+	QMenu*      file_menu    = win->menuBar()->addMenu("&File");
+	QMenu*      presets_menu = win->menuBar()->addMenu("&Presets");
+	auto* const quit_action  = new QAction("&Quit", win);
 
 	QObject::connect(quit_action, SIGNAL(triggered()), win, SLOT(close()));
 	quit_action->setShortcuts(QKeySequence::Quit);
@@ -770,7 +771,7 @@ jalv_open_ui(Jalv* jalv)
 		            widget->height() + win->menuBar()->height());
 	}
 
-	Timer* timer = new Timer(jalv);
+	auto* const timer = new Timer(jalv);
 	timer->start(1000 / jalv->ui_update_hz);
 
 	int ret = app->exec();
