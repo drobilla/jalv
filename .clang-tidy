@@ -30,7 +30,6 @@ Checks: >
   -llvm-header-guard,
   -llvmlibc-*,
   -misc-no-recursion,
-  -modernize-return-braced-init-list,
   -modernize-use-trailing-return-type,
   -readability-function-cognitive-complexity,
   -readability-implicit-bool-conversion,

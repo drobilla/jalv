@@ -174,7 +174,7 @@ FlowLayout::takeAt(int index)
 Qt::Orientations
 FlowLayout::expandingDirections() const
 {
-	return Qt::Orientations();
+	return {};
 }
 
 bool
@@ -646,10 +646,7 @@ build_control_widget(Jalv* jalv)
 		}
 
 		if (jalv->ports[i].type == TYPE_CONTROL) {
-			PortContainer portContainer;
-			portContainer.jalv = jalv;
-			portContainer.port = &jalv->ports[i];
-			portContainers.append(portContainer);
+			portContainers.append(PortContainer{jalv, &jalv->ports[i]});
 		}
 	}
 
