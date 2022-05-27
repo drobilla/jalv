@@ -151,6 +151,8 @@ jalv_print_controls(Jalv* jalv, bool writable, bool readable)
       printf("%s = %f\n", lilv_node_as_string(control->symbol), port->control);
     }
   }
+
+  fflush(stdout);
 }
 
 static int
