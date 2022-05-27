@@ -860,42 +860,40 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   sratom_set_env(jalv->sratom, jalv->env);
   sratom_set_env(jalv->ui_sratom, jalv->env);
 
-  jalv->urids.atom_Float  = symap_map(jalv->symap, LV2_ATOM__Float);
-  jalv->urids.atom_Int    = symap_map(jalv->symap, LV2_ATOM__Int);
-  jalv->urids.atom_Object = symap_map(jalv->symap, LV2_ATOM__Object);
-  jalv->urids.atom_Path   = symap_map(jalv->symap, LV2_ATOM__Path);
-  jalv->urids.atom_String = symap_map(jalv->symap, LV2_ATOM__String);
-  jalv->urids.atom_eventTransfer =
-    symap_map(jalv->symap, LV2_ATOM__eventTransfer);
-  jalv->urids.bufsz_maxBlockLength =
-    symap_map(jalv->symap, LV2_BUF_SIZE__maxBlockLength);
-  jalv->urids.bufsz_minBlockLength =
-    symap_map(jalv->symap, LV2_BUF_SIZE__minBlockLength);
-  jalv->urids.bufsz_sequenceSize =
-    symap_map(jalv->symap, LV2_BUF_SIZE__sequenceSize);
-  jalv->urids.log_Error      = symap_map(jalv->symap, LV2_LOG__Error);
-  jalv->urids.log_Trace      = symap_map(jalv->symap, LV2_LOG__Trace);
-  jalv->urids.log_Warning    = symap_map(jalv->symap, LV2_LOG__Warning);
-  jalv->urids.midi_MidiEvent = symap_map(jalv->symap, LV2_MIDI__MidiEvent);
-  jalv->urids.param_sampleRate =
-    symap_map(jalv->symap, LV2_PARAMETERS__sampleRate);
-  jalv->urids.patch_Get        = symap_map(jalv->symap, LV2_PATCH__Get);
-  jalv->urids.patch_Put        = symap_map(jalv->symap, LV2_PATCH__Put);
-  jalv->urids.patch_Set        = symap_map(jalv->symap, LV2_PATCH__Set);
-  jalv->urids.patch_body       = symap_map(jalv->symap, LV2_PATCH__body);
-  jalv->urids.patch_property   = symap_map(jalv->symap, LV2_PATCH__property);
-  jalv->urids.patch_value      = symap_map(jalv->symap, LV2_PATCH__value);
-  jalv->urids.time_Position    = symap_map(jalv->symap, LV2_TIME__Position);
-  jalv->urids.time_bar         = symap_map(jalv->symap, LV2_TIME__bar);
-  jalv->urids.time_barBeat     = symap_map(jalv->symap, LV2_TIME__barBeat);
-  jalv->urids.time_beatUnit    = symap_map(jalv->symap, LV2_TIME__beatUnit);
-  jalv->urids.time_beatsPerBar = symap_map(jalv->symap, LV2_TIME__beatsPerBar);
-  jalv->urids.time_beatsPerMinute =
-    symap_map(jalv->symap, LV2_TIME__beatsPerMinute);
-  jalv->urids.time_frame     = symap_map(jalv->symap, LV2_TIME__frame);
-  jalv->urids.time_speed     = symap_map(jalv->symap, LV2_TIME__speed);
-  jalv->urids.ui_scaleFactor = symap_map(jalv->symap, LV2_UI__scaleFactor);
-  jalv->urids.ui_updateRate  = symap_map(jalv->symap, LV2_UI__updateRate);
+#define MAP_URI(uri) symap_map(jalv->symap, (uri));
+
+  jalv->urids.atom_Float           = MAP_URI(LV2_ATOM__Float);
+  jalv->urids.atom_Int             = MAP_URI(LV2_ATOM__Int);
+  jalv->urids.atom_Object          = MAP_URI(LV2_ATOM__Object);
+  jalv->urids.atom_Path            = MAP_URI(LV2_ATOM__Path);
+  jalv->urids.atom_String          = MAP_URI(LV2_ATOM__String);
+  jalv->urids.atom_eventTransfer   = MAP_URI(LV2_ATOM__eventTransfer);
+  jalv->urids.bufsz_maxBlockLength = MAP_URI(LV2_BUF_SIZE__maxBlockLength);
+  jalv->urids.bufsz_minBlockLength = MAP_URI(LV2_BUF_SIZE__minBlockLength);
+  jalv->urids.bufsz_sequenceSize   = MAP_URI(LV2_BUF_SIZE__sequenceSize);
+  jalv->urids.log_Error            = MAP_URI(LV2_LOG__Error);
+  jalv->urids.log_Trace            = MAP_URI(LV2_LOG__Trace);
+  jalv->urids.log_Warning          = MAP_URI(LV2_LOG__Warning);
+  jalv->urids.midi_MidiEvent       = MAP_URI(LV2_MIDI__MidiEvent);
+  jalv->urids.param_sampleRate     = MAP_URI(LV2_PARAMETERS__sampleRate);
+  jalv->urids.patch_Get            = MAP_URI(LV2_PATCH__Get);
+  jalv->urids.patch_Put            = MAP_URI(LV2_PATCH__Put);
+  jalv->urids.patch_Set            = MAP_URI(LV2_PATCH__Set);
+  jalv->urids.patch_body           = MAP_URI(LV2_PATCH__body);
+  jalv->urids.patch_property       = MAP_URI(LV2_PATCH__property);
+  jalv->urids.patch_value          = MAP_URI(LV2_PATCH__value);
+  jalv->urids.time_Position        = MAP_URI(LV2_TIME__Position);
+  jalv->urids.time_bar             = MAP_URI(LV2_TIME__bar);
+  jalv->urids.time_barBeat         = MAP_URI(LV2_TIME__barBeat);
+  jalv->urids.time_beatUnit        = MAP_URI(LV2_TIME__beatUnit);
+  jalv->urids.time_beatsPerBar     = MAP_URI(LV2_TIME__beatsPerBar);
+  jalv->urids.time_beatsPerMinute  = MAP_URI(LV2_TIME__beatsPerMinute);
+  jalv->urids.time_frame           = MAP_URI(LV2_TIME__frame);
+  jalv->urids.time_speed           = MAP_URI(LV2_TIME__speed);
+  jalv->urids.ui_scaleFactor       = MAP_URI(LV2_UI__scaleFactor);
+  jalv->urids.ui_updateRate        = MAP_URI(LV2_UI__updateRate);
+
+#undef MAP_URI
 
 #ifdef _WIN32
   jalv->temp_dir = jalv_strdup("jalvXXXXXX");
@@ -944,50 +942,49 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->world                = world;
   const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
 
+#define MAP_NODE(uri) lilv_new_uri(world, (uri))
+
   // Cache URIs for concepts we'll use
-  jalv->nodes.atom_AtomPort   = lilv_new_uri(world, LV2_ATOM__AtomPort);
-  jalv->nodes.atom_Chunk      = lilv_new_uri(world, LV2_ATOM__Chunk);
-  jalv->nodes.atom_Float      = lilv_new_uri(world, LV2_ATOM__Float);
-  jalv->nodes.atom_Path       = lilv_new_uri(world, LV2_ATOM__Path);
-  jalv->nodes.atom_Sequence   = lilv_new_uri(world, LV2_ATOM__Sequence);
-  jalv->nodes.lv2_AudioPort   = lilv_new_uri(world, LV2_CORE__AudioPort);
-  jalv->nodes.lv2_CVPort      = lilv_new_uri(world, LV2_CORE__CVPort);
-  jalv->nodes.lv2_ControlPort = lilv_new_uri(world, LV2_CORE__ControlPort);
-  jalv->nodes.lv2_InputPort   = lilv_new_uri(world, LV2_CORE__InputPort);
-  jalv->nodes.lv2_OutputPort  = lilv_new_uri(world, LV2_CORE__OutputPort);
-  jalv->nodes.lv2_connectionOptional =
-    lilv_new_uri(world, LV2_CORE__connectionOptional);
-  jalv->nodes.lv2_control       = lilv_new_uri(world, LV2_CORE__control);
-  jalv->nodes.lv2_default       = lilv_new_uri(world, LV2_CORE__default);
-  jalv->nodes.lv2_enumeration   = lilv_new_uri(world, LV2_CORE__enumeration);
-  jalv->nodes.lv2_extensionData = lilv_new_uri(world, LV2_CORE__extensionData);
-  jalv->nodes.lv2_integer       = lilv_new_uri(world, LV2_CORE__integer);
-  jalv->nodes.lv2_maximum       = lilv_new_uri(world, LV2_CORE__maximum);
-  jalv->nodes.lv2_minimum       = lilv_new_uri(world, LV2_CORE__minimum);
-  jalv->nodes.lv2_name          = lilv_new_uri(world, LV2_CORE__name);
-  jalv->nodes.lv2_reportsLatency =
-    lilv_new_uri(world, LV2_CORE__reportsLatency);
-  jalv->nodes.lv2_sampleRate = lilv_new_uri(world, LV2_CORE__sampleRate);
-  jalv->nodes.lv2_symbol     = lilv_new_uri(world, LV2_CORE__symbol);
-  jalv->nodes.lv2_toggled    = lilv_new_uri(world, LV2_CORE__toggled);
-  jalv->nodes.midi_MidiEvent = lilv_new_uri(world, LV2_MIDI__MidiEvent);
-  jalv->nodes.pg_group       = lilv_new_uri(world, LV2_PORT_GROUPS__group);
-  jalv->nodes.pprops_logarithmic =
-    lilv_new_uri(world, LV2_PORT_PROPS__logarithmic);
-  jalv->nodes.pprops_notOnGUI = lilv_new_uri(world, LV2_PORT_PROPS__notOnGUI);
-  jalv->nodes.pprops_rangeSteps =
-    lilv_new_uri(world, LV2_PORT_PROPS__rangeSteps);
-  jalv->nodes.pset_Preset  = lilv_new_uri(world, LV2_PRESETS__Preset);
-  jalv->nodes.pset_bank    = lilv_new_uri(world, LV2_PRESETS__bank);
-  jalv->nodes.rdfs_comment = lilv_new_uri(world, LILV_NS_RDFS "comment");
-  jalv->nodes.rdfs_label   = lilv_new_uri(world, LILV_NS_RDFS "label");
-  jalv->nodes.rdfs_range   = lilv_new_uri(world, LILV_NS_RDFS "range");
-  jalv->nodes.rsz_minimumSize =
-    lilv_new_uri(world, LV2_RESIZE_PORT__minimumSize);
-  jalv->nodes.ui_showInterface = lilv_new_uri(world, LV2_UI__showInterface);
-  jalv->nodes.work_interface   = lilv_new_uri(world, LV2_WORKER__interface);
-  jalv->nodes.work_schedule    = lilv_new_uri(world, LV2_WORKER__schedule);
-  jalv->nodes.end              = NULL;
+  jalv->nodes.atom_AtomPort          = MAP_NODE(LV2_ATOM__AtomPort);
+  jalv->nodes.atom_Chunk             = MAP_NODE(LV2_ATOM__Chunk);
+  jalv->nodes.atom_Float             = MAP_NODE(LV2_ATOM__Float);
+  jalv->nodes.atom_Path              = MAP_NODE(LV2_ATOM__Path);
+  jalv->nodes.atom_Sequence          = MAP_NODE(LV2_ATOM__Sequence);
+  jalv->nodes.lv2_AudioPort          = MAP_NODE(LV2_CORE__AudioPort);
+  jalv->nodes.lv2_CVPort             = MAP_NODE(LV2_CORE__CVPort);
+  jalv->nodes.lv2_ControlPort        = MAP_NODE(LV2_CORE__ControlPort);
+  jalv->nodes.lv2_InputPort          = MAP_NODE(LV2_CORE__InputPort);
+  jalv->nodes.lv2_OutputPort         = MAP_NODE(LV2_CORE__OutputPort);
+  jalv->nodes.lv2_connectionOptional = MAP_NODE(LV2_CORE__connectionOptional);
+  jalv->nodes.lv2_control            = MAP_NODE(LV2_CORE__control);
+  jalv->nodes.lv2_default            = MAP_NODE(LV2_CORE__default);
+  jalv->nodes.lv2_enumeration        = MAP_NODE(LV2_CORE__enumeration);
+  jalv->nodes.lv2_extensionData      = MAP_NODE(LV2_CORE__extensionData);
+  jalv->nodes.lv2_integer            = MAP_NODE(LV2_CORE__integer);
+  jalv->nodes.lv2_maximum            = MAP_NODE(LV2_CORE__maximum);
+  jalv->nodes.lv2_minimum            = MAP_NODE(LV2_CORE__minimum);
+  jalv->nodes.lv2_name               = MAP_NODE(LV2_CORE__name);
+  jalv->nodes.lv2_reportsLatency     = MAP_NODE(LV2_CORE__reportsLatency);
+  jalv->nodes.lv2_sampleRate         = MAP_NODE(LV2_CORE__sampleRate);
+  jalv->nodes.lv2_symbol             = MAP_NODE(LV2_CORE__symbol);
+  jalv->nodes.lv2_toggled            = MAP_NODE(LV2_CORE__toggled);
+  jalv->nodes.midi_MidiEvent         = MAP_NODE(LV2_MIDI__MidiEvent);
+  jalv->nodes.pg_group               = MAP_NODE(LV2_PORT_GROUPS__group);
+  jalv->nodes.pprops_logarithmic     = MAP_NODE(LV2_PORT_PROPS__logarithmic);
+  jalv->nodes.pprops_notOnGUI        = MAP_NODE(LV2_PORT_PROPS__notOnGUI);
+  jalv->nodes.pprops_rangeSteps      = MAP_NODE(LV2_PORT_PROPS__rangeSteps);
+  jalv->nodes.pset_Preset            = MAP_NODE(LV2_PRESETS__Preset);
+  jalv->nodes.pset_bank              = MAP_NODE(LV2_PRESETS__bank);
+  jalv->nodes.rdfs_comment           = MAP_NODE(LILV_NS_RDFS "comment");
+  jalv->nodes.rdfs_label             = MAP_NODE(LILV_NS_RDFS "label");
+  jalv->nodes.rdfs_range             = MAP_NODE(LILV_NS_RDFS "range");
+  jalv->nodes.rsz_minimumSize        = MAP_NODE(LV2_RESIZE_PORT__minimumSize);
+  jalv->nodes.ui_showInterface       = MAP_NODE(LV2_UI__showInterface);
+  jalv->nodes.work_interface         = MAP_NODE(LV2_WORKER__interface);
+  jalv->nodes.work_schedule          = MAP_NODE(LV2_WORKER__schedule);
+  jalv->nodes.end                    = NULL;
+
+#undef MAP_NODE
 
   // Get plugin URI from loaded state or command line
   LilvState* state      = NULL;
