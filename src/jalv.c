@@ -824,9 +824,10 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   suil_init(argc, argv, SUIL_ARG_NONE);
 #endif
 
-  if (jalv_init(argc, argv, &jalv->opts)) {
+  int ret = 0;
+  if ((ret = jalv_init(argc, argv, &jalv->opts))) {
     jalv_close(jalv);
-    return -1;
+    return ret;
   }
 
   jalv->symap = symap_new();

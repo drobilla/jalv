@@ -52,8 +52,20 @@ print_usage(const char* name, bool error)
   fprintf(os, "  -s           Show plugin UI if possible\n");
   fprintf(os, "  -t           Print trace messages from plugin\n");
   fprintf(os, "  -U URI       Load the UI with the given URI\n");
+  fprintf(os, "  -V           Display version information and exit\n");
   fprintf(os, "  -x           Exact JACK client name (exit if taken)\n");
   return error ? 1 : 0;
+}
+
+static int
+print_version(void)
+{
+  printf("jalv " JALV_VERSION " <http://drobilla.net/software/jalv>\n");
+  printf("Copyright 2011-2022 David Robillard <d@drobilla.net>.\n"
+         "License ISC: <https://spdx.org/licenses/ISC>.\n"
+         "This is free software; you are free to change and redistribute it."
+         "\nThere is NO WARRANTY, to the extent permitted by law.\n");
+  return 1;
 }
 
 void
@@ -77,6 +89,10 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
   for (; a < *argc && (*argv)[a][0] == '-'; ++a) {
     if ((*argv)[a][1] == 'h') {
       return print_usage((*argv)[0], true);
+    }
+
+    if ((*argv)[a][1] == 'V') {
+      return print_version();
     }
 
     if ((*argv)[a][1] == 's') {
