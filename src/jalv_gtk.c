@@ -149,7 +149,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
      "Show controls for ports with notOnGUI property on generic UI",
      NULL},
     {"no-menu",
-     'n',
+     'm',
      0,
      G_OPTION_ARG_NONE,
      &opts->no_menu,
