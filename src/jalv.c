@@ -1296,13 +1296,17 @@ jalv_close(Jalv* const jalv)
   jalv_worker_finish(&jalv->worker);
 
   // Deactivate audio
-  jalv_backend_deactivate(jalv);
+  if (jalv->backend) {
+    jalv_backend_deactivate(jalv);
+    jalv_backend_close(jalv);
+  }
+
+  // Free event port buffers
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     if (jalv->ports[i].evbuf) {
       lv2_evbuf_free(jalv->ports[i].evbuf);
     }
   }
-  jalv_backend_close(jalv);
 
   // Destroy the worker
   jalv_worker_destroy(&jalv->worker);
