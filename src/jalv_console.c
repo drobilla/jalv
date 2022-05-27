@@ -44,13 +44,13 @@ print_usage(const char* name, bool error)
   fprintf(os, "  -b SIZE      Buffer size for plugin <=> UI communication\n");
   fprintf(os, "  -c SYM=VAL   Set control value (e.g. \"vol=1.4\")\n");
   fprintf(os, "  -d           Dump plugin <=> UI communication\n");
-  fprintf(os, "  -U URI       Load the UI with the given URI\n");
   fprintf(os, "  -h           Display this help and exit\n");
   fprintf(os, "  -l DIR       Load state from save directory\n");
   fprintf(os, "  -n NAME      JACK client name\n");
   fprintf(os, "  -p           Print control output changes to stdout\n");
   fprintf(os, "  -s           Show plugin UI if possible\n");
   fprintf(os, "  -t           Print trace messages from plugin\n");
+  fprintf(os, "  -U URI       Load the UI with the given URI\n");
   fprintf(os, "  -x           Exact JACK client name (exit if taken)\n");
   return error ? 1 : 0;
 }
