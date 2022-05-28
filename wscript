@@ -214,6 +214,7 @@ def configure(conf):
                                          struct sigaction*''',
                         mandatory   = False)
 
+    conf.define('JALV_VERSION', JALV_VERSION)
     conf.write_config_header('jalv_config.h', remove=False)
 
     autowaf.display_summary(
