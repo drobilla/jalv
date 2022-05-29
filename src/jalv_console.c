@@ -28,12 +28,17 @@
 #include "zix/common.h"
 #include "zix/sem.h"
 
+#ifdef _WIN32
+#  include <synchapi.h>
+#else
+#  include <unistd.h>
+#endif
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 static int
 print_usage(const char* name, bool error)
@@ -268,7 +273,12 @@ jalv_run_custom_ui(Jalv* jalv)
       if (idle_iface->idle(suil_instance_get_handle(jalv->ui_instance))) {
         break;
       }
+
+#  ifdef _WIN32
+      Sleep(33);
+#  else
       usleep(33333);
+#  endif
     }
 
     show_iface->hide(suil_instance_get_handle(jalv->ui_instance));
