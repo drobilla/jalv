@@ -57,6 +57,8 @@
 #ifdef _WIN32
 #  include <io.h> // for _mktemp
 #  define snprintf _snprintf
+#else
+#  include <unistd.h>
 #endif
 
 #include <assert.h>

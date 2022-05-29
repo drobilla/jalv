@@ -81,6 +81,7 @@ def configure(conf):
                 '-Wno-shorten-64-to-32',
                 '-Wno-sign-conversion',
                 '-Wno-switch-enum',
+                '-Wno-unknown-warning-option',
                 '-Wno-unused-macros',
                 '-Wno-unused-parameter',
                 '-Wno-vla',
