@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: ISC
 
 #include "control.h"
+#include "frontend.h"
 #include "jalv_internal.h"
 #include "state.h"
-#include "ui.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
@@ -93,7 +93,7 @@ on_window_destroy(GtkWidget* ZIX_UNUSED(widget), gpointer ZIX_UNUSED(data))
 }
 
 int
-jalv_init(int* argc, char*** argv, JalvOptions* opts)
+jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
 {
   GOptionEntry entries[] = {
     {"load",
@@ -219,7 +219,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(void)
+jalv_frontend_ui_type(void)
 {
 #if GTK_MAJOR_VERSION == 2
   return "http://lv2plug.in/ns/extensions/ui#GtkUI";
@@ -1317,13 +1317,13 @@ build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
 }
 
 bool
-jalv_discover_ui(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_discover(Jalv* ZIX_UNUSED(jalv))
 {
   return TRUE;
 }
 
 float
-jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 {
 #if GTK_MAJOR_VERSION == 2
   return 30.0f;
@@ -1338,7 +1338,7 @@ jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 }
 
 float
-jalv_ui_scale_factor(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_scale_factor(Jalv* ZIX_UNUSED(jalv))
 {
 #if GTK_MAJOR_VERSION == 2
   return 1.0f;
@@ -1364,7 +1364,7 @@ on_row_activated(GtkTreeView* const       tree_view,
 }
 
 LilvNode*
-jalv_select_plugin(Jalv* jalv)
+jalv_frontend_select_plugin(Jalv* jalv)
 {
   // Create the dialog
   GtkWidget* const dialog = gtk_dialog_new_with_buttons("Plugin Selector",
@@ -1466,7 +1466,7 @@ jalv_select_plugin(Jalv* jalv)
 }
 
 int
-jalv_open_ui(Jalv* jalv)
+jalv_frontend_open(Jalv* jalv)
 {
   GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   jalv->window      = window;
@@ -1490,7 +1490,7 @@ jalv_open_ui(Jalv* jalv)
 
   // Attempt to instantiate custom UI if necessary
   if (jalv->ui && !jalv->opts.generic_ui) {
-    jalv_ui_instantiate(jalv, jalv_native_ui_type(), alignment);
+    jalv_ui_instantiate(jalv, jalv_frontend_ui_type(), alignment);
   }
 
   jalv->features.request_value.request = on_request_value;
@@ -1538,7 +1538,7 @@ jalv_open_ui(Jalv* jalv)
 }
 
 int
-jalv_close_ui(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_close(Jalv* ZIX_UNUSED(jalv))
 {
   gtk_main_quit();
   return 0;

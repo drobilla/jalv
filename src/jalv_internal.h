@@ -333,9 +333,6 @@ jalv_set_control(const ControlID* control,
 void
 jalv_init_ui(Jalv* jalv);
 
-int
-jalv_close_ui(Jalv* jalv);
-
 void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent);
 

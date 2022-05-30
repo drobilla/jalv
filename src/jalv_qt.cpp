@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: ISC
 
 #include "jalv_qt.hpp"
+#include "frontend.h"
 #include "jalv_internal.h"
-#include "ui.h"
 
 #include "lilv/lilv.h"
 #include "suil/suil.h"
@@ -275,7 +275,7 @@ FlowLayout::smartSpacing(QStyle::PixelMetric pm) const
 extern "C" {
 
 int
-jalv_init(int* argc, char*** argv, JalvOptions*)
+jalv_frontend_init(int* argc, char*** argv, JalvOptions*)
 {
   app = new QApplication(*argc, *argv, true);
   app->setStyleSheet("QGroupBox::title { subcontrol-position: top center }");
@@ -284,7 +284,7 @@ jalv_init(int* argc, char*** argv, JalvOptions*)
 }
 
 const char*
-jalv_native_ui_type(void)
+jalv_frontend_ui_type(void)
 {
   return "http://lv2plug.in/ns/extensions/ui#Qt5UI";
 }
@@ -623,31 +623,31 @@ build_control_widget(Jalv* jalv)
 }
 
 bool
-jalv_discover_ui(Jalv*)
+jalv_frontend_discover(Jalv*)
 {
   return true;
 }
 
 float
-jalv_ui_refresh_rate(Jalv*)
+jalv_frontend_refresh_rate(Jalv*)
 {
   return (float)QGuiApplication::primaryScreen()->refreshRate();
 }
 
 float
-jalv_ui_scale_factor(Jalv*)
+jalv_frontend_scale_factor(Jalv*)
 {
   return (float)QGuiApplication::primaryScreen()->devicePixelRatio();
 }
 
 LilvNode*
-jalv_select_plugin(Jalv*)
+jalv_frontend_select_plugin(Jalv*)
 {
   return nullptr;
 }
 
 int
-jalv_open_ui(Jalv* jalv)
+jalv_frontend_open(Jalv* jalv)
 {
   auto* const win          = new QMainWindow();
   QMenu*      file_menu    = win->menuBar()->addMenu("&File");
@@ -662,7 +662,7 @@ jalv_open_ui(Jalv* jalv)
   jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
 
   if (jalv->ui && !jalv->opts.generic_ui) {
-    jalv_ui_instantiate(jalv, jalv_native_ui_type(), win);
+    jalv_ui_instantiate(jalv, jalv_frontend_ui_type(), win);
   }
 
   QWidget* widget = nullptr;
@@ -706,7 +706,7 @@ jalv_open_ui(Jalv* jalv)
 }
 
 int
-jalv_close_ui(Jalv*)
+jalv_frontend_close(Jalv*)
 {
   app->quit();
   return 0;

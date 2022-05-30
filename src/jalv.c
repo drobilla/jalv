@@ -7,12 +7,12 @@
 
 #include "backend.h"
 #include "control.h"
+#include "frontend.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"
 #include "log.h"
 #include "lv2_evbuf.h"
 #include "state.h"
-#include "ui.h"
 #include "worker.h"
 
 #include "lilv/lilv.h"
@@ -653,7 +653,7 @@ jalv_update(Jalv* jalv)
 {
   // Check quit flag and close if set
   if (zix_sem_try_wait(&jalv->done)) {
-    jalv_close_ui(jalv);
+    jalv_frontend_close(jalv);
     return 0;
   }
 
@@ -755,7 +755,7 @@ setup_signals(Jalv* const jalv)
 static const LilvUI*
 jalv_select_custom_ui(const Jalv* const jalv)
 {
-  const char* const native_ui_type_uri = jalv_native_ui_type();
+  const char* const native_ui_type_uri = jalv_frontend_ui_type();
 
   if (jalv->opts.ui_uri) {
     // Specific UI explicitly requested by user
@@ -826,7 +826,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 #endif
 
   int ret = 0;
-  if ((ret = jalv_init(argc, argv, &jalv->opts))) {
+  if ((ret = jalv_frontend_init(argc, argv, &jalv->opts))) {
     jalv_close(jalv);
     return ret;
   }
@@ -1012,7 +1012,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   }
 
   if (!plugin_uri) {
-    plugin_uri = jalv_select_plugin(jalv);
+    plugin_uri = jalv_frontend_select_plugin(jalv);
   }
 
   if (!plugin_uri) {
@@ -1064,7 +1064,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->uis = lilv_plugin_get_uis(jalv->plugin);
   if (!jalv->opts.generic_ui) {
     if ((jalv->ui = jalv_select_custom_ui(jalv))) {
-      const char* host_type_uri = jalv_native_ui_type();
+      const char* host_type_uri = jalv_frontend_ui_type();
       if (host_type_uri) {
         LilvNode* host_type = lilv_new_uri(jalv->world, host_type_uri);
 
@@ -1113,7 +1113,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   if (jalv->opts.update_rate == 0.0) {
     // Calculate a reasonable UI update frequency
-    jalv->ui_update_hz = jalv_ui_refresh_rate(jalv);
+    jalv->ui_update_hz = jalv_frontend_refresh_rate(jalv);
   } else {
     // Use user-specified UI update rate
     jalv->ui_update_hz = jalv->opts.update_rate;
@@ -1122,7 +1122,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   if (jalv->opts.scale_factor == 0.0) {
     // Calculate the monitor's scale factor
-    jalv->ui_scale_factor = jalv_ui_scale_factor(jalv);
+    jalv->ui_scale_factor = jalv_frontend_scale_factor(jalv);
   } else {
     // Use user-specified UI scale factor
     jalv->ui_scale_factor = jalv->opts.scale_factor;
@@ -1280,7 +1280,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   lilv_instance_activate(jalv->instance);
 
   // Discover UI
-  jalv->has_ui = jalv_discover_ui(jalv);
+  jalv->has_ui = jalv_frontend_discover(jalv);
 
   // Activate Jack
   jalv_backend_activate(jalv);
@@ -1383,7 +1383,7 @@ main(int argc, char** argv)
   setup_signals(&jalv);
 
   // Run UI (or prompt at console)
-  jalv_open_ui(&jalv);
+  jalv_frontend_open(&jalv);
 
   // Wait for finish signal from UI or signal handler
   zix_sem_wait(&jalv.done);

@@ -3,6 +3,7 @@
 
 #include "backend.h"
 
+#include "frontend.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"
 #include "log.h"
@@ -64,7 +65,7 @@ static void
 jack_shutdown_cb(void* data)
 {
   Jalv* const jalv = (Jalv*)data;
-  jalv_close_ui(jalv);
+  jalv_frontend_close(jalv);
   zix_sem_post(&jalv->done);
 }
 

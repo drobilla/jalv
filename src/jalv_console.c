@@ -6,11 +6,11 @@
 #define _BSD_SOURCE 1
 #define _DEFAULT_SOURCE 1
 
+#include "frontend.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"
 #include "log.h"
 #include "state.h"
-#include "ui.h"
 
 #include "lilv/lilv.h"
 #include "lv2/ui/ui.h"
@@ -77,7 +77,7 @@ jalv_ui_port_event(Jalv*       jalv,
 }
 
 int
-jalv_init(int* argc, char*** argv, JalvOptions* opts)
+jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
 {
   int n_controls = 0;
   int a          = 1;
@@ -146,7 +146,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(void)
+jalv_frontend_ui_type(void)
 {
   return NULL;
 }
@@ -235,7 +235,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 }
 
 bool
-jalv_discover_ui(Jalv* jalv)
+jalv_frontend_discover(Jalv* jalv)
 {
   return jalv->opts.show_ui;
 }
@@ -247,7 +247,7 @@ jalv_run_custom_ui(Jalv* jalv)
   const LV2UI_Idle_Interface* idle_iface = NULL;
   const LV2UI_Show_Interface* show_iface = NULL;
   if (jalv->ui && jalv->opts.show_ui) {
-    jalv_ui_instantiate(jalv, jalv_native_ui_type(), NULL);
+    jalv_ui_instantiate(jalv, jalv_frontend_ui_type(), NULL);
     idle_iface = (const LV2UI_Idle_Interface*)suil_instance_extension_data(
       jalv->ui_instance, LV2_UI__idleInterface);
     show_iface = (const LV2UI_Show_Interface*)suil_instance_extension_data(
@@ -280,26 +280,26 @@ jalv_run_custom_ui(Jalv* jalv)
 }
 
 float
-jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 {
   return 30.0f;
 }
 
 float
-jalv_ui_scale_factor(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_scale_factor(Jalv* ZIX_UNUSED(jalv))
 {
   return 1.0f;
 }
 
 LilvNode*
-jalv_select_plugin(Jalv* jalv)
+jalv_frontend_select_plugin(Jalv* jalv)
 {
   (void)jalv;
   return NULL;
 }
 
 int
-jalv_open_ui(Jalv* jalv)
+jalv_frontend_open(Jalv* jalv)
 {
   if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
     // Primitive command prompt for setting control values
@@ -323,7 +323,7 @@ jalv_open_ui(Jalv* jalv)
 }
 
 int
-jalv_close_ui(Jalv* jalv)
+jalv_frontend_close(Jalv* jalv)
 {
   zix_sem_post(&jalv->done);
   return 0;
