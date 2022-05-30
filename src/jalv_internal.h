@@ -152,7 +152,8 @@ typedef struct {
   uint32_t index;
   uint32_t protocol;
   uint32_t size;
-  uint8_t  body[];
+
+  // Followed immediately by size bytes of data
 } ControlChange;
 
 typedef struct {

@@ -86,6 +86,10 @@
 #  define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif
 
+#ifndef MSG_BUFFER_SIZE
+#  define MSG_BUFFER_SIZE 1024
+#endif
+
 /**
    Size factor for UI ring buffers.
 
@@ -383,7 +387,7 @@ jalv_set_control(const ControlID* control,
     // Copy forge since it is used by process thread
     LV2_Atom_Forge       forge = jalv->forge;
     LV2_Atom_Forge_Frame frame;
-    uint8_t              buf[1024];
+    uint8_t              buf[MSG_BUFFER_SIZE];
     lv2_atom_forge_set_buffer(&forge, buf, sizeof(buf));
 
     lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Set);
@@ -508,13 +512,13 @@ jalv_ui_write(void* const jalv_handle,
     free(str);
   }
 
-  char           buf[sizeof(ControlChange) + buffer_size];
+  char           buf[MSG_BUFFER_SIZE];
   ControlChange* ev = (ControlChange*)buf;
   ev->index         = port_index;
   ev->protocol      = protocol;
   ev->size          = buffer_size;
-  memcpy(ev->body, buffer, buffer_size);
-  zix_ring_write(jalv->ui_events, buf, sizeof(buf));
+  memcpy(ev + 1, buffer, buffer_size);
+  zix_ring_write(jalv->ui_events, buf, sizeof(ControlChange) + buffer_size);
 }
 
 void
@@ -528,11 +532,13 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
   const size_t  space = zix_ring_read_space(jalv->ui_events);
   for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
     zix_ring_read(jalv->ui_events, (char*)&ev, sizeof(ev));
-    char body[ev.size];
+
+    char body[MSG_BUFFER_SIZE];
     if (zix_ring_read(jalv->ui_events, body, ev.size) != ev.size) {
       fprintf(stderr, "error: Error reading from UI ring buffer\n");
       break;
     }
+
     assert(ev.index < jalv->num_ports);
     struct Port* const port = &jalv->ports[ev.index];
     if (ev.protocol == 0) {
@@ -577,7 +583,7 @@ jalv_init_ui(Jalv* jalv)
     // Send patch:Get message for initial parameters/etc
     LV2_Atom_Forge       forge = jalv->forge;
     LV2_Atom_Forge_Frame frame;
-    uint8_t              buf[1024];
+    uint8_t              buf[MSG_BUFFER_SIZE];
     lv2_atom_forge_set_buffer(&forge, buf, sizeof(buf));
     lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Get);
 
@@ -605,7 +611,7 @@ jalv_send_to_ui(Jalv*       jalv,
   ev->protocol      = jalv->urids.atom_eventTransfer;
   ev->size          = sizeof(LV2_Atom) + size;
 
-  LV2_Atom* atom = (LV2_Atom*)ev->body;
+  LV2_Atom* atom = (LV2_Atom*)(ev + 1);
   atom->type     = type;
   atom->size     = size;
 

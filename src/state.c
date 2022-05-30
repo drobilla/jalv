@@ -172,7 +172,7 @@ set_port_value(const char* port_symbol,
     ev->index         = port->index;
     ev->protocol      = 0;
     ev->size          = sizeof(fvalue);
-    *(float*)ev->body = fvalue;
+    *(float*)(ev + 1) = fvalue;
     zix_ring_write(jalv->plugin_events, buf, sizeof(buf));
   }
 }

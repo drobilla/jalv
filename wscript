@@ -101,7 +101,6 @@ def configure(conf):
                 '-Wno-unknown-warning-option',
                 '-Wno-unused-macros',
                 '-Wno-unused-parameter',
-                '-Wno-vla',
             ],
             'gcc': [
                 '-Wno-cast-align',
@@ -116,7 +115,6 @@ def configure(conf):
                 '-Wno-switch-enum',
                 '-Wno-unused-macros',
                 '-Wno-unused-parameter',
-                '-Wno-vla',
             ],
         })
 
