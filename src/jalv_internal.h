@@ -8,6 +8,7 @@
 #include "jalv_config.h"
 #include "lv2_evbuf.h"
 #include "nodes.h"
+#include "options.h"
 #include "symap.h"
 #include "urids.h"
 
@@ -67,26 +68,6 @@ struct Port {
   uint32_t        index;     ///< Port index
   float           control;   ///< For control ports, otherwise 0.0f
 };
-
-typedef struct {
-  char*    name;            ///< Client name
-  int      name_exact;      ///< Exit if name is taken
-  char*    load;            ///< Path for state to load
-  char*    preset;          ///< URI of preset to load
-  char**   controls;        ///< Control values
-  uint32_t buffer_size;     ///< Plugin <= >UI communication buffer size
-  double   update_rate;     ///< UI update rate in Hz
-  double   scale_factor;    ///< UI scale factor
-  int      dump;            ///< Dump communication iff true
-  int      trace;           ///< Print trace log iff true
-  int      generic_ui;      ///< Use generic UI iff true
-  int      show_hidden;     ///< Show controls for notOnGUI ports
-  int      no_menu;         ///< Hide menu iff true
-  int      show_ui;         ///< Show non-embedded UI
-  int      print_controls;  ///< Print control changes to stdout
-  int      non_interactive; ///< Do not listen for commands on stdin
-  char*    ui_uri;          ///< URI of UI to load
-} JalvOptions;
 
 typedef enum { JALV_RUNNING, JALV_PAUSE_REQUESTED, JALV_PAUSED } JalvPlayState;
 

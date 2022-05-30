@@ -5,6 +5,7 @@
 #include "frontend.h"
 #include "jalv_internal.h"
 #include "nodes.h"
+#include "options.h"
 #include "state.h"
 #include "urids.h"
 
