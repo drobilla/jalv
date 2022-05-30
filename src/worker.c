@@ -4,7 +4,6 @@
 #include "worker.h"
 
 #include "lv2/worker/worker.h"
-#include "zix/common.h"
 #include "zix/ring.h"
 #include "zix/sem.h"
 #include "zix/thread.h"
@@ -27,11 +26,10 @@ static void*
 worker_func(void* data)
 {
   JalvWorker* worker = (JalvWorker*)data;
-  Jalv*       jalv   = worker->jalv;
   void*       buf    = NULL;
   while (true) {
     zix_sem_wait(&worker->sem);
-    if (jalv->exit) {
+    if (*worker->exit) {
       break;
     }
 
@@ -46,10 +44,9 @@ worker_func(void* data)
 
     zix_ring_read(worker->requests, (char*)buf, size);
 
-    zix_sem_wait(&jalv->work_lock);
-    worker->iface->work(
-      jalv->instance->lv2_handle, jalv_worker_respond, worker, size, buf);
-    zix_sem_post(&jalv->work_lock);
+    zix_sem_wait(worker->lock);
+    worker->iface->work(worker->handle, jalv_worker_respond, worker, size, buf);
+    zix_sem_post(worker->lock);
   }
 
   free(buf);
@@ -57,8 +54,7 @@ worker_func(void* data)
 }
 
 void
-jalv_worker_init(Jalv*                       ZIX_UNUSED(jalv),
-                 JalvWorker*                 worker,
+jalv_worker_init(JalvWorker*                 worker,
                  const LV2_Worker_Interface* iface,
                  bool                        threaded)
 {
@@ -101,7 +97,6 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
                      const void*                data)
 {
   JalvWorker* worker = (JalvWorker*)handle;
-  Jalv*       jalv   = worker->jalv;
 
   if (!size) {
     return LV2_WORKER_ERR_UNKNOWN;
@@ -114,10 +109,10 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
     zix_sem_post(&worker->sem);
   } else {
     // Execute work immediately in this thread
-    zix_sem_wait(&jalv->work_lock);
+    zix_sem_wait(worker->lock);
     worker->iface->work(
-      jalv->instance->lv2_handle, jalv_worker_respond, worker, size, data);
-    zix_sem_post(&jalv->work_lock);
+      worker->handle, jalv_worker_respond, worker, size, data);
+    zix_sem_post(worker->lock);
   }
 
   return LV2_WORKER_SUCCESS;

@@ -10,8 +10,7 @@
 #include <stdint.h>
 
 void
-jalv_worker_init(Jalv*                       jalv,
-                 JalvWorker*                 worker,
+jalv_worker_init(JalvWorker*                 worker,
                  const LV2_Worker_Interface* iface,
                  bool                        threaded);
 

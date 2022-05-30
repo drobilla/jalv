@@ -852,8 +852,10 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->map.map    = map_uri;
   init_feature(&jalv->features.map_feature, LV2_URID__map, &jalv->map);
 
-  jalv->worker.jalv       = jalv;
-  jalv->state_worker.jalv = jalv;
+  jalv->worker.lock       = &jalv->work_lock;
+  jalv->worker.exit       = &jalv->exit;
+  jalv->state_worker.lock = &jalv->work_lock;
+  jalv->state_worker.exit = &jalv->exit;
 
   jalv->unmap.handle = jalv;
   jalv->unmap.unmap  = unmap_uri;
@@ -1243,8 +1245,13 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     return -9;
   }
 
+  // Point things to the instance that require it
+
   jalv->features.ext_data.data_access =
     lilv_instance_get_descriptor(jalv->instance)->extension_data;
+
+  jalv->worker.handle       = jalv->instance->lv2_handle;
+  jalv->state_worker.handle = jalv->instance->lv2_handle;
 
   fprintf(stderr, "\n");
   if (!jalv->buf_size_set) {
@@ -1258,9 +1265,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
       (const LV2_Worker_Interface*)lilv_instance_get_extension_data(
         jalv->instance, LV2_WORKER__interface);
 
-    jalv_worker_init(jalv, &jalv->worker, iface, true);
+    jalv_worker_init(&jalv->worker, iface, true);
     if (jalv->safe_restore) {
-      jalv_worker_init(jalv, &jalv->state_worker, iface, false);
+      jalv_worker_init(&jalv->state_worker, iface, false);
     }
   }
 
