@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright 2007-2022 David Robillard <d@drobilla.net>
+# SPDX-License-Identifier: CC0-1.0 OR ISC
+
 import os
 
 from waflib import Build, Logs, Options, Utils

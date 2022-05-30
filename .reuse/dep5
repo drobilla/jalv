@@ -1,0 +1,12 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: jalv
+Upstream-Contact: David Robillard <d@drobilla.net>
+Source: https://gitlab.com/drobilla/jalv
+
+Files: jalv.desktop.in .clang* *.md .clant.json .git* INSTALL NEWS AUTHORS
+Copyright: 2010-2022 David Robillard <d@drobilla.net>
+License: CC0-1.0 OR ISC
+
+Files: doc/*.1
+Copyright: 2011-2020 David Robillard <d@drobilla.net>
+License: ISC
