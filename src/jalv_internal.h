@@ -10,10 +10,10 @@
 #include "options.h"
 #include "symap.h"
 #include "urids.h"
+#include "worker.h"
 
 #include "zix/ring.h"
 #include "zix/sem.h"
-#include "zix/thread.h"
 
 #include "lilv/lilv.h"
 #include "serd/serd.h"
@@ -53,19 +53,6 @@ typedef struct JalvBackend JalvBackend;
 typedef struct Jalv Jalv;
 
 typedef enum { JALV_RUNNING, JALV_PAUSE_REQUESTED, JALV_PAUSED } JalvPlayState;
-
-typedef struct {
-  ZixRing*                    requests;  ///< Requests to the worker
-  ZixRing*                    responses; ///< Responses from the worker
-  void*                       response;  ///< Worker response buffer
-  ZixSem*                     lock;      ///< Lock for plugin work() method
-  bool*                       exit;      ///< Pointer to exit flag
-  ZixSem                      sem;       ///< Worker semaphore
-  ZixThread                   thread;    ///< Worker thread
-  LV2_Handle                  handle;    ///< Plugin handle
-  const LV2_Worker_Interface* iface;     ///< Plugin worker interface
-  bool                        threaded;  ///< Run work in another thread
-} JalvWorker;
 
 typedef struct {
   LV2_Feature                map_feature;
