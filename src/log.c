@@ -8,6 +8,7 @@
 #include "jalv_config.h"
 #include "jalv_internal.h"
 #include "options.h"
+#include "port.h"
 #include "urids.h"
 
 #include "lilv/lilv.h"

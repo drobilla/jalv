@@ -6,6 +6,7 @@
 #include "jalv_internal.h"
 #include "nodes.h"
 #include "options.h"
+#include "port.h"
 
 #include "lilv/lilv.h"
 #include "suil/suil.h"

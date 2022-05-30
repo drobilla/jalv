@@ -7,6 +7,7 @@
 #include "jalv_internal.h"
 #include "log.h"
 #include "nodes.h"
+#include "port.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/forge.h"

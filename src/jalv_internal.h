@@ -6,7 +6,6 @@
 
 #include "control.h"
 #include "jalv_config.h"
-#include "lv2_evbuf.h"
 #include "nodes.h"
 #include "options.h"
 #include "symap.h"
@@ -52,22 +51,6 @@ struct Jalv;
 typedef struct JalvBackend JalvBackend;
 
 typedef struct Jalv Jalv;
-
-enum PortFlow { FLOW_UNKNOWN, FLOW_INPUT, FLOW_OUTPUT };
-
-enum PortType { TYPE_UNKNOWN, TYPE_CONTROL, TYPE_AUDIO, TYPE_EVENT, TYPE_CV };
-
-struct Port {
-  const LilvPort* lilv_port; ///< LV2 port
-  enum PortType   type;      ///< Data type
-  enum PortFlow   flow;      ///< Data flow direction
-  void*           sys_port;  ///< For audio/MIDI ports, otherwise NULL
-  LV2_Evbuf*      evbuf;     ///< For MIDI ports, otherwise NULL
-  void*           widget;    ///< Control widget, if applicable
-  size_t          buf_size;  ///< Custom buffer size, or 0
-  uint32_t        index;     ///< Port index
-  float           control;   ///< For control ports, otherwise 0.0f
-};
 
 typedef enum { JALV_RUNNING, JALV_PAUSE_REQUESTED, JALV_PAUSED } JalvPlayState;
 

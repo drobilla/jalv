@@ -12,6 +12,7 @@
 #include "jalv_internal.h"
 #include "log.h"
 #include "options.h"
+#include "port.h"
 #include "state.h"
 
 #include "lilv/lilv.h"

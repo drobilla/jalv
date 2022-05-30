@@ -11,6 +11,7 @@
 #include "lv2_evbuf.h"
 #include "nodes.h"
 #include "options.h"
+#include "port.h"
 #include "urids.h"
 
 #include "lilv/lilv.h"

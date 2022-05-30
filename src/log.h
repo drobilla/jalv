@@ -22,6 +22,8 @@
 extern "C" {
 #endif
 
+struct Port;
+
 // String and log utilities
 
 void
