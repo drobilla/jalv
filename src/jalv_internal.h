@@ -30,23 +30,14 @@
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
 
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #ifdef __clang__
 #  define REALTIME __attribute__((annotate("realtime")))
 #else
 #  define REALTIME
-#endif
-
-#ifdef __GNUC__
-#  define JALV_LOG_FUNC(fmt, arg1) __attribute__((format(printf, fmt, arg1)))
-#else
-#  define JALV_LOG_FUNC(fmt, arg1)
 #endif
 
 #ifdef __cplusplus
@@ -466,6 +457,7 @@ jalv_save(Jalv* jalv, const char* dir);
 
 void
 jalv_save_port_values(Jalv* jalv, SerdWriter* writer, const SerdNode* subject);
+
 char*
 jalv_make_path(LV2_State_Make_Path_Handle handle, const char* path);
 
@@ -477,29 +469,6 @@ atom_to_turtle(LV2_URID_Unmap* unmap,
                const SerdNode* subject,
                const SerdNode* predicate,
                const LV2_Atom* atom);
-
-void
-jalv_print_control(Jalv* jalv, const struct Port* port, float value);
-
-char*
-jalv_strdup(const char* str);
-
-char*
-jalv_strjoin(const char* a, const char* b);
-
-JALV_LOG_FUNC(3, 4)
-int
-jalv_printf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, ...);
-
-JALV_LOG_FUNC(3, 0)
-int
-jalv_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap);
-
-bool
-jalv_ansi_start(FILE* stream, int color);
-
-void
-jalv_ansi_reset(FILE* stream);
 
 #ifdef __cplusplus
 } // extern "C"

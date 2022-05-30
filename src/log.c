@@ -1,11 +1,14 @@
-// Copyright 2007-2016 David Robillard <d@drobilla.net>
+// Copyright 2007-2022 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #define _POSIX_C_SOURCE 200809L
 
+#include "log.h"
+
 #include "jalv_config.h"
 #include "jalv_internal.h"
 
+#include "lilv/lilv.h"
 #include "lv2/log/log.h"
 #include "lv2/urid/urid.h"
 
@@ -16,6 +19,8 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void
 jalv_print_control(Jalv* const              jalv,

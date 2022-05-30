@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: ISC
 
 #include "jalv_internal.h"
+#include "log.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/forge.h"
