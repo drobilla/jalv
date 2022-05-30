@@ -3,6 +3,7 @@
 
 #include "state.h"
 
+#include "control.h"
 #include "jalv_internal.h"
 #include "log.h"
 #include "nodes.h"

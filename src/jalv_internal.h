@@ -4,6 +4,7 @@
 #ifndef JALV_INTERNAL_H
 #define JALV_INTERNAL_H
 
+#include "control.h"
 #include "jalv_config.h"
 #include "lv2_evbuf.h"
 #include "nodes.h"
@@ -66,58 +67,6 @@ struct Port {
   uint32_t        index;     ///< Port index
   float           control;   ///< For control ports, otherwise 0.0f
 };
-
-// Controls
-
-/// Type of plugin control
-typedef enum {
-  PORT,    ///< Control port
-  PROPERTY ///< Property (set via atom message)
-} ControlType;
-
-typedef struct {
-  float value;
-  char* label;
-} ScalePoint;
-
-/// Plugin control
-typedef struct {
-  ControlType     type;           ///< Type of control
-  LilvNode*       node;           ///< Port or property
-  LilvNode*       symbol;         ///< Symbol
-  LilvNode*       label;          ///< Human readable label
-  LV2_Atom_Forge* forge;          ///< Forge (for URIDs)
-  LV2_URID        property;       ///< Iff type == PROPERTY
-  uint32_t        index;          ///< Iff type == PORT
-  LilvNode*       group;          ///< Port/control group, or NULL
-  void*           widget;         ///< Control Widget
-  size_t          n_points;       ///< Number of scale points
-  ScalePoint*     points;         ///< Scale points
-  LV2_URID        value_type;     ///< Type of control value
-  LilvNode*       min;            ///< Minimum value
-  LilvNode*       max;            ///< Maximum value
-  LilvNode*       def;            ///< Default value
-  bool            is_toggle;      ///< Boolean (0 and 1 only)
-  bool            is_integer;     ///< Integer values only
-  bool            is_enumeration; ///< Point values only
-  bool            is_logarithmic; ///< Logarithmic scale
-  bool            is_writable;    ///< Writable (input)
-  bool            is_readable;    ///< Readable (output)
-} ControlID;
-
-typedef struct {
-  size_t      n_controls;
-  ControlID** controls;
-} Controls;
-
-/// Control change event, sent through ring buffers for UI updates
-typedef struct {
-  uint32_t index;
-  uint32_t protocol;
-  uint32_t size;
-
-  // Followed immediately by size bytes of data
-} ControlChange;
 
 typedef struct {
   char*    name;            ///< Client name

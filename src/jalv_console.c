@@ -6,6 +6,7 @@
 #define _BSD_SOURCE 1
 #define _DEFAULT_SOURCE 1
 
+#include "control.h"
 #include "frontend.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"

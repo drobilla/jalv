@@ -5,8 +5,6 @@
 
 #include "control.h"
 
-#include "jalv_internal.h"
-
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
 #include "lv2/atom/forge.h"

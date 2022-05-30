@@ -3,6 +3,7 @@
 
 #include "backend.h"
 
+#include "control.h"
 #include "frontend.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"
