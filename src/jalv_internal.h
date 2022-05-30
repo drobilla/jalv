@@ -6,7 +6,9 @@
 
 #include "jalv_config.h"
 #include "lv2_evbuf.h"
+#include "nodes.h"
 #include "symap.h"
+#include "urids.h"
 
 #include "zix/ring.h"
 #include "zix/sem.h"
@@ -136,80 +138,6 @@ typedef struct {
   int      non_interactive; ///< Do not listen for commands on stdin
   char*    ui_uri;          ///< URI of UI to load
 } JalvOptions;
-
-typedef struct {
-  LV2_URID atom_Float;
-  LV2_URID atom_Int;
-  LV2_URID atom_Object;
-  LV2_URID atom_Path;
-  LV2_URID atom_String;
-  LV2_URID atom_eventTransfer;
-  LV2_URID bufsz_maxBlockLength;
-  LV2_URID bufsz_minBlockLength;
-  LV2_URID bufsz_sequenceSize;
-  LV2_URID log_Error;
-  LV2_URID log_Trace;
-  LV2_URID log_Warning;
-  LV2_URID midi_MidiEvent;
-  LV2_URID param_sampleRate;
-  LV2_URID patch_Get;
-  LV2_URID patch_Put;
-  LV2_URID patch_Set;
-  LV2_URID patch_body;
-  LV2_URID patch_property;
-  LV2_URID patch_value;
-  LV2_URID time_Position;
-  LV2_URID time_bar;
-  LV2_URID time_barBeat;
-  LV2_URID time_beatUnit;
-  LV2_URID time_beatsPerBar;
-  LV2_URID time_beatsPerMinute;
-  LV2_URID time_frame;
-  LV2_URID time_speed;
-  LV2_URID ui_scaleFactor;
-  LV2_URID ui_updateRate;
-} JalvURIDs;
-
-typedef struct {
-  LilvNode* atom_AtomPort;
-  LilvNode* atom_Chunk;
-  LilvNode* atom_Float;
-  LilvNode* atom_Path;
-  LilvNode* atom_Sequence;
-  LilvNode* lv2_AudioPort;
-  LilvNode* lv2_CVPort;
-  LilvNode* lv2_ControlPort;
-  LilvNode* lv2_InputPort;
-  LilvNode* lv2_OutputPort;
-  LilvNode* lv2_connectionOptional;
-  LilvNode* lv2_control;
-  LilvNode* lv2_default;
-  LilvNode* lv2_enumeration;
-  LilvNode* lv2_extensionData;
-  LilvNode* lv2_integer;
-  LilvNode* lv2_maximum;
-  LilvNode* lv2_minimum;
-  LilvNode* lv2_name;
-  LilvNode* lv2_reportsLatency;
-  LilvNode* lv2_sampleRate;
-  LilvNode* lv2_symbol;
-  LilvNode* lv2_toggled;
-  LilvNode* midi_MidiEvent;
-  LilvNode* pg_group;
-  LilvNode* pprops_logarithmic;
-  LilvNode* pprops_notOnGUI;
-  LilvNode* pprops_rangeSteps;
-  LilvNode* pset_Preset;
-  LilvNode* pset_bank;
-  LilvNode* rdfs_comment;
-  LilvNode* rdfs_label;
-  LilvNode* rdfs_range;
-  LilvNode* rsz_minimumSize;
-  LilvNode* ui_showInterface;
-  LilvNode* work_interface;
-  LilvNode* work_schedule;
-  LilvNode* end; ///< NULL terminator for easy freeing of entire structure
-} JalvNodes;
 
 typedef enum { JALV_RUNNING, JALV_PAUSE_REQUESTED, JALV_PAUSED } JalvPlayState;
 

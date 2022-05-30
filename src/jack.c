@@ -8,6 +8,8 @@
 #include "jalv_internal.h"
 #include "log.h"
 #include "lv2_evbuf.h"
+#include "nodes.h"
+#include "urids.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"

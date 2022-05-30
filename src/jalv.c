@@ -12,7 +12,9 @@
 #include "jalv_internal.h"
 #include "log.h"
 #include "lv2_evbuf.h"
+#include "nodes.h"
 #include "state.h"
+#include "urids.h"
 #include "worker.h"
 
 #include "lilv/lilv.h"

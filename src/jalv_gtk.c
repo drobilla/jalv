@@ -4,7 +4,9 @@
 #include "control.h"
 #include "frontend.h"
 #include "jalv_internal.h"
+#include "nodes.h"
 #include "state.h"
+#include "urids.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"

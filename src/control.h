@@ -5,6 +5,7 @@
 #define JALV_CONTROL_H
 
 #include "jalv_internal.h"
+#include "nodes.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/forge.h"

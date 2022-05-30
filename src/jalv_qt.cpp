@@ -4,6 +4,7 @@
 #include "jalv_qt.hpp"
 #include "frontend.h"
 #include "jalv_internal.h"
+#include "nodes.h"
 
 #include "lilv/lilv.h"
 #include "suil/suil.h"

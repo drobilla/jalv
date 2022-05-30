@@ -7,6 +7,7 @@
 
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "urids.h"
 
 #include "lilv/lilv.h"
 #include "lv2/log/log.h"
