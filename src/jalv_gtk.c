@@ -34,6 +34,16 @@ LV2_DISABLE_DEPRECATION_WARNINGS
 #include <stdlib.h>
 #include <string.h>
 
+/* TODO: Gtk only provides one pointer for value changed callbacks, which we
+   use for the ControlID.  So, there is no easy way to pass both a ControlID
+   and Jalv which is needed to actually do anything with a control.  Work
+   around this by statically storing the Jalv instance.  Since this UI isn't a
+   module, this isn't the end of the world, but a global "god pointer" is a
+   pretty bad smell.  Refactoring things to be more modular or changing how Gtk
+   signals are connected would be a good idea.
+*/
+static Jalv* s_jalv = NULL;
+
 static GtkCheckMenuItem* active_preset_item = NULL;
 static bool              updating           = false;
 
@@ -581,7 +591,7 @@ set_control(const ControlID* control,
             const void*      body)
 {
   if (!updating) {
-    jalv_set_control(control, size, type, body);
+    jalv_set_control(s_jalv, control, size, type, body);
   }
 }
 
@@ -594,20 +604,20 @@ differ_enough(float a, float b)
 static void
 set_float_control(const ControlID* control, float value)
 {
-  if (control->value_type == control->jalv->forge.Int) {
+  if (control->value_type == control->forge->Int) {
     const int32_t ival = lrintf(value);
-    set_control(control, sizeof(ival), control->jalv->forge.Int, &ival);
-  } else if (control->value_type == control->jalv->forge.Long) {
+    set_control(control, sizeof(ival), control->forge->Int, &ival);
+  } else if (control->value_type == control->forge->Long) {
     const int64_t lval = lrintf(value);
-    set_control(control, sizeof(lval), control->jalv->forge.Long, &lval);
-  } else if (control->value_type == control->jalv->forge.Float) {
-    set_control(control, sizeof(value), control->jalv->forge.Float, &value);
-  } else if (control->value_type == control->jalv->forge.Double) {
+    set_control(control, sizeof(lval), control->forge->Long, &lval);
+  } else if (control->value_type == control->forge->Float) {
+    set_control(control, sizeof(value), control->forge->Float, &value);
+  } else if (control->value_type == control->forge->Double) {
     const double dval = value;
-    set_control(control, sizeof(dval), control->jalv->forge.Double, &dval);
-  } else if (control->value_type == control->jalv->forge.Bool) {
+    set_control(control, sizeof(dval), control->forge->Double, &dval);
+  } else if (control->value_type == control->forge->Bool) {
     const int32_t ival = value;
-    set_control(control, sizeof(ival), control->jalv->forge.Bool, &ival);
+    set_control(control, sizeof(ival), control->forge->Bool, &ival);
   }
 
   Controller* controller = (Controller*)control->widget;
@@ -910,18 +920,17 @@ string_changed(GtkEntry* widget, gpointer data)
   ControlID*  control = (ControlID*)data;
   const char* string  = gtk_entry_get_text(widget);
 
-  set_control(control, strlen(string) + 1, control->jalv->forge.String, string);
+  set_control(control, strlen(string) + 1, control->forge->String, string);
 }
 
 static void
 file_changed(GtkFileChooserButton* widget, gpointer data)
 {
   ControlID*  control = (ControlID*)data;
-  Jalv*       jalv    = control->jalv;
   const char* filename =
     gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
 
-  set_control(control, strlen(filename) + 1, jalv->forge.Path, filename);
+  set_control(control, strlen(filename) + 1, s_jalv->forge.Path, filename);
 }
 
 static Controller*
@@ -1471,6 +1480,8 @@ jalv_frontend_open(Jalv* jalv)
   GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   jalv->window      = window;
 
+  s_jalv = jalv;
+
   g_signal_connect(window, "destroy", G_CALLBACK(on_window_destroy), jalv);
 
   set_window_title(jalv);
@@ -1541,6 +1552,7 @@ int
 jalv_frontend_close(Jalv* ZIX_UNUSED(jalv))
 {
   gtk_main_quit();
+  s_jalv = NULL;
   return 0;
 }
 

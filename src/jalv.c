@@ -193,7 +193,14 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
     port->type    = TYPE_CONTROL;
     port->control = isnan(default_value) ? 0.0f : default_value;
     if (!hidden) {
-      add_control(&jalv->controls, new_port_control(jalv, port->index));
+      add_control(&jalv->controls,
+                  new_port_control(jalv->world,
+                                   jalv->plugin,
+                                   port->lilv_port,
+                                   port->index,
+                                   jalv->sample_rate,
+                                   &jalv->nodes,
+                                   &jalv->forge));
     }
   } else if (lilv_port_is_a(
                jalv->plugin, port->lilv_port, jalv->nodes.lv2_AudioPort)) {
@@ -344,7 +351,9 @@ jalv_create_controls(Jalv* jalv, bool writable)
       }
     }
 
-    record = new_property_control(jalv, property);
+    record = new_property_control(
+      jalv->world, property, &jalv->nodes, &jalv->map, &jalv->forge);
+
     if (writable) {
       record->is_writable = true;
     } else {
@@ -367,14 +376,14 @@ jalv_create_controls(Jalv* jalv, bool writable)
 }
 
 void
-jalv_set_control(const ControlID* control,
+jalv_set_control(Jalv*            jalv,
+                 const ControlID* control,
                  uint32_t         size,
                  LV2_URID         type,
                  const void*      body)
 {
-  Jalv* jalv = control->jalv;
   if (control->type == PORT && type == jalv->forge.Float) {
-    struct Port* port = &control->jalv->ports[control->index];
+    struct Port* port = &jalv->ports[control->index];
     port->control     = *(const float*)body;
   } else if (control->type == PROPERTY) {
     // Copy forge since it is used by process thread
@@ -714,7 +723,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
     return false;
   }
 
-  jalv_set_control(control, sizeof(float), jalv->urids.atom_Float, &val);
+  jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &val);
   printf("%s = %f\n", sym, val);
 
   return true;

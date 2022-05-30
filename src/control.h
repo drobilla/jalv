@@ -7,6 +7,7 @@
 #include "jalv_internal.h"
 
 #include "lilv/lilv.h"
+#include "lv2/atom/forge.h"
 #include "lv2/urid/urid.h"
 
 #include <stdint.h>
@@ -22,10 +23,20 @@ int
 scale_point_cmp(const ScalePoint* a, const ScalePoint* b);
 
 ControlID*
-new_port_control(Jalv* jalv, uint32_t index);
+new_port_control(LilvWorld*        world,
+                 const LilvPlugin* plugin,
+                 const LilvPort*   port,
+                 uint32_t          port_index,
+                 float             sample_rate,
+                 const JalvNodes*  nodes,
+                 LV2_Atom_Forge*   forge);
 
 ControlID*
-new_property_control(Jalv* jalv, const LilvNode* property);
+new_property_control(LilvWorld*       world,
+                     const LilvNode*  property,
+                     const JalvNodes* nodes,
+                     LV2_URID_Map*    map,
+                     LV2_Atom_Forge*  forge);
 
 void
 add_control(Controls* controls, ControlID* control);
