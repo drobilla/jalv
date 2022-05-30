@@ -9,8 +9,6 @@
 #include "suil/suil.h"
 #include "zix/sem.h"
 
-#include <QtGlobal>
-
 #include <QAction>
 #include <QApplication>
 #include <QDial>

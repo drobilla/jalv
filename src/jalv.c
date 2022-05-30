@@ -47,10 +47,10 @@
 #  include "suil/suil.h"
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32)
 #  include <io.h> // for _mktemp
 #  define snprintf _snprintf
-#else
+#elif defined(__APPLE__)
 #  include <unistd.h> // for mkdtemp on Darwin
 #endif
 

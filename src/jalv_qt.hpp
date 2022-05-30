@@ -5,46 +5,18 @@
 #include "state.h"
 
 #include "lilv/lilv.h"
-#include "suil/suil.h"
-#include "zix/sem.h"
-
-#include <QtGlobal>
 
 #include <QAction>
-#include <QApplication>
-#include <QDial>
-#include <QFontMetrics>
 #include <QGroupBox>
-#include <QGuiApplication>
-#include <QHBoxLayout>
-#include <QKeySequence>
-#include <QLabel>
-#include <QLayout>
-#include <QLayoutItem>
-#include <QList>
-#include <QMainWindow>
-#include <QMenu>
-#include <QMenuBar>
-#include <QObject>
-#include <QPoint>
-#include <QRect>
-#include <QScreen>
-#include <QScrollArea>
-#include <QSize>
-#include <QSizePolicy>
 #include <QString>
-#include <QStyle>
-#include <QTimer>
-#include <QVBoxLayout>
-#include <QWidget>
 #include <QtCore>
 
-#include <algorithm>
-#include <cmath>
-#include <cstdint>
-#include <cstring>
 #include <map>
 #include <vector>
+
+class QDial;
+class QLabel;
+class QWidget;
 
 class PresetAction : public QAction
 {
