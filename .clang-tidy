@@ -1,5 +1,7 @@
 Checks: >
   *,
+  -*-c-arrays,
+  -*-deprecated-headers,
   -*-magic-numbers,
   -*-named-parameter,
   -*-narrowing-conversions,
@@ -29,7 +31,10 @@ Checks: >
   -llvm-header-guard,
   -llvmlibc-*,
   -misc-no-recursion,
+  -modernize-redundant-void-arg,
+  -modernize-use-nullptr,
   -modernize-use-trailing-return-type,
+  -modernize-use-using,
   -readability-function-cognitive-complexity,
   -readability-implicit-bool-conversion,
   -readability-non-const-parameter,
