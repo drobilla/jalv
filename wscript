@@ -196,6 +196,18 @@ def configure(conf):
 
     defines = ['_POSIX_C_SOURCE=200809L']
 
+    conf.env.PTHREAD_CFLAGS = []
+    conf.env.PTHREAD_LINKFLAGS = []
+    if conf.env.DEST_OS != 'win32':
+        if conf.check(cflags=['-pthread'], mandatory=False):
+            conf.env.PTHREAD_CFLAGS = ['-pthread']
+        if conf.check(linkflags=['-pthread'], mandatory=False):
+            if not (conf.env.DEST_OS == 'darwin'
+                    and conf.env.CXX_NAME == 'clang'):
+                conf.env.PTHREAD_LINKFLAGS += ['-pthread']
+        elif conf.check(linkflags=['-lpthread'], mandatory=False):
+            conf.env.PTHREAD_LINKFLAGS += ['-lpthread']
+
     conf.check_function('c', 'isatty',
                         header_name = 'unistd.h',
                         defines     = defines,
@@ -263,6 +275,8 @@ def build(bld):
         obj = bld(features     = 'c cshlib',
                   source       = source + ' src/jalv_console.c',
                   target       = 'jalv',
+                  cflags       = bld.env.PTHREAD_CFLAGS,
+                  linkflags    = bld.env.PTHREAD_LINKFLAGS,
                   defines      = ['ZIX_INTERNAL'],
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
@@ -276,9 +290,10 @@ def build(bld):
     obj = bld(features     = 'c cprogram',
               source       = source + ' src/jalv_console.c',
               target       = 'jalv',
+              cflags       = bld.env.PTHREAD_CFLAGS,
+              linkflags    = bld.env.PTHREAD_LINKFLAGS,
               defines      = ['ZIX_INTERNAL'],
               includes     = ['.', 'src'],
-              lib          = ['pthread'],
               uselib       = libs,
               install_path = '${BINDIR}')
 
@@ -287,9 +302,11 @@ def build(bld):
         obj = bld(features     = 'c cprogram',
                   source       = source + ' src/jalv_gtk.c',
                   target       = 'jalv.gtk',
+                  cflags       = bld.env.PTHREAD_CFLAGS,
+                  linkflags    = bld.env.PTHREAD_LINKFLAGS,
                   defines      = ['ZIX_INTERNAL'],
                   includes     = ['.', 'src'],
-                  lib          = ['pthread', 'm'],
+                  lib          = ['m'],
                   uselib       = libs + ' GTK2',
                   install_path = '${BINDIR}')
 
@@ -298,9 +315,11 @@ def build(bld):
         obj = bld(features     = 'c cprogram',
                   source       = source + ' src/jalv_gtk.c',
                   target       = 'jalv.gtk3',
+                  cflags       = bld.env.PTHREAD_CFLAGS,
+                  linkflags    = bld.env.PTHREAD_LINKFLAGS,
                   defines      = ['ZIX_INTERNAL'],
                   includes     = ['.', 'src'],
-                  lib          = ['pthread', 'm'],
+                  lib          = ['m'],
                   uselib       = libs + ' GTK3',
                   install_path = '${BINDIR}')
 
@@ -321,9 +340,10 @@ def build(bld):
         obj = bld(features     = 'c cxx cxxprogram',
                   source       = source + ' src/jalv_qt.cpp',
                   target       = 'jalv.qt5',
+                  cflags       = bld.env.PTHREAD_CFLAGS,
+                  linkflags    = bld.env.PTHREAD_LINKFLAGS,
                   defines      = ['ZIX_INTERNAL'],
                   includes     = ['.', 'src'],
-                  lib          = ['pthread'],
                   uselib       = libs + ' QT5',
                   install_path = '${BINDIR}',
                   cxxflags     = ['-fPIC'])

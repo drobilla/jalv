@@ -15,7 +15,8 @@
 */
 
 #define _POSIX_C_SOURCE 200809L // for mkdtemp
-#define _DARWIN_C_SOURCE        // for mkdtemp on OSX
+#define _XOPEN_SOURCE 600       // for S_IFMT and S_IFDIF
+#define _DARWIN_C_SOURCE        // for mkdtemp on Darwin
 
 #include "jalv_config.h"
 #include "jalv_internal.h"
@@ -57,8 +58,6 @@
 #ifdef _WIN32
 #  include <io.h> // for _mktemp
 #  define snprintf _snprintf
-#else
-#  include <unistd.h>
 #endif
 
 #include <assert.h>
@@ -645,8 +644,8 @@ jalv_run(Jalv* jalv, uint32_t nframes)
 
   // Check if it's time to send updates to the UI
   jalv->event_delta_t += nframes;
-  bool  send_ui_updates = false;
-  float update_frames   = jalv->sample_rate / jalv->ui_update_hz;
+  bool     send_ui_updates = false;
+  uint32_t update_frames   = (uint32_t)(jalv->sample_rate / jalv->ui_update_hz);
   if (jalv->has_ui && (jalv->event_delta_t > update_frames)) {
     send_ui_updates     = true;
     jalv->event_delta_t = 0;
@@ -1000,7 +999,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   if (jalv->opts.load) {
     struct stat info;
     stat(jalv->opts.load, &info);
-    if (S_ISDIR(info.st_mode)) {
+    if ((info.st_mode & S_IFMT) == S_IFDIR) {
       char* path = jalv_strjoin(jalv->opts.load, "/state.ttl");
       state = lilv_state_new_from_file(jalv->world, &jalv->map, NULL, path);
       free(path);
@@ -1207,7 +1206,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
                                          &static_features[2],
                                          &static_features[3],
                                          NULL};
-  jalv->feature_list                  = calloc(1, sizeof(features));
+
+  jalv->feature_list = (const LV2_Feature**)calloc(1, sizeof(features));
   if (!jalv->feature_list) {
     fprintf(stderr, "Failed to allocate feature list\n");
     jalv_close(jalv);
