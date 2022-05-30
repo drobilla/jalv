@@ -22,5 +22,6 @@ IndentPPDirectives: AfterHash
 KeepEmptyLinesAtTheStartOfBlocks: false
 SpacesInContainerLiterals: false
 StatementMacros:
+  - Q_OBJECT
   - _Pragma
 ...

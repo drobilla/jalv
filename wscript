@@ -335,10 +335,10 @@ def build(bld):
     # Qt5 version
     if bld.env.HAVE_QT5:
         obj = bld(rule = '${MOC5} ${SRC} > ${TGT}',
-                  source = 'src/jalv_qt.cpp',
-                  target = 'jalv_qt5_meta.hpp')
+                  source = 'src/jalv_qt.hpp',
+                  target = 'jalv_qt5_meta.cpp')
         obj = bld(features     = 'c cxx cxxprogram',
-                  source       = source + ' src/jalv_qt.cpp',
+                  source       = source + ' src/jalv_qt.cpp jalv_qt5_meta.cpp',
                   target       = 'jalv.qt5',
                   cflags       = bld.env.PTHREAD_CFLAGS,
                   linkflags    = bld.env.PTHREAD_LINKFLAGS,
