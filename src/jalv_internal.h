@@ -78,10 +78,6 @@ typedef struct {
   char* label;
 } ScalePoint;
 
-/// Order scale points by value
-int
-scale_point_cmp(const ScalePoint* a, const ScalePoint* b);
-
 /// Plugin control
 typedef struct {
   Jalv*       jalv;
@@ -107,22 +103,10 @@ typedef struct {
   bool        is_readable;    ///< Readable (output)
 } ControlID;
 
-ControlID*
-new_port_control(Jalv* jalv, uint32_t index);
-
-ControlID*
-new_property_control(Jalv* jalv, const LilvNode* property);
-
 typedef struct {
   size_t      n_controls;
   ControlID** controls;
 } Controls;
-
-void
-add_control(Controls* controls, ControlID* control);
-
-ControlID*
-get_property_control(const Controls* controls, LV2_URID property);
 
 /// Control change event, sent through ring buffers for UI updates
 typedef struct {

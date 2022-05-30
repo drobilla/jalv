@@ -3,6 +3,8 @@
 
 #define _POSIX_C_SOURCE 200809L
 
+#include "control.h"
+
 #include "jalv_internal.h"
 
 #include "lilv/lilv.h"

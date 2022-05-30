@@ -6,6 +6,7 @@
 #define _DARWIN_C_SOURCE        // for mkdtemp on Darwin
 
 #include "backend.h"
+#include "control.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"
 #include "log.h"
