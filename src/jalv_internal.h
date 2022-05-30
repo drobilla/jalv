@@ -328,22 +328,6 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts);
 int
 jalv_close(Jalv* jalv);
 
-JalvBackend*
-jalv_backend_init(Jalv* jalv);
-
-void
-jalv_backend_activate(Jalv* jalv);
-
-void
-jalv_backend_deactivate(Jalv* jalv);
-
-void
-jalv_backend_close(Jalv* jalv);
-
-/// Expose a port to the system (if applicable) and connect it to its buffer
-void
-jalv_backend_activate_port(Jalv* jalv, uint32_t port_index);
-
 void
 jalv_create_ports(Jalv* jalv);
 

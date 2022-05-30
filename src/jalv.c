@@ -5,6 +5,7 @@
 #define _XOPEN_SOURCE 600       // for S_IFMT and S_IFDIF
 #define _DARWIN_C_SOURCE        // for mkdtemp on Darwin
 
+#include "backend.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"
 #include "log.h"

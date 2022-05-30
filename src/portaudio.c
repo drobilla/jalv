@@ -1,6 +1,8 @@
 // Copyright 2007-2022 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
+#include "backend.h"
+
 #include "jalv_internal.h"
 #include "worker.h"
 
