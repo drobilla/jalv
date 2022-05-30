@@ -9,6 +9,7 @@
 #include "jalv_internal.h"
 #include "log.h"
 #include "lv2_evbuf.h"
+#include "state.h"
 #include "worker.h"
 
 #include "lilv/lilv.h"

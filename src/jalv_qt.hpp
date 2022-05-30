@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: ISC
 
 #include "jalv_internal.h"
+#include "state.h"
 
 #include "lilv/lilv.h"
 #include "suil/suil.h"

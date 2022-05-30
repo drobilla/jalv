@@ -1,6 +1,8 @@
 // Copyright 2007-2016 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
+#include "state.h"
+
 #include "jalv_internal.h"
 #include "log.h"
 
