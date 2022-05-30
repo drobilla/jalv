@@ -3,6 +3,7 @@
 
 #include "jalv_internal.h"
 #include "state.h"
+#include "ui.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"

@@ -3,6 +3,7 @@
 
 #include "jalv_qt.hpp"
 #include "jalv_internal.h"
+#include "ui.h"
 
 #include "lilv/lilv.h"
 #include "suil/suil.h"

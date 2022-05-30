@@ -323,9 +323,6 @@ int
 jalv_open(Jalv* jalv, int* argc, char*** argv);
 
 int
-jalv_init(int* argc, char*** argv, JalvOptions* opts);
-
-int
 jalv_close(Jalv* jalv);
 
 void
@@ -348,24 +345,6 @@ jalv_set_control(const ControlID* control,
                  uint32_t         size,
                  LV2_URID         type,
                  const void*      body);
-
-const char*
-jalv_native_ui_type(void);
-
-bool
-jalv_discover_ui(Jalv* jalv);
-
-float
-jalv_ui_refresh_rate(Jalv* jalv);
-
-float
-jalv_ui_scale_factor(Jalv* jalv);
-
-int
-jalv_open_ui(Jalv* jalv);
-
-LilvNode*
-jalv_select_plugin(Jalv* jalv);
 
 void
 jalv_init_ui(Jalv* jalv);

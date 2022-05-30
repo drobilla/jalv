@@ -11,6 +11,7 @@
 #include "log.h"
 #include "lv2_evbuf.h"
 #include "state.h"
+#include "ui.h"
 #include "worker.h"
 
 #include "lilv/lilv.h"
