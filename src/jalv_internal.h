@@ -37,12 +37,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#ifdef __clang__
-#  define REALTIME __attribute__((annotate("realtime")))
-#else
-#  define REALTIME
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

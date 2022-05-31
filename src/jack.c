@@ -38,6 +38,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __clang__
+#  define REALTIME __attribute__((annotate("realtime")))
+#else
+#  define REALTIME
+#endif
+
 struct JalvBackendImpl {
   jack_client_t* client;             ///< Jack client
   bool           is_internal_client; ///< Running inside jackd
