@@ -95,9 +95,9 @@ jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
       sink(jalv, preset, label, data);
       lilv_nodes_free(labels);
     } else {
-      fprintf(stderr,
-              "Preset <%s> has no rdfs:label\n",
-              lilv_node_as_string(lilv_nodes_get(presets, i)));
+      jalv_log(JALV_LOG_WARNING,
+               "Preset <%s> has no rdfs:label\n",
+               lilv_node_as_string(lilv_nodes_get(presets, i)));
     }
   }
   lilv_nodes_free(presets);
@@ -129,7 +129,7 @@ set_port_value(const char* port_symbol,
   Jalv*        jalv = (Jalv*)user_data;
   struct Port* port = jalv_port_by_symbol(jalv, port_symbol);
   if (!port) {
-    fprintf(stderr, "error: Preset port `%s' is missing\n", port_symbol);
+    jalv_log(JALV_LOG_ERR, "Preset port `%s' is missing\n", port_symbol);
     return;
   }
 
@@ -143,10 +143,10 @@ set_port_value(const char* port_symbol,
   } else if (type == jalv->forge.Long) {
     fvalue = *(const int64_t*)value;
   } else {
-    fprintf(stderr,
-            "error: Preset `%s' value has bad type <%s>\n",
-            port_symbol,
-            jalv->unmap.unmap(jalv->unmap.handle, type));
+    jalv_log(JALV_LOG_ERR,
+             "Preset `%s' value has bad type <%s>\n",
+             port_symbol,
+             jalv->unmap.unmap(jalv->unmap.handle, type));
     return;
   }
 

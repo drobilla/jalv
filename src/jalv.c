@@ -150,7 +150,7 @@ feature_is_supported(Jalv* jalv, const char* uri)
 static void
 die(const char* msg)
 {
-  fprintf(stderr, "%s\n", msg);
+  jalv_log(JALV_LOG_ERR, "%s\n", msg);
   exit(EXIT_FAILURE);
 }
 
@@ -253,10 +253,9 @@ jalv_create_ports(Jalv* jalv)
     if (jalv->ports[index].type == TYPE_EVENT) {
       jalv->control_in = index;
     } else {
-      fprintf(stderr,
-              "warning: Non-event port %u has lv2:control designation, "
-              "ignored\n",
-              index);
+      jalv_log(JALV_LOG_WARNING,
+               "Non-event port %u has lv2:control designation, ignored\n",
+               index);
     }
   }
 
@@ -368,9 +367,9 @@ jalv_create_controls(Jalv* jalv, bool writable)
     if (record->value_type) {
       add_control(&jalv->controls, record);
     } else {
-      fprintf(stderr,
-              "Parameter <%s> has unknown value type, ignored\n",
-              lilv_node_as_string(record->node));
+      jalv_log(JALV_LOG_WARNING,
+               "Parameter <%s> has unknown value type, ignored\n",
+               lilv_node_as_string(record->node));
       free(record);
     }
   }
@@ -491,15 +490,15 @@ jalv_ui_write(void* const jalv_handle,
   Jalv* const jalv = (Jalv*)jalv_handle;
 
   if (protocol != 0 && protocol != jalv->urids.atom_eventTransfer) {
-    fprintf(stderr,
-            "UI write with unsupported protocol %u (%s)\n",
-            protocol,
-            unmap_uri(jalv, protocol));
+    jalv_log(JALV_LOG_ERR,
+             "UI write with unsupported protocol %u (%s)\n",
+             protocol,
+             unmap_uri(jalv, protocol));
     return;
   }
 
   if (port_index >= jalv->num_ports) {
-    fprintf(stderr, "UI write to out of range port index %u\n", port_index);
+    jalv_log(JALV_LOG_ERR, "UI write to invalid port index %u\n", port_index);
     return;
   }
 
@@ -542,7 +541,7 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
 
     char body[MSG_BUFFER_SIZE];
     if (zix_ring_read(jalv->ui_events, body, ev.size) != ev.size) {
-      fprintf(stderr, "error: Error reading from UI ring buffer\n");
+      jalv_log(JALV_LOG_ERR, "Failed to read from UI ring buffer\n");
       break;
     }
 
@@ -561,8 +560,8 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
                       atom->size,
                       (const uint8_t*)LV2_ATOM_BODY_CONST(atom));
     } else {
-      fprintf(
-        stderr, "error: Unknown control change protocol %u\n", ev.protocol);
+      jalv_log(
+        JALV_LOG_ERR, "Unknown control change protocol %u\n", ev.protocol);
     }
   }
 }
@@ -628,7 +627,7 @@ jalv_send_to_ui(Jalv*       jalv,
     return true;
   }
 
-  fprintf(stderr, "Plugin => UI buffer overflow!\n");
+  jalv_log(JALV_LOG_ERR, "Plugin => UI buffer overflow\n");
   return false;
 }
 
@@ -718,13 +717,14 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
   char  sym[256];
   float val = 0.0f;
   if (sscanf(s, "%[^=]=%f", sym, &val) != 2) {
-    fprintf(stderr, "warning: Ignoring invalid value `%s'\n", s);
+    jalv_log(JALV_LOG_WARNING, "Ignoring invalid value `%s'\n", s);
     return false;
   }
 
   ControlID* control = jalv_control_by_symbol(jalv, sym);
   if (!control) {
-    fprintf(stderr, "warning: Ignoring value for unknown control `%s'\n", sym);
+    jalv_log(
+      JALV_LOG_WARNING, "Ignoring value for unknown control `%s'\n", sym);
     return false;
   }
 
@@ -1018,7 +1018,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
         jalv->world, &jalv->map, NULL, jalv->opts.load);
     }
     if (!state) {
-      fprintf(stderr, "Failed to load state from %s\n", jalv->opts.load);
+      jalv_log(JALV_LOG_ERR, "Failed to load state from %s\n", jalv->opts.load);
       jalv_close(jalv);
       return -2;
     }
@@ -1032,7 +1032,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   }
 
   if (!plugin_uri) {
-    fprintf(stderr, "Missing plugin URI, try lv2ls to list plugins\n");
+    jalv_log(JALV_LOG_ERR, "Missing plugin URI, try lv2ls to list plugins\n");
     jalv_close(jalv);
     return -3;
   }
@@ -1042,7 +1042,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
   lilv_node_free(plugin_uri);
   if (!jalv->plugin) {
-    fprintf(stderr, "Failed to find plugin\n");
+    jalv_log(JALV_LOG_ERR, "Failed to find plugin\n");
     jalv_close(jalv);
     return -4;
   }
@@ -1056,7 +1056,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv->preset = state;
     lilv_node_free(preset);
     if (!state) {
-      fprintf(stderr, "Failed to find preset <%s>\n", jalv->opts.preset);
+      jalv_log(JALV_LOG_ERR, "Failed to find preset <%s>\n", jalv->opts.preset);
       jalv_close(jalv);
       return -5;
     }
@@ -1107,7 +1107,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_create_controls(jalv, false);
 
   if (!(jalv->backend = jalv_backend_init(jalv))) {
-    fprintf(stderr, "Failed to connect to audio system\n");
+    jalv_log(JALV_LOG_ERR, "Failed to connect to audio system\n");
     jalv_close(jalv);
     return -6;
   }
@@ -1217,7 +1217,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   jalv->feature_list = (const LV2_Feature**)calloc(1, sizeof(features));
   if (!jalv->feature_list) {
-    fprintf(stderr, "Failed to allocate feature list\n");
+    jalv_log(JALV_LOG_ERR, "Failed to allocate feature list\n");
     jalv_close(jalv);
     return -7;
   }
@@ -1228,7 +1228,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   LILV_FOREACH (nodes, f, req_feats) {
     const char* uri = lilv_node_as_uri(lilv_nodes_get(req_feats, f));
     if (!feature_is_supported(jalv, uri)) {
-      fprintf(stderr, "Feature %s is not supported\n", uri);
+      jalv_log(JALV_LOG_ERR, "Feature %s is not supported\n", uri);
       jalv_close(jalv);
       return -8;
     }
@@ -1239,7 +1239,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->instance = lilv_plugin_instantiate(
     jalv->plugin, jalv->sample_rate, jalv->feature_list);
   if (!jalv->instance) {
-    fprintf(stderr, "Failed to instantiate plugin.\n");
+    jalv_log(JALV_LOG_ERR, "Failed to instantiate plugin.\n");
     jalv_close(jalv);
     return -9;
   }

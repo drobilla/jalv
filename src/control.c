@@ -5,6 +5,8 @@
 
 #include "control.h"
 
+#include "log.h"
+
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
 #include "lv2/atom/forge.h"
@@ -12,7 +14,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -160,9 +161,9 @@ new_property_control(LilvWorld* const       world,
     (id->value_type == forge->Int || id->value_type == forge->Long);
 
   if (!id->value_type) {
-    fprintf(stderr,
-            "Unknown value type for property <%s>\n",
-            lilv_node_as_string(property));
+    jalv_log(JALV_LOG_WARNING,
+             "Unknown value type for property <%s>\n",
+             lilv_node_as_string(property));
   }
 
   return id;

@@ -26,6 +26,12 @@ struct Port;
 
 // String and log utilities
 
+typedef enum {
+  JALV_LOG_ERR     = 3,
+  JALV_LOG_WARNING = 4,
+  JALV_LOG_DEBUG   = 7,
+} JalvLogLevel;
+
 void
 jalv_print_control(Jalv* jalv, const struct Port* port, float value);
 
@@ -35,13 +41,21 @@ jalv_strdup(const char* str);
 char*
 jalv_strjoin(const char* a, const char* b);
 
-JALV_LOG_FUNC(3, 4)
+JALV_LOG_FUNC(2, 0)
 int
-jalv_printf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, ...);
+jalv_vlog(JalvLogLevel level, const char* fmt, va_list ap);
+
+JALV_LOG_FUNC(2, 3)
+int
+jalv_log(JalvLogLevel level, const char* fmt, ...);
 
 JALV_LOG_FUNC(3, 0)
 int
 jalv_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap);
+
+JALV_LOG_FUNC(3, 4)
+int
+jalv_printf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, ...);
 
 bool
 jalv_ansi_start(FILE* stream, int color);

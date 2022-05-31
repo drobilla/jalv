@@ -4,6 +4,7 @@
 #include "control.h"
 #include "frontend.h"
 #include "jalv_internal.h"
+#include "log.h"
 #include "nodes.h"
 #include "options.h"
 #include "port.h"
@@ -688,7 +689,7 @@ control_changed(Jalv*       jalv,
     } else if (GTK_IS_RANGE(widget)) {
       gtk_range_set_value(GTK_RANGE(widget), fvalue);
     } else {
-      fprintf(stderr, "Unknown widget type for value\n");
+      jalv_log(JALV_LOG_WARNING, "Unknown widget type for value\n");
     }
 
     if (controller->spin) {
@@ -700,7 +701,7 @@ control_changed(Jalv*       jalv,
   } else if (GTK_IS_FILE_CHOOSER(widget) && type == jalv->urids.atom_Path) {
     gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(widget), (const char*)body);
   } else {
-    fprintf(stderr, "Unknown widget type for value\n");
+    jalv_log(JALV_LOG_WARNING, "Unknown widget type for value\n");
   }
 }
 
@@ -717,12 +718,12 @@ patch_set_get(Jalv*                  jalv,
                       value,
                       0);
   if (!*property) {
-    fprintf(stderr, "patch:Set message with no property\n");
+    jalv_log(JALV_LOG_WARNING, "patch:Set message with no property\n");
     return 1;
   }
 
   if ((*property)->atom.type != jalv->forge.URID) {
-    fprintf(stderr, "patch:Set property is not a URID\n");
+    jalv_log(JALV_LOG_WARNING, "patch:Set property is not a URID\n");
     return 1;
   }
 
@@ -736,12 +737,12 @@ patch_put_get(Jalv*                   jalv,
 {
   lv2_atom_object_get(obj, jalv->urids.patch_body, (const LV2_Atom*)body, 0);
   if (!*body) {
-    fprintf(stderr, "patch:Put message with no body\n");
+    jalv_log(JALV_LOG_WARNING, "patch:Put message with no body\n");
     return 1;
   }
 
   if (!lv2_atom_forge_is_object_type(&jalv->forge, (*body)->atom.type)) {
-    fprintf(stderr, "patch:Put body is not an object\n");
+    jalv_log(JALV_LOG_WARNING, "patch:Put body is not an object\n");
     return 1;
   }
 
@@ -824,7 +825,7 @@ jalv_ui_port_event(Jalv*       jalv,
   }
 
   if (protocol != jalv->urids.atom_eventTransfer) {
-    fprintf(stderr, "Unknown port event protocol\n");
+    jalv_log(JALV_LOG_WARNING, "Unknown port event protocol\n");
     return;
   }
 
@@ -847,7 +848,7 @@ jalv_ui_port_event(Jalv*       jalv,
         }
       }
     } else {
-      fprintf(stderr, "Unknown object type\n");
+      jalv_log(JALV_LOG_ERR, "Unknown object type\n");
     }
     updating = false;
   }

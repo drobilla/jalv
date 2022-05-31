@@ -274,7 +274,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       ev->size          = sizeof(float);
       *(float*)(ev + 1) = port->control;
       if (zix_ring_write(jalv->plugin_events, buf, sizeof(buf)) < sizeof(buf)) {
-        fprintf(stderr, "Plugin => UI buffer overflow!\n");
+        jalv_log(JALV_LOG_ERR, "Plugin => UI buffer overflow!\n");
       }
     }
   }
@@ -510,7 +510,7 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
 {
   const size_t args_len = strlen(load_init);
   if (args_len > JACK_LOAD_INIT_LIMIT) {
-    fprintf(stderr, "error: Too many arguments given\n");
+    jalv_log(JALV_LOG_ERR, "Too many arguments given\n");
     return -1;
   }
 
@@ -562,7 +562,7 @@ jack_finish(void* const arg)
   Jalv* const jalv = (Jalv*)arg;
   if (jalv) {
     if (jalv_close(jalv)) {
-      fprintf(stderr, "Failed to close Jalv\n");
+      jalv_log(JALV_LOG_ERR, "Failed to close Jalv\n");
     }
 
     free(jalv);

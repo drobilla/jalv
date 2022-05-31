@@ -89,7 +89,7 @@ pa_process_cb(const void*                     inputs,
       ev->size          = sizeof(float);
       *(float*)(ev + 1) = port->control;
       if (zix_ring_write(jalv->plugin_events, buf, sizeof(buf)) < sizeof(buf)) {
-        fprintf(stderr, "Plugin => UI buffer overflow!\n");
+        jalv_log(JALV_LOG_ERR, "Plugin => UI buffer overflow\n");
       }
     }
   }
@@ -100,7 +100,7 @@ pa_process_cb(const void*                     inputs,
 static JalvBackend*
 pa_error(const char* msg, PaError err)
 {
-  fprintf(stderr, "error: %s (%s)\n", msg, Pa_GetErrorText(err));
+  jalv_log(JALV_LOG_ERR, "%s (%s)\n", msg, Pa_GetErrorText(err));
   Pa_Terminate();
   return NULL;
 }
@@ -187,8 +187,8 @@ jalv_backend_activate(Jalv* jalv)
 {
   const int st = Pa_StartStream(jalv->backend->stream);
   if (st != paNoError) {
-    fprintf(
-      stderr, "error: Error starting audio stream (%s)\n", Pa_GetErrorText(st));
+    jalv_log(
+      JALV_LOG_ERR, "Error starting audio stream (%s)\n", Pa_GetErrorText(st));
   }
 }
 
@@ -197,8 +197,8 @@ jalv_backend_deactivate(Jalv* jalv)
 {
   const int st = Pa_CloseStream(jalv->backend->stream);
   if (st != paNoError) {
-    fprintf(
-      stderr, "error: Error closing audio stream (%s)\n", Pa_GetErrorText(st));
+    jalv_log(
+      JALV_LOG_ERR, "Error closing audio stream (%s)\n", Pa_GetErrorText(st));
   }
 }
 
