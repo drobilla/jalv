@@ -6,6 +6,7 @@
 
 #include "control.h"
 #include "jalv_config.h"
+#include "log.h"
 #include "nodes.h"
 #include "options.h"
 #include "symap.h"
@@ -64,6 +65,7 @@ struct JalvImpl {
   JalvOptions       opts;          ///< Command-line options
   JalvURIDs         urids;         ///< URIDs
   JalvNodes         nodes;         ///< Nodes
+  JalvLog           log;           ///< Log for error/warning/debug messages
   LV2_Atom_Forge    forge;         ///< Atom forge
   const char*       prog_name;     ///< Program name (argv[0])
   LilvWorld*        world;         ///< Lilv World

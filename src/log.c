@@ -7,7 +7,6 @@
 
 #include "jalv_config.h"
 #include "jalv_internal.h"
-#include "options.h"
 #include "port.h"
 #include "urids.h"
 
@@ -100,17 +99,17 @@ jalv_log(const JalvLogLevel level, const char* const fmt, ...)
 int
 jalv_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap)
 {
-  Jalv* const jalv = (Jalv*)handle;
+  JalvLog* const log = (JalvLog*)handle;
 
-  if (type == jalv->urids.log_Trace && jalv->opts.trace) {
-    return jalv_vlog(JALV_LOG_DEBUG, fmt, ap);
+  if (type == log->urids->log_Trace) {
+    return log->tracing ? jalv_vlog(JALV_LOG_DEBUG, fmt, ap) : 0;
   }
 
-  if (type == jalv->urids.log_Error) {
+  if (type == log->urids->log_Error) {
     return jalv_vlog(JALV_LOG_ERR, fmt, ap);
   }
 
-  if (type == jalv->urids.log_Warning) {
+  if (type == log->urids->log_Warning) {
     return jalv_vlog(JALV_LOG_WARNING, fmt, ap);
   }
 

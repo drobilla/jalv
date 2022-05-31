@@ -845,6 +845,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     return ret;
   }
 
+  jalv->log.urids   = &jalv->urids;
+  jalv->log.tracing = jalv->opts.trace;
+
   jalv->symap = symap_new();
   zix_sem_init(&jalv->symap_lock, 1);
   zix_sem_init(&jalv->work_lock, 1);
@@ -938,7 +941,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
                LV2_WORKER__schedule,
                &jalv->features.ssched);
 
-  jalv->features.llog.handle  = jalv;
+  jalv->features.llog.handle  = &jalv->log;
   jalv->features.llog.printf  = jalv_printf;
   jalv->features.llog.vprintf = jalv_vprintf;
   init_feature(&jalv->features.log_feature, LV2_LOG__log, &jalv->features.llog);

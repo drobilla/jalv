@@ -5,6 +5,7 @@
 #define JALV_LOG_H
 
 #include "types.h"
+#include "urids.h"
 
 #include "lv2/log/log.h"
 #include "lv2/urid/urid.h"
@@ -31,6 +32,11 @@ typedef enum {
   JALV_LOG_WARNING = 4,
   JALV_LOG_DEBUG   = 7,
 } JalvLogLevel;
+
+typedef struct {
+  JalvURIDs* urids;
+  bool       tracing;
+} JalvLog;
 
 void
 jalv_print_control(Jalv* jalv, const struct Port* port, float value);
