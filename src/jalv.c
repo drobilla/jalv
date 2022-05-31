@@ -58,6 +58,8 @@
 #ifdef _WIN32
 #  include <io.h> // for _mktemp
 #  define snprintf _snprintf
+#else
+#  include <unistd.h> // for mkdtemp on Darwin
 #endif
 
 #include <assert.h>
