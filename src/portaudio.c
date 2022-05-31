@@ -10,7 +10,7 @@
 #include <portaudio.h>
 #include <stdio.h>
 
-struct JalvBackend {
+struct JalvBackendImpl {
   PaStream* stream;
 };
 

@@ -4,7 +4,7 @@
 #ifndef JALV_STATE_H
 #define JALV_STATE_H
 
-#include "jalv_internal.h"
+#include "types.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"

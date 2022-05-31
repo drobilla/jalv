@@ -9,6 +9,7 @@
 #include "nodes.h"
 #include "options.h"
 #include "symap.h"
+#include "types.h"
 #include "urids.h"
 #include "worker.h"
 
@@ -46,14 +47,6 @@
 extern "C" {
 #endif
 
-struct Jalv;
-
-typedef struct JalvBackend JalvBackend;
-
-typedef struct Jalv Jalv;
-
-typedef enum { JALV_RUNNING, JALV_PAUSE_REQUESTED, JALV_PAUSED } JalvPlayState;
-
 typedef struct {
   LV2_Feature                map_feature;
   LV2_Feature                unmap_feature;
@@ -73,7 +66,7 @@ typedef struct {
   LV2_Extension_Data_Feature ext_data;
 } JalvFeatures;
 
-struct Jalv {
+struct JalvImpl {
   JalvOptions       opts;          ///< Command-line options
   JalvURIDs         urids;         ///< URIDs
   JalvNodes         nodes;         ///< Nodes

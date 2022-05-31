@@ -14,6 +14,7 @@
 #include "options.h"
 #include "port.h"
 #include "state.h"
+#include "types.h"
 
 #include "lilv/lilv.h"
 #include "lv2/ui/ui.h"

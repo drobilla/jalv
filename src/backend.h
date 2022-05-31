@@ -4,7 +4,7 @@
 #ifndef JALV_BACKEND_H
 #define JALV_BACKEND_H
 
-#include "jalv_internal.h"
+#include "types.h"
 
 #include <stdint.h>
 

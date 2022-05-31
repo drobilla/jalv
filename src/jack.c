@@ -12,6 +12,7 @@
 #include "nodes.h"
 #include "options.h"
 #include "port.h"
+#include "types.h"
 #include "urids.h"
 
 #include "lilv/lilv.h"
@@ -37,7 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct JalvBackend {
+struct JalvBackendImpl {
   jack_client_t* client;             ///< Jack client
   bool           is_internal_client; ///< Running inside jackd
 };

@@ -4,8 +4,8 @@
 #ifndef JALV_UI_H
 #define JALV_UI_H
 
-#include "jalv_internal.h"
 #include "options.h"
+#include "types.h"
 
 #include "lilv/lilv.h"
 
