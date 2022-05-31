@@ -67,7 +67,6 @@ struct JalvImpl {
   JalvNodes         nodes;         ///< Nodes
   JalvLog           log;           ///< Log for error/warning/debug messages
   LV2_Atom_Forge    forge;         ///< Atom forge
-  const char*       prog_name;     ///< Program name (argv[0])
   LilvWorld*        world;         ///< Lilv World
   LV2_URID_Map      map;           ///< URI => Int map
   LV2_URID_Unmap    unmap;         ///< Int => URI map

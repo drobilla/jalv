@@ -828,7 +828,6 @@ jalv_select_custom_ui(const Jalv* const jalv)
 int
 jalv_open(Jalv* const jalv, int* argc, char*** argv)
 {
-  jalv->prog_name     = (*argv)[0];
   jalv->block_length  = 4096; // Should be set by backend
   jalv->midi_buf_size = 1024; // Should be set by backend
   jalv->play_state    = JALV_PAUSED;
