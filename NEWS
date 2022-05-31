@@ -10,10 +10,11 @@ jalv (1.6.7) unstable;
   * Fix crash when running jalv without arguments
   * Fix outdated man pages
   * Flush stdout after printing control values in console interface
+  * Print status information consistently to stdout
   * Remove Gtkmm interface
   * Remove Qt4 support
 
- -- David Robillard <d@drobilla.net>  Mon, 30 May 2022 19:42:05 +0000
+ -- David Robillard <d@drobilla.net>  Tue, 31 May 2022 01:37:51 +0000
 
 jalv (1.6.6) stable;
 

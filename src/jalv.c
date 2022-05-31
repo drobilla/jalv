@@ -1096,11 +1096,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   // Create ringbuffers for UI if necessary
   if (jalv->ui) {
-    fprintf(stderr,
-            "UI:           %s\n",
-            lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
+    printf("UI:           %s\n", lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
   } else {
-    fprintf(stderr, "UI:           None\n");
+    printf("UI:           None\n");
   }
 
   // Create port and control structures
@@ -1147,9 +1145,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   // The UI can only go so fast, clamp to reasonable limits
   jalv->ui_update_hz     = MIN(60, jalv->ui_update_hz);
   jalv->opts.buffer_size = MAX(4096, jalv->opts.buffer_size);
-  fprintf(stderr, "Comm buffers: %u bytes\n", jalv->opts.buffer_size);
-  fprintf(stderr, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
-  fprintf(stderr, "Scale factor: %.01f\n", jalv->ui_scale_factor);
+  printf("Comm buffers: %u bytes\n", jalv->opts.buffer_size);
+  printf("Update rate:  %.01f Hz\n", jalv->ui_update_hz);
+  printf("Scale factor: %.01f\n", jalv->ui_scale_factor);
 
   // Build options array to pass to plugin
   const LV2_Options_Option options[ARRAY_SIZE(jalv->features.options)] = {
@@ -1254,7 +1252,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->worker.handle       = jalv->instance->lv2_handle;
   jalv->state_worker.handle = jalv->instance->lv2_handle;
 
-  fprintf(stderr, "\n");
+  printf("\n");
   if (!jalv->buf_size_set) {
     jalv_allocate_port_buffers(jalv);
   }
@@ -1314,8 +1312,6 @@ int
 jalv_close(Jalv* const jalv)
 {
   jalv->exit = true;
-
-  fprintf(stderr, "Exiting...\n");
 
   // Terminate the worker
   jalv_worker_finish(&jalv->worker);

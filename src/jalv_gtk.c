@@ -847,7 +847,7 @@ jalv_ui_port_event(Jalv*       jalv,
         }
       }
     } else {
-      printf("Unknown object type?\n");
+      fprintf(stderr, "Unknown object type\n");
     }
     updating = false;
   }
