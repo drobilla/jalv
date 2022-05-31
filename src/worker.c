@@ -36,12 +36,12 @@ worker_func(void* data)
     uint32_t size = 0;
     zix_ring_read(worker->requests, (char*)&size, sizeof(size));
 
-    if (!(buf = realloc(buf, size))) {
-      fprintf(stderr, "error: realloc() failed\n");
-      free(buf);
-      return NULL;
+    void* const new_buf = realloc(buf, size);
+    if (!new_buf) {
+      break;
     }
 
+    buf = new_buf;
     zix_ring_read(worker->requests, (char*)buf, size);
 
     zix_sem_wait(worker->lock);
