@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from waflib import Build, Logs, Options
+import os
+
+from waflib import Build, Logs, Options, Utils
 from waflib.extras import autowaf as autowaf
 
 # Version of this package (even if built as a child)
@@ -26,11 +28,9 @@ def options(ctx):
         {'portaudio':       'use PortAudio backend, not JACK',
          'no-gui':          'do not build any GUIs',
          'no-gtk':          'do not build Gtk GUI',
-         'no-gtkmm':        'do not build Gtkmm GUI',
          'no-gtk2':         'do not build Gtk2 GUI',
          'no-gtk3':         'do not build Gtk3 GUI',
          'no-qt':           'do not build Qt GUI',
-         'no-qt4':          'do not build Qt4 GUI',
          'no-qt5':          'do not build Qt5 GUI'})
 
 
@@ -39,6 +39,7 @@ def configure(conf):
     conf.load('compiler_cxx', cache=True)
     conf.load('autowaf', cache=True)
     autowaf.set_c_lang(conf, 'c99')
+    autowaf.set_cxx_lang(conf, 'c++14')
 
     if Options.options.strict:
         # Check for programs used by lint target
@@ -56,6 +57,23 @@ def configure(conf):
                 '-Wno-bad-function-cast',
                 '-Wno-c++-compat',
             ],
+            'msvc': [
+                '/wd4061', # enumerator in switch is not explicitly handled
+                '/wd4100', # unreferenced formal parameter
+                '/wd4191', # unsafe function conversion
+                '/wd4200', # zero-sized array in struct/union
+                '/wd4244', # possible loss of data from integer conversion
+                '/wd4267', # possible loss of data from size conversion
+                '/wd4365', # signed/unsigned mismatch
+                '/wd4514', # unreferenced inline function has been removed
+                '/wd4706', # assignment within conditional expression
+                '/wd4710', # function not inlined
+                '/wd4711', # function selected for automatic inline expansion
+                '/wd4800', # implicit conversion from int to bool
+                '/wd4820', # padding added after construct
+                '/wd4996', # POSIX name for this item is deprecated
+                '/wd5045', # compiler will insert Spectre mitigation
+            ],
         })
 
         autowaf.add_compiler_flags(conf.env, '*', {
@@ -72,15 +90,17 @@ def configure(conf):
                 '-Wno-format-nonliteral',
                 '-Wno-implicit-fallthrough',
                 '-Wno-implicit-float-conversion',
+                '-Wno-nullability-extension',
                 '-Wno-padded',
                 '-Wno-redundant-parens',
                 '-Wno-reserved-id-macro',
+                '-Wno-reserved-identifier',
                 '-Wno-shorten-64-to-32',
                 '-Wno-sign-conversion',
                 '-Wno-switch-enum',
+                '-Wno-unknown-warning-option',
                 '-Wno-unused-macros',
                 '-Wno-unused-parameter',
-                '-Wno-vla',
             ],
             'gcc': [
                 '-Wno-cast-align',
@@ -95,7 +115,6 @@ def configure(conf):
                 '-Wno-switch-enum',
                 '-Wno-unused-macros',
                 '-Wno-unused-parameter',
-                '-Wno-vla',
             ],
         })
 
@@ -111,11 +130,11 @@ def configure(conf):
             ],
         })
 
-    conf.check_pkg('lv2 >= 1.17.2', uselib_store='LV2')
+    conf.check_pkg('lv2 >= 1.18.0', uselib_store='LV2')
     conf.check_pkg('lilv-0 >= 0.24.0', uselib_store='LILV')
     conf.check_pkg('serd-0 >= 0.24.0', uselib_store='SERD')
     conf.check_pkg('sord-0 >= 0.14.0', uselib_store='SORD')
-    conf.check_pkg('sratom-0 >= 0.6.0', uselib_store='SRATOM')
+    conf.check_pkg('sratom-0 >= 0.6.4', uselib_store='SRATOM')
     if Options.options.portaudio:
         conf.check_pkg('portaudio-2.0 >= 2.0.0',
                        uselib_store='PORTAUDIO',
@@ -132,11 +151,6 @@ def configure(conf):
                            uselib_store='GTK2',
                            system=True,
                            mandatory=False)
-        if not Options.options.no_gtkmm:
-            conf.check_pkg('gtkmm-2.4 >= 2.20.0',
-                           uselib_store='GTKMM2',
-                           system=True,
-                           mandatory=False)
         if not Options.options.no_gtk3:
             conf.check_pkg('gtk+-3.0 >= 3.0.0',
                            uselib_store='GTK3',
@@ -144,16 +158,6 @@ def configure(conf):
                            mandatory=False)
 
     if not Options.options.no_gui and not Options.options.no_qt:
-        if not Options.options.no_qt4:
-            conf.check_pkg('QtGui >= 4.0.0',
-                           uselib_store='QT4',
-                           system=True,
-                           mandatory=False)
-            if conf.env.HAVE_QT4:
-                if not conf.find_program('moc-qt4', var='MOC4',
-                                         mandatory=False):
-                    conf.find_program('moc', var='MOC4')
-
         if not Options.options.no_qt5:
             conf.check_pkg('Qt5Widgets >= 5.1.0',
                            uselib_store='QT5',
@@ -164,14 +168,9 @@ def configure(conf):
                                          mandatory=False):
                     conf.find_program('moc', var='MOC5')
 
-    have_gui = (conf.env.HAVE_GTK2 or
-                conf.env.HAVE_GTKMM2 or
-                conf.env.HAVE_GTK3 or
-                conf.env.HAVE_QT4 or
-                conf.env.HAVE_QT5)
+    have_gui = (conf.env.HAVE_GTK2 or conf.env.HAVE_GTK3 or conf.env.HAVE_QT5)
 
-    if have_gui:
-        conf.check_pkg('suil-0 >= 0.10.0', uselib_store='SUIL')
+    conf.check_pkg('suil-0 >= 0.10.0', uselib_store='SUIL')
 
     if conf.env.HAVE_JACK:
         conf.check_function(
@@ -196,6 +195,18 @@ def configure(conf):
                             mandatory   = False)
 
     defines = ['_POSIX_C_SOURCE=200809L']
+
+    conf.env.PTHREAD_CFLAGS = []
+    conf.env.PTHREAD_LINKFLAGS = []
+    if conf.env.DEST_OS != 'win32':
+        if conf.check(cflags=['-pthread'], mandatory=False):
+            conf.env.PTHREAD_CFLAGS = ['-pthread']
+        if conf.check(linkflags=['-pthread'], mandatory=False):
+            if not (conf.env.DEST_OS == 'darwin'
+                    and conf.env.CXX_NAME == 'clang'):
+                conf.env.PTHREAD_LINKFLAGS += ['-pthread']
+        elif conf.check(linkflags=['-lpthread'], mandatory=False):
+            conf.env.PTHREAD_LINKFLAGS += ['-lpthread']
 
     conf.check_function('c', 'isatty',
                         header_name = 'unistd.h',
@@ -231,6 +242,7 @@ def configure(conf):
                                          struct sigaction*''',
                         mandatory   = False)
 
+    conf.define('JALV_VERSION', JALV_VERSION)
     conf.write_config_header('jalv_config.h', remove=False)
 
     autowaf.display_summary(
@@ -239,8 +251,6 @@ def configure(conf):
          'Jack metadata support': conf.is_defined('HAVE_JACK_METADATA'),
          'Gtk 2.0 support': bool(conf.env.HAVE_GTK2),
          'Gtk 3.0 support': bool(conf.env.HAVE_GTK3),
-         'Gtkmm 2.0 support': bool(conf.env.HAVE_GTKMM2),
-         'Qt 4.0 support': bool(conf.env.HAVE_QT4),
          'Qt 5.0 support': bool(conf.env.HAVE_QT5),
          'Color output': bool(conf.env.JALV_WITH_COLOR)})
 
@@ -265,6 +275,9 @@ def build(bld):
         obj = bld(features     = 'c cshlib',
                   source       = source + ' src/jalv_console.c',
                   target       = 'jalv',
+                  cflags       = bld.env.PTHREAD_CFLAGS,
+                  linkflags    = bld.env.PTHREAD_LINKFLAGS,
+                  defines      = ['ZIX_INTERNAL'],
                   includes     = ['.', 'src'],
                   lib          = ['pthread'],
                   uselib       = libs,
@@ -277,8 +290,10 @@ def build(bld):
     obj = bld(features     = 'c cprogram',
               source       = source + ' src/jalv_console.c',
               target       = 'jalv',
+              cflags       = bld.env.PTHREAD_CFLAGS,
+              linkflags    = bld.env.PTHREAD_LINKFLAGS,
+              defines      = ['ZIX_INTERNAL'],
               includes     = ['.', 'src'],
-              lib          = ['pthread'],
               uselib       = libs,
               install_path = '${BINDIR}')
 
@@ -287,8 +302,11 @@ def build(bld):
         obj = bld(features     = 'c cprogram',
                   source       = source + ' src/jalv_gtk.c',
                   target       = 'jalv.gtk',
+                  cflags       = bld.env.PTHREAD_CFLAGS,
+                  linkflags    = bld.env.PTHREAD_LINKFLAGS,
+                  defines      = ['ZIX_INTERNAL'],
                   includes     = ['.', 'src'],
-                  lib          = ['pthread', 'm'],
+                  lib          = ['m'],
                   uselib       = libs + ' GTK2',
                   install_path = '${BINDIR}')
 
@@ -297,44 +315,35 @@ def build(bld):
         obj = bld(features     = 'c cprogram',
                   source       = source + ' src/jalv_gtk.c',
                   target       = 'jalv.gtk3',
+                  cflags       = bld.env.PTHREAD_CFLAGS,
+                  linkflags    = bld.env.PTHREAD_LINKFLAGS,
+                  defines      = ['ZIX_INTERNAL'],
                   includes     = ['.', 'src'],
-                  lib          = ['pthread', 'm'],
+                  lib          = ['m'],
                   uselib       = libs + ' GTK3',
                   install_path = '${BINDIR}')
 
-    # Gtkmm version
-    if bld.env.HAVE_GTKMM2:
-        obj = bld(features     = 'c cxx cxxprogram',
-                  source       = source + ' src/jalv_gtkmm2.cpp',
-                  target       = 'jalv.gtkmm',
-                  includes     = ['.', 'src'],
-                  lib          = ['pthread'],
-                  uselib       = libs + ' GTKMM2',
-                  install_path = '${BINDIR}')
-
-    # Qt4 version
-    if bld.env.HAVE_QT4:
-        obj = bld(rule = '${MOC4} ${SRC} > ${TGT}',
-                  source = 'src/jalv_qt.cpp',
-                  target = 'jalv_qt4_meta.hpp')
-        obj = bld(features     = 'c cxx cxxprogram',
-                  source       = source + ' src/jalv_qt.cpp',
-                  target       = 'jalv.qt4',
-                  includes     = ['.', 'src'],
-                  lib          = ['pthread'],
-                  uselib       = libs + ' QT4',
-                  install_path = '${BINDIR}')
+        bld(features         = 'subst',
+            source           = 'jalv.desktop.in',
+            target           = 'jalv.desktop',
+            install_path     = '${DATADIR}/applications',
+            chmod            = Utils.O644,
+            BINDIR           = os.path.normpath(bld.env.BINDIR),
+            APP_INSTALL_NAME = 'jalv.gtk3',
+            APP_HUMAN_NAME   = 'Jalv')
 
     # Qt5 version
     if bld.env.HAVE_QT5:
         obj = bld(rule = '${MOC5} ${SRC} > ${TGT}',
-                  source = 'src/jalv_qt.cpp',
-                  target = 'jalv_qt5_meta.hpp')
+                  source = 'src/jalv_qt.hpp',
+                  target = 'jalv_qt5_meta.cpp')
         obj = bld(features     = 'c cxx cxxprogram',
-                  source       = source + ' src/jalv_qt.cpp',
+                  source       = source + ' src/jalv_qt.cpp jalv_qt5_meta.cpp',
                   target       = 'jalv.qt5',
+                  cflags       = bld.env.PTHREAD_CFLAGS,
+                  linkflags    = bld.env.PTHREAD_LINKFLAGS,
+                  defines      = ['ZIX_INTERNAL'],
                   includes     = ['.', 'src'],
-                  lib          = ['pthread'],
                   uselib       = libs + ' QT5',
                   install_path = '${BINDIR}',
                   cxxflags     = ['-fPIC'])

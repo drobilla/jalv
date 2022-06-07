@@ -1,5 +1,5 @@
 /*
-  Copyright 2011-2014 David Robillard <d@drobilla.net>
+  Copyright 2011-2022 David Robillard <d@drobilla.net>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -29,21 +29,15 @@
 
 typedef struct SymapImpl Symap;
 
-/**
-   Create a new symbol map.
-*/
+/// Create a new symbol map
 Symap*
 symap_new(void);
 
-/**
-   Free a symbol map.
-*/
+/// Free a symbol map
 void
 symap_free(Symap* map);
 
-/**
-   Map a string to a symbol ID if it is already mapped, otherwise return 0.
-*/
+/// Map a string to a symbol ID if it is already mapped, otherwise return 0
 uint32_t
 symap_try_map(Symap* map, const char* sym);
 
@@ -63,4 +57,4 @@ symap_map(Symap* map, const char* sym);
 const char*
 symap_unmap(Symap* map, uint32_t id);
 
-#endif /* SYMAP_H */
+#endif // SYMAP_H

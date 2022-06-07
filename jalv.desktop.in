@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=@APP_HUMAN_NAME@
+Comment=Simple LV2 plugin host
+Comment[fr]=Hôte de greffon LV2 simple
+Exec=@BINDIR@/@APP_INSTALL_NAME@
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;
+Keywords=music;midi;alsa;jack;
