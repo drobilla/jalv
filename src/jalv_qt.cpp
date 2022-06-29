@@ -48,12 +48,12 @@
 #include <map>
 #include <vector>
 
-#define CONTROL_WIDTH 150
-#define DIAL_STEPS 10000
+constexpr int CONTROL_WIDTH = 150;
+constexpr int DIAL_STEPS    = 10000;
 
 static QApplication* app = nullptr;
 
-class FlowLayout : public QLayout
+class FlowLayout final : public QLayout
 {
 public:
   explicit FlowLayout(QWidget* parent, int margin, int hSpacing, int vSpacing);
@@ -590,7 +590,7 @@ build_control_widget(Jalv* jalv)
     LilvNode*   group =
       lilv_port_get(plugin, port->lilv_port, jalv->nodes.pg_group);
     if (group) {
-      if (!lilv_node_equals(group, lastGroup)) {
+      if (!groupLayout || !lilv_node_equals(group, lastGroup)) {
         // Group has changed
         LilvNode* groupName =
           lilv_world_get(world, group, jalv->nodes.lv2_name, nullptr);
