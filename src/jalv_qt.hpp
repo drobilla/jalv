@@ -14,6 +14,8 @@
 #include <map>
 #include <vector>
 
+struct Port;
+
 class QDial;
 class QLabel;
 class QWidget;
@@ -39,8 +41,8 @@ private:
 };
 
 struct PortContainer {
-  Jalv*        jalv;
-  struct Port* port;
+  Jalv* jalv;
+  Port* port;
 };
 
 class Control : public QGroupBox
@@ -62,7 +64,7 @@ private:
 
   QDial*            dial;
   const LilvPlugin* plugin;
-  struct Port*      port;
+  Port*             port;
 
   QLabel* label;
   QString name;
