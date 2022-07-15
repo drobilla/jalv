@@ -1,0 +1,35 @@
+option('checks', type: 'boolean', value: true, yield: true,
+       description: 'Check for features with the build system')
+
+option('cxx', type: 'feature', value: 'auto', yield: true,
+       description: 'Build C++ programs')
+
+option('gtk2', type: 'feature', value: 'auto', yield: true,
+       description: 'Build Gtk2 GUI')
+
+option('gtk3', type: 'feature', value: 'auto', yield: true,
+       description: 'Build Gtk3 GUI')
+
+option('portaudio', type: 'feature', value: 'auto', yield: true,
+       description: 'Build PortAudio driver')
+
+option('jack', type: 'feature', value: 'auto', yield: true,
+       description: 'Build JACK driver')
+
+option('posix', type: 'feature', value: 'auto', yield: true,
+       description: 'Use POSIX system facilities')
+
+option('qt5', type: 'feature', value: 'auto', yield: true,
+       description: 'Build Qt5 GUI')
+
+option('strict', type: 'boolean', value: false, yield: true,
+       description: 'Enable ultra-strict warnings')
+
+option('suil', type: 'feature', value: 'auto', yield: true,
+       description: 'Use suil to load plugin UIs')
+
+option('title', type: 'string', value: 'Jalv',
+       description: 'Project title')
+
+option('tests', type: 'feature', value: 'auto', yield: true,
+       description: 'Build tests')

@@ -1,0 +1,9 @@
+# Copyright 2022 David Robillard <d@drobilla.net>
+# SPDX-License-Identifier: CC0-1.0 OR ISC
+
+[wrap-git]
+directory=suil
+url=https://gitlab.com/lv2/suil.git
+push-url=ssh://git@gitlab.com:lv2/suil.git
+revision=meson
+depth=1

@@ -1,8 +1,6 @@
 // Copyright 2007-2022 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
-#define _POSIX_C_SOURCE 200809L
-
 #include "log.h"
 
 #include "jalv_config.h"
@@ -14,7 +12,7 @@
 #include "lv2/log/log.h"
 #include "lv2/urid/urid.h"
 
-#ifdef HAVE_ISATTY
+#if USE_ISATTY
 #  include <unistd.h>
 #endif
 
@@ -129,7 +127,7 @@ jalv_printf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, ...)
 bool
 jalv_ansi_start(FILE* stream, int color)
 {
-#if defined(HAVE_ISATTY) && defined(HAVE_FILENO)
+#if USE_ISATTY && USE_FILENO
   if (isatty(fileno(stream))) {
     return fprintf(stream, "\033[0;%dm", color);
   }
@@ -140,7 +138,7 @@ jalv_ansi_start(FILE* stream, int color)
 void
 jalv_ansi_reset(FILE* stream)
 {
-#ifdef HAVE_ISATTY
+#if USE_ISATTY
   if (isatty(fileno(stream))) {
     fprintf(stream, "\033[0m");
     fflush(stream);

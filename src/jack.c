@@ -27,7 +27,7 @@
 #include <jack/transport.h>
 #include <jack/types.h>
 
-#ifdef HAVE_JACK_METADATA
+#if USE_JACK_METADATA
 #  include <jack/metadata.h>
 #endif
 
@@ -64,7 +64,7 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
   Jalv* const jalv   = (Jalv*)data;
   jalv->block_length = nframes;
   jalv->buf_size_set = true;
-#ifdef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
+#if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
   jalv->midi_buf_size = jack_port_type_get_buffer_size(jalv->backend->client,
                                                        JACK_DEFAULT_MIDI_TYPE);
 #endif
@@ -174,7 +174,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       // Connect plugin port directly to Jack port buffer
       lilv_instance_connect_port(
         jalv->instance, p, jack_port_get_buffer(port->sys_port, nframes));
-#ifdef HAVE_JACK_METADATA
+#if USE_JACK_METADATA
     } else if (port->type == TYPE_CV && port->sys_port) {
       // Connect plugin port directly to Jack port buffer
       lilv_instance_connect_port(
@@ -376,7 +376,7 @@ jalv_backend_init(Jalv* jalv)
   jalv->sample_rate   = (float)jack_get_sample_rate(client);
   jalv->block_length  = jack_get_buffer_size(client);
   jalv->midi_buf_size = 4096;
-#ifdef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
+#if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
   jalv->midi_buf_size =
     jack_port_type_get_buffer_size(client, JACK_DEFAULT_MIDI_TYPE);
 #endif
@@ -455,7 +455,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
     port->sys_port = jack_port_register(
       client, lilv_node_as_string(sym), JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
     break;
-#ifdef HAVE_JACK_METADATA
+#if USE_JACK_METADATA
   case TYPE_CV:
     port->sys_port = jack_port_register(
       client, lilv_node_as_string(sym), JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
@@ -482,7 +482,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
     break;
   }
 
-#ifdef HAVE_JACK_METADATA
+#if USE_JACK_METADATA
   if (port->sys_port) {
     // Set port order to index
     char index_str[16];

@@ -20,7 +20,7 @@
 #include "lilv/lilv.h"
 #include "serd/serd.h"
 #include "sratom/sratom.h"
-#ifdef HAVE_SUIL
+#if USE_SUIL
 #  include "suil/suil.h"
 #endif
 
@@ -93,7 +93,7 @@ struct JalvImpl {
   const LilvUI*     ui;            ///< Plugin UI (RDF data)
   const LilvNode*   ui_type;       ///< Plugin UI type (unwrapped)
   LilvInstance*     instance;      ///< Plugin instance (shared library)
-#ifdef HAVE_SUIL
+#if USE_SUIL
   SuilHost*     ui_host;     ///< Plugin UI host support
   SuilInstance* ui_instance; ///< Plugin UI instance (shared library)
 #endif

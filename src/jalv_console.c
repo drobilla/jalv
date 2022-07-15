@@ -1,11 +1,6 @@
 // Copyright 2007-2022 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
-#define _POSIX_C_SOURCE 200809L
-#define _XOPEN_SOURCE 600
-#define _BSD_SOURCE 1
-#define _DEFAULT_SOURCE 1
-
 #include "control.h"
 #include "frontend.h"
 #include "jalv_config.h"
@@ -18,9 +13,12 @@
 
 #include "lilv/lilv.h"
 #include "lv2/ui/ui.h"
-#include "suil/suil.h"
 #include "zix/common.h"
 #include "zix/sem.h"
+
+#if USE_SUIL
+#  include "suil/suil.h"
+#endif
 
 #ifdef _WIN32
 #  include <synchapi.h>
@@ -74,10 +72,18 @@ jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    protocol,
                    const void* buffer)
 {
+#if USE_SUIL
   if (jalv->ui_instance) {
     suil_instance_port_event(
       jalv->ui_instance, port_index, buffer_size, protocol, buffer);
   }
+#else
+  (void)jalv;
+  (void)port_index;
+  (void)buffer_size;
+  (void)protocol;
+  (void)buffer;
+#endif
 }
 
 int
@@ -247,7 +253,7 @@ jalv_frontend_discover(Jalv* jalv)
 static bool
 jalv_run_custom_ui(Jalv* jalv)
 {
-#ifdef HAVE_SUIL
+#if USE_SUIL
   const LV2UI_Idle_Interface* idle_iface = NULL;
   const LV2UI_Show_Interface* show_iface = NULL;
   if (jalv->ui && jalv->opts.show_ui) {
@@ -278,6 +284,8 @@ jalv_run_custom_ui(Jalv* jalv)
     show_iface->hide(suil_instance_get_handle(jalv->ui_instance));
     return true;
   }
+#else
+  (void)jalv;
 #endif
 
   return false;

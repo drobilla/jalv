@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_MLOCK
+#if HAVE_MLOCK
 #  include <sys/mman.h>
 #  define ZIX_MLOCK(ptr, size) mlock((ptr), (size))
 #elif defined(_WIN32)

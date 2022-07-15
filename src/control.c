@@ -1,8 +1,6 @@
 // Copyright 2007-2022 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
-#define _POSIX_C_SOURCE 200809L
-
 #include "control.h"
 
 #include "log.h"

@@ -1,10 +1,6 @@
 // Copyright 2007-2022 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
-#define _POSIX_C_SOURCE 200809L // for mkdtemp
-#define _XOPEN_SOURCE 600       // for S_IFMT and S_IFDIF
-#define _DARWIN_C_SOURCE        // for mkdtemp on Darwin
-
 #include "backend.h"
 #include "control.h"
 #include "frontend.h"
@@ -48,7 +44,7 @@
 #include "zix/ring.h"
 #include "zix/sem.h"
 
-#ifdef HAVE_SUIL
+#if USE_SUIL
 #  include "suil/suil.h"
 #endif
 
@@ -210,7 +206,7 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
   } else if (lilv_port_is_a(
                jalv->plugin, port->lilv_port, jalv->nodes.lv2_AudioPort)) {
     port->type = TYPE_AUDIO;
-#ifdef HAVE_JACK_METADATA
+#if USE_JACK_METADATA
   } else if (lilv_port_is_a(
                jalv->plugin, port->lilv_port, jalv->nodes.lv2_CVPort)) {
     port->type = TYPE_CV;
@@ -415,7 +411,7 @@ jalv_set_control(Jalv*            jalv,
 void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 {
-#ifdef HAVE_SUIL
+#if USE_SUIL
   jalv->ui_host = suil_host_new(jalv_ui_write, jalv_ui_port_index, NULL, NULL);
 
   const LV2_Feature parent_feature   = {LV2_UI__parent, parent};
@@ -752,7 +748,7 @@ setup_signals(Jalv* const jalv)
 {
   exit_sem = &jalv->done;
 
-#ifdef HAVE_SIGACTION
+#if !defined(_WIN32) && USE_SIGACTION
   struct sigaction action;
   sigemptyset(&action.sa_mask);
   action.sa_flags   = 0;
@@ -780,7 +776,7 @@ jalv_select_custom_ui(const Jalv* const jalv)
     return ui;
   }
 
-#ifdef HAVE_SUIL
+#if USE_SUIL
   if (native_ui_type_uri) {
     // Try to find an embeddable UI
     LilvNode* native_type = lilv_new_uri(jalv->world, native_ui_type_uri);
@@ -834,7 +830,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->bpm           = 120.0f;
   jalv->control_in    = (uint32_t)-1;
 
-#ifdef HAVE_SUIL
+#if USE_SUIL
   suil_init(argc, argv, SUIL_ARG_NONE);
 #endif
 
@@ -1082,6 +1078,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->uis = lilv_plugin_get_uis(jalv->plugin);
   if (!jalv->opts.generic_ui) {
     if ((jalv->ui = jalv_select_custom_ui(jalv))) {
+#if USE_SUIL
       const char* host_type_uri = jalv_frontend_ui_type();
       if (host_type_uri) {
         LilvNode* host_type = lilv_new_uri(jalv->world, host_type_uri);
@@ -1093,6 +1090,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
         lilv_node_free(host_type);
       }
+#endif
     }
   }
 
@@ -1127,7 +1125,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv->opts.buffer_size = jalv->midi_buf_size * N_BUFFER_CYCLES;
   }
 
-  if (jalv->opts.update_rate == 0.0) {
+  if (!jalv->opts.update_rate) {
     // Calculate a reasonable UI update frequency
     jalv->ui_update_hz = jalv_frontend_refresh_rate(jalv);
   } else {
@@ -1136,7 +1134,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv->ui_update_hz = MAX(1.0f, jalv->ui_update_hz);
   }
 
-  if (jalv->opts.scale_factor == 0.0) {
+  if (!jalv->opts.scale_factor) {
     // Calculate the monitor's scale factor
     jalv->ui_scale_factor = jalv_frontend_scale_factor(jalv);
   } else {
@@ -1335,7 +1333,7 @@ jalv_close(Jalv* const jalv)
   jalv_worker_destroy(&jalv->worker);
 
   // Deactivate plugin
-#ifdef HAVE_SUIL
+#if USE_SUIL
   suil_instance_free(jalv->ui_instance);
 #endif
   if (jalv->instance) {
@@ -1352,7 +1350,7 @@ jalv_close(Jalv* const jalv)
   }
   symap_free(jalv->symap);
   zix_sem_destroy(&jalv->symap_lock);
-#ifdef HAVE_SUIL
+#if USE_SUIL
   suil_host_free(jalv->ui_host);
 #endif
 

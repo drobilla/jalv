@@ -4,6 +4,7 @@
 #include "backend.h"
 
 #include "jalv_internal.h"
+#include "port.h"
 #include "worker.h"
 
 #include <math.h>
