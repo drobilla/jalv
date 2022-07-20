@@ -342,11 +342,6 @@ Control::Control(PortContainer portContainer, QWidget* parent)
   , plugin(portContainer.jalv->plugin)
   , port(portContainer.port)
   , label(new QLabel())
-  , max(1.0f)
-  , min(0.0f)
-  , isInteger(false)
-  , isEnum(false)
-  , isLogarithmic(false)
 {
   JalvNodes*      nodes    = &portContainer.jalv->nodes;
   const LilvPort* lilvPort = port->lilv_port;

@@ -69,11 +69,11 @@ private:
   QLabel* label;
   QString name;
   int     steps;
-  float   max;
-  float   min;
-  bool    isInteger;
-  bool    isEnum;
-  bool    isLogarithmic;
+  float   max{1.0f};
+  float   min{0.0f};
+  bool    isInteger{};
+  bool    isEnum{};
+  bool    isLogarithmic{};
 
   std::vector<float>           scalePoints;
   std::map<float, const char*> scaleMap;
