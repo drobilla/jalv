@@ -1,4 +1,4 @@
-jalv (1.6.7) unstable;
+jalv (1.6.7) unstable; urgency=medium
 
   * Add Gtk plugin selector UI and desktop file
   * Add missing option in console help output
@@ -18,7 +18,7 @@ jalv (1.6.7) unstable;
 
  -- David Robillard <d@drobilla.net>  Wed, 20 Jul 2022 19:49:03 +0000
 
-jalv (1.6.6) stable;
+jalv (1.6.6) stable; urgency=medium
 
   * Add a command line argument to select a specific UI
   * Explicitly support lv2:inPlaceBroken
@@ -28,14 +28,14 @@ jalv (1.6.6) stable;
 
  -- David Robillard <d@drobilla.net>  Thu, 07 Jan 2021 22:05:38 +0000
 
-jalv (1.6.4) stable;
+jalv (1.6.4) stable; urgency=medium
 
   * Support rdfs:label for port groups
   * Use screen refresh rate with Gtk3 and Qt5
 
  -- David Robillard <d@drobilla.net>  Sun, 10 Nov 2019 21:56:49 +0000
 
-jalv (1.6.2) stable;
+jalv (1.6.2) stable; urgency=medium
 
   * Add jalv -i option to ignore stdin for background use
   * Add several commands to console interface
@@ -51,7 +51,7 @@ jalv (1.6.2) stable;
 
  -- David Robillard <d@drobilla.net>  Thu, 06 Jun 2019 20:38:01 +0000
 
-jalv (1.6.0) stable;
+jalv (1.6.0) stable; urgency=medium
 
   * Add PortAudio backend (compile time option, audio only)
   * Add Qt5 version
@@ -77,7 +77,7 @@ jalv (1.6.0) stable;
 
  -- David Robillard <d@drobilla.net>  Wed, 04 Jan 2017 17:24:58 +0000
 
-jalv (1.4.6) stable;
+jalv (1.4.6) stable; urgency=medium
 
   * Add option to print control output changes to stdout
   * Add support for data-access extension (based on patch by Filipe Coelho)
@@ -92,7 +92,7 @@ jalv (1.4.6) stable;
 
  -- David Robillard <d@drobilla.net>  Fri, 08 Aug 2014 22:30:28 +0000
 
-jalv (1.4.4) stable;
+jalv (1.4.4) stable; urgency=medium
 
   * Add --no-menu option for jalv.gtk
   * Add -c option for setting controls from the command line
@@ -105,7 +105,7 @@ jalv (1.4.4) stable;
 
  -- David Robillard <d@drobilla.net>  Sat, 04 Jan 2014 21:11:45 +0000
 
-jalv (1.4.2) stable;
+jalv (1.4.2) stable; urgency=medium
 
   * Add command-line option to control UI update frequency
   * Fix crash when running "jalv" with bad command line arguments
@@ -120,7 +120,7 @@ jalv (1.4.2) stable;
 
  -- David Robillard <d@drobilla.net>  Fri, 09 Aug 2013 14:40:20 +0000
 
-jalv (1.4.0) stable;
+jalv (1.4.0) stable; urgency=medium
 
   * Add menu bar and pass parent widget in Qt version for true UI embedding
   * Add spinbuttons for precisely setting control values
@@ -133,7 +133,7 @@ jalv (1.4.0) stable;
 
  -- David Robillard <d@drobilla.net>  Sat, 23 Feb 2013 03:35:22 +0000
 
-jalv (1.2.0) stable;
+jalv (1.2.0) stable; urgency=medium
 
   * Add Gtk3 UI
   * Fix Jack Session support
@@ -149,7 +149,7 @@ jalv (1.2.0) stable;
 
  -- David Robillard <d@drobilla.net>  Sun, 14 Oct 2012 22:38:53 +0000
 
-jalv (1.0.0) stable;
+jalv (1.0.0) stable; urgency=medium
 
   * Initial release
 
