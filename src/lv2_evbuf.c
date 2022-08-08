@@ -4,6 +4,7 @@
 #include "lv2_evbuf.h"
 
 #include "lv2/atom/atom.h"
+#include "lv2/atom/util.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -15,12 +16,6 @@ struct LV2_Evbuf_Impl {
   uint32_t          atom_Sequence;
   LV2_Atom_Sequence buf;
 };
-
-static inline uint32_t
-lv2_evbuf_pad_size(uint32_t size)
-{
-  return (size + 7) & (~7);
-}
 
 LV2_Evbuf*
 lv2_evbuf_new(uint32_t capacity, uint32_t atom_Chunk, uint32_t atom_Sequence)
@@ -80,7 +75,7 @@ LV2_Evbuf_Iterator
 lv2_evbuf_end(LV2_Evbuf* evbuf)
 {
   const uint32_t           size = lv2_evbuf_get_size(evbuf);
-  const LV2_Evbuf_Iterator iter = {evbuf, lv2_evbuf_pad_size(size)};
+  const LV2_Evbuf_Iterator iter = {evbuf, lv2_atom_pad_size(size)};
   return iter;
 }
 
@@ -104,7 +99,7 @@ lv2_evbuf_next(LV2_Evbuf_Iterator iter)
                                                      &evbuf->buf.atom) +
                             offset))
            ->body.size;
-  offset += lv2_evbuf_pad_size(sizeof(LV2_Atom_Event) + size);
+  offset += lv2_atom_pad_size(sizeof(LV2_Atom_Event) + size);
 
   LV2_Evbuf_Iterator next = {evbuf, offset};
   return next;
@@ -164,7 +159,7 @@ lv2_evbuf_write(LV2_Evbuf_Iterator* iter,
   aev->body.size   = size;
   memcpy(LV2_ATOM_BODY(&aev->body), data, size);
 
-  size = lv2_evbuf_pad_size(sizeof(LV2_Atom_Event) + size);
+  size = lv2_atom_pad_size(sizeof(LV2_Atom_Event) + size);
   aseq->atom.size += size;
   iter->offset += size;
 
