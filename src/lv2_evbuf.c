@@ -1,7 +1,8 @@
-// Copyright 2008-2018 David Robillard <d@drobilla.net>
+// Copyright 2008-2022 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "lv2_evbuf.h"
+#include "jalv_config.h"
 
 #include "lv2/atom/atom.h"
 #include "lv2/atom/util.h"
@@ -14,19 +15,35 @@ struct LV2_Evbuf_Impl {
   uint32_t          capacity;
   uint32_t          atom_Chunk;
   uint32_t          atom_Sequence;
+  uint32_t          pad; // So buf has correct atom alignment
   LV2_Atom_Sequence buf;
 };
 
 LV2_Evbuf*
 lv2_evbuf_new(uint32_t capacity, uint32_t atom_Chunk, uint32_t atom_Sequence)
 {
-  // FIXME: memory must be 64-bit aligned
-  LV2_Evbuf* evbuf     = (LV2_Evbuf*)malloc(sizeof(LV2_Evbuf) +
-                                        sizeof(LV2_Atom_Sequence) + capacity);
-  evbuf->capacity      = capacity;
-  evbuf->atom_Chunk    = atom_Chunk;
-  evbuf->atom_Sequence = atom_Sequence;
-  lv2_evbuf_reset(evbuf, true);
+  const size_t buffer_size =
+    sizeof(LV2_Evbuf) + sizeof(LV2_Atom_Sequence) + capacity;
+
+#if USE_POSIX_MEMALIGN
+  LV2_Evbuf* evbuf = NULL;
+  const int  st    = posix_memalign((void**)&evbuf, 16, buffer_size);
+  if (st) {
+    return NULL;
+  }
+
+  assert((uintptr_t)evbuf % 8U == 0U);
+#else
+  LV2_Evbuf* evbuf = (LV2_Evbuf*)malloc(buffer_size);
+#endif
+
+  if (evbuf) {
+    memset(evbuf, 0, sizeof(*evbuf));
+    evbuf->capacity      = capacity;
+    evbuf->atom_Chunk    = atom_Chunk;
+    evbuf->atom_Sequence = atom_Sequence;
+  }
+
   return evbuf;
 }
 
@@ -86,22 +103,21 @@ lv2_evbuf_is_valid(LV2_Evbuf_Iterator iter)
 }
 
 LV2_Evbuf_Iterator
-lv2_evbuf_next(LV2_Evbuf_Iterator iter)
+lv2_evbuf_next(const LV2_Evbuf_Iterator iter)
 {
   if (!lv2_evbuf_is_valid(iter)) {
     return iter;
   }
 
-  LV2_Evbuf* evbuf  = iter.evbuf;
-  uint32_t   offset = iter.offset;
-  uint32_t   size   = 0;
-  size = ((LV2_Atom_Event*)((char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence,
-                                                     &evbuf->buf.atom) +
-                            offset))
-           ->body.size;
-  offset += lv2_atom_pad_size(sizeof(LV2_Atom_Event) + size);
+  LV2_Atom_Sequence* aseq = &iter.evbuf->buf;
+  LV2_Atom_Event*    aev =
+    (LV2_Atom_Event*)((char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq) +
+                      iter.offset);
 
-  LV2_Evbuf_Iterator next = {evbuf, offset};
+  const uint32_t offset =
+    iter.offset + lv2_atom_pad_size(sizeof(LV2_Atom_Event) + aev->body.size);
+
+  LV2_Evbuf_Iterator next = {iter.evbuf, offset};
   return next;
 }
 

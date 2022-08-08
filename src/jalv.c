@@ -280,6 +280,8 @@ jalv_allocate_port_buffers(Jalv* jalv)
 
       lilv_instance_connect_port(
         jalv->instance, i, lv2_evbuf_get_buffer(port->evbuf));
+
+      lv2_evbuf_reset(port->evbuf, port->flow == FLOW_INPUT);
     }
   }
 }
