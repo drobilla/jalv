@@ -23,6 +23,7 @@
 #include "lv2/buf-size/buf-size.h"
 #include "lv2/core/lv2.h"
 #include "lv2/data-access/data-access.h"
+#include "lv2/instance-access/instance-access.h"
 #include "lv2/log/log.h"
 #include "lv2/midi/midi.h"
 #include "lv2/options/options.h"
@@ -414,12 +415,16 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 #if USE_SUIL
   jalv->ui_host = suil_host_new(jalv_ui_write, jalv_ui_port_index, NULL, NULL);
 
-  const LV2_Feature parent_feature   = {LV2_UI__parent, parent};
+  const LV2_Feature parent_feature = {LV2_UI__parent, parent};
+
   const LV2_Feature instance_feature = {
-    NS_EXT "instance-access", lilv_instance_get_handle(jalv->instance)};
-  const LV2_Feature  data_feature  = {LV2_DATA_ACCESS_URI,
+    LV2_INSTANCE_ACCESS_URI, lilv_instance_get_handle(jalv->instance)};
+
+  const LV2_Feature data_feature = {LV2_DATA_ACCESS_URI,
                                     &jalv->features.ext_data};
-  const LV2_Feature  idle_feature  = {LV2_UI__idleInterface, NULL};
+
+  const LV2_Feature idle_feature = {LV2_UI__idleInterface, NULL};
+
   const LV2_Feature* ui_features[] = {&jalv->features.map_feature,
                                       &jalv->features.unmap_feature,
                                       &instance_feature,
