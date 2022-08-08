@@ -1278,6 +1278,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   // Apply loaded state to plugin instance if necessary
   if (state) {
     jalv_apply_state(jalv, state);
+    lilv_state_free(state);
   }
 
   if (jalv->opts.controls) {
@@ -1336,6 +1337,9 @@ jalv_close(Jalv* const jalv)
 
   // Destroy the worker
   jalv_worker_destroy(&jalv->worker);
+  if (jalv->safe_restore) {
+    jalv_worker_destroy(&jalv->state_worker);
+  }
 
   // Deactivate plugin
 #if USE_SUIL
@@ -1374,6 +1378,7 @@ jalv_close(Jalv* const jalv)
 
   sratom_free(jalv->sratom);
   sratom_free(jalv->ui_sratom);
+  serd_env_free(jalv->env);
   lilv_uis_free(jalv->uis);
   lilv_world_free(jalv->world);
 

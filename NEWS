@@ -9,6 +9,7 @@ jalv (1.6.7) unstable; urgency=medium
   * Fix MSVC build
   * Fix crash when running jalv without arguments
   * Fix man page headers
+  * Fix memory leaks
   * Fix outdated man pages
   * Flush stdout after printing control values in console interface
   * Print status information consistently to stdout
@@ -16,7 +17,7 @@ jalv (1.6.7) unstable; urgency=medium
   * Remove Qt4 support
   * Switch to meson build system
 
- -- David Robillard <d@drobilla.net>  Wed, 20 Jul 2022 19:49:03 +0000
+ -- David Robillard <d@drobilla.net>  Mon, 08 Aug 2022 22:34:43 +0000
 
 jalv (1.6.6) stable; urgency=medium
 

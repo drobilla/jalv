@@ -82,13 +82,9 @@ jalv_worker_finish(JalvWorker* worker)
 void
 jalv_worker_destroy(JalvWorker* worker)
 {
-  if (worker->requests) {
-    if (worker->threaded) {
-      zix_ring_free(worker->requests);
-    }
-    zix_ring_free(worker->responses);
-    free(worker->response);
-  }
+  zix_ring_free(worker->requests);
+  zix_ring_free(worker->responses);
+  free(worker->response);
 }
 
 LV2_Worker_Status
