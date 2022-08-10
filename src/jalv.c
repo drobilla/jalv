@@ -977,37 +977,9 @@ jalv_init_env(SerdEnv* const env)
     env, (const uint8_t*)"xsd", (const uint8_t*)NS_XSD);
 }
 
-int
-jalv_open(Jalv* const jalv, int* argc, char*** argv)
+static void
+jalv_init_features(Jalv* const jalv)
 {
-  jalv->block_length  = 4096; // Should be set by backend
-  jalv->midi_buf_size = 1024; // Should be set by backend
-  jalv->play_state    = JALV_PAUSED;
-  jalv->bpm           = 120.0f;
-  jalv->control_in    = (uint32_t)-1;
-
-#if USE_SUIL
-  suil_init(argc, argv, SUIL_ARG_NONE);
-#endif
-
-  // Parse command-line arguments
-  const int ret = jalv_frontend_init(argc, argv, &jalv->opts);
-  if (ret) {
-    jalv_close(jalv);
-    return ret;
-  }
-
-  jalv->env   = serd_env_new(NULL);
-  jalv->symap = symap_new();
-
-  jalv_init_urids(jalv->symap, &jalv->urids);
-
-  jalv->log.urids   = &jalv->urids;
-  jalv->log.tracing = jalv->opts.trace;
-
-  zix_sem_init(&jalv->symap_lock, 1);
-  zix_sem_init(&jalv->work_lock, 1);
-
   // urid:map
   jalv->map.handle = jalv;
   jalv->map.map    = map_uri;
@@ -1017,24 +989,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->unmap.handle = jalv;
   jalv->unmap.unmap  = unmap_uri;
   init_feature(&jalv->features.unmap_feature, LV2_URID__unmap, &jalv->unmap);
-
-  lv2_atom_forge_init(&jalv->forge, &jalv->map);
-  jalv_init_env(jalv->env);
-
-  jalv->sratom    = sratom_new(&jalv->map);
-  jalv->ui_sratom = sratom_new(&jalv->map);
-  sratom_set_env(jalv->sratom, jalv->env);
-  sratom_set_env(jalv->ui_sratom, jalv->env);
-
-  // Create temporary directory for plugin state
-#ifdef _WIN32
-  jalv->temp_dir = jalv_strdup("jalvXXXXXX");
-  _mktemp(jalv->temp_dir);
-#else
-  char* templ    = jalv_strdup("/tmp/jalv-XXXXXX");
-  jalv->temp_dir = jalv_strjoin(mkdtemp(templ), "/");
-  free(templ);
-#endif
 
   // state:makePath
   jalv->features.make_path.handle = jalv;
@@ -1060,11 +1014,116 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->features.llog.vprintf = jalv_vprintf;
   init_feature(&jalv->features.log_feature, LV2_LOG__log, &jalv->features.llog);
 
+  // (options:options is initialized later by jalv_init_options())
+
+  // state:threadSafeRestore
+  init_feature(
+    &jalv->features.safe_restore_feature, LV2_STATE__threadSafeRestore, NULL);
+
   // ui:requestValue
   jalv->features.request_value.handle = jalv;
   init_feature(&jalv->features.request_value_feature,
                LV2_UI__requestValue,
                &jalv->features.request_value);
+}
+
+static void
+jalv_init_options(Jalv* const jalv)
+{
+  const LV2_Options_Option options[ARRAY_SIZE(jalv->features.options)] = {
+    {LV2_OPTIONS_INSTANCE,
+     0,
+     jalv->urids.param_sampleRate,
+     sizeof(float),
+     jalv->urids.atom_Float,
+     &jalv->sample_rate},
+    {LV2_OPTIONS_INSTANCE,
+     0,
+     jalv->urids.bufsz_minBlockLength,
+     sizeof(int32_t),
+     jalv->urids.atom_Int,
+     &jalv->block_length},
+    {LV2_OPTIONS_INSTANCE,
+     0,
+     jalv->urids.bufsz_maxBlockLength,
+     sizeof(int32_t),
+     jalv->urids.atom_Int,
+     &jalv->block_length},
+    {LV2_OPTIONS_INSTANCE,
+     0,
+     jalv->urids.bufsz_sequenceSize,
+     sizeof(int32_t),
+     jalv->urids.atom_Int,
+     &jalv->midi_buf_size},
+    {LV2_OPTIONS_INSTANCE,
+     0,
+     jalv->urids.ui_updateRate,
+     sizeof(float),
+     jalv->urids.atom_Float,
+     &jalv->ui_update_hz},
+    {LV2_OPTIONS_INSTANCE,
+     0,
+     jalv->urids.ui_scaleFactor,
+     sizeof(float),
+     jalv->urids.atom_Float,
+     &jalv->ui_scale_factor},
+    {LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL}};
+
+  memcpy(jalv->features.options, options, sizeof(jalv->features.options));
+
+  init_feature(&jalv->features.options_feature,
+               LV2_OPTIONS__options,
+               (void*)jalv->features.options);
+}
+
+int
+jalv_open(Jalv* const jalv, int* argc, char*** argv)
+{
+  jalv->block_length  = 4096; // Should be set by backend
+  jalv->midi_buf_size = 1024; // Should be set by backend
+  jalv->play_state    = JALV_PAUSED;
+  jalv->bpm           = 120.0f;
+  jalv->control_in    = (uint32_t)-1;
+
+#if USE_SUIL
+  suil_init(argc, argv, SUIL_ARG_NONE);
+#endif
+
+  // Parse command-line arguments
+  int ret = 0;
+  if ((ret = jalv_frontend_init(argc, argv, &jalv->opts))) {
+    jalv_close(jalv);
+    return ret;
+  }
+
+  jalv->symap = symap_new();
+
+  jalv_init_urids(jalv->symap, &jalv->urids);
+  jalv_init_env(jalv->env);
+  jalv_init_features(jalv);
+
+  jalv->log.urids   = &jalv->urids;
+  jalv->log.tracing = jalv->opts.trace;
+
+  zix_sem_init(&jalv->symap_lock, 1);
+  zix_sem_init(&jalv->work_lock, 1);
+
+  lv2_atom_forge_init(&jalv->forge, &jalv->map);
+
+  jalv->sratom    = sratom_new(&jalv->map);
+  jalv->ui_sratom = sratom_new(&jalv->map);
+  sratom_set_env(jalv->sratom, jalv->env);
+  sratom_set_env(jalv->ui_sratom, jalv->env);
+
+  // Create temporary directory for plugin state
+#ifdef _WIN32
+  jalv->temp_dir = jalv_strdup("jalvXXXXXX");
+  _mktemp(jalv->temp_dir);
+#else
+  char* templ    = jalv_strdup("/tmp/jalv-XXXXXX");
+  jalv->temp_dir = jalv_strjoin(mkdtemp(templ), "/");
+  free(templ);
+#endif
 
   zix_sem_init(&jalv->done, 0);
   zix_sem_init(&jalv->paused, 0);
@@ -1236,53 +1295,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_log(JALV_LOG_INFO, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
   jalv_log(JALV_LOG_INFO, "Scale factor: %.01f\n", jalv->ui_scale_factor);
 
-  // Build options array to pass to plugin
-  const LV2_Options_Option options[ARRAY_SIZE(jalv->features.options)] = {
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.param_sampleRate,
-     sizeof(float),
-     jalv->urids.atom_Float,
-     &jalv->sample_rate},
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.bufsz_minBlockLength,
-     sizeof(int32_t),
-     jalv->urids.atom_Int,
-     &jalv->block_length},
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.bufsz_maxBlockLength,
-     sizeof(int32_t),
-     jalv->urids.atom_Int,
-     &jalv->block_length},
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.bufsz_sequenceSize,
-     sizeof(int32_t),
-     jalv->urids.atom_Int,
-     &jalv->midi_buf_size},
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.ui_updateRate,
-     sizeof(float),
-     jalv->urids.atom_Float,
-     &jalv->ui_update_hz},
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.ui_scaleFactor,
-     sizeof(float),
-     jalv->urids.atom_Float,
-     &jalv->ui_scale_factor},
-    {LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL}};
-  memcpy(jalv->features.options, options, sizeof(jalv->features.options));
-
-  init_feature(&jalv->features.options_feature,
-               LV2_OPTIONS__options,
-               (void*)jalv->features.options);
-
-  init_feature(
-    &jalv->features.safe_restore_feature, LV2_STATE__threadSafeRestore, NULL);
+  jalv_init_options(jalv);
 
   // Create Plugin <=> UI communication buffers
   jalv->ui_to_plugin = zix_ring_new(NULL, jalv->opts.buffer_size);
