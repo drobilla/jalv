@@ -600,7 +600,7 @@ jalv_write_event(Jalv* const       jalv,
                  const LV2_URID    type,
                  const void* const body)
 {
-  // TODO: Be more disciminate about what to send
+  // TODO: Be more discriminate about what to send
   char           evbuf[sizeof(ControlChange) + sizeof(LV2_Atom)];
   ControlChange* ev = (ControlChange*)evbuf;
   ev->index         = port_index;
