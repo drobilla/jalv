@@ -4,6 +4,7 @@
 #ifndef JALV_STATE_H
 #define JALV_STATE_H
 
+#include "attributes.h"
 #include "types.h"
 
 #include "lilv/lilv.h"
@@ -12,9 +13,7 @@
 #include "lv2/urid/urid.h"
 #include "serd/serd.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 // State and preset utilities
 
@@ -60,8 +59,6 @@ atom_to_turtle(LV2_URID_Unmap* unmap,
                const SerdNode* predicate,
                const LV2_Atom* atom);
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_STATE_H

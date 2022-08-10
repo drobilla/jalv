@@ -4,13 +4,12 @@
 #ifndef JALV_BACKEND_H
 #define JALV_BACKEND_H
 
+#include "attributes.h"
 #include "types.h"
 
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 // Audio/MIDI I/O backend interface
 
@@ -30,8 +29,6 @@ jalv_backend_close(Jalv* jalv);
 void
 jalv_backend_activate_port(Jalv* jalv, uint32_t port_index);
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_BACKEND_H

@@ -4,11 +4,11 @@
 #ifndef JALV_NODES_H
 #define JALV_NODES_H
 
+#include "attributes.h"
+
 #include "lilv/lilv.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 typedef struct {
   LilvNode* atom_AtomPort;
@@ -51,8 +51,6 @@ typedef struct {
   LilvNode* end; ///< NULL terminator for easy freeing of entire structure
 } JalvNodes;
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_NODES_H

@@ -4,11 +4,11 @@
 #ifndef JALV_OPTIONS_H
 #define JALV_OPTIONS_H
 
+#include "attributes.h"
+
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 typedef struct {
   char*    name;            ///< Client name
@@ -30,8 +30,6 @@ typedef struct {
   char*    ui_uri;          ///< URI of UI to load
 } JalvOptions;
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_OPTIONS_H

@@ -4,6 +4,7 @@
 #ifndef JALV_CONTROL_H
 #define JALV_CONTROL_H
 
+#include "attributes.h"
 #include "nodes.h"
 
 #include "lilv/lilv.h"
@@ -14,9 +15,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 // Plugin control utilities
 
@@ -99,8 +98,6 @@ add_control(Controls* controls, ControlID* control);
 ControlID*
 get_property_control(const Controls* controls, LV2_URID property);
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_CONTROL_H

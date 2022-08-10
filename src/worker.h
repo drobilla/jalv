@@ -4,6 +4,8 @@
 #ifndef JALV_WORKER_H
 #define JALV_WORKER_H
 
+#include "attributes.h"
+
 #include "zix/ring.h"
 #include "zix/sem.h"
 #include "zix/thread.h"
@@ -14,9 +16,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 // Worker for running non-realtime tasks for plugins
 
@@ -52,8 +52,6 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
 void
 jalv_worker_emit_responses(JalvWorker* worker, LV2_Handle lv2_handle);
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_WORKER_H

@@ -4,6 +4,7 @@
 #ifndef JALV_LOG_H
 #define JALV_LOG_H
 
+#include "attributes.h"
 #include "types.h"
 #include "urids.h"
 
@@ -19,9 +20,7 @@
 #  define JALV_LOG_FUNC(fmt, arg1)
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 struct Port;
 
@@ -69,8 +68,6 @@ jalv_ansi_start(FILE* stream, int color);
 void
 jalv_ansi_reset(FILE* stream);
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_LOG_H

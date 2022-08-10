@@ -4,11 +4,11 @@
 #ifndef JALV_URIDS_H
 #define JALV_URIDS_H
 
+#include "attributes.h"
+
 #include "lv2/urid/urid.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 typedef struct {
   LV2_URID atom_Float;
@@ -43,8 +43,6 @@ typedef struct {
   LV2_URID ui_updateRate;
 } JalvURIDs;
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_URIDS_H

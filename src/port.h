@@ -4,6 +4,7 @@
 #ifndef JALV_PORT_H
 #define JALV_PORT_H
 
+#include "attributes.h"
 #include "lv2_evbuf.h"
 
 #include "lilv/lilv.h"
@@ -11,9 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 enum PortFlow { FLOW_UNKNOWN, FLOW_INPUT, FLOW_OUTPUT };
 
@@ -31,8 +30,6 @@ struct Port {
   float           control;   ///< For control ports, otherwise 0.0f
 };
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_PORT_H

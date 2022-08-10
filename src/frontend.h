@@ -4,6 +4,7 @@
 #ifndef JALV_UI_H
 #define JALV_UI_H
 
+#include "attributes.h"
 #include "options.h"
 #include "types.h"
 
@@ -11,9 +12,7 @@
 
 #include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 // Interface that must be implemented by UIs
 
@@ -49,8 +48,6 @@ jalv_frontend_open(Jalv* jalv);
 int
 jalv_frontend_close(Jalv* jalv);
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_UI_H

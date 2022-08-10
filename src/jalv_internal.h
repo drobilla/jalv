@@ -4,6 +4,7 @@
 #ifndef JALV_INTERNAL_H
 #define JALV_INTERNAL_H
 
+#include "attributes.h"
 #include "control.h"
 #include "jalv_config.h"
 #include "log.h"
@@ -38,9 +39,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+JALV_BEGIN_DECLS
 
 typedef struct {
   LV2_Feature                map_feature;
@@ -227,8 +226,6 @@ jalv_run(Jalv* jalv, uint32_t nframes);
 int
 jalv_update(Jalv* jalv);
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+JALV_END_DECLS
 
 #endif // JALV_INTERNAL_H
