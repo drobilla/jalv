@@ -402,11 +402,11 @@ jalv_set_control(Jalv*            jalv,
     lv2_atom_forge_write(&forge, body, size);
 
     const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);
-    jalv_ui_write(jalv,
-                  jalv->control_in,
-                  lv2_atom_total_size(atom),
-                  jalv->urids.atom_eventTransfer,
-                  atom);
+    jalv_send_to_plugin(jalv,
+                        jalv->control_in,
+                        lv2_atom_total_size(atom),
+                        jalv->urids.atom_eventTransfer,
+                        atom);
   }
 }
 
@@ -425,7 +425,8 @@ void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 {
 #if USE_SUIL
-  jalv->ui_host = suil_host_new(jalv_ui_write, jalv_ui_port_index, NULL, NULL);
+  jalv->ui_host =
+    suil_host_new(jalv_send_to_plugin, jalv_ui_port_index, NULL, NULL);
 
   const LV2_Feature parent_feature = {LV2_UI__parent, parent};
 
@@ -494,11 +495,11 @@ jalv_ui_is_resizable(Jalv* jalv)
 }
 
 void
-jalv_ui_write(void* const jalv_handle,
-              uint32_t    port_index,
-              uint32_t    buffer_size,
-              uint32_t    protocol,
-              const void* buffer)
+jalv_send_to_plugin(void* const jalv_handle,
+                    uint32_t    port_index,
+                    uint32_t    buffer_size,
+                    uint32_t    protocol,
+                    const void* buffer)
 {
   Jalv* const jalv = (Jalv*)jalv_handle;
 
@@ -586,11 +587,11 @@ jalv_init_ui(Jalv* jalv)
     lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Get);
 
     const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);
-    jalv_ui_write(jalv,
-                  jalv->control_in,
-                  lv2_atom_total_size(atom),
-                  jalv->urids.atom_eventTransfer,
-                  atom);
+    jalv_send_to_plugin(jalv,
+                        jalv->control_in,
+                        lv2_atom_total_size(atom),
+                        jalv->urids.atom_eventTransfer,
+                        atom);
     lv2_atom_forge_pop(&forge, &frame);
   }
 }

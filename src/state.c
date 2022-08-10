@@ -155,7 +155,7 @@ set_port_value(const char* port_symbol,
     port->control = fvalue;
   } else {
     // Send value to running plugin
-    jalv_ui_write(jalv, port->index, sizeof(fvalue), 0, &fvalue);
+    jalv_send_to_plugin(jalv, port->index, sizeof(fvalue), 0, &fvalue);
   }
 
   if (jalv->has_ui) {
