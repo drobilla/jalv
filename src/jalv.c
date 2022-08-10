@@ -1164,14 +1164,12 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
         lilv_node_free(host_type);
       }
 #endif
-    }
-  }
 
-  // Create ringbuffers for UI if necessary
-  if (jalv->ui) {
-    printf("UI:           %s\n", lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
-  } else {
-    printf("UI:           None\n");
+      if (jalv->ui) {
+        printf("UI:           %s\n",
+               lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
+      }
+    }
   }
 
   // Create port and control structures
