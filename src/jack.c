@@ -17,6 +17,7 @@
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
 #include "lv2/atom/forge.h"
+#include "lv2/urid/urid.h"
 #include "zix/sem.h"
 
 #include <jack/jack.h>
@@ -227,7 +228,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
         // Get event from LV2 buffer
         uint32_t frames    = 0;
         uint32_t subframes = 0;
-        uint32_t type      = 0;
+        LV2_URID type      = 0;
         uint32_t size      = 0;
         void*    body      = NULL;
         lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
@@ -239,7 +240,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
         if (jalv->has_ui) {
           // Forward event to UI
-          jalv_send_to_ui(jalv, p, type, size, body);
+          jalv_write_event(jalv, jalv->plugin_to_ui, p, size, type, body);
         }
       }
     } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&

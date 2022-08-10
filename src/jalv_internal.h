@@ -175,12 +175,26 @@ jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    protocol,
                    const void* buffer);
 
-bool
-jalv_send_to_ui(Jalv*       jalv,
-                uint32_t    port_index,
-                uint32_t    type,
-                uint32_t    size,
-                const void* body);
+/**
+   Write a port event using the atom:eventTransfer protocol.
+
+   This is used to transfer atoms between the plugin and UI via sequence ports.
+
+   @param jalv Jalv instance.
+   @param target Communication ring (jalv->plugin_to_ui or jalv->ui_to_plugin).
+   @param port_index Index of the port this change is for.
+   @param size Size of body in bytes.
+   @param type Atom type URID.
+   @param body Atom body.
+   @return 0 on success, non-zero on failure (overflow).
+*/
+int
+jalv_write_event(Jalv*       jalv,
+                 ZixRing*    target,
+                 uint32_t    port_index,
+                 uint32_t    size,
+                 LV2_URID    type,
+                 const void* body);
 
 /**
    Write a control port change using the default (0) protocol.

@@ -592,12 +592,13 @@ jalv_init_ui(Jalv* jalv)
   }
 }
 
-bool
-jalv_send_to_ui(Jalv*       jalv,
-                uint32_t    port_index,
-                uint32_t    type,
-                uint32_t    size,
-                const void* body)
+int
+jalv_write_event(Jalv* const       jalv,
+                 ZixRing* const    target,
+                 const uint32_t    port_index,
+                 const uint32_t    size,
+                 const LV2_URID    type,
+                 const void* const body)
 {
   // TODO: Be more disciminate about what to send
   char           evbuf[sizeof(ControlChange) + sizeof(LV2_Atom)];
@@ -610,14 +611,13 @@ jalv_send_to_ui(Jalv*       jalv,
   atom->type     = type;
   atom->size     = size;
 
-  if (zix_ring_write_space(jalv->plugin_to_ui) >= sizeof(evbuf) + size) {
-    zix_ring_write(jalv->plugin_to_ui, evbuf, sizeof(evbuf));
-    zix_ring_write(jalv->plugin_to_ui, (const char*)body, size);
-    return true;
+  if (zix_ring_write_space(target) >= sizeof(evbuf) + size) {
+    zix_ring_write(target, evbuf, sizeof(evbuf));
+    zix_ring_write(target, (const char*)body, size);
+    return 0;
   }
 
-  jalv_log(JALV_LOG_ERR, "Plugin => UI buffer overflow\n");
-  return false;
+  return 1;
 }
 
 int

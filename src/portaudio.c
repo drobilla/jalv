@@ -75,7 +75,7 @@ pa_process_cb(const void*                     inputs,
 
         if (jalv->has_ui) {
           // Forward event to UI
-          jalv_send_to_ui(jalv, p, type, size, body);
+          jalv_write_event(jalv, jalv->plugin_to_ui, p, size, type, body);
         }
       }
     } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&
