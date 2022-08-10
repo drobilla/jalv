@@ -90,7 +90,7 @@ pa_process_cb(const void*                     inputs,
       ev->protocol      = 0;
       ev->size          = sizeof(float);
       *(float*)(ev + 1) = port->control;
-      if (zix_ring_write(jalv->plugin_events, buf, sizeof(buf)) < sizeof(buf)) {
+      if (zix_ring_write(jalv->plugin_to_ui, buf, sizeof(buf)) < sizeof(buf)) {
         jalv_log(JALV_LOG_ERR, "Plugin => UI buffer overflow\n");
       }
     }

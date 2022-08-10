@@ -62,37 +62,37 @@ typedef struct {
 } JalvFeatures;
 
 struct JalvImpl {
-  JalvOptions       opts;          ///< Command-line options
-  JalvURIDs         urids;         ///< URIDs
-  JalvNodes         nodes;         ///< Nodes
-  JalvLog           log;           ///< Log for error/warning/debug messages
-  LV2_Atom_Forge    forge;         ///< Atom forge
-  LilvWorld*        world;         ///< Lilv World
-  LV2_URID_Map      map;           ///< URI => Int map
-  LV2_URID_Unmap    unmap;         ///< Int => URI map
-  SerdEnv*          env;           ///< Environment for RDF printing
-  Sratom*           sratom;        ///< Atom serialiser
-  Sratom*           ui_sratom;     ///< Atom serialiser for UI thread
-  Symap*            symap;         ///< URI map
-  ZixSem            symap_lock;    ///< Lock for URI map
-  JalvBackend*      backend;       ///< Audio system backend
-  ZixRing*          ui_events;     ///< Port events from UI
-  ZixRing*          plugin_events; ///< Port events from plugin
-  void*             ui_event_buf;  ///< Buffer for reading UI port events
-  JalvWorker        worker;        ///< Worker thread implementation
-  JalvWorker        state_worker;  ///< Synchronous worker for state restore
-  ZixSem            work_lock;     ///< Lock for plugin work() method
-  ZixSem            done;          ///< Exit semaphore
-  ZixSem            paused;        ///< Paused signal from process thread
-  JalvPlayState     play_state;    ///< Current play state
-  char*             temp_dir;      ///< Temporary plugin state directory
-  char*             save_dir;      ///< Plugin save directory
-  const LilvPlugin* plugin;        ///< Plugin class (RDF data)
-  LilvState*        preset;        ///< Current preset
-  LilvUIs*          uis;           ///< All plugin UIs (RDF data)
-  const LilvUI*     ui;            ///< Plugin UI (RDF data)
-  const LilvNode*   ui_type;       ///< Plugin UI type (unwrapped)
-  LilvInstance*     instance;      ///< Plugin instance (shared library)
+  JalvOptions       opts;         ///< Command-line options
+  JalvURIDs         urids;        ///< URIDs
+  JalvNodes         nodes;        ///< Nodes
+  JalvLog           log;          ///< Log for error/warning/debug messages
+  LV2_Atom_Forge    forge;        ///< Atom forge
+  LilvWorld*        world;        ///< Lilv World
+  LV2_URID_Map      map;          ///< URI => Int map
+  LV2_URID_Unmap    unmap;        ///< Int => URI map
+  SerdEnv*          env;          ///< Environment for RDF printing
+  Sratom*           sratom;       ///< Atom serialiser
+  Sratom*           ui_sratom;    ///< Atom serialiser for UI thread
+  Symap*            symap;        ///< URI map
+  ZixSem            symap_lock;   ///< Lock for URI map
+  JalvBackend*      backend;      ///< Audio system backend
+  ZixRing*          ui_to_plugin; ///< Port events from UI
+  ZixRing*          plugin_to_ui; ///< Port events from plugin
+  void*             ui_event_buf; ///< Buffer for reading UI port events
+  JalvWorker        worker;       ///< Worker thread implementation
+  JalvWorker        state_worker; ///< Synchronous worker for state restore
+  ZixSem            work_lock;    ///< Lock for plugin work() method
+  ZixSem            done;         ///< Exit semaphore
+  ZixSem            paused;       ///< Paused signal from process thread
+  JalvPlayState     play_state;   ///< Current play state
+  char*             temp_dir;     ///< Temporary plugin state directory
+  char*             save_dir;     ///< Plugin save directory
+  const LilvPlugin* plugin;       ///< Plugin class (RDF data)
+  LilvState*        preset;       ///< Current preset
+  LilvUIs*          uis;          ///< All plugin UIs (RDF data)
+  const LilvUI*     ui;           ///< Plugin UI (RDF data)
+  const LilvNode*   ui_type;      ///< Plugin UI type (unwrapped)
+  LilvInstance*     instance;     ///< Plugin instance (shared library)
 #if USE_SUIL
   SuilHost*     ui_host;     ///< Plugin UI host support
   SuilInstance* ui_instance; ///< Plugin UI instance (shared library)

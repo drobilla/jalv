@@ -527,7 +527,7 @@ jalv_ui_write(void* const jalv_handle,
   ev->protocol      = protocol;
   ev->size          = buffer_size;
   memcpy(ev + 1, buffer, buffer_size);
-  zix_ring_write(jalv->ui_events, buf, sizeof(ControlChange) + buffer_size);
+  zix_ring_write(jalv->ui_to_plugin, buf, sizeof(ControlChange) + buffer_size);
 }
 
 void
@@ -538,12 +538,12 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
   }
 
   ControlChange ev;
-  const size_t  space = zix_ring_read_space(jalv->ui_events);
+  const size_t  space = zix_ring_read_space(jalv->ui_to_plugin);
   for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
-    zix_ring_read(jalv->ui_events, (char*)&ev, sizeof(ev));
+    zix_ring_read(jalv->ui_to_plugin, (char*)&ev, sizeof(ev));
 
     char body[MSG_BUFFER_SIZE];
-    if (zix_ring_read(jalv->ui_events, body, ev.size) != ev.size) {
+    if (zix_ring_read(jalv->ui_to_plugin, body, ev.size) != ev.size) {
       jalv_log(JALV_LOG_ERR, "Failed to read from UI ring buffer\n");
       break;
     }
@@ -624,9 +624,9 @@ jalv_send_to_ui(Jalv*       jalv,
   atom->type     = type;
   atom->size     = size;
 
-  if (zix_ring_write_space(jalv->plugin_events) >= sizeof(evbuf) + size) {
-    zix_ring_write(jalv->plugin_events, evbuf, sizeof(evbuf));
-    zix_ring_write(jalv->plugin_events, (const char*)body, size);
+  if (zix_ring_write_space(jalv->plugin_to_ui) >= sizeof(evbuf) + size) {
+    zix_ring_write(jalv->plugin_to_ui, evbuf, sizeof(evbuf));
+    zix_ring_write(jalv->plugin_to_ui, (const char*)body, size);
     return true;
   }
 
@@ -675,17 +675,17 @@ jalv_update(Jalv* jalv)
 
   // Emit UI events
   ControlChange ev;
-  const size_t  space = zix_ring_read_space(jalv->plugin_events);
+  const size_t  space = zix_ring_read_space(jalv->plugin_to_ui);
   for (size_t i = 0; i + sizeof(ev) < space; i += sizeof(ev) + ev.size) {
     // Read event header to get the size
-    zix_ring_read(jalv->plugin_events, (char*)&ev, sizeof(ev));
+    zix_ring_read(jalv->plugin_to_ui, (char*)&ev, sizeof(ev));
 
     // Resize read buffer if necessary
     jalv->ui_event_buf = realloc(jalv->ui_event_buf, ev.size);
     void* const buf    = jalv->ui_event_buf;
 
     // Read event body
-    zix_ring_read(jalv->plugin_events, (char*)buf, ev.size);
+    zix_ring_read(jalv->plugin_to_ui, (char*)buf, ev.size);
 
     if (jalv->opts.dump && ev.protocol == jalv->urids.atom_eventTransfer) {
       // Dump event in Turtle to the console
@@ -1207,10 +1207,10 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     &jalv->features.safe_restore_feature, LV2_STATE__threadSafeRestore, NULL);
 
   // Create Plugin <=> UI communication buffers
-  jalv->ui_events     = zix_ring_new(jalv->opts.buffer_size);
-  jalv->plugin_events = zix_ring_new(jalv->opts.buffer_size);
-  zix_ring_mlock(jalv->ui_events);
-  zix_ring_mlock(jalv->plugin_events);
+  jalv->ui_to_plugin = zix_ring_new(jalv->opts.buffer_size);
+  jalv->plugin_to_ui = zix_ring_new(jalv->opts.buffer_size);
+  zix_ring_mlock(jalv->ui_to_plugin);
+  zix_ring_mlock(jalv->plugin_to_ui);
 
   // Build feature list for passing to plugins
   const LV2_Feature* const features[] = {&jalv->features.map_feature,
@@ -1356,8 +1356,8 @@ jalv_close(Jalv* const jalv)
 
   // Clean up
   free(jalv->ports);
-  zix_ring_free(jalv->ui_events);
-  zix_ring_free(jalv->plugin_events);
+  zix_ring_free(jalv->ui_to_plugin);
+  zix_ring_free(jalv->plugin_to_ui);
   for (LilvNode** n = (LilvNode**)&jalv->nodes; *n; ++n) {
     lilv_node_free(*n);
   }
