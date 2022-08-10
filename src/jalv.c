@@ -966,6 +966,17 @@ jalv_init_nodes(LilvWorld* const world, JalvNodes* const nodes)
 #undef MAP_NODE
 }
 
+static void
+jalv_init_env(SerdEnv* const env)
+{
+  serd_env_set_prefix_from_strings(
+    env, (const uint8_t*)"patch", (const uint8_t*)LV2_PATCH_PREFIX);
+  serd_env_set_prefix_from_strings(
+    env, (const uint8_t*)"time", (const uint8_t*)LV2_TIME_PREFIX);
+  serd_env_set_prefix_from_strings(
+    env, (const uint8_t*)"xsd", (const uint8_t*)NS_XSD);
+}
+
 int
 jalv_open(Jalv* const jalv, int* argc, char*** argv)
 {
@@ -986,6 +997,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     return ret;
   }
 
+  jalv->env   = serd_env_new(NULL);
   jalv->symap = symap_new();
 
   jalv_init_urids(jalv->symap, &jalv->urids);
@@ -1007,14 +1019,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   init_feature(&jalv->features.unmap_feature, LV2_URID__unmap, &jalv->unmap);
 
   lv2_atom_forge_init(&jalv->forge, &jalv->map);
-
-  jalv->env = serd_env_new(NULL);
-  serd_env_set_prefix_from_strings(
-    jalv->env, (const uint8_t*)"patch", (const uint8_t*)LV2_PATCH_PREFIX);
-  serd_env_set_prefix_from_strings(
-    jalv->env, (const uint8_t*)"time", (const uint8_t*)LV2_TIME_PREFIX);
-  serd_env_set_prefix_from_strings(
-    jalv->env, (const uint8_t*)"xsd", (const uint8_t*)NS_XSD);
+  jalv_init_env(jalv->env);
 
   jalv->sratom    = sratom_new(&jalv->map);
   jalv->ui_sratom = sratom_new(&jalv->map);
