@@ -13,14 +13,19 @@
 #include <stdlib.h>
 
 static LV2_Worker_Status
+jalv_worker_write_packet(ZixRing* const target, uint32_t size, const void* data)
+{
+  zix_ring_write(target, (const char*)&size, sizeof(size));
+  zix_ring_write(target, (const char*)data, size);
+  return LV2_WORKER_SUCCESS;
+}
+
+static LV2_Worker_Status
 jalv_worker_respond(LV2_Worker_Respond_Handle handle,
                     uint32_t                  size,
                     const void*               data)
 {
-  JalvWorker* worker = (JalvWorker*)handle;
-  zix_ring_write(worker->responses, (const char*)&size, sizeof(size));
-  zix_ring_write(worker->responses, (const char*)data, size);
-  return LV2_WORKER_SUCCESS;
+  return jalv_worker_write_packet(((JalvWorker*)handle)->responses, size, data);
 }
 
 static void*
@@ -102,9 +107,10 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
 
   if (worker->threaded) {
     // Schedule a request to be executed by the worker thread
-    zix_ring_write(worker->requests, (const char*)&size, sizeof(size));
-    zix_ring_write(worker->requests, (const char*)data, size);
-    zix_sem_post(&worker->sem);
+    if (!(st = jalv_worker_write_packet(worker->requests, size, data))) {
+      zix_sem_post(&worker->sem);
+    }
+
   } else {
     // Execute work immediately in this thread
     zix_sem_wait(worker->lock);
