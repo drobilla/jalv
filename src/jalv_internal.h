@@ -185,6 +185,13 @@ jalv_send_to_ui(Jalv*       jalv,
                 uint32_t    size,
                 const void* body);
 
+void
+jalv_dump_atom(Jalv*           jalv,
+               FILE*           stream,
+               const char*     label,
+               const LV2_Atom* atom,
+               int             color);
+
 bool
 jalv_run(Jalv* jalv, uint32_t nframes);
 

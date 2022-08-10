@@ -504,21 +504,8 @@ jalv_ui_write(void* const jalv_handle,
     return;
   }
 
-  if (jalv->opts.dump && protocol == jalv->urids.atom_eventTransfer) {
-    const LV2_Atom* atom = (const LV2_Atom*)buffer;
-
-    char* str = sratom_to_turtle(jalv->sratom,
-                                 &jalv->unmap,
-                                 "jalv:",
-                                 NULL,
-                                 NULL,
-                                 atom->type,
-                                 atom->size,
-                                 LV2_ATOM_BODY_CONST(atom));
-    jalv_ansi_start(stdout, 36);
-    printf("\n## UI => Plugin (%u bytes) ##\n%s\n", atom->size, str);
-    jalv_ansi_reset(stdout);
-    free(str);
+  if (protocol == jalv->urids.atom_eventTransfer) {
+    jalv_dump_atom(jalv, stdout, "UI => Plugin", (const LV2_Atom*)buffer, 36);
   }
 
   char           buf[MSG_BUFFER_SIZE];
@@ -634,6 +621,30 @@ jalv_send_to_ui(Jalv*       jalv,
   return false;
 }
 
+void
+jalv_dump_atom(Jalv* const           jalv,
+               FILE* const           stream,
+               const char* const     label,
+               const LV2_Atom* const atom,
+               const int             color)
+{
+  if (jalv->opts.dump) {
+    char* const str = sratom_to_turtle(jalv->sratom,
+                                       &jalv->unmap,
+                                       "jalv:",
+                                       NULL,
+                                       NULL,
+                                       atom->type,
+                                       atom->size,
+                                       LV2_ATOM_BODY_CONST(atom));
+
+    jalv_ansi_start(stream, color);
+    fprintf(stream, "\n# %s (%u bytes):\n%s\n", label, atom->size, str);
+    jalv_ansi_reset(stream);
+    free(str);
+  }
+}
+
 bool
 jalv_run(Jalv* jalv, uint32_t nframes)
 {
@@ -688,23 +699,8 @@ jalv_update(Jalv* jalv)
     // Read event body
     zix_ring_read(jalv->plugin_to_ui, buf, ev.size);
 
-    if (jalv->opts.dump && ev.protocol == jalv->urids.atom_eventTransfer) {
-      // Dump event in Turtle to the console
-      LV2_Atom* atom = (LV2_Atom*)buf;
-
-      char* str = sratom_to_turtle(jalv->ui_sratom,
-                                   &jalv->unmap,
-                                   "jalv:",
-                                   NULL,
-                                   NULL,
-                                   atom->type,
-                                   atom->size,
-                                   LV2_ATOM_BODY(atom));
-
-      jalv_ansi_start(stdout, 35);
-      printf("\n## Plugin => UI (%u bytes) ##\n%s\n", atom->size, str);
-      jalv_ansi_reset(stdout);
-      free(str);
+    if (ev.protocol == jalv->urids.atom_eventTransfer) {
+      jalv_dump_atom(jalv, stdout, "Plugin => UI", (const LV2_Atom*)buf, 35);
     }
 
     jalv_ui_port_event(jalv, ev.index, ev.size, ev.protocol, buf);

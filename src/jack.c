@@ -18,7 +18,6 @@
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
 #include "lv2/atom/forge.h"
-#include "sratom/sratom.h"
 #include "zix/ring.h"
 #include "zix/sem.h"
 
@@ -125,20 +124,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       lv2_atom_forge_float(forge, pos.beats_per_minute);
     }
 
-    if (jalv->opts.dump) {
-      char* str = sratom_to_turtle(jalv->sratom,
-                                   &jalv->unmap,
-                                   "time:",
-                                   NULL,
-                                   NULL,
-                                   lv2_pos->type,
-                                   lv2_pos->size,
-                                   LV2_ATOM_BODY(lv2_pos));
-      jalv_ansi_start(stdout, 36);
-      printf("\n## Position ##\n%s\n", str);
-      jalv_ansi_reset(stdout);
-      free(str);
-    }
+    jalv_dump_atom(jalv, stdout, "Position", lv2_pos, 32);
   }
 
   // Update transport state to expected values for next cycle
