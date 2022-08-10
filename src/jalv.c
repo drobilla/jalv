@@ -1107,12 +1107,6 @@ jalv_init_display(Jalv* const jalv)
 int
 jalv_open(Jalv* const jalv, int* argc, char*** argv)
 {
-  jalv->block_length  = 4096; // Should be set by backend
-  jalv->midi_buf_size = 1024; // Should be set by backend
-  jalv->play_state    = JALV_PAUSED;
-  jalv->bpm           = 120.0f;
-  jalv->control_in    = (uint32_t)-1;
-
 #if USE_SUIL
   suil_init(argc, argv, SUIL_ARG_NONE);
 #endif
@@ -1124,23 +1118,36 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     return ret;
   }
 
-  jalv->symap = symap_new();
+  // Load the LV2 world
+  LilvWorld* const world = lilv_world_new();
+  lilv_world_load_all(world);
 
-  jalv_init_urids(jalv->symap, &jalv->urids);
-  jalv_init_env(jalv->env);
-  jalv_init_features(jalv);
-
-  jalv->log.urids   = &jalv->urids;
-  jalv->log.tracing = jalv->opts.trace;
+  jalv->world         = world;
+  jalv->env           = serd_env_new(NULL);
+  jalv->symap         = symap_new();
+  jalv->block_length  = 4096U;
+  jalv->midi_buf_size = 1024U;
+  jalv->play_state    = JALV_PAUSED;
+  jalv->bpm           = 120.0f;
+  jalv->control_in    = (uint32_t)-1;
+  jalv->log.urids     = &jalv->urids;
+  jalv->log.tracing   = jalv->opts.trace;
 
   zix_sem_init(&jalv->symap_lock, 1);
   zix_sem_init(&jalv->work_lock, 1);
+  zix_sem_init(&jalv->done, 0);
+  zix_sem_init(&jalv->paused, 0);
 
+  jalv_init_env(jalv->env);
+  jalv_init_urids(jalv->symap, &jalv->urids);
+  jalv_init_nodes(world, &jalv->nodes);
+  jalv_init_features(jalv);
   lv2_atom_forge_init(&jalv->forge, &jalv->map);
 
-  jalv->sratom    = sratom_new(&jalv->map);
-  jalv->ui_sratom = sratom_new(&jalv->map);
+  // Set up atom reading and writing environment
+  jalv->sratom = sratom_new(&jalv->map);
   sratom_set_env(jalv->sratom, jalv->env);
+  jalv->ui_sratom = sratom_new(&jalv->map);
   sratom_set_env(jalv->ui_sratom, jalv->env);
 
   // Create temporary directory for plugin state
@@ -1152,17 +1159,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->temp_dir = jalv_strjoin(mkdtemp(templ), "/");
   free(templ);
 #endif
-
-  zix_sem_init(&jalv->done, 0);
-  zix_sem_init(&jalv->paused, 0);
-
-  // Find all installed plugins
-  LilvWorld* world = lilv_world_new();
-  lilv_world_load_all(world);
-  jalv->world                = world;
-  const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
-
-  jalv_init_nodes(world, &jalv->nodes);
 
   // Get plugin URI from loaded state or command line
   LilvState* state      = NULL;
@@ -1199,8 +1195,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   }
 
   // Find plugin
-  jalv_log(
-    JALV_LOG_INFO, "Plugin:       %s\n", lilv_node_as_string(plugin_uri));
+  const char* const        plugin_uri_str = lilv_node_as_string(plugin_uri);
+  const LilvPlugins* const plugins        = lilv_world_get_all_plugins(world);
+  jalv_log(JALV_LOG_INFO, "Plugin:       %s\n", plugin_uri_str);
   jalv->plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
   lilv_node_free(plugin_uri);
   if (!jalv->plugin) {
