@@ -48,12 +48,8 @@ pa_process_cb(const void*                     inputs,
           {sizeof(LV2_Atom_Object_Body), jalv->urids.atom_Object},
           {0, jalv->urids.patch_Get}};
         LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
-        lv2_evbuf_write(&iter,
-                        0,
-                        0,
-                        get.atom.type,
-                        get.atom.size,
-                        (const uint8_t*)LV2_ATOM_BODY(&get));
+        lv2_evbuf_write(
+          &iter, 0, 0, get.atom.type, get.atom.size, LV2_ATOM_BODY(&get));
       }
     } else if (port->type == TYPE_EVENT) {
       // Clear event output for plugin to write to
@@ -74,7 +70,7 @@ pa_process_cb(const void*                     inputs,
            i = lv2_evbuf_next(i)) {
         // Get event from LV2 buffer
         uint32_t frames, subframes, type, size;
-        uint8_t* body;
+        void*    body;
         lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
         if (jalv->has_ui) {

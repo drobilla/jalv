@@ -127,7 +127,7 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
               uint32_t*          subframes,
               uint32_t*          type,
               uint32_t*          size,
-              uint8_t**          data)
+              void**             data)
 {
   *frames = *subframes = *type = *size = 0;
   *data                                = NULL;
@@ -145,7 +145,7 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
   *subframes = 0;
   *type      = aev->body.type;
   *size      = aev->body.size;
-  *data      = (uint8_t*)LV2_ATOM_BODY(&aev->body);
+  *data      = LV2_ATOM_BODY(&aev->body);
 
   return true;
 }
@@ -156,7 +156,7 @@ lv2_evbuf_write(LV2_Evbuf_Iterator* iter,
                 uint32_t            subframes,
                 uint32_t            type,
                 uint32_t            size,
-                const uint8_t*      data)
+                const void*         data)
 {
   (void)subframes;
 

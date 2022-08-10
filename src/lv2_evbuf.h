@@ -97,7 +97,7 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
               uint32_t*          subframes,
               uint32_t*          type,
               uint32_t*          size,
-              uint8_t**          data);
+              void**             data);
 
 /**
    Write an event at `iter`.
@@ -114,7 +114,7 @@ lv2_evbuf_write(LV2_Evbuf_Iterator* iter,
                 uint32_t            subframes,
                 uint32_t            type,
                 uint32_t            size,
-                const uint8_t*      data);
+                const void*         data);
 
 #ifdef __cplusplus
 }

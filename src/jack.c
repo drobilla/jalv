@@ -173,12 +173,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       // Write transport change event if applicable
       LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
       if (xport_changed) {
-        lv2_evbuf_write(&iter,
-                        0,
-                        0,
-                        lv2_pos->type,
-                        lv2_pos->size,
-                        (const uint8_t*)LV2_ATOM_BODY(lv2_pos));
+        lv2_evbuf_write(
+          &iter, 0, 0, lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
       }
 
       if (jalv->request_update) {
@@ -186,12 +182,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
         const LV2_Atom_Object get = {
           {sizeof(LV2_Atom_Object_Body), jalv->urids.atom_Object},
           {0, jalv->urids.patch_Get}};
-        lv2_evbuf_write(&iter,
-                        0,
-                        0,
-                        get.atom.type,
-                        get.atom.size,
-                        (const uint8_t*)LV2_ATOM_BODY_CONST(&get));
+        lv2_evbuf_write(
+          &iter, 0, 0, get.atom.type, get.atom.size, LV2_ATOM_BODY_CONST(&get));
       }
 
       if (port->sys_port) {
@@ -239,7 +231,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
         uint32_t subframes = 0;
         uint32_t type      = 0;
         uint32_t size      = 0;
-        uint8_t* body      = NULL;
+        void*    body      = NULL;
         lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
         if (buf && type == jalv->urids.midi_MidiEvent) {
