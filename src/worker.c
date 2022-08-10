@@ -35,7 +35,7 @@ worker_func(void* data)
     }
 
     uint32_t size = 0;
-    zix_ring_read(worker->requests, (char*)&size, sizeof(size));
+    zix_ring_read(worker->requests, &size, sizeof(size));
 
     void* const new_buf = realloc(buf, size);
     if (!new_buf) {
@@ -43,7 +43,7 @@ worker_func(void* data)
     }
 
     buf = new_buf;
-    zix_ring_read(worker->requests, (char*)buf, size);
+    zix_ring_read(worker->requests, buf, size);
 
     zix_sem_wait(worker->lock);
     worker->iface->work(worker->handle, jalv_worker_respond, worker, size, buf);
@@ -122,8 +122,8 @@ jalv_worker_emit_responses(JalvWorker* worker, LV2_Handle lv2_handle)
     uint32_t read_space = zix_ring_read_space(worker->responses);
     while (read_space) {
       uint32_t size = 0;
-      zix_ring_read(worker->responses, (char*)&size, sizeof(size));
-      zix_ring_read(worker->responses, (char*)worker->response, size);
+      zix_ring_read(worker->responses, &size, sizeof(size));
+      zix_ring_read(worker->responses, worker->response, size);
 
       worker->iface->work_response(lv2_handle, size, worker->response);
 

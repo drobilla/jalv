@@ -540,7 +540,7 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
   ControlChange ev;
   const size_t  space = zix_ring_read_space(jalv->ui_to_plugin);
   for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
-    zix_ring_read(jalv->ui_to_plugin, (char*)&ev, sizeof(ev));
+    zix_ring_read(jalv->ui_to_plugin, &ev, sizeof(ev));
 
     char body[MSG_BUFFER_SIZE];
     if (zix_ring_read(jalv->ui_to_plugin, body, ev.size) != ev.size) {
@@ -679,14 +679,14 @@ jalv_update(Jalv* jalv)
   const size_t  space = zix_ring_read_space(jalv->plugin_to_ui);
   for (size_t i = 0; i + sizeof(ev) < space; i += sizeof(ev) + ev.size) {
     // Read event header to get the size
-    zix_ring_read(jalv->plugin_to_ui, (char*)&ev, sizeof(ev));
+    zix_ring_read(jalv->plugin_to_ui, &ev, sizeof(ev));
 
     // Resize read buffer if necessary
     jalv->ui_event_buf = realloc(jalv->ui_event_buf, ev.size);
     void* const buf    = jalv->ui_event_buf;
 
     // Read event body
-    zix_ring_read(jalv->plugin_to_ui, (char*)buf, ev.size);
+    zix_ring_read(jalv->plugin_to_ui, buf, ev.size);
 
     if (jalv->opts.dump && ev.protocol == jalv->urids.atom_eventTransfer) {
       // Dump event in Turtle to the console
