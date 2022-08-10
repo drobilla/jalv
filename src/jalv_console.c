@@ -170,7 +170,10 @@ jalv_print_controls(Jalv* jalv, bool writable, bool readable)
     if ((control->is_writable && writable) ||
         (control->is_readable && readable)) {
       struct Port* const port = &jalv->ports[control->index];
-      printf("%s = %f\n", lilv_node_as_string(control->symbol), port->control);
+      jalv_log(JALV_LOG_INFO,
+               "%s = %f\n",
+               lilv_node_as_string(control->symbol),
+               port->control);
     }
   }
 

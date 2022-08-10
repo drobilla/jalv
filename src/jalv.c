@@ -784,7 +784,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
   }
 
   jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &val);
-  printf("%s = %f\n", sym, val);
+  jalv_log(JALV_LOG_INFO, "%s = %f\n", sym, val);
 
   return true;
 }
@@ -1098,7 +1098,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   }
 
   // Find plugin
-  printf("Plugin:       %s\n", lilv_node_as_string(plugin_uri));
+  jalv_log(
+    JALV_LOG_INFO, "Plugin:       %s\n", lilv_node_as_string(plugin_uri));
   jalv->plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
   lilv_node_free(plugin_uri);
   if (!jalv->plugin) {
@@ -1166,8 +1167,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 #endif
 
       if (jalv->ui) {
-        printf("UI:           %s\n",
-               lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
+        jalv_log(JALV_LOG_INFO,
+                 "UI:           %s\n",
+                 lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
       }
     }
   }
@@ -1183,9 +1185,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     return -6;
   }
 
-  printf("Sample rate:  %u Hz\n", (uint32_t)jalv->sample_rate);
-  printf("Block length: %u frames\n", jalv->block_length);
-  printf("MIDI buffers: %zu bytes\n", jalv->midi_buf_size);
+  jalv_log(JALV_LOG_INFO, "Sample rate:  %u Hz\n", (uint32_t)jalv->sample_rate);
+  jalv_log(JALV_LOG_INFO, "Block length: %u frames\n", jalv->block_length);
+  jalv_log(JALV_LOG_INFO, "MIDI buffers: %zu bytes\n", jalv->midi_buf_size);
 
   if (jalv->opts.buffer_size == 0) {
     /* The UI ring is fed by plugin output ports (usually one), and the UI
@@ -1216,9 +1218,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   // The UI can only go so fast, clamp to reasonable limits
   jalv->ui_update_hz     = MIN(60, jalv->ui_update_hz);
   jalv->opts.buffer_size = MAX(4096, jalv->opts.buffer_size);
-  printf("Comm buffers: %u bytes\n", jalv->opts.buffer_size);
-  printf("Update rate:  %.01f Hz\n", jalv->ui_update_hz);
-  printf("Scale factor: %.01f\n", jalv->ui_scale_factor);
+  jalv_log(JALV_LOG_INFO, "Comm buffers: %u bytes\n", jalv->opts.buffer_size);
+  jalv_log(JALV_LOG_INFO, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
+  jalv_log(JALV_LOG_INFO, "Scale factor: %.01f\n", jalv->ui_scale_factor);
 
   // Build options array to pass to plugin
   const LV2_Options_Option options[ARRAY_SIZE(jalv->features.options)] = {
@@ -1328,7 +1330,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_worker_start(
     jalv->state_worker, worker_iface, jalv->instance->lv2_handle);
 
-  printf("\n");
+  jalv_log(JALV_LOG_INFO, "\n");
   if (!jalv->buf_size_set) {
     jalv_allocate_port_buffers(jalv);
   }

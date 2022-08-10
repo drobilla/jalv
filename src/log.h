@@ -29,6 +29,7 @@ struct Port;
 typedef enum {
   JALV_LOG_ERR     = 3,
   JALV_LOG_WARNING = 4,
+  JALV_LOG_INFO    = 6,
   JALV_LOG_DEBUG   = 7,
 } JalvLogLevel;
 

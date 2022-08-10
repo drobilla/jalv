@@ -28,7 +28,7 @@ jalv_print_control(Jalv* const              jalv,
                    const float              value)
 {
   const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-  printf("%s = %f\n", lilv_node_as_string(sym), value);
+  jalv_log(JALV_LOG_INFO, "%s = %f\n", lilv_node_as_string(sym), value);
 }
 
 char*
@@ -66,6 +66,8 @@ jalv_vlog(const JalvLogLevel level, const char* const fmt, va_list ap)
   case JALV_LOG_WARNING:
     fancy = jalv_ansi_start(stderr, 33);
     fprintf(stderr, "warning: ");
+    break;
+  case JALV_LOG_INFO:
     break;
   case JALV_LOG_DEBUG:
     fancy = jalv_ansi_start(stderr, 32);
