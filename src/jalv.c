@@ -541,8 +541,8 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
   for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
     zix_ring_read(jalv->ui_to_plugin, &ev, sizeof(ev));
 
-    char body[MSG_BUFFER_SIZE];
-    if (zix_ring_read(jalv->ui_to_plugin, body, ev.size) != ev.size) {
+    char buffer[MSG_BUFFER_SIZE];
+    if (zix_ring_read(jalv->ui_to_plugin, buffer, ev.size) != ev.size) {
       jalv_log(JALV_LOG_ERR, "Failed to read from UI ring buffer\n");
       break;
     }
@@ -551,10 +551,10 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
     struct Port* const port = &jalv->ports[ev.index];
     if (ev.protocol == 0) {
       assert(ev.size == sizeof(float));
-      port->control = *(float*)body;
+      port->control = *(float*)buffer;
     } else if (ev.protocol == jalv->urids.atom_eventTransfer) {
       LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
-      const LV2_Atom* const atom = (const LV2_Atom*)body;
+      const LV2_Atom* const atom = (const LV2_Atom*)buffer;
       lv2_evbuf_write(
         &e, nframes, 0, atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
     } else {
