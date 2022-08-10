@@ -184,6 +184,7 @@ jalv_send_to_ui(Jalv*       jalv,
                 uint32_t    type,
                 uint32_t    size,
                 const void* body);
+
 bool
 jalv_run(Jalv* jalv, uint32_t nframes);
 
