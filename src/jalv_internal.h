@@ -182,6 +182,24 @@ jalv_send_to_ui(Jalv*       jalv,
                 uint32_t    size,
                 const void* body);
 
+/**
+   Write a control port change using the default (0) protocol.
+
+   This is used to transfer control port value changes between the plugin and
+   UI.
+
+   @param jalv Jalv instance.
+   @param target Communication ring (jalv->plugin_to_ui or jalv->ui_to_plugin).
+   @param port_index Index of the port this change is for.
+   @param value New control port value.
+   @return 0 on success, non-zero on failure (overflow).
+*/
+int
+jalv_write_control(Jalv*    jalv,
+                   ZixRing* target,
+                   uint32_t port_index,
+                   float    value);
+
 void
 jalv_dump_atom(Jalv*           jalv,
                FILE*           stream,

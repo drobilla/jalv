@@ -620,6 +620,25 @@ jalv_send_to_ui(Jalv*       jalv,
   return false;
 }
 
+int
+jalv_write_control(Jalv* const    jalv,
+                   ZixRing* const target,
+                   const uint32_t port_index,
+                   const float    value)
+{
+  (void)jalv;
+
+  char buf[sizeof(ControlChange) + sizeof(value)];
+
+  ControlChange* const ev = (ControlChange*)buf;
+  ev->index               = port_index;
+  ev->protocol            = 0U;
+  ev->size                = sizeof(value);
+  *(float*)(ev + 1)       = value;
+
+  return zix_ring_write(target, buf, sizeof(buf)) != sizeof(buf);
+}
+
 void
 jalv_dump_atom(Jalv* const           jalv,
                FILE* const           stream,

@@ -3,7 +3,6 @@
 
 #include "state.h"
 
-#include "control.h"
 #include "jalv_internal.h"
 #include "log.h"
 #include "nodes.h"
@@ -15,7 +14,6 @@
 #include "lv2/state/state.h"
 #include "lv2/urid/urid.h"
 #include "zix/common.h"
-#include "zix/ring.h"
 #include "zix/sem.h"
 
 #include <stdbool.h>
@@ -154,19 +152,13 @@ set_port_value(const char* port_symbol,
     // Set value on port struct directly
     port->control = fvalue;
   } else {
-    // Send value to running plugin
-    jalv_send_to_plugin(jalv, port->index, sizeof(fvalue), 0, &fvalue);
+    // Send value to plugin (as if from UI)
+    jalv_write_control(jalv, jalv->ui_to_plugin, port->index, fvalue);
   }
 
   if (jalv->has_ui) {
-    // Update UI
-    char           buf[sizeof(ControlChange) + sizeof(fvalue)];
-    ControlChange* ev = (ControlChange*)buf;
-    ev->index         = port->index;
-    ev->protocol      = 0;
-    ev->size          = sizeof(fvalue);
-    *(float*)(ev + 1) = fvalue;
-    zix_ring_write(jalv->plugin_to_ui, buf, sizeof(buf));
+    // Update UI (as if from plugin)
+    jalv_write_control(jalv, jalv->plugin_to_ui, port->index, fvalue);
   }
 }
 

@@ -3,7 +3,6 @@
 
 #include "backend.h"
 
-#include "control.h"
 #include "frontend.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"
@@ -18,7 +17,6 @@
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
 #include "lv2/atom/forge.h"
-#include "zix/ring.h"
 #include "zix/sem.h"
 
 #include <jack/jack.h>
@@ -246,15 +244,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       }
     } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&
                port->type == TYPE_CONTROL) {
-      char           buf[sizeof(ControlChange) + sizeof(float)];
-      ControlChange* ev = (ControlChange*)buf;
-      ev->index         = p;
-      ev->protocol      = 0;
-      ev->size          = sizeof(float);
-      *(float*)(ev + 1) = port->control;
-      if (zix_ring_write(jalv->plugin_to_ui, buf, sizeof(buf)) < sizeof(buf)) {
-        jalv_log(JALV_LOG_ERR, "Plugin => UI buffer overflow\n");
-      }
+      jalv_write_control(jalv, jalv->plugin_to_ui, p, port->control);
     }
   }
 
