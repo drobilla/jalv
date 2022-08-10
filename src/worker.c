@@ -63,10 +63,10 @@ jalv_worker_init(JalvWorker*                 worker,
   worker->threaded = threaded;
   if (threaded) {
     zix_thread_create(&worker->thread, 4096, worker_func, worker);
-    worker->requests = zix_ring_new(4096);
+    worker->requests = zix_ring_new(NULL, 4096);
     zix_ring_mlock(worker->requests);
   }
-  worker->responses = zix_ring_new(4096);
+  worker->responses = zix_ring_new(NULL, 4096);
   worker->response  = malloc(4096);
   zix_ring_mlock(worker->responses);
 }

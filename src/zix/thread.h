@@ -44,9 +44,7 @@ zix_thread_create(ZixThread* thread,
                   void* (*function)(void*),
                   void* arg);
 
-/**
-   Join `thread` (block until `thread` exits).
-*/
+/// Join `thread` (block until `thread` exits)
 static inline ZixStatus
 zix_thread_join(ZixThread thread, void** retval);
 

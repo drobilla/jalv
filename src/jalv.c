@@ -1203,8 +1203,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     &jalv->features.safe_restore_feature, LV2_STATE__threadSafeRestore, NULL);
 
   // Create Plugin <=> UI communication buffers
-  jalv->ui_to_plugin = zix_ring_new(jalv->opts.buffer_size);
-  jalv->plugin_to_ui = zix_ring_new(jalv->opts.buffer_size);
+  jalv->ui_to_plugin = zix_ring_new(NULL, jalv->opts.buffer_size);
+  jalv->plugin_to_ui = zix_ring_new(NULL, jalv->opts.buffer_size);
   zix_ring_mlock(jalv->ui_to_plugin);
   zix_ring_mlock(jalv->plugin_to_ui);
 

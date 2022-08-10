@@ -213,6 +213,7 @@ sources = backend_sources + files(
   'src/state.c',
   'src/symap.c',
   'src/worker.c',
+  'src/zix/allocator.c',
   'src/zix/ring.c',
 )
 
