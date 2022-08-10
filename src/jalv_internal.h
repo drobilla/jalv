@@ -168,9 +168,6 @@ jalv_ui_write(void*       jalv_handle,
 void
 jalv_apply_ui_events(Jalv* jalv, uint32_t nframes);
 
-uint32_t
-jalv_ui_port_index(void* controller, const char* symbol);
-
 void
 jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    port_index,

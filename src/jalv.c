@@ -410,6 +410,17 @@ jalv_set_control(Jalv*            jalv,
   }
 }
 
+#if USE_SUIL
+static uint32_t
+jalv_ui_port_index(void* const controller, const char* symbol)
+{
+  Jalv* const  jalv = (Jalv*)controller;
+  struct Port* port = jalv_port_by_symbol(jalv, symbol);
+
+  return port ? port->index : LV2UI_INVALID_PORT_INDEX;
+}
+#endif
+
 void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 {
@@ -554,15 +565,6 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
         JALV_LOG_ERR, "Unknown control change protocol %u\n", ev.protocol);
     }
   }
-}
-
-uint32_t
-jalv_ui_port_index(void* const controller, const char* symbol)
-{
-  Jalv* const  jalv = (Jalv*)controller;
-  struct Port* port = jalv_port_by_symbol(jalv, symbol);
-
-  return port ? port->index : LV2UI_INVALID_PORT_INDEX;
 }
 
 void
