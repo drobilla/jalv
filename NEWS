@@ -12,13 +12,14 @@ jalv (1.6.7) unstable; urgency=medium
   * Fix man page headers
   * Fix memory leaks
   * Fix outdated man pages
+  * Fix spurious transport messages
   * Flush stdout after printing control values in console interface
   * Print status information consistently to stdout
   * Remove Gtkmm interface
   * Remove Qt4 support
   * Switch to meson build system
 
- -- David Robillard <d@drobilla.net>  Mon, 08 Aug 2022 22:39:54 +0000
+ -- David Robillard <d@drobilla.net>  Wed, 10 Aug 2022 16:17:35 +0000
 
 jalv (1.6.6) stable; urgency=medium
 

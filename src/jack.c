@@ -94,9 +94,10 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     (jack_transport_query(client, &pos) == JackTransportRolling);
 
   // If transport state is not as expected, then something has changed
+  const bool has_bbt = (pos.valid & JackPositionBBT);
   const bool xport_changed =
     (rolling != jalv->rolling || pos.frame != jalv->position ||
-     pos.beats_per_minute != jalv->bpm);
+     (has_bbt && pos.beats_per_minute != jalv->bpm));
 
   uint8_t   pos_buf[256];
   LV2_Atom* lv2_pos = (LV2_Atom*)pos_buf;
@@ -110,7 +111,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     lv2_atom_forge_long(forge, pos.frame);
     lv2_atom_forge_key(forge, jalv->urids.time_speed);
     lv2_atom_forge_float(forge, rolling ? 1.0 : 0.0);
-    if (pos.valid & JackPositionBBT) {
+    if (has_bbt) {
       lv2_atom_forge_key(forge, jalv->urids.time_barBeat);
       lv2_atom_forge_float(forge,
                            pos.beat - 1 + (pos.tick / pos.ticks_per_beat));
@@ -142,7 +143,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
   // Update transport state to expected values for next cycle
   jalv->position = rolling ? pos.frame + nframes : pos.frame;
-  jalv->bpm      = pos.beats_per_minute;
+  jalv->bpm      = has_bbt ? pos.beats_per_minute : jalv->bpm;
   jalv->rolling  = rolling;
 
   switch (jalv->play_state) {
