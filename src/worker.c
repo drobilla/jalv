@@ -93,7 +93,8 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
                      uint32_t                   size,
                      const void*                data)
 {
-  JalvWorker* worker = (JalvWorker*)handle;
+  JalvWorker*       worker = (JalvWorker*)handle;
+  LV2_Worker_Status st     = LV2_WORKER_SUCCESS;
 
   if (!size) {
     return LV2_WORKER_ERR_UNKNOWN;
@@ -107,12 +108,12 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
   } else {
     // Execute work immediately in this thread
     zix_sem_wait(worker->lock);
-    worker->iface->work(
+    st = worker->iface->work(
       worker->handle, jalv_worker_respond, worker, size, data);
     zix_sem_post(worker->lock);
   }
 
-  return LV2_WORKER_SUCCESS;
+  return st;
 }
 
 void
