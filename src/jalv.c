@@ -1076,6 +1076,34 @@ jalv_init_options(Jalv* const jalv)
                (void*)jalv->features.options);
 }
 
+static void
+jalv_init_display(Jalv* const jalv)
+{
+  if (!jalv->opts.update_rate) {
+    // Calculate a reasonable UI update frequency
+    jalv->ui_update_hz = jalv_frontend_refresh_rate(jalv);
+  } else {
+    // Use user-specified UI update rate
+    jalv->ui_update_hz = jalv->opts.update_rate;
+    jalv->ui_update_hz = MAX(1.0f, jalv->ui_update_hz);
+  }
+
+  if (!jalv->opts.scale_factor) {
+    // Calculate the monitor's scale factor
+    jalv->ui_scale_factor = jalv_frontend_scale_factor(jalv);
+  } else {
+    // Use user-specified UI scale factor
+    jalv->ui_scale_factor = jalv->opts.scale_factor;
+  }
+
+  // The UI can only go so fast, clamp to reasonable limits
+  jalv->ui_update_hz     = MIN(60, jalv->ui_update_hz);
+  jalv->opts.buffer_size = MAX(4096, jalv->opts.buffer_size);
+  jalv_log(JALV_LOG_INFO, "Comm buffers: %u bytes\n", jalv->opts.buffer_size);
+  jalv_log(JALV_LOG_INFO, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
+  jalv_log(JALV_LOG_INFO, "Scale factor: %.01f\n", jalv->ui_scale_factor);
+}
+
 int
 jalv_open(Jalv* const jalv, int* argc, char*** argv)
 {
@@ -1271,30 +1299,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv->opts.buffer_size = jalv->midi_buf_size * N_BUFFER_CYCLES;
   }
 
-  if (!jalv->opts.update_rate) {
-    // Calculate a reasonable UI update frequency
-    jalv->ui_update_hz = jalv_frontend_refresh_rate(jalv);
-  } else {
-    // Use user-specified UI update rate
-    jalv->ui_update_hz = jalv->opts.update_rate;
-    jalv->ui_update_hz = MAX(1.0f, jalv->ui_update_hz);
-  }
-
-  if (!jalv->opts.scale_factor) {
-    // Calculate the monitor's scale factor
-    jalv->ui_scale_factor = jalv_frontend_scale_factor(jalv);
-  } else {
-    // Use user-specified UI scale factor
-    jalv->ui_scale_factor = jalv->opts.scale_factor;
-  }
-
-  // The UI can only go so fast, clamp to reasonable limits
-  jalv->ui_update_hz     = MIN(60, jalv->ui_update_hz);
-  jalv->opts.buffer_size = MAX(4096, jalv->opts.buffer_size);
-  jalv_log(JALV_LOG_INFO, "Comm buffers: %u bytes\n", jalv->opts.buffer_size);
-  jalv_log(JALV_LOG_INFO, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
-  jalv_log(JALV_LOG_INFO, "Scale factor: %.01f\n", jalv->ui_scale_factor);
-
+  jalv_init_display(jalv);
   jalv_init_options(jalv);
 
   // Create Plugin <=> UI communication buffers
