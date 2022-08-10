@@ -15,8 +15,13 @@
 static LV2_Worker_Status
 jalv_worker_write_packet(ZixRing* const target, uint32_t size, const void* data)
 {
-  zix_ring_write(target, (const char*)&size, sizeof(size));
-  zix_ring_write(target, (const char*)data, size);
+  ZixRingTransaction tx = zix_ring_begin_write(target);
+  if (zix_ring_amend_write(target, &tx, &size, sizeof(size)) ||
+      zix_ring_amend_write(target, &tx, data, size)) {
+    return LV2_WORKER_ERR_NO_SPACE;
+  }
+
+  zix_ring_commit_write(target, &tx);
   return LV2_WORKER_SUCCESS;
 }
 
