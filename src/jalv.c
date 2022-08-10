@@ -505,14 +505,14 @@ jalv_send_to_plugin(void* const jalv_handle,
 
   if (protocol != 0 && protocol != jalv->urids.atom_eventTransfer) {
     jalv_log(JALV_LOG_ERR,
-             "UI write with unsupported protocol %u (%s)\n",
+             "UI wrote with unsupported protocol %u (%s)\n",
              protocol,
              unmap_uri(jalv, protocol));
     return;
   }
 
   if (port_index >= jalv->num_ports) {
-    jalv_log(JALV_LOG_ERR, "UI write to invalid port index %u\n", port_index);
+    jalv_log(JALV_LOG_ERR, "UI wrote to invalid port index %u\n", port_index);
     return;
   }
 
@@ -1248,7 +1248,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->instance = lilv_plugin_instantiate(
     jalv->plugin, jalv->sample_rate, jalv->feature_list);
   if (!jalv->instance) {
-    jalv_log(JALV_LOG_ERR, "Failed to instantiate plugin.\n");
+    jalv_log(JALV_LOG_ERR, "Failed to instantiate plugin\n");
     jalv_close(jalv);
     return -9;
   }
