@@ -711,15 +711,11 @@ jalv_run(Jalv* jalv, uint32_t nframes)
   // Run plugin for this cycle
   lilv_instance_run(jalv->instance, nframes);
 
-  // Process any worker replies
+  // Process any worker replies and end the cycle
   LV2_Handle handle = lilv_instance_get_handle(jalv->instance);
-  jalv_worker_emit_responses(&jalv->state_worker, handle);
-  jalv_worker_emit_responses(&jalv->worker, handle);
-
-  // Notify the plugin the run() cycle is finished
-  if (jalv->worker.iface && jalv->worker.iface->end_run) {
-    jalv->worker.iface->end_run(jalv->instance->lv2_handle);
-  }
+  jalv_worker_emit_responses(jalv->state_worker, handle);
+  jalv_worker_emit_responses(jalv->worker, handle);
+  jalv_worker_end_run(jalv->worker);
 
   // Check if it's time to send updates to the UI
   jalv->event_delta_t += nframes;
@@ -914,11 +910,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->map.map    = map_uri;
   init_feature(&jalv->features.map_feature, LV2_URID__map, &jalv->map);
 
-  jalv->worker.lock       = &jalv->work_lock;
-  jalv->worker.exit       = &jalv->exit;
-  jalv->state_worker.lock = &jalv->work_lock;
-  jalv->state_worker.exit = &jalv->exit;
-
   jalv->unmap.handle = jalv;
   jalv->unmap.unmap  = unmap_uri;
   init_feature(&jalv->features.unmap_feature, LV2_URID__unmap, &jalv->unmap);
@@ -988,12 +979,10 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
                LV2_STATE__makePath,
                &jalv->features.make_path);
 
-  jalv->features.sched.handle        = &jalv->worker;
   jalv->features.sched.schedule_work = jalv_worker_schedule;
   init_feature(
     &jalv->features.sched_feature, LV2_WORKER__schedule, &jalv->features.sched);
 
-  jalv->features.ssched.handle        = &jalv->state_worker;
   jalv->features.ssched.schedule_work = jalv_worker_schedule;
   init_feature(&jalv->features.state_sched_feature,
                LV2_WORKER__schedule,
@@ -1010,9 +999,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
                &jalv->features.request_value);
 
   zix_sem_init(&jalv->done, 0);
-
   zix_sem_init(&jalv->paused, 0);
-  zix_sem_init(&jalv->worker.sem, 0);
 
   // Find all installed plugins
   LilvWorld* world = lilv_world_new();
@@ -1106,6 +1093,17 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv_log(JALV_LOG_ERR, "Failed to find plugin\n");
     jalv_close(jalv);
     return -4;
+  }
+
+  // Create workers if necessary
+  if (lilv_plugin_has_extension_data(jalv->plugin,
+                                     jalv->nodes.work_interface)) {
+    jalv->worker                = jalv_worker_new(&jalv->work_lock, true);
+    jalv->features.sched.handle = jalv->worker;
+    if (jalv->safe_restore) {
+      jalv->state_worker           = jalv_worker_new(&jalv->work_lock, false);
+      jalv->features.ssched.handle = jalv->state_worker;
+    }
   }
 
   // Load preset, if specified
@@ -1312,25 +1310,17 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->features.ext_data.data_access =
     lilv_instance_get_descriptor(jalv->instance)->extension_data;
 
-  jalv->worker.handle       = jalv->instance->lv2_handle;
-  jalv->state_worker.handle = jalv->instance->lv2_handle;
+  const LV2_Worker_Interface* worker_iface =
+    (const LV2_Worker_Interface*)lilv_instance_get_extension_data(
+      jalv->instance, LV2_WORKER__interface);
+
+  jalv_worker_start(jalv->worker, worker_iface, jalv->instance->lv2_handle);
+  jalv_worker_start(
+    jalv->state_worker, worker_iface, jalv->instance->lv2_handle);
 
   printf("\n");
   if (!jalv->buf_size_set) {
     jalv_allocate_port_buffers(jalv);
-  }
-
-  // Create workers if necessary
-  if (lilv_plugin_has_extension_data(jalv->plugin,
-                                     jalv->nodes.work_interface)) {
-    const LV2_Worker_Interface* iface =
-      (const LV2_Worker_Interface*)lilv_instance_get_extension_data(
-        jalv->instance, LV2_WORKER__interface);
-
-    jalv_worker_init(&jalv->worker, iface, true);
-    if (jalv->safe_restore) {
-      jalv_worker_init(&jalv->state_worker, iface, false);
-    }
   }
 
   // Apply loaded state to plugin instance if necessary
@@ -1375,10 +1365,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 int
 jalv_close(Jalv* const jalv)
 {
-  jalv->exit = true;
-
   // Terminate the worker
-  jalv_worker_finish(&jalv->worker);
+  jalv_worker_exit(jalv->worker);
 
   // Deactivate audio
   if (jalv->backend) {
@@ -1394,10 +1382,8 @@ jalv_close(Jalv* const jalv)
   }
 
   // Destroy the worker
-  jalv_worker_destroy(&jalv->worker);
-  if (jalv->safe_restore) {
-    jalv_worker_destroy(&jalv->state_worker);
-  }
+  jalv_worker_free(jalv->worker);
+  jalv_worker_free(jalv->state_worker);
 
   // Deactivate plugin
 #if USE_SUIL

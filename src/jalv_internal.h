@@ -78,8 +78,8 @@ struct JalvImpl {
   ZixRing*          ui_to_plugin; ///< Port events from UI
   ZixRing*          plugin_to_ui; ///< Port events from plugin
   void*             ui_event_buf; ///< Buffer for reading UI port events
-  JalvWorker        worker;       ///< Worker thread implementation
-  JalvWorker        state_worker; ///< Synchronous worker for state restore
+  JalvWorker*       worker;       ///< Worker thread implementation
+  JalvWorker*       state_worker; ///< Synchronous worker for state restore
   ZixSem            work_lock;    ///< Lock for plugin work() method
   ZixSem            done;         ///< Exit semaphore
   ZixSem            paused;       ///< Paused signal from process thread
@@ -112,7 +112,6 @@ struct JalvImpl {
   float               bpm;             ///< Transport tempo in beats per minute
   bool                rolling;         ///< Transport speed (0=stop, 1=play)
   bool                buf_size_set;    ///< True iff buffer size callback fired
-  bool                exit;            ///< True iff execution is finished
   bool                has_ui;          ///< True iff a control UI is present
   bool                request_update;  ///< True iff a plugin update is needed
   bool                safe_restore;    ///< Plugin restore() is thread-safe
