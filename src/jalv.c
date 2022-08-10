@@ -644,8 +644,9 @@ jalv_run(Jalv* jalv, uint32_t nframes)
   lilv_instance_run(jalv->instance, nframes);
 
   // Process any worker replies
-  jalv_worker_emit_responses(&jalv->state_worker, jalv->instance);
-  jalv_worker_emit_responses(&jalv->worker, jalv->instance);
+  LV2_Handle handle = lilv_instance_get_handle(jalv->instance);
+  jalv_worker_emit_responses(&jalv->state_worker, handle);
+  jalv_worker_emit_responses(&jalv->worker, handle);
 
   // Notify the plugin the run() cycle is finished
   if (jalv->worker.iface && jalv->worker.iface->end_run) {

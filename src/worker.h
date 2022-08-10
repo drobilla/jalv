@@ -8,7 +8,6 @@
 #include "zix/sem.h"
 #include "zix/thread.h"
 
-#include "lilv/lilv.h"
 #include "lv2/core/lv2.h"
 #include "lv2/worker/worker.h"
 
@@ -51,7 +50,7 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
                      const void*                data);
 
 void
-jalv_worker_emit_responses(JalvWorker* worker, LilvInstance* instance);
+jalv_worker_emit_responses(JalvWorker* worker, LV2_Handle lv2_handle);
 
 #ifdef __cplusplus
 } // extern "C"

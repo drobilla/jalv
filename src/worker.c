@@ -3,6 +3,7 @@
 
 #include "worker.h"
 
+#include "lv2/core/lv2.h"
 #include "lv2/worker/worker.h"
 #include "zix/ring.h"
 #include "zix/sem.h"
@@ -115,18 +116,16 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
 }
 
 void
-jalv_worker_emit_responses(JalvWorker* worker, LilvInstance* instance)
+jalv_worker_emit_responses(JalvWorker* worker, LV2_Handle lv2_handle)
 {
   if (worker->responses) {
     uint32_t read_space = zix_ring_read_space(worker->responses);
     while (read_space) {
       uint32_t size = 0;
       zix_ring_read(worker->responses, (char*)&size, sizeof(size));
-
       zix_ring_read(worker->responses, (char*)worker->response, size);
 
-      worker->iface->work_response(
-        instance->lv2_handle, size, worker->response);
+      worker->iface->work_response(lv2_handle, size, worker->response);
 
       read_space -= sizeof(size) + size;
     }
