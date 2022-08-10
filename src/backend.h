@@ -11,17 +11,21 @@
 
 JALV_BEGIN_DECLS
 
-// Audio/MIDI I/O backend interface
+// Interface that must be implemented by audio/MIDI backends
 
+/// Initialize the audio and MIDI systems
 JalvBackend*
 jalv_backend_init(Jalv* jalv);
 
+/// Activate the backend and start processing audio
 void
 jalv_backend_activate(Jalv* jalv);
 
+/// Deactivate the backend and stop processing audio
 void
 jalv_backend_deactivate(Jalv* jalv);
 
+/// Close the backend
 void
 jalv_backend_close(Jalv* jalv);
 

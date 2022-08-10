@@ -979,8 +979,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   suil_init(argc, argv, SUIL_ARG_NONE);
 #endif
 
-  int ret = 0;
-  if ((ret = jalv_frontend_init(argc, argv, &jalv->opts))) {
+  // Parse command-line arguments
+  const int ret = jalv_frontend_init(argc, argv, &jalv->opts);
+  if (ret) {
     jalv_close(jalv);
     return ret;
   }
@@ -995,10 +996,12 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   zix_sem_init(&jalv->symap_lock, 1);
   zix_sem_init(&jalv->work_lock, 1);
 
+  // urid:map
   jalv->map.handle = jalv;
   jalv->map.map    = map_uri;
   init_feature(&jalv->features.map_feature, LV2_URID__map, &jalv->map);
 
+  // urid:unmap
   jalv->unmap.handle = jalv;
   jalv->unmap.unmap  = unmap_uri;
   init_feature(&jalv->features.unmap_feature, LV2_URID__unmap, &jalv->unmap);
@@ -1018,6 +1021,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   sratom_set_env(jalv->sratom, jalv->env);
   sratom_set_env(jalv->ui_sratom, jalv->env);
 
+  // Create temporary directory for plugin state
 #ifdef _WIN32
   jalv->temp_dir = jalv_strdup("jalvXXXXXX");
   _mktemp(jalv->temp_dir);
@@ -1027,26 +1031,31 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   free(templ);
 #endif
 
+  // state:makePath
   jalv->features.make_path.handle = jalv;
   jalv->features.make_path.path   = jalv_make_path;
   init_feature(&jalv->features.make_path_feature,
                LV2_STATE__makePath,
                &jalv->features.make_path);
 
+  // worker:schedule (normal)
   jalv->features.sched.schedule_work = jalv_worker_schedule;
   init_feature(
     &jalv->features.sched_feature, LV2_WORKER__schedule, &jalv->features.sched);
 
+  // worker:schedule (state)
   jalv->features.ssched.schedule_work = jalv_worker_schedule;
   init_feature(&jalv->features.state_sched_feature,
                LV2_WORKER__schedule,
                &jalv->features.ssched);
 
+  // log:log
   jalv->features.llog.handle  = &jalv->log;
   jalv->features.llog.printf  = jalv_printf;
   jalv->features.llog.vprintf = jalv_vprintf;
   init_feature(&jalv->features.log_feature, LV2_LOG__log, &jalv->features.llog);
 
+  // ui:requestValue
   jalv->features.request_value.handle = jalv;
   init_feature(&jalv->features.request_value_feature,
                LV2_UI__requestValue,
@@ -1341,6 +1350,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     lilv_state_free(state);
   }
 
+  // Apply initial controls from command-line arguments
   if (jalv->opts.controls) {
     for (char** c = jalv->opts.controls; *c; ++c) {
       jalv_apply_control_arg(jalv, *c);
@@ -1367,7 +1377,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   // Discover UI
   jalv->has_ui = jalv_frontend_discover(jalv);
 
-  // Activate Jack
+  // Activate audio backend
   jalv_backend_activate(jalv);
   jalv->play_state = JALV_RUNNING;
 
