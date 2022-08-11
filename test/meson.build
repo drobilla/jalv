@@ -22,3 +22,16 @@ if not meson.is_subproject()
     )
   endif
 endif
+
+##############
+# Unit Tests #
+##############
+
+test(
+  'test_symap',
+  executable(
+    'test_symap',
+    files('../src/symap.c'),
+    c_args: ['-DSYMAP_STANDALONE'],
+  ),
+)
