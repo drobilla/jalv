@@ -1210,6 +1210,12 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
     if (group && !lilv_node_equals(group, last_group)) {
       LilvNode* group_name =
         lilv_world_get(jalv->world, group, jalv->nodes.lv2_name, NULL);
+
+      if (!group_name) {
+        group_name =
+          lilv_world_get(jalv->world, group, jalv->nodes.rdfs_label, NULL);
+      }
+
       GtkWidget* group_label =
         new_label(lilv_node_as_string(group_name), true, 0.0f, 1.0f);
       gtk_table_attach(GTK_TABLE(port_table),

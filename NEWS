@@ -19,9 +19,10 @@ jalv (1.6.7) unstable; urgency=medium
   * Propagate worker errors to the scheduler when possible
   * Remove Gtkmm interface
   * Remove Qt4 support
+  * Support both rdfs:label and lv2:name for port group labels
   * Switch to meson build system
 
- -- David Robillard <d@drobilla.net>  Wed, 10 Aug 2022 17:04:22 +0000
+ -- David Robillard <d@drobilla.net>  Tue, 16 Aug 2022 21:02:29 +0000
 
 jalv (1.6.6) stable; urgency=medium
 
