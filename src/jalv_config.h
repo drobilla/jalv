@@ -45,14 +45,18 @@
 // POSIX.1-2001: fileno()
 #  ifndef HAVE_FILENO
 #    if defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L
-#      define HAVE_FILENO
+#      define HAVE_FILENO 1
+#    else
+#      define HAVE_FILENO 0
 #    endif
 #  endif
 
 // POSIX.1-2001: isatty()
 #  ifndef HAVE_ISATTY
 #    if defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L
-#      define HAVE_ISATTY
+#      define HAVE_ISATTY 1
+#    else
+#      define HAVE_ISATTY 0
 #    endif
 #  endif
 
@@ -77,7 +81,9 @@
 // POSIX.1-2001: sigaction()
 #  ifndef HAVE_SIGACTION
 #    if defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L
-#      define HAVE_SIGACTION
+#      define HAVE_SIGACTION 1
+#    else
+#      define HAVE_SIGACTION 0
 #    endif
 #  endif
 
@@ -85,7 +91,9 @@
 #  ifndef HAVE_SUIL
 #    ifdef __has_include
 #      if __has_include("suil/suil.h")
-#        define HAVE_SUIL
+#        define HAVE_SUIL 1
+#      else
+#        define HAVE_SUIL 0
 #      endif
 #    endif
 #  endif
@@ -94,7 +102,9 @@
 #  ifndef HAVE_JACK_METADATA
 #    ifdef __has_include
 #      if __has_include("jack/metadata.h")
-#        define HAVE_JACK_METADATA
+#        define HAVE_JACK_METADATA 1
+#      else
+#        define HAVE_JACK_METADATA 0
 #      endif
 #    endif
 #  endif
@@ -103,7 +113,9 @@
 #  ifndef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
 #    ifdef __has_include
 #      if __has_include("jack/midiport.h")
-#        define HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
+#        define HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE 1
+#      else
+#        define HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE 0
 #      endif
 #    endif
 #  endif
