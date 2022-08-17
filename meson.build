@@ -48,14 +48,6 @@ m_dep = cc.find_library('m', required: false)
 
 thread_dep = dependency('threads')
 
-lv2_dep = dependency('lv2',
-                     version: '>= 1.18.0',
-                     fallback: ['lv2', 'lv2_dep'])
-
-lilv_dep = dependency('lilv-0',
-                      version: '>= 0.24.0',
-                      fallback: ['lilv', 'lilv_dep'])
-
 serd_dep = dependency('serd-0',
                       version: '>= 0.30.0',
                       fallback: ['serd', 'serd_dep'])
@@ -63,6 +55,14 @@ serd_dep = dependency('serd-0',
 sord_dep = dependency('sord-0',
                       version: '>= 0.14.0',
                       fallback: ['sord', 'sord_dep'])
+
+lv2_dep = dependency('lv2',
+                     version: '>= 1.18.0',
+                     fallback: ['lv2', 'lv2_dep'])
+
+lilv_dep = dependency('lilv-0',
+                      version: '>= 0.24.0',
+                      fallback: ['lilv', 'lilv_dep'])
 
 sratom_dep = dependency('sratom-0',
                         version: '>= 0.6.4',
