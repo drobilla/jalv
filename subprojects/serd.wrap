@@ -5,5 +5,5 @@
 directory=serd
 url=https://gitlab.com/drobilla/serd.git
 push-url=ssh://git@gitlab.com:drobilla/serd.git
-revision=meson
+revision=master
 depth=1

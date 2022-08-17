@@ -5,5 +5,5 @@
 directory=sord
 url=https://gitlab.com/drobilla/sord.git
 push-url=ssh://git@gitlab.com:drobilla/sord.git
-revision=meson
+revision=master
 depth=1

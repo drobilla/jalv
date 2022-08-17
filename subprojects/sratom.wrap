@@ -5,5 +5,5 @@
 directory=sratom
 url=https://gitlab.com/lv2/sratom.git
 push-url=ssh://git@gitlab.com:lv2/sratom.git
-revision=meson
+revision=master
 depth=1
