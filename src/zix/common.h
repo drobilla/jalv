@@ -56,15 +56,6 @@ extern "C" {
 #  define ZIX_LOG_FUNC(fmt, arg1)
 #endif
 
-// Unused parameter macro to suppresses warnings and make it impossible to use
-#if defined(__cplusplus)
-#  define ZIX_UNUSED(name)
-#elif defined(__GNUC__)
-#  define ZIX_UNUSED(name) name##_unused __attribute__((__unused__))
-#else
-#  define ZIX_UNUSED(name) name
-#endif
-
 typedef enum {
   ZIX_STATUS_SUCCESS,
   ZIX_STATUS_ERROR,
