@@ -144,51 +144,59 @@ if get_option('checks')
     '-DJALV_NO_DEFAULT_CONFIG',
   ]
 
-  fileno_code = '''#include <stdio.h>
+  if no_posix
+    platform_defines += ['-DHAVE_FILENO=0']
+    platform_defines += ['-DHAVE_ISATTY=0']
+    platform_defines += ['-DHAVE_MLOCK=0']
+    platform_defines += ['-DHAVE_POSIX_MEMALIGN=0']
+    platform_defines += ['-DHAVE_SIGACTION=0']
+  else
+    fileno_code = '''#include <stdio.h>
 int main(void) { return fileno(stdin); }'''
 
-  isatty_code = '''#include <unistd.h>
+    isatty_code = '''#include <unistd.h>
 int main(void) { return isatty(0); }'''
 
-  mlock_code = '''#include <sys/mman.h>
+    mlock_code = '''#include <sys/mman.h>
 int main(void) { return mlock(0, 0); }'''
 
-  posix_memalign_code = '''#include <stdlib.h>
+    posix_memalign_code = '''#include <stdlib.h>
 int main(void) { void* mem; posix_memalign(&mem, 8, 8); }'''
 
-  sigaction_code = '''#include <signal.h>
+    sigaction_code = '''#include <signal.h>
 int main(void) { return sigaction(SIGINT, 0, 0); }'''
+
+    platform_defines += '-DHAVE_FILENO=@0@'.format(
+      cc.compiles(fileno_code,
+                  args: platform_defines,
+                  name: 'fileno').to_int())
+
+    platform_defines += '-DHAVE_ISATTY=@0@'.format(
+      cc.compiles(isatty_code,
+                  args: platform_defines,
+                  name: 'isatty').to_int())
+
+    platform_defines += '-DHAVE_MLOCK=@0@'.format(
+      cc.compiles(mlock_code,
+                  args: platform_defines,
+                  name: 'mlock').to_int())
+
+    platform_defines += '-DHAVE_POSIX_MEMALIGN=@0@'.format(
+      cc.compiles(posix_memalign_code,
+                  args: platform_defines,
+                  name: 'posix_memalign').to_int())
+
+    platform_defines += '-DHAVE_SIGACTION=@0@'.format(
+      cc.compiles(sigaction_code,
+                  args: platform_defines,
+                  name: 'sigaction').to_int())
+  endif
 
   jack_metadata_code = '''#include <jack/metadata.h>
 int main(void) { return !!&jack_set_property; }'''
 
   jack_port_type_get_buffer_size_code = '''#include <jack/jack.h>
 int main(void) { return !!&jack_port_type_get_buffer_size; }'''
-
-  platform_defines += '-DHAVE_FILENO=@0@'.format(
-    cc.compiles(fileno_code,
-                args: platform_defines,
-                name: 'fileno').to_int())
-
-  platform_defines += '-DHAVE_ISATTY=@0@'.format(
-    cc.compiles(isatty_code,
-                args: platform_defines,
-                name: 'isatty').to_int())
-
-  platform_defines += '-DHAVE_MLOCK=@0@'.format(
-    cc.compiles(mlock_code,
-                args: platform_defines,
-                name: 'mlock').to_int())
-
-  platform_defines += '-DHAVE_POSIX_MEMALIGN=@0@'.format(
-    cc.compiles(posix_memalign_code,
-                args: platform_defines,
-                name: 'posix_memalign').to_int())
-
-  platform_defines += '-DHAVE_SIGACTION=@0@'.format(
-    cc.compiles(sigaction_code,
-                args: platform_defines,
-                name: 'sigaction').to_int())
 
   platform_defines += '-DHAVE_JACK_METADATA=@0@'.format(
     cc.compiles(jack_metadata_code,
