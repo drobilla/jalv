@@ -27,6 +27,8 @@ configuration:
 
   * `CC`: Path to C compiler.
   * `CFLAGS`: C compiler options.
+  * `CXX`: Path to C++ compiler.
+  * `CXXFLAGS`: C++ compiler options.
   * `LDFLAGS`: Linker options.
 
 However, it is better to use meson options for configuration.  All options can
