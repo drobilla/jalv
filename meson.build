@@ -229,6 +229,9 @@ common_dependencies = [
   backend_dep,
   lilv_dep,
   m_dep,
+  serd_dep,
+  sratom_dep,
+  suil_dep,
   thread_dep,
 ]
 
