@@ -2,14 +2,16 @@
 # SPDX-License-Identifier: CC0-1.0 OR ISC
 
 if not meson.is_subproject()
-  # Check release metadata
-  autoship = find_program('autoship', required: get_option('tests'))
-  if autoship.found()
-    test(
-      'autoship', autoship,
-      args: ['test', jalv_src_root],
-      suite: 'data',
-    )
+  if get_option('strict')
+    # Check release metadata
+    autoship = find_program('autoship', required: get_option('tests'))
+    if autoship.found()
+      test(
+        'autoship', autoship,
+        args: ['test', jalv_src_root],
+        suite: 'data',
+      )
+    endif
   endif
 
   # Check licensing metadata
