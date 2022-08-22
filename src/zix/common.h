@@ -4,6 +4,8 @@
 #ifndef ZIX_COMMON_H
 #define ZIX_COMMON_H
 
+#include "zix/attributes.h"
+
 #include <stdbool.h>
 
 /**
@@ -11,49 +13,8 @@
    @{
 */
 
-/** @cond */
-#if defined(_WIN32) && !defined(ZIX_STATIC) && defined(ZIX_INTERNAL)
-#  define ZIX_API __declspec(dllexport)
-#elif defined(_WIN32) && !defined(ZIX_STATIC)
-#  define ZIX_API __declspec(dllimport)
-#elif defined(__GNUC__)
-#  define ZIX_API __attribute__((visibility("default")))
-#else
-#  define ZIX_API
-#endif
-
-#ifdef __GNUC__
-#  define ZIX_PURE_FUNC __attribute__((pure))
-#  define ZIX_CONST_FUNC __attribute__((const))
-#  define ZIX_MALLOC_FUNC __attribute__((malloc))
-#else
-#  define ZIX_PURE_FUNC
-#  define ZIX_CONST_FUNC
-#  define ZIX_MALLOC_FUNC
-#endif
-
-#define ZIX_PURE_API \
-  ZIX_API            \
-  ZIX_PURE_FUNC
-
-#define ZIX_CONST_API \
-  ZIX_API             \
-  ZIX_CONST_FUNC
-
-#define ZIX_MALLOC_API \
-  ZIX_API              \
-  ZIX_MALLOC_FUNC
-
-/** @endcond */
-
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#ifdef __GNUC__
-#  define ZIX_LOG_FUNC(fmt, arg1) __attribute__((format(printf, fmt, arg1)))
-#else
-#  define ZIX_LOG_FUNC(fmt, arg1)
 #endif
 
 typedef enum {
@@ -63,47 +24,25 @@ typedef enum {
   ZIX_STATUS_NOT_FOUND,
   ZIX_STATUS_EXISTS,
   ZIX_STATUS_BAD_ARG,
-  ZIX_STATUS_BAD_PERMS
+  ZIX_STATUS_BAD_PERMS,
+  ZIX_STATUS_REACHED_END
 } ZixStatus;
 
-static inline const char*
-zix_strerror(const ZixStatus status)
-{
-  switch (status) {
-  case ZIX_STATUS_SUCCESS:
-    return "Success";
-  case ZIX_STATUS_ERROR:
-    return "Unknown error";
-  case ZIX_STATUS_NO_MEM:
-    return "Out of memory";
-  case ZIX_STATUS_NOT_FOUND:
-    return "Not found";
-  case ZIX_STATUS_EXISTS:
-    return "Exists";
-  case ZIX_STATUS_BAD_ARG:
-    return "Bad argument";
-  case ZIX_STATUS_BAD_PERMS:
-    return "Bad permissions";
-  }
-  return "Unknown error";
-}
+/// Return a string describing a status code
+ZIX_CONST_API
+const char*
+zix_strerror(ZixStatus status);
 
-/**
-   Function for comparing two elements.
-*/
+/// Function for comparing two elements
 typedef int (*ZixComparator)(const void* a,
                              const void* b,
                              const void* user_data);
 
-/**
-   Function for testing equality of two elements.
-*/
+/// Function for testing equality of two elements
 typedef bool (*ZixEqualFunc)(const void* a, const void* b);
 
-/**
-   Function to destroy an element.
-*/
-typedef void (*ZixDestroyFunc)(void* ptr);
+/// Function to destroy an element
+typedef void (*ZixDestroyFunc)(void* ptr, const void* user_data);
 
 /**
    @}
