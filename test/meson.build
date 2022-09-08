@@ -1,5 +1,5 @@
 # Copyright 2019-2022 David Robillard <d@drobilla.net>
-# SPDX-License-Identifier: CC0-1.0 OR ISC
+# SPDX-License-Identifier: 0BSD OR ISC
 
 if not meson.is_subproject()
   if get_option('strict')

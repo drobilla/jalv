@@ -5,7 +5,7 @@ Source: https://gitlab.com/drobilla/jalv
 
 Files: .clang* .clant.json .gitignore AUTHORS NEWS jalv.desktop.in jalv.ttl meson_options.txt
 Copyright: 2010-2022 David Robillard <d@drobilla.net>
-License: CC0-1.0 OR ISC
+License: 0BSD OR ISC
 
 Files: INSTALL.md README.md doc/*.1
 Copyright: 2011-2020 David Robillard <d@drobilla.net>
