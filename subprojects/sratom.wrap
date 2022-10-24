@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: 0BSD OR ISC
 
 [wrap-git]
-directory=sratom
-url=https://gitlab.com/lv2/sratom.git
-push-url=ssh://git@gitlab.com:lv2/sratom.git
-revision=master
-depth=1
+url = https://gitlab.com/lv2/sratom.git
+push-url = ssh://git@gitlab.com:lv2/sratom.git
+revision = master
+depth = 1

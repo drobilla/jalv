@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: 0BSD OR ISC
 
 [wrap-git]
-directory=serd
-url=https://gitlab.com/drobilla/serd.git
-push-url=ssh://git@gitlab.com:drobilla/serd.git
-revision=master
-depth=1
+url = https://gitlab.com/drobilla/serd.git
+push-url = ssh://git@gitlab.com:drobilla/serd.git
+revision = master
+depth = 1

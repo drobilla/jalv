@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: 0BSD OR ISC
 
 [wrap-git]
-directory=lv2
-url=https://gitlab.com/lv2/lv2.git
-push-url=ssh://git@gitlab.com:lv2/lv2.git
-revision=master
-depth=1
+url = https://gitlab.com/lv2/lv2.git
+push-url = ssh://git@gitlab.com:lv2/lv2.git
+revision = master
+depth = 1
