@@ -145,15 +145,18 @@ symap_map(Symap* const map, const char* sym)
     return 0;
   }
 
+  map->symbols = new_symbols;
+
   // Grow index array
   uint32_t* new_index = (uint32_t*)realloc(map->index, id * sizeof(index));
   if (!new_index) {
     return 0;
   }
 
+  map->index = new_index;
+
   // Append new symbol to symbols array
   map->size            = id;
-  map->symbols         = new_symbols;
   map->symbols[id - 1] = symap_strdup(sym);
 
   // Insert new index element into sorted index
@@ -212,6 +215,10 @@ symap_test(Symap* const map)
     }
 
     const uint32_t id = symap_map(map, syms[i]);
+    if (!id) {
+      return fprintf(stderr, "error: Failed to insert ID\n");
+    }
+
     if (!!strcmp(map->symbols[id - 1], syms[i])) {
       return fprintf(stderr, "error: Corrupt symbol table\n");
     }
