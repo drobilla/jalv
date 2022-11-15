@@ -21,7 +21,7 @@
 #include "lv2/ui/ui.h"
 #include "lv2/urid/urid.h"
 #include "suil/suil.h"
-#include "zix/common.h"
+#include "zix/attributes.h"
 #include "zix/sem.h"
 
 LV2_DISABLE_DEPRECATION_WARNINGS

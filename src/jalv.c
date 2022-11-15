@@ -41,7 +41,7 @@
 #include "serd/serd.h"
 #include "sratom/sratom.h"
 #include "symap.h"
-#include "zix/common.h"
+#include "zix/attributes.h"
 #include "zix/ring.h"
 #include "zix/sem.h"
 
@@ -740,7 +740,7 @@ int
 jalv_update(Jalv* jalv)
 {
   // Check quit flag and close if set
-  if (zix_sem_try_wait(&jalv->done)) {
+  if (!zix_sem_try_wait(&jalv->done)) {
     jalv_frontend_close(jalv);
     return 0;
   }

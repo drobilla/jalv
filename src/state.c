@@ -13,7 +13,7 @@
 #include "lv2/core/lv2.h"
 #include "lv2/state/state.h"
 #include "lv2/urid/urid.h"
-#include "zix/common.h"
+#include "zix/attributes.h"
 #include "zix/sem.h"
 
 #include <stdbool.h>

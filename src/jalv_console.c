@@ -13,7 +13,7 @@
 
 #include "lilv/lilv.h"
 #include "lv2/ui/ui.h"
-#include "zix/common.h"
+#include "zix/attributes.h"
 #include "zix/sem.h"
 
 #if USE_SUIL
@@ -273,7 +273,7 @@ jalv_run_custom_ui(Jalv* jalv)
     show_iface->show(suil_instance_get_handle(jalv->ui_instance));
 
     // Drive idle interface until interrupted
-    while (!zix_sem_try_wait(&jalv->done)) {
+    while (zix_sem_try_wait(&jalv->done)) {
       jalv_update(jalv);
       if (idle_iface->idle(suil_instance_get_handle(jalv->ui_instance))) {
         break;
@@ -320,7 +320,7 @@ jalv_frontend_open(Jalv* jalv)
 {
   if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
     // Primitive command prompt for setting control values
-    while (!zix_sem_try_wait(&jalv->done)) {
+    while (zix_sem_try_wait(&jalv->done)) {
       char line[1024];
       printf("> ");
       if (fgets(line, sizeof(line), stdin)) {

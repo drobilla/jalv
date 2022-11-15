@@ -35,5 +35,6 @@ test(
     'test_symap',
     files('../src/symap.c'),
     c_args: ['-DSYMAP_STANDALONE'],
+    dependencies: [zix_dep],
   ),
 )

@@ -1,3 +1,9 @@
+jalv (1.6.9) stable; urgency=medium
+
+  * Switch to external zix dependency
+
+ -- David Robillard <d@drobilla.net>  Wed, 16 Nov 2022 15:50:45 +0000
+
 jalv (1.6.8) stable; urgency=medium
 
   * Add Gtk plugin selector UI and desktop file

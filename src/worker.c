@@ -5,9 +5,9 @@
 
 #include "lv2/core/lv2.h"
 #include "lv2/worker/worker.h"
-#include "zix/common.h"
 #include "zix/ring.h"
 #include "zix/sem.h"
+#include "zix/status.h"
 #include "zix/thread.h"
 
 #include <stdio.h>
@@ -103,7 +103,7 @@ jalv_worker_launch(JalvWorker* const worker)
 
   ZixRing* const requests = zix_ring_new(NULL, MAX_PACKET_SIZE);
   if (!requests) {
-    zix_thread_join(worker->thread, NULL);
+    zix_thread_join(worker->thread);
     zix_sem_destroy(&worker->sem);
     return ZIX_STATUS_NO_MEM;
   }
@@ -156,7 +156,7 @@ jalv_worker_exit(JalvWorker* const worker)
   if (worker && worker->threaded) {
     worker->exit = true;
     zix_sem_post(&worker->sem);
-    zix_thread_join(worker->thread, NULL);
+    zix_thread_join(worker->thread);
     worker->threaded = false;
   }
 }

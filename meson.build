@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: 0BSD OR ISC
 
 project('jalv', ['c', 'cpp'],
-        version: '1.6.8',
+        version: '1.6.9',
         license: 'ISC',
         meson_version: '>= 0.56.0',
         default_options: [
@@ -47,6 +47,10 @@ endif
 m_dep = cc.find_library('m', required: false)
 
 thread_dep = dependency('threads')
+
+zix_dep = dependency('zix-0',
+                     version: '>= 0.3.0',
+                     fallback: ['zix', 'zix_dep'])
 
 serd_dep = dependency('serd-0',
                       version: '>= 0.30.0',
@@ -114,7 +118,6 @@ endif
 
 platform_defines = [
   '-DJALV_VERSION="@0@"'.format(meson.project_version()),
-  '-DZIX_STATIC',
 ]
 
 suil_defines = ['-DHAVE_SUIL=@0@'.format(suil_dep.found().to_int())]
@@ -221,8 +224,6 @@ sources = backend_sources + files(
   'src/state.c',
   'src/symap.c',
   'src/worker.c',
-  'src/zix/allocator.c',
-  'src/zix/ring.c',
 )
 
 common_dependencies = [
@@ -233,6 +234,7 @@ common_dependencies = [
   sratom_dep,
   suil_dep,
   thread_dep,
+  zix_dep,
 ]
 
 # Internal JACK client library
