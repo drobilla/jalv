@@ -4,5 +4,5 @@
 [wrap-git]
 url = https://gitlab.com/drobilla/zix.git
 push-url = ssh://git@gitlab.com:drobilla/zix.git
-revision = master
+revision = main
 depth = 1
