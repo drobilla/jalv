@@ -48,34 +48,48 @@ m_dep = cc.find_library('m', required: false)
 
 thread_dep = dependency('threads')
 
-zix_dep = dependency('zix-0',
-                     version: '>= 0.3.0',
-                     fallback: ['zix', 'zix_dep'])
+zix_dep = dependency(
+  'zix-0',
+  fallback: ['zix', 'zix_dep'],
+  version: '>= 0.3.0',
+)
 
-serd_dep = dependency('serd-0',
-                      version: '>= 0.30.0',
-                      fallback: ['serd', 'serd_dep'])
+serd_dep = dependency(
+  'serd-0',
+  fallback: ['serd', 'serd_dep'],
+  version: '>= 0.30.0',
+)
 
-sord_dep = dependency('sord-0',
-                      version: '>= 0.14.0',
-                      fallback: ['sord', 'sord_dep'])
+sord_dep = dependency(
+  'sord-0',
+  fallback: ['sord', 'sord_dep'],
+  version: '>= 0.14.0',
+)
 
-lv2_dep = dependency('lv2',
-                     version: '>= 1.18.0',
-                     fallback: ['lv2', 'lv2_dep'])
+lv2_dep = dependency(
+  'lv2',
+  fallback: ['lv2', 'lv2_dep'],
+  version: '>= 1.18.0',
+)
 
-lilv_dep = dependency('lilv-0',
-                      version: '>= 0.24.0',
-                      fallback: ['lilv', 'lilv_dep'])
+lilv_dep = dependency(
+  'lilv-0',
+  fallback: ['lilv', 'lilv_dep'],
+  version: '>= 0.24.0',
+)
 
-sratom_dep = dependency('sratom-0',
-                        version: '>= 0.6.4',
-                        fallback: ['sratom', 'sratom_dep'])
+sratom_dep = dependency(
+  'sratom-0',
+  fallback: ['sratom', 'sratom_dep'],
+  version: '>= 0.6.4',
+)
 
-suil_dep = dependency('suil-0',
-                      version: '>= 0.10.0',
-                      fallback: ['suil', 'suil_dep'],
-                      required: get_option('suil'))
+suil_dep = dependency(
+  'suil-0',
+  fallback: ['suil', 'suil_dep'],
+  required: get_option('suil'),
+  version: '>= 0.10.0',
+)
 
 ###########
 # Drivers #
@@ -287,15 +301,19 @@ endif
 
 # Gtk 3.0 GUI version
 if not get_option('gtk3').disabled()
-  gdk3_dep = dependency('gdk-3.0',
-                        version: '>= 3.0.0',
-                        include_type: 'system',
-                        required: get_option('gtk3'))
+  gdk3_dep = dependency(
+    'gdk-3.0',
+    include_type: 'system',
+    required: get_option('gtk3'),
+    version: '>= 3.0.0',
+  )
 
-  gtk3_dep = dependency('gtk+-3.0',
-                        version: '>= 3.0.0',
-                        include_type: 'system',
-                        required: get_option('gtk3'))
+  gtk3_dep = dependency(
+    'gtk+-3.0',
+    include_type: 'system',
+    required: get_option('gtk3'),
+    version: '>= 3.0.0',
+  )
 
   if gdk3_dep.found() and gtk3_dep.found()
     config = configuration_data()
@@ -322,10 +340,12 @@ endif
 
 # Qt 5 GUI version
 if not get_option('qt5').disabled()
-  qt5_dep = dependency('Qt5Widgets',
-                       version: '>= 5.1.0',
-                       include_type: 'system',
-                       required: get_option('qt5'))
+  qt5_dep = dependency(
+    'Qt5Widgets',
+    include_type: 'system',
+    required: get_option('qt5'),
+    version: '>= 5.1.0',
+  )
 
   moc = find_program('moc-qt5', required: false)
   if not moc.found()
