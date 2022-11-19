@@ -50,6 +50,12 @@ thread_dep = dependency('threads')
 
 zix_dep = dependency(
   'zix-0',
+  default_options: [
+    'benchmarks=disabled',
+    'docs=disabled',
+    'tests=disabled',
+    'tests_cpp=disabled',
+  ],
   fallback: ['zix', 'zix_dep'],
   version: '>= 0.3.0',
 )
