@@ -333,6 +333,11 @@ if not get_option('qt5').disabled()
   endif
 
   if moc.found()
+    qt_args = []
+    if cpp.get_id() in ['clang', 'gcc']
+      qt_args = ['-fPIC']
+    endif
+
     jalv_qt_hpp = files(jalv_src_root / 'src' / 'jalv_qt.hpp')
 
     jalv_qt5_meta_cpp = custom_target(
@@ -347,7 +352,7 @@ if not get_option('qt5').disabled()
       'jalv.qt5',
       sources + files('src/jalv_qt.cpp') + [jalv_qt5_meta_cpp],
       c_args: c_suppressions + platform_defines + suil_defines,
-      cpp_args: cpp_suppressions + platform_defines + suil_defines,
+      cpp_args: cpp_suppressions + platform_defines + suil_defines + qt_args,
       dependencies: common_dependencies + [qt5_dep, suil_dep],
       include_directories: include_directories('src'),
       install: true,
