@@ -62,36 +62,66 @@ zix_dep = dependency(
 
 serd_dep = dependency(
   'serd-0',
+  default_options: [
+    'docs=disabled',
+    'tests=disabled',
+    'tools=disabled',
+  ],
   fallback: ['serd', 'serd_dep'],
   version: '>= 0.30.0',
 )
 
 sord_dep = dependency(
   'sord-0',
+  default_options: [
+    'docs=disabled',
+    'tests=disabled',
+    'tools=disabled',
+  ],
   fallback: ['sord', 'sord_dep'],
   version: '>= 0.14.0',
 )
 
 lv2_dep = dependency(
   'lv2',
+  default_options: [
+    'docs=disabled',
+    'old_headers=false',
+    'plugins=disabled',
+    'tests=disabled',
+  ],
   fallback: ['lv2', 'lv2_dep'],
   version: '>= 1.18.0',
 )
 
 lilv_dep = dependency(
   'lilv-0',
+  default_options: [
+    'bindings_py=disabled',
+    'docs=disabled',
+    'tests=disabled',
+    'tools=disabled',
+  ],
   fallback: ['lilv', 'lilv_dep'],
   version: '>= 0.24.0',
 )
 
 sratom_dep = dependency(
   'sratom-0',
+  default_options: [
+    'docs=disabled',
+    'tests=disabled',
+  ],
   fallback: ['sratom', 'sratom_dep'],
   version: '>= 0.6.4',
 )
 
 suil_dep = dependency(
   'suil-0',
+  default_options: [
+    'docs=disabled',
+    'tests=disabled',
+  ],
   fallback: ['suil', 'suil_dep'],
   required: get_option('suil'),
   version: '>= 0.10.0',
