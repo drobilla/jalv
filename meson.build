@@ -94,6 +94,16 @@ lv2_dep = dependency(
   version: '>= 1.18.0',
 )
 
+sratom_dep = dependency(
+  'sratom-0',
+  default_options: [
+    'docs=disabled',
+    'tests=disabled',
+  ],
+  fallback: ['sratom', 'sratom_dep'],
+  version: '>= 0.6.4',
+)
+
 lilv_dep = dependency(
   'lilv-0',
   default_options: [
@@ -104,16 +114,6 @@ lilv_dep = dependency(
   ],
   fallback: ['lilv', 'lilv_dep'],
   version: '>= 0.24.0',
-)
-
-sratom_dep = dependency(
-  'sratom-0',
-  default_options: [
-    'docs=disabled',
-    'tests=disabled',
-  ],
-  fallback: ['sratom', 'sratom_dep'],
-  version: '>= 0.6.4',
 )
 
 suil_dep = dependency(
