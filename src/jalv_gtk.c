@@ -146,7 +146,7 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
      "UI update frequency",
      "HZ"},
     {"scale-factor",
-     0,
+     'S',
      0,
      G_OPTION_ARG_DOUBLE,
      &opts->scale_factor,
