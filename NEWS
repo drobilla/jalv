@@ -2,9 +2,10 @@ jalv (1.6.9) stable; urgency=medium
 
   * Build Qt UI with -fPIC
   * Remove Gtk2 interface
+  * Replace use of deprecated Gtk interfaces
   * Switch to external zix dependency
 
- -- David Robillard <d@drobilla.net>  Sun, 11 Dec 2022 18:52:53 +0000
+ -- David Robillard <d@drobilla.net>  Sun, 11 Dec 2022 20:10:11 +0000
 
 jalv (1.6.8) stable; urgency=medium
 

@@ -24,8 +24,6 @@
 #include "zix/attributes.h"
 #include "zix/sem.h"
 
-LV2_DISABLE_DEPRECATION_WARNINGS
-
 #include <gdk/gdk.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -754,9 +752,9 @@ on_request_value(LV2UI_Feature_Handle      handle,
   GtkWidget* dialog = gtk_file_chooser_dialog_new("Choose file",
                                                   GTK_WINDOW(jalv->window),
                                                   GTK_FILE_CHOOSER_ACTION_OPEN,
-                                                  GTK_STOCK_CANCEL,
+                                                  "_Cancel",
                                                   GTK_RESPONSE_CANCEL,
-                                                  GTK_STOCK_OK,
+                                                  "_OK",
                                                   GTK_RESPONSE_OK,
                                                   NULL);
 
@@ -1032,6 +1030,8 @@ make_slider(ControlID* record, float value)
       G_OBJECT(spin), "value-changed", G_CALLBACK(spin_changed), record);
   }
 
+  gtk_widget_set_halign(scale, GTK_ALIGN_FILL);
+  gtk_widget_set_hexpand(scale, TRUE);
   return new_controller(GTK_SPIN_BUTTON(spin), scale);
 }
 
@@ -1103,58 +1103,39 @@ make_controller(ControlID* control, float value)
 }
 
 static GtkWidget*
-new_label(const char* text, bool title, float xalign, float yalign)
+new_label(const char* text, bool title, GtkAlign xalign, GtkAlign yalign)
 {
   GtkWidget*  label = gtk_label_new(NULL);
   const char* fmt   = title ? "<span font_weight=\"bold\">%s</span>" : "%s:";
   gchar*      str   = g_markup_printf_escaped(fmt, text);
+
+  gtk_widget_set_halign(label, xalign);
+  gtk_widget_set_valign(label, yalign);
   gtk_label_set_markup(GTK_LABEL(label), str);
+
   g_free(str);
-  gtk_misc_set_alignment(GTK_MISC(label), xalign, yalign);
   return label;
 }
 
 static void
-add_control_row(GtkWidget*  table,
+add_control_row(GtkWidget*  grid,
                 int         row,
                 const char* name,
                 Controller* controller)
 {
-  GtkWidget* label = new_label(name, false, 1.0, 0.5);
-  gtk_table_attach(GTK_TABLE(table),
-                   label,
-                   0,
-                   1,
-                   row,
-                   row + 1,
-                   GTK_FILL,
-                   (GtkAttachOptions)(GTK_FILL | GTK_EXPAND),
-                   8,
-                   1);
-  int control_left_attach = 1;
+  GtkWidget* label = new_label(name, false, GTK_ALIGN_END, GTK_ALIGN_BASELINE);
+  gtk_widget_set_margin_end(label, 8);
+  gtk_grid_attach(GTK_GRID(grid), label, 0, row, 1, 1);
+
   if (controller->spin) {
-    control_left_attach = 2;
-    gtk_table_attach(GTK_TABLE(table),
-                     GTK_WIDGET(controller->spin),
-                     1,
-                     2,
-                     row,
-                     row + 1,
-                     GTK_FILL,
-                     GTK_FILL,
-                     2,
-                     1);
+    gtk_grid_attach(GTK_GRID(grid), GTK_WIDGET(controller->spin), 1, row, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), controller->control, 2, row, 1, 1);
+  } else {
+    gtk_grid_attach(GTK_GRID(grid), controller->control, 1, row, 2, 1);
   }
-  gtk_table_attach(GTK_TABLE(table),
-                   controller->control,
-                   control_left_attach,
-                   3,
-                   row,
-                   row + 1,
-                   (GtkAttachOptions)(GTK_FILL | GTK_EXPAND),
-                   GTK_FILL,
-                   2,
-                   1);
+
+  gtk_widget_set_halign(controller->control, GTK_ALIGN_FILL);
+  gtk_widget_set_hexpand(controller->control, TRUE);
 }
 
 static int
@@ -1174,7 +1155,7 @@ control_group_cmp(const void* p1, const void* p2, void* ZIX_UNUSED(data))
 static GtkWidget*
 build_control_widget(Jalv* jalv, GtkWidget* window)
 {
-  GtkWidget* port_table = gtk_table_new(jalv->num_ports, 3, false);
+  GtkWidget* port_grid = gtk_grid_new();
 
   // Make an array of controls sorted by group
   GArray* controls = g_array_new(FALSE, TRUE, sizeof(ControlID*));
@@ -1201,18 +1182,12 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
           lilv_world_get(jalv->world, group, jalv->nodes.rdfs_label, NULL);
       }
 
-      GtkWidget* group_label =
-        new_label(lilv_node_as_string(group_name), true, 0.0f, 1.0f);
-      gtk_table_attach(GTK_TABLE(port_table),
-                       group_label,
-                       0,
-                       2,
-                       n_rows,
-                       n_rows + 1,
-                       GTK_FILL,
-                       GTK_FILL,
-                       0,
-                       6);
+      GtkWidget* group_label = new_label(lilv_node_as_string(group_name),
+                                         true,
+                                         GTK_ALIGN_START,
+                                         GTK_ALIGN_BASELINE);
+
+      gtk_grid_attach(GTK_GRID(port_grid), group_label, 0, n_rows, 3, 1);
       ++n_rows;
     }
     last_group = group;
@@ -1233,7 +1208,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
     }
     if (controller) {
       // Add row to table for this controller
-      add_control_row(port_table,
+      add_control_row(port_grid,
                       n_rows++,
                       (record->label ? lilv_node_as_string(record->label)
                                      : lilv_node_as_uri(record->node)),
@@ -1252,13 +1227,16 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 
   if (n_rows > 0) {
     gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
-    GtkWidget* alignment = gtk_alignment_new(0.5, 0.0, 1.0, 0.0);
-    gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 0, 0, 8, 8);
-    gtk_container_add(GTK_CONTAINER(alignment), port_table);
-    return alignment;
+    gtk_widget_set_margin_start(port_grid, 8);
+    gtk_widget_set_margin_end(port_grid, 8);
+    gtk_widget_set_halign(port_grid, GTK_ALIGN_FILL);
+    gtk_widget_set_hexpand(port_grid, TRUE);
+    gtk_widget_set_valign(port_grid, GTK_ALIGN_START);
+    gtk_widget_set_vexpand(port_grid, FALSE);
+    return port_grid;
   }
 
-  gtk_widget_destroy(port_table);
+  gtk_widget_destroy(port_grid);
   GtkWidget* button = gtk_button_new_with_label("Close");
   g_signal_connect_swapped(
     button, "clicked", G_CALLBACK(gtk_widget_destroy), window);
@@ -1276,8 +1254,8 @@ build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
   GtkAccelGroup* ag = gtk_accel_group_new();
   gtk_window_add_accel_group(GTK_WINDOW(window), ag);
 
-  GtkWidget* save = gtk_image_menu_item_new_from_stock(GTK_STOCK_SAVE, ag);
-  GtkWidget* quit = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, ag);
+  GtkWidget* save = gtk_menu_item_new_with_mnemonic("_Save");
+  GtkWidget* quit = gtk_menu_item_new_with_mnemonic("_Quit");
 
   gtk_menu_item_set_submenu(GTK_MENU_ITEM(file), file_menu);
   gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), save);
@@ -1483,14 +1461,19 @@ jalv_frontend_open(Jalv* jalv)
     build_menu(jalv, window, vbox);
   }
 
-  // Create/show alignment to contain UI (whether custom or generic)
-  GtkWidget* alignment = gtk_alignment_new(0.5, 0.5, 1.0, 1.0);
-  gtk_box_pack_start(GTK_BOX(vbox), alignment, TRUE, TRUE, 0);
-  gtk_widget_show(alignment);
+  // Create and show a box to contain the plugin UI
+  GtkWidget* ui_box = gtk_event_box_new();
+  gtk_widget_set_halign(ui_box, GTK_ALIGN_FILL);
+  gtk_widget_set_hexpand(ui_box, TRUE);
+  gtk_widget_set_valign(ui_box, GTK_ALIGN_FILL);
+  gtk_widget_set_vexpand(ui_box, TRUE);
+  gtk_box_pack_start(GTK_BOX(vbox), ui_box, TRUE, TRUE, 0);
+  gtk_widget_show(ui_box);
+  gtk_widget_show(vbox);
 
   // Attempt to instantiate custom UI if necessary
   if (jalv->ui && !jalv->opts.generic_ui) {
-    jalv_ui_instantiate(jalv, jalv_frontend_ui_type(), alignment);
+    jalv_ui_instantiate(jalv, jalv_frontend_ui_type(), ui_box);
   }
 
   jalv->features.request_value.request = on_request_value;
@@ -1498,19 +1481,18 @@ jalv_frontend_open(Jalv* jalv)
   if (jalv->ui_instance) {
     GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(jalv->ui_instance);
 
-    gtk_container_add(GTK_CONTAINER(alignment), widget);
+    gtk_container_add(GTK_CONTAINER(ui_box), widget);
     gtk_window_set_resizable(GTK_WINDOW(window), jalv_ui_is_resizable(jalv));
     gtk_widget_show_all(vbox);
     gtk_widget_grab_focus(widget);
   } else {
     GtkWidget* controls   = build_control_widget(jalv, window);
     GtkWidget* scroll_win = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroll_win),
-                                          controls);
+    gtk_container_add(GTK_CONTAINER(scroll_win), controls);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll_win),
                                    GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
-    gtk_container_add(GTK_CONTAINER(alignment), scroll_win);
+    gtk_container_add(GTK_CONTAINER(ui_box), scroll_win);
     gtk_widget_show_all(vbox);
 
     GtkRequisition controls_size = {0, 0};
