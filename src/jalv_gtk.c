@@ -955,6 +955,8 @@ make_combo(ControlID* record, float value)
   g_object_unref(list_store);
 
   gtk_widget_set_sensitive(combo, record->is_writable);
+  gtk_widget_set_halign(combo, GTK_ALIGN_START);
+  gtk_widget_set_hexpand(combo, FALSE);
 
   GtkCellRenderer* cell = gtk_cell_renderer_text_new();
   gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), cell, TRUE);
