@@ -74,7 +74,7 @@ on_window_destroy(GtkWidget* ZIX_UNUSED(widget), gpointer ZIX_UNUSED(data))
 int
 jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
 {
-  GOptionEntry entries[] = {
+  const GOptionEntry entries[] = {
     {"load",
      'l',
      0,
@@ -144,21 +144,21 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
      G_OPTION_ARG_DOUBLE,
      &opts->update_rate,
      "UI update frequency",
-     NULL},
+     "HZ"},
     {"scale-factor",
      0,
      0,
      G_OPTION_ARG_DOUBLE,
      &opts->scale_factor,
      "UI scale factor",
-     NULL},
+     "SCALE"},
     {"control",
      'c',
      0,
      G_OPTION_ARG_STRING_ARRAY,
      &opts->controls,
      "Set control value (e.g. \"vol=1.4\")",
-     NULL},
+     "SETTING"},
     {"print-controls",
      'p',
      0,
@@ -172,7 +172,7 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
      G_OPTION_ARG_STRING,
      &opts->name,
      "JACK client name",
-     NULL},
+     "NAME"},
     {"exact-jack-name",
      'x',
      0,
@@ -181,6 +181,7 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
      "Exact JACK client name (exit if taken)",
      NULL},
     {0, 0, 0, G_OPTION_ARG_NONE, 0, 0, 0}};
+
   GError*   error = NULL;
   const int err =
     gtk_init_with_args(argc,

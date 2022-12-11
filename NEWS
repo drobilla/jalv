@@ -1,6 +1,7 @@
 jalv (1.6.9) stable; urgency=medium
 
   * Build Qt UI with -fPIC
+  * Clean up command line help output
   * Remove Gtk2 interface
   * Replace use of deprecated Gtk interfaces
   * Switch to external zix dependency
