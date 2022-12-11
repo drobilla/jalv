@@ -72,34 +72,21 @@ get_float(const LilvNode* node, float fallback)
 static GtkWidget*
 new_box(gboolean horizontal, gint spacing)
 {
-#if GTK_MAJOR_VERSION == 3
   return gtk_box_new(horizontal ? GTK_ORIENTATION_HORIZONTAL
                                 : GTK_ORIENTATION_VERTICAL,
                      spacing);
-#else
-  return (horizontal ? gtk_hbox_new(FALSE, spacing)
-                     : gtk_vbox_new(FALSE, spacing));
-#endif
 }
 
 static GtkWidget*
 new_hscale(gdouble min, gdouble max, gdouble step)
 {
-#if GTK_MAJOR_VERSION == 3
   return gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, min, max, step);
-#else
-  return gtk_hscale_new_with_range(min, max, step);
-#endif
 }
 
 static void
 size_request(GtkWidget* widget, GtkRequisition* req)
 {
-#if GTK_MAJOR_VERSION == 3
   gtk_widget_get_preferred_size(widget, NULL, req);
-#else
-  gtk_widget_size_request(widget, req);
-#endif
 }
 
 static void
@@ -237,9 +224,7 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
 const char*
 jalv_frontend_ui_type(void)
 {
-#if GTK_MAJOR_VERSION == 2
-  return "http://lv2plug.in/ns/extensions/ui#GtkUI";
-#elif GTK_MAJOR_VERSION == 3
+#if GTK_MAJOR_VERSION == 3
   return "http://lv2plug.in/ns/extensions/ui#Gtk3UI";
 #else
   return NULL;
@@ -1346,29 +1331,21 @@ jalv_frontend_discover(Jalv* ZIX_UNUSED(jalv))
 float
 jalv_frontend_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 {
-#if GTK_MAJOR_VERSION == 2
-  return 30.0f;
-#else
   GdkDisplay* const display = gdk_display_get_default();
   GdkMonitor* const monitor = gdk_display_get_primary_monitor(display);
 
   const float rate = (float)gdk_monitor_get_refresh_rate(monitor);
 
   return rate < 30.0f ? 30.0f : rate;
-#endif
 }
 
 float
 jalv_frontend_scale_factor(Jalv* ZIX_UNUSED(jalv))
 {
-#if GTK_MAJOR_VERSION == 2
-  return 1.0f;
-#else
   GdkDisplay* const display = gdk_display_get_default();
   GdkMonitor* const monitor = gdk_display_get_primary_monitor(display);
 
   return (float)gdk_monitor_get_scale_factor(monitor);
-#endif
 }
 
 static void

@@ -311,30 +311,6 @@ executable(
   install: true,
 )
 
-# Gtk 2.0 GUI version
-if not get_option('gtk2').disabled()
-  gdk2_dep = dependency('gdk-2.0',
-                        version: '>= 2.18.0',
-                        include_type: 'system',
-                        required: get_option('gtk2'))
-
-  gtk2_dep = dependency('gtk+-2.0',
-                        version: '>= 2.18.0',
-                        include_type: 'system',
-                        required: get_option('gtk2'))
-
-  if gdk2_dep.found() and gtk2_dep.found()
-    executable(
-      'jalv.gtk',
-      sources + files('src/jalv_gtk.c'),
-      c_args: c_suppressions + platform_defines + suil_defines,
-      dependencies: common_dependencies + [gdk2_dep, gtk2_dep, suil_dep],
-      include_directories: include_directories('src'),
-      install: true,
-    )
-  endif
-endif
-
 # Gtk 3.0 GUI version
 if not get_option('gtk3').disabled()
   gdk3_dep = dependency(

@@ -4,9 +4,6 @@ option('checks', type: 'boolean', value: true, yield: true,
 option('cxx', type: 'feature', value: 'auto', yield: true,
        description: 'Build C++ programs')
 
-option('gtk2', type: 'feature', value: 'auto', yield: true,
-       description: 'Build Gtk2 GUI')
-
 option('gtk3', type: 'feature', value: 'auto', yield: true,
        description: 'Build Gtk3 GUI')
 
