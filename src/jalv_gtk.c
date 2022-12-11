@@ -83,7 +83,7 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
      "Load state from save directory",
      "DIR"},
     {"preset",
-     'p',
+     'P',
      0,
      G_OPTION_ARG_STRING,
      &opts->preset,
