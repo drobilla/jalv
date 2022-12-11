@@ -60,31 +60,9 @@ typedef struct {
 static float
 get_float(const LilvNode* node, float fallback)
 {
-  if (lilv_node_is_float(node) || lilv_node_is_int(node)) {
-    return lilv_node_as_float(node);
-  }
-
-  return fallback;
-}
-
-static GtkWidget*
-new_box(gboolean horizontal, gint spacing)
-{
-  return gtk_box_new(horizontal ? GTK_ORIENTATION_HORIZONTAL
-                                : GTK_ORIENTATION_VERTICAL,
-                     spacing);
-}
-
-static GtkWidget*
-new_hscale(gdouble min, gdouble max, gdouble step)
-{
-  return gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, min, max, step);
-}
-
-static void
-size_request(GtkWidget* widget, GtkRequisition* req)
-{
-  gtk_widget_get_preferred_size(widget, NULL, req);
+  return (lilv_node_is_float(node) || lilv_node_is_int(node))
+           ? lilv_node_as_float(node)
+           : fallback;
 }
 
 static void
@@ -474,7 +452,7 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
   free(dot_lv2);
 
   GtkWidget* content   = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-  GtkBox*    box       = GTK_BOX(new_box(true, 8));
+  GtkBox*    box       = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8));
   GtkWidget* uri_label = gtk_label_new("URI (Optional):");
   GtkWidget* uri_entry = gtk_entry_new();
   GtkWidget* add_prefix =
@@ -973,13 +951,16 @@ make_combo(ControlID* record, float value)
 static Controller*
 make_log_slider(ControlID* record, float value)
 {
-  const float min   = get_float(record->min, 0.0f);
-  const float max   = get_float(record->max, 1.0f);
-  const float lmin  = logf(min);
-  const float lmax  = logf(max);
-  const float ldft  = logf(value);
-  GtkWidget*  scale = new_hscale(lmin, lmax, 0.001);
-  GtkWidget*  spin  = gtk_spin_button_new_with_range(min, max, 0.000001);
+  const float min  = get_float(record->min, 0.0f);
+  const float max  = get_float(record->max, 1.0f);
+  const float lmin = logf(min);
+  const float lmax = logf(max);
+  const float ldft = logf(value);
+
+  GtkWidget* const scale =
+    gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, lmin, lmax, 0.001);
+
+  GtkWidget* const spin = gtk_spin_button_new_with_range(min, max, 0.000001);
 
   gtk_widget_set_sensitive(scale, record->is_writable);
   gtk_widget_set_sensitive(spin, record->is_writable);
@@ -1001,11 +982,14 @@ make_log_slider(ControlID* record, float value)
 static Controller*
 make_slider(ControlID* record, float value)
 {
-  const float  min   = get_float(record->min, 0.0f);
-  const float  max   = get_float(record->max, 1.0f);
-  const double step  = record->is_integer ? 1.0 : ((max - min) / 100.0);
-  GtkWidget*   scale = new_hscale(min, max, step);
-  GtkWidget*   spin  = gtk_spin_button_new_with_range(min, max, step);
+  const float  min  = get_float(record->min, 0.0f);
+  const float  max  = get_float(record->max, 1.0f);
+  const double step = record->is_integer ? 1.0 : ((max - min) / 100.0);
+
+  GtkWidget* const scale =
+    gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, min, max, step);
+
+  GtkWidget* const spin = gtk_spin_button_new_with_range(min, max, step);
 
   gtk_widget_set_sensitive(scale, record->is_writable);
   gtk_widget_set_sensitive(spin, record->is_writable);
@@ -1459,7 +1443,8 @@ jalv_frontend_open(Jalv* jalv)
 
   set_window_title(jalv);
 
-  GtkWidget* vbox = new_box(false, 0);
+  GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
   gtk_window_set_role(GTK_WINDOW(window), "plugin_ui");
   gtk_container_add(GTK_CONTAINER(window), vbox);
 
@@ -1503,8 +1488,8 @@ jalv_frontend_open(Jalv* jalv)
 
     GtkRequisition controls_size = {0, 0};
     GtkRequisition box_size      = {0, 0};
-    size_request(GTK_WIDGET(controls), &controls_size);
-    size_request(GTK_WIDGET(vbox), &box_size);
+    gtk_widget_get_preferred_size(GTK_WIDGET(controls), NULL, &controls_size);
+    gtk_widget_get_preferred_size(GTK_WIDGET(vbox), NULL, &box_size);
 
     gtk_window_set_default_size(
       GTK_WINDOW(window),
