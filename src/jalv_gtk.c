@@ -669,6 +669,8 @@ control_changed(Jalv*       jalv,
       }
     } else if (GTK_IS_TOGGLE_BUTTON(widget)) {
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), fvalue > 0.0f);
+    } else if (GTK_IS_SWITCH(widget)) {
+      gtk_switch_set_active(GTK_SWITCH(widget), fvalue > 0.f);
     } else if (GTK_IS_RANGE(widget)) {
       gtk_range_set_value(GTK_RANGE(widget), fvalue);
     } else {
@@ -896,10 +898,12 @@ combo_changed(GtkComboBox* box, gpointer data)
 }
 
 static gboolean
-toggle_changed(GtkToggleButton* button, gpointer data)
+switch_changed(GtkSwitch* toggle_switch, gboolean state, gpointer data)
 {
-  set_float_control((const ControlID*)data,
-                    gtk_toggle_button_get_active(button) ? 1.0f : 0.0f);
+  (void)toggle_switch;
+  (void)data;
+
+  set_float_control((const ControlID*)data, state ? 1.0f : 0.0f);
   return FALSE;
 }
 
@@ -1036,22 +1040,24 @@ make_slider(ControlID* record, float value)
 }
 
 static Controller*
-make_toggle(ControlID* record, float value)
+make_toggle_switch(ControlID* record, float value)
 {
-  GtkWidget* check = gtk_check_button_new();
+  GtkWidget* toggle_switch = gtk_switch_new();
+  gtk_widget_set_halign(toggle_switch, GTK_ALIGN_START);
+  gtk_widget_set_hexpand(toggle_switch, FALSE);
 
-  gtk_widget_set_sensitive(check, record->is_writable);
+  gtk_widget_set_sensitive(toggle_switch, record->is_writable);
 
   if (value) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check), TRUE);
+    gtk_switch_set_active(GTK_SWITCH(toggle_switch), TRUE);
   }
 
   if (record->is_writable) {
     g_signal_connect(
-      G_OBJECT(check), "toggled", G_CALLBACK(toggle_changed), record);
+      G_OBJECT(toggle_switch), "state-set", G_CALLBACK(switch_changed), record);
   }
 
-  return new_controller(NULL, check);
+  return new_controller(NULL, toggle_switch);
 }
 
 static Controller*
@@ -1090,7 +1096,7 @@ make_controller(ControlID* control, float value)
   Controller* controller = NULL;
 
   if (control->is_toggle) {
-    controller = make_toggle(control, value);
+    controller = make_toggle_switch(control, value);
   } else if (control->is_enumeration) {
     controller = make_combo(control, value);
   } else if (control->is_logarithmic) {
@@ -1133,9 +1139,6 @@ add_control_row(GtkWidget*  grid,
   } else {
     gtk_grid_attach(GTK_GRID(grid), controller->control, 1, row, 2, 1);
   }
-
-  gtk_widget_set_halign(controller->control, GTK_ALIGN_FILL);
-  gtk_widget_set_hexpand(controller->control, TRUE);
 }
 
 static int
@@ -1156,6 +1159,7 @@ static GtkWidget*
 build_control_widget(Jalv* jalv, GtkWidget* window)
 {
   GtkWidget* port_grid = gtk_grid_new();
+  gtk_grid_set_row_spacing(GTK_GRID(port_grid), 4);
 
   // Make an array of controls sorted by group
   GArray* controls = g_array_new(FALSE, TRUE, sizeof(ControlID*));

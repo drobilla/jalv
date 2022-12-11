@@ -4,8 +4,9 @@ jalv (1.6.9) stable; urgency=medium
   * Remove Gtk2 interface
   * Replace use of deprecated Gtk interfaces
   * Switch to external zix dependency
+  * Use Gtk switches instead of checkboxes for toggle controls
 
- -- David Robillard <d@drobilla.net>  Sun, 11 Dec 2022 20:10:11 +0000
+ -- David Robillard <d@drobilla.net>  Sun, 11 Dec 2022 20:14:12 +0000
 
 jalv (1.6.8) stable; urgency=medium
 
