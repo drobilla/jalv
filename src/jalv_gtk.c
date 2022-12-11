@@ -1485,6 +1485,8 @@ jalv_frontend_open(Jalv* jalv)
                                    GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER(ui_box), scroll_win);
+    gtk_widget_set_margin_top(controls, 8);
+    gtk_widget_set_margin_bottom(controls, 8);
     gtk_widget_show_all(vbox);
 
     GtkRequisition controls_size = {0, 0};
