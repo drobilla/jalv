@@ -51,7 +51,7 @@ print_usage(const char* name, bool error)
           "  -t           Print trace messages from plugin\n"
           "  -U URI       Load the UI with the given URI\n"
           "  -V           Display version information and exit\n"
-          "  -x           Exact JACK client name (exit if taken)\n");
+          "  -x           Exit if the requested JACK client name is taken.\n");
   return error ? 1 : 0;
 }
 
