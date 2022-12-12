@@ -4,12 +4,9 @@ Checks: >
   -*-magic-numbers,
   -*-named-parameter,
   -*-narrowing-conversions,
-  -*-reserved-identifier,
-  -*-uppercase-literal-suffix,
   -altera-*,
   -bugprone-branch-clone,
   -bugprone-easily-swappable-parameters,
-  -bugprone-macro-parentheses,
   -cert-err33-c,
   -cert-err34-c,
   -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
@@ -33,6 +30,11 @@ Checks: >
   -readability-implicit-bool-conversion,
   -readability-non-const-parameter,
   -readability-static-accessed-through-instance,
+CheckOptions:
+  - key:   hicpp-uppercase-literal-suffix.NewSuffixes
+    value: 'L;U;UL;ULL'
+  - key:   readability-uppercase-literal-suffix.NewSuffixes
+    value: 'L;U;UL;ULL'
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'
 FormatStyle: file
