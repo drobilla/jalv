@@ -317,14 +317,14 @@ if not get_option('gtk3').disabled()
     'gdk-3.0',
     include_type: 'system',
     required: get_option('gtk3'),
-    version: '>= 3.0.0',
+    version: '>= 3.12.0',
   )
 
   gtk3_dep = dependency(
     'gtk+-3.0',
     include_type: 'system',
     required: get_option('gtk3'),
-    version: '>= 3.0.0',
+    version: '>= 3.12.0',
   )
 
   if gdk3_dep.found() and gtk3_dep.found()

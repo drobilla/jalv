@@ -525,7 +525,7 @@ on_delete_preset_activate(GtkWidget* widget, void* ptr)
     (GtkWindow*)jalv->window,
     (GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
     "_Cancel",
-    GTK_RESPONSE_REJECT,
+    GTK_RESPONSE_CANCEL,
     "_OK",
     GTK_RESPONSE_ACCEPT,
     NULL);
@@ -1334,14 +1334,16 @@ LilvNode*
 jalv_frontend_select_plugin(Jalv* jalv)
 {
   // Create the dialog
-  GtkWidget* const dialog = gtk_dialog_new_with_buttons("Plugin Selector",
-                                                        NULL,
-                                                        (GtkDialogFlags)0,
-                                                        "_OK",
-                                                        GTK_RESPONSE_ACCEPT,
-                                                        "_Cancel",
-                                                        GTK_RESPONSE_REJECT,
-                                                        NULL);
+  GtkWidget* const dialog = gtk_dialog_new_with_buttons(
+    "Plugin Selector",
+    NULL,
+    (GtkDialogFlags)(GTK_DIALOG_USE_HEADER_BAR | GTK_DIALOG_MODAL |
+                     GTK_DIALOG_DESTROY_WITH_PARENT),
+    "_Cancel",
+    GTK_RESPONSE_CANCEL,
+    "_Load",
+    GTK_RESPONSE_ACCEPT,
+    NULL);
 
   gtk_window_set_role(GTK_WINDOW(dialog), "plugin_selector");
   gtk_window_set_default_size(GTK_WINDOW(dialog), 800, 600);
