@@ -213,10 +213,10 @@ FlowLayout::doLayout(const QRect& rect, bool testOnly) const
   int bottom = 0;
   getContentsMargins(&left, &top, &right, &bottom);
 
-  QRect effectiveRect = rect.adjusted(+left, +top, -right, -bottom);
-  int   x             = effectiveRect.x();
-  int   y             = effectiveRect.y();
-  int   lineHeight    = 0;
+  const QRect effectiveRect = rect.adjusted(+left, +top, -right, -bottom);
+  int         x             = effectiveRect.x();
+  int         y             = effectiveRect.y();
+  int         lineHeight    = 0;
 
   QLayoutItem* item = nullptr;
   foreach (item, itemList) {
@@ -396,7 +396,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
   }
 
   // Find and set min, max and default values for port
-  float defaultValue = ndef ? lilv_node_as_float(ndef) : port->control;
+  const float defaultValue = ndef ? lilv_node_as_float(ndef) : port->control;
   setRange(lilv_node_as_float(nmin), lilv_node_as_float(nmax));
   setValue(defaultValue);
 
@@ -524,7 +524,7 @@ Control::stringWidth(const QString& str)
 void
 Control::dialChanged(int)
 {
-  float value = getValue();
+  const float value = getValue();
 
   label->setText(getValueLabel(value));
   port->control = value;
@@ -578,8 +578,8 @@ build_control_widget(Jalv* jalv)
   LilvNode*    lastGroup   = nullptr;
   QHBoxLayout* groupLayout = nullptr;
   for (int i = 0; i < portContainers.count(); ++i) {
-    PortContainer portContainer = portContainers[i];
-    Port*         port          = portContainer.port;
+    const PortContainer portContainer = portContainers[i];
+    Port* const         port          = portContainer.port;
 
     auto* const control = new Control(portContainer, nullptr);
     LilvNode*   group =
@@ -608,7 +608,7 @@ build_control_widget(Jalv* jalv)
     lilv_node_free(lastGroup);
     lastGroup = group;
 
-    uint32_t index            = lilv_port_get_index(plugin, port->lilv_port);
+    const uint32_t index      = lilv_port_get_index(plugin, port->lilv_port);
     jalv->ports[index].widget = control;
   }
   lilv_node_free(lastGroup);
@@ -696,7 +696,7 @@ jalv_frontend_open(Jalv* jalv)
   auto* const timer = new Timer(jalv);
   timer->start(1000 / jalv->ui_update_hz);
 
-  int ret = app->exec();
+  const int ret = app->exec();
   zix_sem_post(&jalv->done);
   return ret;
 }
