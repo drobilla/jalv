@@ -60,10 +60,10 @@ public:
 
   explicit FlowLayout(int margin, int hSpacing, int vSpacing);
 
-  FlowLayout(const FlowLayout&) = delete;
+  FlowLayout(const FlowLayout&)            = delete;
   FlowLayout& operator=(const FlowLayout&) = delete;
 
-  FlowLayout(FlowLayout&&) = delete;
+  FlowLayout(FlowLayout&&)             = delete;
   FlowLayout&& operator=(FlowLayout&&) = delete;
 
   ~FlowLayout() override;
