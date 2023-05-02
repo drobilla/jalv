@@ -3,7 +3,7 @@ Upstream-Name: jalv
 Upstream-Contact: David Robillard <d@drobilla.net>
 Source: https://gitlab.com/drobilla/jalv
 
-Files: .clang* .clant.json .gitignore AUTHORS NEWS jalv.desktop.in jalv.ttl meson_options.txt
+Files: .clang* .clant.json .gitignore AUTHORS NEWS jalv.desktop.in jalv.ttl
 Copyright: 2010-2022 David Robillard <d@drobilla.net>
 License: 0BSD OR ISC
 

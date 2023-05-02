@@ -28,11 +28,6 @@ if add_languages(['cpp'], native: false, required: get_option('cxx'))
   cpp = meson.get_compiler('cpp')
 endif
 
-# Set global warning flags
-if get_option('strict') and not meson.is_subproject()
-  subdir('meson/warnings')
-endif
-
 # Set global warning suppressions
 subdir('meson/suppressions')
 add_project_arguments(c_suppressions, language: ['c'])
@@ -131,15 +126,19 @@ suil_dep = dependency(
 # Drivers #
 ###########
 
-portaudio_dep = dependency('portaudio-2.0',
-                           version: '>= 2.0.0',
-                           include_type: 'system',
-                           required: get_option('portaudio'))
+portaudio_dep = dependency(
+  'portaudio-2.0',
+  include_type: 'system',
+  required: get_option('portaudio'),
+  version: '>= 2.0.0',
+)
 
-jack_dep = dependency('jack',
-                      version: '>= 0.120.0',
-                      include_type: 'system',
-                      required: get_option('jack'))
+jack_dep = dependency(
+  'jack',
+  include_type: 'system',
+  required: get_option('jack'),
+  version: '>= 0.120.0',
+)
 
 backend_sources = files()
 if get_option('jack').enabled() and get_option('portaudio').enabled()
@@ -191,11 +190,13 @@ else
   ]
 endif
 
-# Check for platform features with the build system
-if get_option('checks')
-  platform_defines += [
-    '-DJALV_NO_DEFAULT_CONFIG',
-  ]
+# Build platform-specific configuration arguments
+if get_option('checks').disabled()
+  # Generic build without platform-specific features
+  platform_defines += ['-DJALV_NO_DEFAULT_CONFIG']
+elif get_option('checks').enabled()
+  # Only use the features detected by the build system
+  platform_defines += ['-DJALV_NO_DEFAULT_CONFIG']
 
   if no_posix
     platform_defines += ['-DHAVE_FILENO=0']

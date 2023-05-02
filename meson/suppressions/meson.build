@@ -1,65 +1,9 @@
-# Copyright 2020-2022 David Robillard <d@drobilla.net>
+# Copyright 2020-2023 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
-# Project-specific warning suppressions.
-#
-# This should be used in conjunction with the generic "warnings" sibling that
-# enables all reasonable warnings for the compiler.  It lives here just to keep
-# the top-level meson.build more readable.
+# Project-specific warning suppressions
 
-clang_common_suppressions = [
-  '-Wno-atomic-implicit-seq-cst',
-  '-Wno-c99-extensions',
-  '-Wno-cast-align',
-  '-Wno-cast-qual',
-  '-Wno-disabled-macro-expansion',
-  '-Wno-documentation-unknown-command',
-  '-Wno-double-promotion',
-  '-Wno-float-conversion',
-  '-Wno-float-equal',
-  '-Wno-format-nonliteral',
-  '-Wno-implicit-fallthrough',
-  '-Wno-implicit-float-conversion',
-  '-Wno-nullability-extension',
-  '-Wno-padded',
-  '-Wno-redundant-parens',
-  '-Wno-reserved-id-macro',
-  '-Wno-reserved-identifier',
-  '-Wno-shorten-64-to-32',
-  '-Wno-sign-conversion',
-  '-Wno-switch-enum',
-  '-Wno-unknown-warning-option',
-  '-Wno-unused-macros',
-  '-Wno-unused-parameter',
-]
-
-gcc_common_suppressions = [
-  '-Wno-cast-align',
-  '-Wno-cast-qual',
-  '-Wno-conversion',
-  '-Wno-double-promotion',
-  '-Wno-float-conversion',
-  '-Wno-float-equal',
-  '-Wno-inline',
-  '-Wno-padded',
-  '-Wno-pedantic',
-  '-Wno-stack-protector',
-  '-Wno-switch-default',
-  '-Wno-switch-enum',
-  '-Wno-unused-macros',
-  '-Wno-unused-parameter',
-]
-
-if host_machine.system() == 'darwin'
-  clang_common_suppressions += [
-    '-Wno-documentation', # JACK
-    '-Wno-documentation-deprecated-sync', # JACK
-  ]
-elif host_machine.system() == 'freebsd'
-  clang_common_suppressions += [
-    '-Wno-c11-extensions', # isnan and friends
-  ]
-endif
+warning_level = get_option('warning_level')
 
 #####
 # C #
@@ -68,28 +12,91 @@ endif
 if is_variable('cc')
   c_suppressions = []
 
-  if get_option('strict')
-    if cc.get_id() == 'clang'
-      c_suppressions += clang_common_suppressions + [
+  if cc.get_id() == 'clang'
+    if warning_level == 'everything'
+      c_suppressions += [
         '-Wno-bad-function-cast',
+        '-Wno-cast-align',
+        '-Wno-cast-qual',
         '-Wno-declaration-after-statement',
+        '-Wno-disabled-macro-expansion',
+        '-Wno-documentation-unknown-command', # MacOS
+        '-Wno-double-promotion',
+        '-Wno-float-conversion',
+        '-Wno-float-equal',
+        '-Wno-format-nonliteral',
+        '-Wno-implicit-float-conversion',
         '-Wno-missing-noreturn',
+        '-Wno-padded',
+        '-Wno-reserved-id-macro', # MacOS
+        '-Wno-shorten-64-to-32',
+        '-Wno-sign-conversion',
+        '-Wno-switch-enum',
+        '-Wno-unused-macros',
       ]
 
-    elif cc.get_id() == 'gcc'
-      c_suppressions += gcc_common_suppressions + [
-        '-Wno-array-bounds',
+      if not meson.is_cross_build()
+        c_suppressions += [
+          '-Wno-poison-system-directories',
+        ]
+      endif
+    endif
+
+    if warning_level in ['everything', '3']
+      c_suppressions += [
+        '-Wno-nullability-extension',
+      ]
+    endif
+
+    if warning_level in ['everything', '3', '2']
+      c_suppressions += [
+        '-Wno-unused-parameter',
+      ]
+    endif
+
+    if host_machine.system() == 'darwin'
+      c_suppressions += [
+        '-Wno-documentation', # JACK
+        '-Wno-documentation-deprecated-sync', # JACK
+      ]
+    elif host_machine.system() == 'freebsd'
+      c_suppressions += [
+        '-Wno-c11-extensions', # isnan and friends
+      ]
+    endif
+
+  elif cc.get_id() == 'gcc'
+    if warning_level == 'everything'
+      c_suppressions += [
         '-Wno-bad-function-cast',
         '-Wno-c++-compat',
+        '-Wno-cast-align',
+        '-Wno-cast-qual',
+        '-Wno-conversion',
+        '-Wno-double-promotion',
+        '-Wno-float-equal',
         '-Wno-format-nonliteral',
+        '-Wno-inline',
+        '-Wno-padded',
         '-Wno-strict-overflow',
         '-Wno-suggest-attribute=const',
         '-Wno-suggest-attribute=pure',
+        '-Wno-switch-default',
+        '-Wno-switch-enum',
         '-Wno-unsuffixed-float-constants',
         '-Wno-unused-const-variable',
+        '-Wno-unused-macros',
       ]
+    endif
 
-    elif cc.get_id() == 'msvc'
+    if warning_level in ['everything', '3', '2']
+      c_suppressions += [
+        '-Wno-unused-parameter',
+      ]
+    endif
+
+  elif cc.get_id() == 'msvc'
+    if warning_level == 'everything'
       c_suppressions += [
         '/wd4061', # enumerator in switch is not explicitly handled
         '/wd4090', # different const qualifiers
@@ -122,18 +129,45 @@ endif
 if is_variable('cpp')
   cpp_suppressions = []
 
-  if get_option('strict')
-    if cpp.get_id() == 'clang'
-      cpp_suppressions = clang_common_suppressions + [
-        '-Wno-extra-semi-stmt',
-        '-Wno-old-style-cast',
+  if cpp.get_id() == 'clang'
+    if warning_level == 'everything'
+      cpp_suppressions += [
+        '-Wno-c++98-compat-pedantic',
+        '-Wno-cast-align', # MacOS
+        '-Wno-cast-qual', # MacOS
+        '-Wno-documentation-unknown-command', # MacOS
+        '-Wno-double-promotion',
+        '-Wno-float-conversion',
+        '-Wno-implicit-float-conversion',
+        '-Wno-old-style-cast', # MacOS
+        '-Wno-padded',
+        '-Wno-redundant-parens',
+        '-Wno-reserved-id-macro', # MacOS
+        '-Wno-shorten-64-to-32',
+        '-Wno-sign-conversion',
         '-Wno-weak-vtables',
-        '-Wno-zero-as-null-pointer-constant',
+        '-Wno-zero-as-null-pointer-constant', # MacOS
       ]
 
-    elif cpp.get_id() == 'gcc'
-      cpp_suppressions = gcc_common_suppressions + [
+      if not meson.is_cross_build()
+        cpp_suppressions += [
+          '-Wno-poison-system-directories',
+        ]
+      endif
+    endif
+
+    if warning_level in ['everything', '3']
+      cpp_suppressions += [
+        '-Wno-nullability-extension',
+      ]
+    endif
+
+  elif cpp.get_id() == 'gcc'
+    if warning_level == 'everything'
+      cpp_suppressions += [
+        '-Wno-conversion',
         '-Wno-effc++',
+        '-Wno-padded',
         '-Wno-strict-overflow',
         '-Wno-suggest-attribute=const',
         '-Wno-suggest-attribute=pure',
