@@ -505,10 +505,11 @@ Control::getValue()
   }
 
   if (isLogarithmic) {
-    return min * powf(max / min, (float)dial->value() / (steps - 1));
+    return min *
+           powf(max / min, static_cast<float>(dial->value()) / (steps - 1));
   }
 
-  return (float)dial->value() / steps;
+  return static_cast<float>(dial->value()) / steps;
 }
 
 int
@@ -627,13 +628,14 @@ jalv_frontend_discover(Jalv*)
 float
 jalv_frontend_refresh_rate(Jalv*)
 {
-  return (float)QGuiApplication::primaryScreen()->refreshRate();
+  return static_cast<float>(QGuiApplication::primaryScreen()->refreshRate());
 }
 
 float
 jalv_frontend_scale_factor(Jalv*)
 {
-  return (float)QGuiApplication::primaryScreen()->devicePixelRatio();
+  return static_cast<float>(
+    QGuiApplication::primaryScreen()->devicePixelRatio());
 }
 
 LilvNode*
