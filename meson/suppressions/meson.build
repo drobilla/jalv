@@ -165,6 +165,8 @@ if is_variable('cpp')
   elif cpp.get_id() == 'gcc'
     if warning_level == 'everything'
       cpp_suppressions += [
+        '-Wno-cast-align', # LV2
+        '-Wno-cast-qual', # LV2
         '-Wno-conversion',
         '-Wno-effc++',
         '-Wno-padded',
