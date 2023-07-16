@@ -1,5 +1,11 @@
-build/**
-.waf-*
-.lock-waf*
-__pycache__
-build
+# Copyright 2019-2022 David Robillard <d@drobilla.net>
+# SPDX-License-Identifier: 0BSD OR ISC
+
+build/
+subprojects/lilv/
+subprojects/lv2/
+subprojects/serd/
+subprojects/sord/
+subprojects/sratom/
+subprojects/suil/
+subprojects/zix/

@@ -1,32 +1,24 @@
-/*
-  Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// SPDX-License-Identifier: ISC
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
-#define _POSIX_C_SOURCE 200809L
-#define _XOPEN_SOURCE 600
-#define _BSD_SOURCE 1
-#define _DEFAULT_SOURCE 1
-
+#include "control.h"
+#include "frontend.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "log.h"
+#include "options.h"
+#include "port.h"
+#include "state.h"
+#include "types.h"
 
 #include "lilv/lilv.h"
 #include "lv2/ui/ui.h"
-#include "suil/suil.h"
-#include "zix/common.h"
+#include "zix/attributes.h"
 #include "zix/sem.h"
+
+#if USE_SUIL
+#  include "suil/suil.h"
+#endif
 
 #ifdef _WIN32
 #  include <synchapi.h>
@@ -45,20 +37,21 @@ print_usage(const char* name, bool error)
 {
   FILE* const os = error ? stderr : stdout;
   fprintf(os, "Usage: %s [OPTION...] PLUGIN_URI\n", name);
-  fprintf(os, "Run an LV2 plugin as a Jack application.\n");
-  fprintf(os, "  -b SIZE      Buffer size for plugin <=> UI communication\n");
-  fprintf(os, "  -c SYM=VAL   Set control value (e.g. \"vol=1.4\")\n");
-  fprintf(os, "  -d           Dump plugin <=> UI communication\n");
-  fprintf(os, "  -h           Display this help and exit\n");
-  fprintf(os, "  -i           Ignore keyboard input, run non-interactively\n");
-  fprintf(os, "  -l DIR       Load state from save directory\n");
-  fprintf(os, "  -n NAME      JACK client name\n");
-  fprintf(os, "  -p           Print control output changes to stdout\n");
-  fprintf(os, "  -s           Show plugin UI if possible\n");
-  fprintf(os, "  -t           Print trace messages from plugin\n");
-  fprintf(os, "  -U URI       Load the UI with the given URI\n");
-  fprintf(os, "  -V           Display version information and exit\n");
-  fprintf(os, "  -x           Exact JACK client name (exit if taken)\n");
+  fprintf(os,
+          "Run an LV2 plugin as a Jack application.\n"
+          "  -b SIZE      Buffer size for plugin <=> UI communication\n"
+          "  -c SYM=VAL   Set control value (e.g. \"vol=1.4\")\n"
+          "  -d           Dump plugin <=> UI communication\n"
+          "  -h           Display this help and exit\n"
+          "  -i           Ignore keyboard input, run non-interactively\n"
+          "  -l DIR       Load state from save directory\n"
+          "  -n NAME      JACK client name\n"
+          "  -p           Print control output changes to stdout\n"
+          "  -s           Show plugin UI if possible\n"
+          "  -t           Print trace messages from plugin\n"
+          "  -U URI       Load the UI with the given URI\n"
+          "  -V           Display version information and exit\n"
+          "  -x           Exit if the requested JACK client name is taken.\n");
   return error ? 1 : 0;
 }
 
@@ -80,14 +73,22 @@ jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    protocol,
                    const void* buffer)
 {
+#if USE_SUIL
   if (jalv->ui_instance) {
     suil_instance_port_event(
       jalv->ui_instance, port_index, buffer_size, protocol, buffer);
   }
+#else
+  (void)jalv;
+  (void)port_index;
+  (void)buffer_size;
+  (void)protocol;
+  (void)buffer;
+#endif
 }
 
 int
-jalv_init(int* argc, char*** argv, JalvOptions* opts)
+jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
 {
   int n_controls = 0;
   int a          = 1;
@@ -159,7 +160,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(void)
+jalv_frontend_ui_type(void)
 {
   return NULL;
 }
@@ -172,7 +173,10 @@ jalv_print_controls(Jalv* jalv, bool writable, bool readable)
     if ((control->is_writable && writable) ||
         (control->is_readable && readable)) {
       struct Port* const port = &jalv->ports[control->index];
-      printf("%s = %f\n", lilv_node_as_string(control->symbol), port->control);
+      jalv_log(JALV_LOG_INFO,
+               "%s = %f\n",
+               lilv_node_as_string(control->symbol),
+               port->control);
     }
   }
 
@@ -255,7 +259,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 }
 
 bool
-jalv_discover_ui(Jalv* jalv)
+jalv_frontend_discover(Jalv* jalv)
 {
   return jalv->opts.show_ui;
 }
@@ -263,11 +267,11 @@ jalv_discover_ui(Jalv* jalv)
 static bool
 jalv_run_custom_ui(Jalv* jalv)
 {
-#ifdef HAVE_SUIL
+#if USE_SUIL
   const LV2UI_Idle_Interface* idle_iface = NULL;
   const LV2UI_Show_Interface* show_iface = NULL;
   if (jalv->ui && jalv->opts.show_ui) {
-    jalv_ui_instantiate(jalv, jalv_native_ui_type(), NULL);
+    jalv_ui_instantiate(jalv, jalv_frontend_ui_type(), NULL);
     idle_iface = (const LV2UI_Idle_Interface*)suil_instance_extension_data(
       jalv->ui_instance, LV2_UI__idleInterface);
     show_iface = (const LV2UI_Show_Interface*)suil_instance_extension_data(
@@ -278,7 +282,7 @@ jalv_run_custom_ui(Jalv* jalv)
     show_iface->show(suil_instance_get_handle(jalv->ui_instance));
 
     // Drive idle interface until interrupted
-    while (!zix_sem_try_wait(&jalv->done)) {
+    while (zix_sem_try_wait(&jalv->done)) {
       jalv_update(jalv);
       if (idle_iface->idle(suil_instance_get_handle(jalv->ui_instance))) {
         break;
@@ -294,36 +298,38 @@ jalv_run_custom_ui(Jalv* jalv)
     show_iface->hide(suil_instance_get_handle(jalv->ui_instance));
     return true;
   }
+#else
+  (void)jalv;
 #endif
 
   return false;
 }
 
 float
-jalv_ui_refresh_rate(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 {
   return 30.0f;
 }
 
 float
-jalv_ui_scale_factor(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_scale_factor(Jalv* ZIX_UNUSED(jalv))
 {
   return 1.0f;
 }
 
 LilvNode*
-jalv_select_plugin(Jalv* jalv)
+jalv_frontend_select_plugin(Jalv* jalv)
 {
   (void)jalv;
   return NULL;
 }
 
 int
-jalv_open_ui(Jalv* jalv)
+jalv_frontend_open(Jalv* jalv)
 {
   if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
     // Primitive command prompt for setting control values
-    while (!zix_sem_try_wait(&jalv->done)) {
+    while (zix_sem_try_wait(&jalv->done)) {
       char line[1024];
       printf("> ");
       if (fgets(line, sizeof(line), stdin)) {
@@ -343,7 +349,7 @@ jalv_open_ui(Jalv* jalv)
 }
 
 int
-jalv_close_ui(Jalv* jalv)
+jalv_frontend_close(Jalv* jalv)
 {
   zix_sem_post(&jalv->done);
   return 0;

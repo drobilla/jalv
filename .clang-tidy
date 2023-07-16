@@ -1,25 +1,19 @@
 Checks: >
   *,
   -*-c-arrays,
-  -*-deprecated-headers,
   -*-magic-numbers,
   -*-named-parameter,
   -*-narrowing-conversions,
-  -*-reserved-identifier,
-  -*-uppercase-literal-suffix,
   -altera-*,
+  -bugprone-assignment-in-if-condition,
   -bugprone-branch-clone,
   -bugprone-easily-swappable-parameters,
-  -bugprone-macro-parentheses,
-  -cert-dcl37-c,
-  -cert-dcl51-cpp,
+  -cert-err33-c,
   -cert-err34-c,
-  -clang-analyzer-core.CallAndMessage,
-  -clang-analyzer-optin.cplusplus.VirtualCall,
   -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -clang-analyzer-valist.Uninitialized,
   -concurrency-mt-unsafe,
   -cppcoreguidelines-avoid-non-const-global-variables,
-  -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-owning-memory,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-reinterpret-cast,
@@ -31,14 +25,19 @@ Checks: >
   -llvm-header-guard,
   -llvmlibc-*,
   -misc-no-recursion,
-  -modernize-redundant-void-arg,
-  -modernize-use-nullptr,
+  -modernize-macro-to-enum,
+  -modernize-use-nodiscard,
   -modernize-use-trailing-return-type,
-  -modernize-use-using,
   -readability-function-cognitive-complexity,
+  -readability-identifier-length,
   -readability-implicit-bool-conversion,
   -readability-non-const-parameter,
   -readability-static-accessed-through-instance,
+CheckOptions:
+  - key:   hicpp-uppercase-literal-suffix.NewSuffixes
+    value: 'L;U;UL;ULL'
+  - key:   readability-uppercase-literal-suffix.NewSuffixes
+    value: 'L;U;UL;ULL'
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'
 FormatStyle: file

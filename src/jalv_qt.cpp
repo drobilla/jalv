@@ -1,27 +1,16 @@
-/*
-  Copyright 2007-2022 David Robillard <d@drobilla.net>
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
+// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// SPDX-License-Identifier: ISC
 
 #include "jalv_qt.hpp"
+#include "frontend.h"
 #include "jalv_internal.h"
+#include "nodes.h"
+#include "options.h"
+#include "port.h"
 
 #include "lilv/lilv.h"
 #include "suil/suil.h"
 #include "zix/sem.h"
-
-#include <QtGlobal>
 
 #include <QAction>
 #include <QApplication>
@@ -58,25 +47,24 @@
 #include <cstring>
 #include <map>
 #include <vector>
-
 #include <pthread.h>
 
-#define CONTROL_WIDTH 150
-#define DIAL_STEPS 10000
+constexpr int CONTROL_WIDTH = 150;
+constexpr int DIAL_STEPS    = 10000;
 
 static QApplication* app = nullptr;
 
-class FlowLayout : public QLayout
+class FlowLayout final : public QLayout
 {
 public:
   explicit FlowLayout(QWidget* parent, int margin, int hSpacing, int vSpacing);
 
   explicit FlowLayout(int margin, int hSpacing, int vSpacing);
 
-  FlowLayout(const FlowLayout&) = delete;
+  FlowLayout(const FlowLayout&)            = delete;
   FlowLayout& operator=(const FlowLayout&) = delete;
 
-  FlowLayout(FlowLayout&&) = delete;
+  FlowLayout(FlowLayout&&)             = delete;
   FlowLayout&& operator=(FlowLayout&&) = delete;
 
   ~FlowLayout() override;
@@ -226,10 +214,10 @@ FlowLayout::doLayout(const QRect& rect, bool testOnly) const
   int bottom = 0;
   getContentsMargins(&left, &top, &right, &bottom);
 
-  QRect effectiveRect = rect.adjusted(+left, +top, -right, -bottom);
-  int   x             = effectiveRect.x();
-  int   y             = effectiveRect.y();
-  int   lineHeight    = 0;
+  const QRect effectiveRect = rect.adjusted(+left, +top, -right, -bottom);
+  int         x             = effectiveRect.x();
+  int         y             = effectiveRect.y();
+  int         lineHeight    = 0;
 
   QLayoutItem* item = nullptr;
   foreach (item, itemList) {
@@ -289,7 +277,7 @@ FlowLayout::smartSpacing(QStyle::PixelMetric pm) const
 extern "C" {
 
 int
-jalv_init(int* argc, char*** argv, JalvOptions* opts)
+jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
 {
   opts->preset_path = jalv_get_working_dir();
 
@@ -300,7 +288,7 @@ jalv_init(int* argc, char*** argv, JalvOptions* opts)
 }
 
 const char*
-jalv_native_ui_type(void)
+jalv_frontend_ui_type(void)
 {
   return "http://lv2plug.in/ns/extensions/ui#Qt5UI";
 }
@@ -357,11 +345,6 @@ Control::Control(PortContainer portContainer, QWidget* parent)
   , plugin(portContainer.jalv->plugin)
   , port(portContainer.port)
   , label(new QLabel())
-  , max(1.0f)
-  , min(0.0f)
-  , isInteger(false)
-  , isEnum(false)
-  , isLogarithmic(false)
 {
   JalvNodes*      nodes    = &portContainer.jalv->nodes;
   const LilvPort* lilvPort = port->lilv_port;
@@ -416,7 +399,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
   }
 
   // Find and set min, max and default values for port
-  float defaultValue = ndef ? lilv_node_as_float(ndef) : port->control;
+  const float defaultValue = ndef ? lilv_node_as_float(ndef) : port->control;
   setRange(lilv_node_as_float(nmin), lilv_node_as_float(nmax));
   setValue(defaultValue);
 
@@ -525,10 +508,11 @@ Control::getValue()
   }
 
   if (isLogarithmic) {
-    return min * powf(max / min, (float)dial->value() / (steps - 1));
+    return min *
+           powf(max / min, static_cast<float>(dial->value()) / (steps - 1));
   }
 
-  return (float)dial->value() / steps;
+  return static_cast<float>(dial->value()) / steps;
 }
 
 int
@@ -544,7 +528,7 @@ Control::stringWidth(const QString& str)
 void
 Control::dialChanged(int)
 {
-  float value = getValue();
+  const float value = getValue();
 
   label->setText(getValueLabel(value));
   port->control = value;
@@ -598,14 +582,14 @@ build_control_widget(Jalv* jalv)
   LilvNode*    lastGroup   = nullptr;
   QHBoxLayout* groupLayout = nullptr;
   for (int i = 0; i < portContainers.count(); ++i) {
-    PortContainer portContainer = portContainers[i];
-    Port*         port          = portContainer.port;
+    const PortContainer portContainer = portContainers[i];
+    Port* const         port          = portContainer.port;
 
     auto* const control = new Control(portContainer, nullptr);
     LilvNode*   group =
       lilv_port_get(plugin, port->lilv_port, jalv->nodes.pg_group);
     if (group) {
-      if (!lilv_node_equals(group, lastGroup)) {
+      if (!groupLayout || !lilv_node_equals(group, lastGroup)) {
         // Group has changed
         LilvNode* groupName =
           lilv_world_get(world, group, jalv->nodes.lv2_name, nullptr);
@@ -628,7 +612,7 @@ build_control_widget(Jalv* jalv)
     lilv_node_free(lastGroup);
     lastGroup = group;
 
-    uint32_t index            = lilv_port_get_index(plugin, port->lilv_port);
+    const uint32_t index      = lilv_port_get_index(plugin, port->lilv_port);
     jalv->ports[index].widget = control;
   }
   lilv_node_free(lastGroup);
@@ -639,25 +623,26 @@ build_control_widget(Jalv* jalv)
 }
 
 bool
-jalv_discover_ui(Jalv*)
+jalv_frontend_discover(Jalv*)
 {
   return true;
 }
 
 float
-jalv_ui_refresh_rate(Jalv*)
+jalv_frontend_refresh_rate(Jalv*)
 {
-  return (float)QGuiApplication::primaryScreen()->refreshRate();
+  return static_cast<float>(QGuiApplication::primaryScreen()->refreshRate());
 }
 
 float
-jalv_ui_scale_factor(Jalv*)
+jalv_frontend_scale_factor(Jalv*)
 {
-  return (float)QGuiApplication::primaryScreen()->devicePixelRatio();
+  return static_cast<float>(
+    QGuiApplication::primaryScreen()->devicePixelRatio());
 }
 
 LilvNode*
-jalv_select_plugin(Jalv*)
+jalv_frontend_select_plugin(Jalv*)
 {
   return nullptr;
 }
@@ -684,7 +669,7 @@ set_window_title(Jalv* jalv)
 pthread_t init_cli_thread(Jalv* jalv);
 
 int
-jalv_open_ui(Jalv* jalv)
+jalv_frontend_open(Jalv* jalv)
 {
   auto* const win          = new QMainWindow();
   QMenu*      file_menu    = win->menuBar()->addMenu("&File");
@@ -699,7 +684,7 @@ jalv_open_ui(Jalv* jalv)
   jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
 
   if (jalv->ui && !jalv->opts.generic_ui) {
-    jalv_ui_instantiate(jalv, jalv_native_ui_type(), win);
+    jalv_ui_instantiate(jalv, jalv_frontend_ui_type(), win);
   }
 
   QWidget* widget = nullptr;
@@ -737,13 +722,14 @@ jalv_open_ui(Jalv* jalv)
   timer->start(1000 / jalv->ui_update_hz);
 
   init_cli_thread(jalv);
-  int ret = app->exec();
+  const int ret = app->exec();
+
   zix_sem_post(&jalv->done);
   return ret;
 }
 
 int
-jalv_close_ui(Jalv*)
+jalv_frontend_close(Jalv*)
 {
   app->quit();
   return 0;

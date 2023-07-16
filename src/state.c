@@ -1,20 +1,12 @@
-/*
-  Copyright 2007-2016 David Robillard <d@drobilla.net>
+// Copyright 2007-2016 David Robillard <d@drobilla.net>
+// SPDX-License-Identifier: ISC
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
+#include "state.h"
 
 #include "jalv_internal.h"
+#include "log.h"
+#include "nodes.h"
+#include "port.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/forge.h"
@@ -22,8 +14,7 @@
 #include "lv2/state/state.h"
 #include "lv2/urid/urid.h"
 #include "lv2/presets/presets.h"
-#include "zix/common.h"
-#include "zix/ring.h"
+#include "zix/attributes.h"
 #include "zix/sem.h"
 
 #include <stdbool.h>
@@ -104,9 +95,9 @@ jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
       sink(jalv, preset, label, data);
       lilv_nodes_free(labels);
     } else {
-      fprintf(stderr,
-              "Preset <%s> has no rdfs:label\n",
-              lilv_node_as_string(lilv_nodes_get(presets, i)));
+      jalv_log(JALV_LOG_WARNING,
+               "Preset <%s> has no rdfs:label\n",
+               lilv_node_as_string(lilv_nodes_get(presets, i)));
     }
   }
   lilv_nodes_free(presets);
@@ -138,7 +129,7 @@ set_port_value(const char* port_symbol,
   Jalv*        jalv = (Jalv*)user_data;
   struct Port* port = jalv_port_by_symbol(jalv, port_symbol);
   if (!port) {
-    fprintf(stderr, "error: Preset port `%s' is missing\n", port_symbol);
+    jalv_log(JALV_LOG_ERR, "Preset port `%s' is missing\n", port_symbol);
     return;
   }
 
@@ -152,10 +143,10 @@ set_port_value(const char* port_symbol,
   } else if (type == jalv->forge.Long) {
     fvalue = *(const int64_t*)value;
   } else {
-    fprintf(stderr,
-            "error: Preset `%s' value has bad type <%s>\n",
-            port_symbol,
-            jalv->unmap.unmap(jalv->unmap.handle, type));
+    jalv_log(JALV_LOG_ERR,
+             "Preset `%s' value has bad type <%s>\n",
+             port_symbol,
+             jalv->unmap.unmap(jalv->unmap.handle, type));
     return;
   }
 
@@ -163,19 +154,13 @@ set_port_value(const char* port_symbol,
     // Set value on port struct directly
     port->control = fvalue;
   } else {
-    // Send value to running plugin
-    jalv_ui_write(jalv, port->index, sizeof(fvalue), 0, &fvalue);
+    // Send value to plugin (as if from UI)
+    jalv_write_control(jalv, jalv->ui_to_plugin, port->index, fvalue);
   }
 
   if (jalv->has_ui) {
-    // Update UI
-    char           buf[sizeof(ControlChange) + sizeof(fvalue)];
-    ControlChange* ev = (ControlChange*)buf;
-    ev->index         = port->index;
-    ev->protocol      = 0;
-    ev->size          = sizeof(fvalue);
-    *(float*)(ev + 1) = fvalue;
-    zix_ring_write(jalv->plugin_events, buf, sizeof(buf));
+    // Update UI (as if from plugin)
+    jalv_write_control(jalv, jalv->plugin_to_ui, port->index, fvalue);
   }
 }
 

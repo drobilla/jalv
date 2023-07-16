@@ -1,0 +1,8 @@
+# Copyright 2022 David Robillard <d@drobilla.net>
+# SPDX-License-Identifier: 0BSD OR ISC
+
+[wrap-git]
+url = https://gitlab.com/lv2/lilv.git
+push-url = ssh://git@gitlab.com:lv2/lilv.git
+revision = master
+depth = 1

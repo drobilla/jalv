@@ -1,22 +1,9 @@
-/*
-  Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// SPDX-License-Identifier: ISC
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
+#include "control.h"
 
-  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
-#define _POSIX_C_SOURCE 200809L
-
-#include "jalv_internal.h"
+#include "log.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
@@ -25,7 +12,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,51 +30,52 @@ scale_point_cmp(const ScalePoint* a, const ScalePoint* b)
 }
 
 ControlID*
-new_port_control(Jalv* jalv, uint32_t index)
+new_port_control(LilvWorld* const        world,
+                 const LilvPlugin* const plugin,
+                 const LilvPort* const   port,
+                 uint32_t                port_index,
+                 const float             sample_rate,
+                 const JalvNodes* const  nodes,
+                 LV2_Atom_Forge* const   forge)
 {
-  struct Port*      port  = &jalv->ports[index];
-  const LilvPort*   lport = port->lilv_port;
-  const LilvPlugin* plug  = jalv->plugin;
-  const JalvNodes*  nodes = &jalv->nodes;
-
   ControlID* id = (ControlID*)calloc(1, sizeof(ControlID));
 
-  id->jalv        = jalv;
   id->type        = PORT;
-  id->node        = lilv_node_duplicate(lilv_port_get_node(plug, lport));
-  id->symbol      = lilv_node_duplicate(lilv_port_get_symbol(plug, lport));
-  id->label       = lilv_port_get_name(plug, lport);
-  id->index       = index;
-  id->group       = lilv_port_get(plug, lport, jalv->nodes.pg_group);
-  id->value_type  = jalv->forge.Float;
-  id->is_writable = lilv_port_is_a(plug, lport, nodes->lv2_InputPort);
-  id->is_readable = lilv_port_is_a(plug, lport, nodes->lv2_OutputPort);
-  id->is_toggle   = lilv_port_has_property(plug, lport, nodes->lv2_toggled);
-  id->is_integer  = lilv_port_has_property(plug, lport, nodes->lv2_integer);
+  id->node        = lilv_node_duplicate(lilv_port_get_node(plugin, port));
+  id->symbol      = lilv_node_duplicate(lilv_port_get_symbol(plugin, port));
+  id->label       = lilv_port_get_name(plugin, port);
+  id->forge       = forge;
+  id->index       = port_index;
+  id->group       = lilv_port_get(plugin, port, nodes->pg_group);
+  id->value_type  = forge->Float;
+  id->is_writable = lilv_port_is_a(plugin, port, nodes->lv2_InputPort);
+  id->is_readable = lilv_port_is_a(plugin, port, nodes->lv2_OutputPort);
+  id->is_toggle   = lilv_port_has_property(plugin, port, nodes->lv2_toggled);
+  id->is_integer  = lilv_port_has_property(plugin, port, nodes->lv2_integer);
 
   id->is_enumeration =
-    lilv_port_has_property(plug, lport, nodes->lv2_enumeration);
+    lilv_port_has_property(plugin, port, nodes->lv2_enumeration);
 
   id->is_logarithmic =
-    lilv_port_has_property(plug, lport, nodes->pprops_logarithmic);
+    lilv_port_has_property(plugin, port, nodes->pprops_logarithmic);
 
-  lilv_port_get_range(plug, lport, &id->def, &id->min, &id->max);
-  if (lilv_port_has_property(plug, lport, jalv->nodes.lv2_sampleRate)) {
+  lilv_port_get_range(plugin, port, &id->def, &id->min, &id->max);
+  if (lilv_port_has_property(plugin, port, nodes->lv2_sampleRate)) {
     // Adjust range for lv2:sampleRate controls
     if (lilv_node_is_float(id->min) || lilv_node_is_int(id->min)) {
-      const float min = lilv_node_as_float(id->min) * jalv->sample_rate;
+      const float min = lilv_node_as_float(id->min) * sample_rate;
       lilv_node_free(id->min);
-      id->min = lilv_new_float(jalv->world, min);
+      id->min = lilv_new_float(world, min);
     }
     if (lilv_node_is_float(id->max) || lilv_node_is_int(id->max)) {
-      const float max = lilv_node_as_float(id->max) * jalv->sample_rate;
+      const float max = lilv_node_as_float(id->max) * sample_rate;
       lilv_node_free(id->max);
-      id->max = lilv_new_float(jalv->world, max);
+      id->max = lilv_new_float(world, max);
     }
   }
 
   // Get scale points
-  LilvScalePoints* sp = lilv_port_get_scale_points(plug, lport);
+  LilvScalePoints* sp = lilv_port_get_scale_points(plugin, port);
   if (sp) {
     id->points =
       (ScalePoint*)malloc(lilv_scale_points_size(sp) * sizeof(ScalePoint));
@@ -120,34 +107,36 @@ new_port_control(Jalv* jalv, uint32_t index)
 }
 
 static bool
-has_range(Jalv* jalv, const LilvNode* subject, const char* range_uri)
+has_range(LilvWorld* const       world,
+          const JalvNodes* const nodes,
+          const LilvNode* const  subject,
+          const char* const      range_uri)
 {
-  LilvNode*  range = lilv_new_uri(jalv->world, range_uri);
-  const bool result =
-    lilv_world_ask(jalv->world, subject, jalv->nodes.rdfs_range, range);
+  LilvNode*  range  = lilv_new_uri(world, range_uri);
+  const bool result = lilv_world_ask(world, subject, nodes->rdfs_range, range);
 
   lilv_node_free(range);
   return result;
 }
 
 ControlID*
-new_property_control(Jalv* jalv, const LilvNode* property)
+new_property_control(LilvWorld* const       world,
+                     const LilvNode*        property,
+                     const JalvNodes* const nodes,
+                     LV2_URID_Map* const    map,
+                     LV2_Atom_Forge* const  forge)
 {
   ControlID* id = (ControlID*)calloc(1, sizeof(ControlID));
-  id->jalv      = jalv;
   id->type      = PROPERTY;
   id->node      = lilv_node_duplicate(property);
-  id->symbol    = lilv_world_get_symbol(jalv->world, property);
-  id->property  = jalv->map.map(jalv, lilv_node_as_uri(property));
+  id->symbol    = lilv_world_get_symbol(world, property);
+  id->forge     = forge;
+  id->property  = map->map(map->handle, lilv_node_as_uri(property));
 
-  id->label =
-    lilv_world_get(jalv->world, property, jalv->nodes.rdfs_label, NULL);
-  id->min =
-    lilv_world_get(jalv->world, property, jalv->nodes.lv2_minimum, NULL);
-  id->max =
-    lilv_world_get(jalv->world, property, jalv->nodes.lv2_maximum, NULL);
-  id->def =
-    lilv_world_get(jalv->world, property, jalv->nodes.lv2_default, NULL);
+  id->label = lilv_world_get(world, property, nodes->rdfs_label, NULL);
+  id->min   = lilv_world_get(world, property, nodes->lv2_minimum, NULL);
+  id->max   = lilv_world_get(world, property, nodes->lv2_maximum, NULL);
+  id->def   = lilv_world_get(world, property, nodes->lv2_default, NULL);
 
   const char* const types[] = {LV2_ATOM__Int,
                                LV2_ATOM__Long,
@@ -159,20 +148,20 @@ new_property_control(Jalv* jalv, const LilvNode* property)
                                NULL};
 
   for (const char* const* t = types; *t; ++t) {
-    if (has_range(jalv, property, *t)) {
-      id->value_type = jalv->map.map(jalv, *t);
+    if (has_range(world, nodes, property, *t)) {
+      id->value_type = map->map(map->handle, *t);
       break;
     }
   }
 
-  id->is_toggle = (id->value_type == jalv->forge.Bool);
+  id->is_toggle = (id->value_type == forge->Bool);
   id->is_integer =
-    (id->value_type == jalv->forge.Int || id->value_type == jalv->forge.Long);
+    (id->value_type == forge->Int || id->value_type == forge->Long);
 
   if (!id->value_type) {
-    fprintf(stderr,
-            "Unknown value type for property <%s>\n",
-            lilv_node_as_string(property));
+    jalv_log(JALV_LOG_WARNING,
+             "Unknown value type for property <%s>\n",
+             lilv_node_as_string(property));
   }
 
   return id;

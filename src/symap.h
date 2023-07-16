@@ -1,18 +1,5 @@
-/*
-  Copyright 2011-2022 David Robillard <d@drobilla.net>
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
+// Copyright 2011-2022 David Robillard <d@drobilla.net>
+// SPDX-License-Identifier: ISC
 
 /**
    @file symap.h API for Symap, a basic symbol map (string interner).
@@ -25,11 +12,14 @@
 #ifndef SYMAP_H
 #define SYMAP_H
 
+#include "zix/attributes.h"
+
 #include <stdint.h>
 
 typedef struct SymapImpl Symap;
 
 /// Create a new symbol map
+ZIX_MALLOC_FUNC
 Symap*
 symap_new(void);
 
@@ -37,24 +27,18 @@ symap_new(void);
 void
 symap_free(Symap* map);
 
-/// Map a string to a symbol ID if it is already mapped, otherwise return 0
+/// Map a string to a symbol if it is already mapped, otherwise return 0
+ZIX_PURE_FUNC
 uint32_t
-symap_try_map(Symap* map, const char* sym);
+symap_try_map(const Symap* map, const char* sym);
 
-/**
-   Map a string to a symbol ID.
-
-   Note that 0 is never a valid symbol ID.
-*/
+/// Map a string to a symbol
 uint32_t
 symap_map(Symap* map, const char* sym);
 
-/**
-   Unmap a symbol ID back to a symbol, or NULL if no such ID exists.
-
-   Note that 0 is never a valid symbol ID.
-*/
+/// Unmap a symbol back to a string if possible, otherwise return NULL
+ZIX_PURE_FUNC
 const char*
-symap_unmap(Symap* map, uint32_t id);
+symap_unmap(const Symap* map, uint32_t id);
 
 #endif // SYMAP_H

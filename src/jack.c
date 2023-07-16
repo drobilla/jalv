@@ -1,28 +1,23 @@
-/*
-  Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// SPDX-License-Identifier: ISC
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
+#include "backend.h"
 
-  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
+#include "frontend.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "log.h"
 #include "lv2_evbuf.h"
+#include "nodes.h"
+#include "options.h"
+#include "port.h"
+#include "types.h"
+#include "urids.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
 #include "lv2/atom/forge.h"
-#include "sratom/sratom.h"
-#include "zix/ring.h"
+#include "lv2/urid/urid.h"
 #include "zix/sem.h"
 
 #include <jack/jack.h>
@@ -30,7 +25,7 @@
 #include <jack/transport.h>
 #include <jack/types.h>
 
-#ifdef HAVE_JACK_METADATA
+#if USE_JACK_METADATA
 #  include <jack/metadata.h>
 #endif
 
@@ -41,7 +36,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct JalvBackend {
+#ifdef __clang__
+#  define REALTIME __attribute__((annotate("realtime")))
+#else
+#  define REALTIME
+#endif
+
+struct JalvBackendImpl {
   jack_client_t* client;             ///< Jack client
   bool           is_internal_client; ///< Running inside jackd
 };
@@ -61,7 +62,7 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
   Jalv* const jalv   = (Jalv*)data;
   jalv->block_length = nframes;
   jalv->buf_size_set = true;
-#ifdef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
+#if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
   jalv->midi_buf_size = jack_port_type_get_buffer_size(jalv->backend->client,
                                                        JACK_DEFAULT_MIDI_TYPE);
 #endif
@@ -74,7 +75,7 @@ static void
 jack_shutdown_cb(void* data)
 {
   Jalv* const jalv = (Jalv*)data;
-  jalv_close_ui(jalv);
+  jalv_frontend_close(jalv);
   zix_sem_post(&jalv->done);
 }
 
@@ -91,9 +92,10 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     (jack_transport_query(client, &pos) == JackTransportRolling);
 
   // If transport state is not as expected, then something has changed
+  const bool has_bbt = (pos.valid & JackPositionBBT);
   const bool xport_changed =
     (rolling != jalv->rolling || pos.frame != jalv->position ||
-     pos.beats_per_minute != jalv->bpm);
+     (has_bbt && pos.beats_per_minute != jalv->bpm));
 
   uint8_t   pos_buf[256];
   LV2_Atom* lv2_pos = (LV2_Atom*)pos_buf;
@@ -107,7 +109,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     lv2_atom_forge_long(forge, pos.frame);
     lv2_atom_forge_key(forge, jalv->urids.time_speed);
     lv2_atom_forge_float(forge, rolling ? 1.0 : 0.0);
-    if (pos.valid & JackPositionBBT) {
+    if (has_bbt) {
       lv2_atom_forge_key(forge, jalv->urids.time_barBeat);
       lv2_atom_forge_float(forge,
                            pos.beat - 1 + (pos.tick / pos.ticks_per_beat));
@@ -121,25 +123,12 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       lv2_atom_forge_float(forge, pos.beats_per_minute);
     }
 
-    if (jalv->opts.dump) {
-      char* str = sratom_to_turtle(jalv->sratom,
-                                   &jalv->unmap,
-                                   "time:",
-                                   NULL,
-                                   NULL,
-                                   lv2_pos->type,
-                                   lv2_pos->size,
-                                   LV2_ATOM_BODY(lv2_pos));
-      jalv_ansi_start(stdout, 36);
-      printf("\n## Position ##\n%s\n", str);
-      jalv_ansi_reset(stdout);
-      free(str);
-    }
+    jalv_dump_atom(jalv, stdout, "Position", lv2_pos, 32);
   }
 
   // Update transport state to expected values for next cycle
   jalv->position = rolling ? pos.frame + nframes : pos.frame;
-  jalv->bpm      = pos.beats_per_minute;
+  jalv->bpm      = has_bbt ? pos.beats_per_minute : jalv->bpm;
   jalv->rolling  = rolling;
 
   switch (jalv->play_state) {
@@ -171,7 +160,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       // Connect plugin port directly to Jack port buffer
       lilv_instance_connect_port(
         jalv->instance, p, jack_port_get_buffer(port->sys_port, nframes));
-#ifdef HAVE_JACK_METADATA
+#if USE_JACK_METADATA
     } else if (port->type == TYPE_CV && port->sys_port) {
       // Connect plugin port directly to Jack port buffer
       lilv_instance_connect_port(
@@ -183,12 +172,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       // Write transport change event if applicable
       LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
       if (xport_changed) {
-        lv2_evbuf_write(&iter,
-                        0,
-                        0,
-                        lv2_pos->type,
-                        lv2_pos->size,
-                        (const uint8_t*)LV2_ATOM_BODY(lv2_pos));
+        lv2_evbuf_write(
+          &iter, 0, 0, lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
       }
 
       if (jalv->request_update) {
@@ -196,12 +181,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
         const LV2_Atom_Object get = {
           {sizeof(LV2_Atom_Object_Body), jalv->urids.atom_Object},
           {0, jalv->urids.patch_Get}};
-        lv2_evbuf_write(&iter,
-                        0,
-                        0,
-                        get.atom.type,
-                        get.atom.size,
-                        (const uint8_t*)LV2_ATOM_BODY_CONST(&get));
+        lv2_evbuf_write(
+          &iter, 0, 0, get.atom.type, get.atom.size, LV2_ATOM_BODY_CONST(&get));
       }
 
       if (port->sys_port) {
@@ -247,9 +228,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
         // Get event from LV2 buffer
         uint32_t frames    = 0;
         uint32_t subframes = 0;
-        uint32_t type      = 0;
+        LV2_URID type      = 0;
         uint32_t size      = 0;
-        uint8_t* body      = NULL;
+        void*    body      = NULL;
         lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
         if (buf && type == jalv->urids.midi_MidiEvent) {
@@ -259,20 +240,12 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
         if (jalv->has_ui) {
           // Forward event to UI
-          jalv_send_to_ui(jalv, p, type, size, body);
+          jalv_write_event(jalv, jalv->plugin_to_ui, p, size, type, body);
         }
       }
     } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&
                port->type == TYPE_CONTROL) {
-      char           buf[sizeof(ControlChange) + sizeof(float)];
-      ControlChange* ev = (ControlChange*)buf;
-      ev->index         = p;
-      ev->protocol      = 0;
-      ev->size          = sizeof(float);
-      *(float*)(ev + 1) = port->control;
-      if (zix_ring_write(jalv->plugin_events, buf, sizeof(buf)) < sizeof(buf)) {
-        fprintf(stderr, "Plugin => UI buffer overflow!\n");
-      }
+      jalv_write_control(jalv, jalv->plugin_to_ui, p, port->control);
     }
   }
 
@@ -367,13 +340,13 @@ jalv_backend_init(Jalv* jalv)
     return NULL;
   }
 
-  printf("JACK Name:    %s\n", jack_get_client_name(client));
+  jalv_log(JALV_LOG_INFO, "JACK Name:    %s\n", jack_get_client_name(client));
 
   // Set audio engine properties
   jalv->sample_rate   = (float)jack_get_sample_rate(client);
   jalv->block_length  = jack_get_buffer_size(client);
   jalv->midi_buf_size = 4096;
-#ifdef HAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE
+#if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
   jalv->midi_buf_size =
     jack_port_type_get_buffer_size(client, JACK_DEFAULT_MIDI_TYPE);
 #endif
@@ -452,7 +425,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
     port->sys_port = jack_port_register(
       client, lilv_node_as_string(sym), JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
     break;
-#ifdef HAVE_JACK_METADATA
+#if USE_JACK_METADATA
   case TYPE_CV:
     port->sys_port = jack_port_register(
       client, lilv_node_as_string(sym), JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
@@ -479,7 +452,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
     break;
   }
 
-#ifdef HAVE_JACK_METADATA
+#if USE_JACK_METADATA
   if (port->sys_port) {
     // Set port order to index
     char index_str[16];
@@ -507,7 +480,7 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
 {
   const size_t args_len = strlen(load_init);
   if (args_len > JACK_LOAD_INIT_LIMIT) {
-    fprintf(stderr, "error: Too many arguments given\n");
+    jalv_log(JALV_LOG_ERR, "Too many arguments given\n");
     return -1;
   }
 
@@ -527,7 +500,8 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
   // Build full command line with "program" name for building argv
   const size_t cmd_len = strlen("jalv ") + args_len;
   char* const  cmd     = (char*)calloc(cmd_len + 1, 1);
-  snprintf(cmd, cmd_len + 1, "jalv %s", load_init);
+  memcpy(cmd, "jalv ", strlen("jalv ") + 1);
+  memcpy(cmd + 5, load_init, args_len + 1);
 
   // Build argv
   int    argc = 0;
@@ -559,7 +533,7 @@ jack_finish(void* const arg)
   Jalv* const jalv = (Jalv*)arg;
   if (jalv) {
     if (jalv_close(jalv)) {
-      fprintf(stderr, "Failed to close Jalv\n");
+      jalv_log(JALV_LOG_ERR, "Failed to close Jalv\n");
     }
 
     free(jalv);

@@ -1,34 +1,26 @@
-/*
-  Copyright 2007-2016 David Robillard <d@drobilla.net>
+// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// SPDX-License-Identifier: ISC
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
-#define _POSIX_C_SOURCE 200809L
+#include "log.h"
 
 #include "jalv_config.h"
 #include "jalv_internal.h"
+#include "port.h"
+#include "urids.h"
 
+#include "lilv/lilv.h"
 #include "lv2/log/log.h"
 #include "lv2/urid/urid.h"
 
-#ifdef HAVE_ISATTY
+#if USE_ISATTY
 #  include <unistd.h>
 #endif
 
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void
 jalv_print_control(Jalv* const              jalv,
@@ -36,7 +28,7 @@ jalv_print_control(Jalv* const              jalv,
                    const float              value)
 {
   const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-  printf("%s = %f\n", lilv_node_as_string(sym), value);
+  jalv_log(JALV_LOG_INFO, "%s = %f\n", lilv_node_as_string(sym), value);
 }
 
 char*
@@ -63,32 +55,24 @@ jalv_strjoin(const char* const a, const char* const b)
 }
 
 int
-jalv_printf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, ...)
+jalv_vlog(const JalvLogLevel level, const char* const fmt, va_list ap)
 {
-  va_list args;
-  va_start(args, fmt);
-  const int ret = jalv_vprintf(handle, type, fmt, args);
-  va_end(args);
-  return ret;
-}
-
-int
-jalv_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap)
-{
-  // TODO: Lock
-  Jalv* jalv  = (Jalv*)handle;
-  bool  fancy = true;
-  if (type == jalv->urids.log_Trace && jalv->opts.trace) {
-    jalv_ansi_start(stderr, 32);
-    fprintf(stderr, "trace: ");
-  } else if (type == jalv->urids.log_Error) {
-    jalv_ansi_start(stderr, 31);
+  bool fancy = false;
+  switch (level) {
+  case JALV_LOG_ERR:
+    fancy = jalv_ansi_start(stderr, 31);
     fprintf(stderr, "error: ");
-  } else if (type == jalv->urids.log_Warning) {
-    jalv_ansi_start(stderr, 33);
+    break;
+  case JALV_LOG_WARNING:
+    fancy = jalv_ansi_start(stderr, 33);
     fprintf(stderr, "warning: ");
-  } else {
-    fancy = false;
+    break;
+  case JALV_LOG_INFO:
+    break;
+  case JALV_LOG_DEBUG:
+    fancy = jalv_ansi_start(stderr, 32);
+    fprintf(stderr, "trace: ");
+    break;
   }
 
   const int st = vfprintf(stderr, fmt, ap);
@@ -100,10 +84,52 @@ jalv_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap)
   return st;
 }
 
+int
+jalv_log(const JalvLogLevel level, const char* const fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+
+  const int ret = jalv_vlog(level, fmt, args);
+
+  va_end(args);
+  return ret;
+}
+
+int
+jalv_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap)
+{
+  JalvLog* const log = (JalvLog*)handle;
+
+  if (type == log->urids->log_Trace) {
+    return log->tracing ? jalv_vlog(JALV_LOG_DEBUG, fmt, ap) : 0;
+  }
+
+  if (type == log->urids->log_Error) {
+    return jalv_vlog(JALV_LOG_ERR, fmt, ap);
+  }
+
+  if (type == log->urids->log_Warning) {
+    return jalv_vlog(JALV_LOG_WARNING, fmt, ap);
+  }
+
+  return vfprintf(stderr, fmt, ap);
+}
+
+int
+jalv_printf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  const int ret = jalv_vprintf(handle, type, fmt, args);
+  va_end(args);
+  return ret;
+}
+
 bool
 jalv_ansi_start(FILE* stream, int color)
 {
-#if defined(HAVE_ISATTY) && defined(HAVE_FILENO)
+#if USE_ISATTY && USE_FILENO
   if (isatty(fileno(stream))) {
     return fprintf(stream, "\033[0;%dm", color);
   }
@@ -114,7 +140,7 @@ jalv_ansi_start(FILE* stream, int color)
 void
 jalv_ansi_reset(FILE* stream)
 {
-#ifdef HAVE_ISATTY
+#if USE_ISATTY
   if (isatty(fileno(stream))) {
     fprintf(stream, "\033[0m");
     fflush(stream);

@@ -1,27 +1,18 @@
-/*
-  Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// SPDX-License-Identifier: ISC
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
+#include "backend.h"
 
 #include "jalv_internal.h"
+#include "port.h"
 #include "worker.h"
 
 #include <math.h>
 #include <portaudio.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-struct JalvBackend {
+struct JalvBackendImpl {
   PaStream* stream;
 };
 
@@ -57,12 +48,8 @@ pa_process_cb(const void*                     inputs,
           {sizeof(LV2_Atom_Object_Body), jalv->urids.atom_Object},
           {0, jalv->urids.patch_Get}};
         LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
-        lv2_evbuf_write(&iter,
-                        0,
-                        0,
-                        get.atom.type,
-                        get.atom.size,
-                        (const uint8_t*)LV2_ATOM_BODY(&get));
+        lv2_evbuf_write(
+          &iter, 0, 0, get.atom.type, get.atom.size, LV2_ATOM_BODY(&get));
       }
     } else if (port->type == TYPE_EVENT) {
       // Clear event output for plugin to write to
@@ -83,25 +70,17 @@ pa_process_cb(const void*                     inputs,
            i = lv2_evbuf_next(i)) {
         // Get event from LV2 buffer
         uint32_t frames, subframes, type, size;
-        uint8_t* body;
+        void*    body;
         lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
         if (jalv->has_ui) {
           // Forward event to UI
-          jalv_send_to_ui(jalv, p, type, size, body);
+          jalv_write_event(jalv, jalv->plugin_to_ui, p, size, type, body);
         }
       }
     } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&
                port->type == TYPE_CONTROL) {
-      char           buf[sizeof(ControlChange) + sizeof(float)];
-      ControlChange* ev = (ControlChange*)buf;
-      ev->index         = p;
-      ev->protocol      = 0;
-      ev->size          = sizeof(float);
-      *(float*)(ev + 1) = port->control;
-      if (zix_ring_write(jalv->plugin_events, buf, sizeof(buf)) < sizeof(buf)) {
-        fprintf(stderr, "Plugin => UI buffer overflow!\n");
-      }
+      jalv_write_control(jalv, jalv->plugin_to_ui, p, port->control);
     }
   }
 
@@ -111,7 +90,7 @@ pa_process_cb(const void*                     inputs,
 static JalvBackend*
 pa_error(const char* msg, PaError err)
 {
-  fprintf(stderr, "error: %s (%s)\n", msg, Pa_GetErrorText(err));
+  jalv_log(JALV_LOG_ERR, "%s (%s)\n", msg, Pa_GetErrorText(err));
   Pa_Terminate();
   return NULL;
 }
@@ -198,8 +177,8 @@ jalv_backend_activate(Jalv* jalv)
 {
   const int st = Pa_StartStream(jalv->backend->stream);
   if (st != paNoError) {
-    fprintf(
-      stderr, "error: Error starting audio stream (%s)\n", Pa_GetErrorText(st));
+    jalv_log(
+      JALV_LOG_ERR, "Error starting audio stream (%s)\n", Pa_GetErrorText(st));
   }
 }
 
@@ -208,8 +187,8 @@ jalv_backend_deactivate(Jalv* jalv)
 {
   const int st = Pa_CloseStream(jalv->backend->stream);
   if (st != paNoError) {
-    fprintf(
-      stderr, "error: Error closing audio stream (%s)\n", Pa_GetErrorText(st));
+    jalv_log(
+      JALV_LOG_ERR, "Error closing audio stream (%s)\n", Pa_GetErrorText(st));
   }
 }
 
