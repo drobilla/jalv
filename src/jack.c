@@ -13,6 +13,7 @@
 #include "port.h"
 #include "types.h"
 #include "urids.h"
+#include "control.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
@@ -35,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #ifdef __clang__
 #  define REALTIME __attribute__((annotate("realtime")))
@@ -95,7 +97,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   const bool has_bbt = (pos.valid & JackPositionBBT);
   const bool xport_changed =
     (rolling != jalv->rolling || pos.frame != jalv->position ||
-     (has_bbt && pos.beats_per_minute != jalv->bpm));
+    (has_bbt && (float)pos.beats_per_minute != jalv->bpm));
 
   uint8_t   pos_buf[256];
   LV2_Atom* lv2_pos = (LV2_Atom*)pos_buf;
@@ -130,6 +132,10 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   jalv->position = rolling ? pos.frame + nframes : pos.frame;
   jalv->bpm      = has_bbt ? pos.beats_per_minute : jalv->bpm;
   jalv->rolling  = rolling;
+
+  if (xport_changed && has_bbt) {
+    //printf("BPM CHANGED => %f <> %f\n", pos.beats_per_minute, jalv->bpm);
+  }
 
   switch (jalv->play_state) {
   case JALV_PAUSE_REQUESTED:
@@ -198,6 +204,12 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     } else if (port->type == TYPE_EVENT) {
       // Clear event output for plugin to write to
       lv2_evbuf_reset(port->evbuf, false);
+    } else if (jalv->bpm_port_index == port->index && port->flow == FLOW_INPUT && port->type == TYPE_CONTROL) {
+      // Send BPM value to designated control port, if any
+      if (xport_changed && has_bbt) {
+        port->control = jalv->bpm;
+        //jalv_print_control(jalv, port, jalv->bpm);
+      }
     }
   }
   jalv->request_update = false;

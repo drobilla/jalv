@@ -112,7 +112,7 @@ jalv_fix_symbol(char* symbol, const char* extra_allowed_chars)
 	int ret = 0;
 	for (uint32_t i = 0; i < strlen(symbol); ++i) {
 		uint32_t bad_char = 1;
-		if (symbol[i] >= 'a' && symbol[i] <= 'z' || symbol[i] >= 'A' && symbol[i] <= 'Z' || symbol[i] == '_' || i > 0 && symbol[i] >= '0' && symbol[i] <= '9') {
+		if ((symbol[i] >= 'a' && symbol[i] <= 'z') || (symbol[i] >= 'A' && symbol[i] <= 'Z') || symbol[i] == '_' || (i > 0 && symbol[i] >= '0' && symbol[i] <= '9')) {
 			bad_char = 0;
 		} else {
 			for (uint32_t j = 0; j < strlen(extra_allowed_chars); ++j)
@@ -141,8 +141,7 @@ jalv_fix_filename(char* fname)
 {
 	int ret = 0;
 	for (uint32_t i = 0; i < strlen(fname); ++i) {
-		uint32_t bad_char = 1;
-		if (!(fname[i] >= 'a' && fname[i] <= 'z' || fname[i] >= 'A' && fname[i] <= 'Z' || fname[i] >= '0' && fname[i] <= '9' || fname[i] == '_' || fname[i] == '-' || fname[i] == '.')) {
+		if (!((fname[i] >= 'a' && fname[i] <= 'z') || (fname[i] >= 'A' && fname[i] <= 'Z') || (fname[i] >= '0' && fname[i] <= '9') || fname[i] == '_' || fname[i] == '-' || fname[i] == '.')) {
 			fname[i] = '_';
 			++ret;
 		}
@@ -1023,6 +1022,7 @@ jalv_init_nodes(LilvWorld* const world, JalvNodes* const nodes)
   nodes->ui_showInterface       = MAP_NODE(LV2_UI__showInterface);
   nodes->work_interface         = MAP_NODE(LV2_WORKER__interface);
   nodes->work_schedule          = MAP_NODE(LV2_WORKER__schedule);
+  nodes->time_beatsPerMinute	= MAP_NODE(LV2_TIME__beatsPerMinute);
   nodes->end                    = NULL;
 
 #undef MAP_NODE
@@ -1442,6 +1442,13 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   // Create Jack ports and connect plugin ports to buffers
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     jalv_backend_activate_port(jalv, i);
+  }
+
+  // Check if plugin has a designated BPM port
+  jalv->bpm_port_index = -1;
+  const LilvPort *bpm_port = lilv_plugin_get_port_by_designation(jalv->plugin, jalv->nodes.lv2_InputPort, jalv->nodes.time_beatsPerMinute);
+  if (bpm_port != NULL) {
+    jalv->bpm_port_index = lilv_port_get_index(jalv->plugin, bpm_port);
   }
 
   // Print initial control values

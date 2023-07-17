@@ -48,6 +48,7 @@ typedef struct {
   LilvNode* ui_showInterface;
   LilvNode* work_interface;
   LilvNode* work_schedule;
+  LilvNode* time_beatsPerMinute;
   LilvNode* end; ///< NULL terminator for easy freeing of entire structure
 } JalvNodes;
 

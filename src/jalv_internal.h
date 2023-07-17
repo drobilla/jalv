@@ -104,6 +104,7 @@ struct JalvImpl {
   uint32_t            control_in;      ///< Index of control input port
   uint32_t            num_ports;       ///< Size of the two following arrays:
   uint32_t            plugin_latency;  ///< Latency reported by plugin (if any)
+  int32_t             bpm_port_index;  ///< Time BPM designated Control Port (index)
   float               ui_update_hz;    ///< Frequency of UI updates
   float               ui_scale_factor; ///< UI scale factor
   float               sample_rate;     ///< Sample rate
