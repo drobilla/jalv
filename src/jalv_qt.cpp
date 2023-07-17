@@ -766,10 +766,8 @@ static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
 	char     sym[1024];
-	char     sym2[1024];
 	uint32_t index = 0;
 	float    value = 0.0f;
-	int      count;
 	if (!strncmp(cmd, "help", 4)) {
 		fprintf(stderr,
 		        "Commands:\n"
