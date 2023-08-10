@@ -133,10 +133,6 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   jalv->bpm      = has_bbt ? pos.beats_per_minute : jalv->bpm;
   jalv->rolling  = rolling;
 
-  if (xport_changed && has_bbt) {
-    //printf("BPM CHANGED => %f <> %f\n", pos.beats_per_minute, jalv->bpm);
-  }
-
   switch (jalv->play_state) {
   case JALV_PAUSE_REQUESTED:
     jalv->play_state = JALV_PAUSED;
