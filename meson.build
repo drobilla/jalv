@@ -52,7 +52,7 @@ zix_dep = dependency(
     'tests_cpp=disabled',
   ],
   fallback: ['zix', 'zix_dep'],
-  version: '>= 0.3.0',
+  version: '>= 0.4.0',
 )
 
 serd_dep = dependency(

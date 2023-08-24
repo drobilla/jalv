@@ -4,8 +4,11 @@
 build/
 subprojects/lilv/
 subprojects/lv2/
+subprojects/packagecache/
 subprojects/serd/
 subprojects/sord/
+subprojects/sphinxygen-1.0.4/
 subprojects/sratom/
 subprojects/suil/
+subprojects/zix-0.4.0/
 subprojects/zix/

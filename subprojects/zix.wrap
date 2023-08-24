@@ -1,8 +1,14 @@
-# Copyright 2022 David Robillard <d@drobilla.net>
+# Copyright 2022-2023 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
-[wrap-git]
-url = https://gitlab.com/drobilla/zix.git
-push-url = ssh://git@gitlab.com:drobilla/zix.git
-revision = main
-depth = 1
+[wrap-file]
+directory = zix-0.4.0
+source_url = https://download.drobilla.net/zix-0.4.0.tar.xz
+source_filename = zix-0.4.0.tar.xz
+source_hash = ac88dbefd9d29bfdce1532165c957d19d474a8367b727edb7be7d524e6cf9a14
+
+# [wrap-git]
+# url = https://gitlab.com/drobilla/zix.git
+# push-url = ssh://git@gitlab.com:drobilla/zix.git
+# revision = v0.4.0
+# depth = 1
