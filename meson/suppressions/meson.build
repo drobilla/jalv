@@ -17,6 +17,7 @@ if is_variable('cc')
       c_suppressions += [
         '-Wno-bad-function-cast',
         '-Wno-cast-align',
+        '-Wno-cast-function-type-strict',
         '-Wno-cast-qual',
         '-Wno-declaration-after-statement',
         '-Wno-disabled-macro-expansion',
@@ -32,6 +33,7 @@ if is_variable('cc')
         '-Wno-shorten-64-to-32',
         '-Wno-sign-conversion',
         '-Wno-switch-enum',
+        '-Wno-unsafe-buffer-usage',
         '-Wno-unused-macros',
       ]
 
@@ -145,6 +147,7 @@ if is_variable('cpp')
         '-Wno-reserved-id-macro', # MacOS
         '-Wno-shorten-64-to-32',
         '-Wno-sign-conversion',
+        '-Wno-unsafe-buffer-usage',
         '-Wno-weak-vtables',
         '-Wno-zero-as-null-pointer-constant', # MacOS
       ]
