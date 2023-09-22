@@ -5,12 +5,10 @@
 #include "frontend.h"
 #include "jalv_internal.h"
 #include "log.h"
-#include "nodes.h"
 #include "options.h"
 #include "port.h"
 #include "state.h"
 #include "types.h"
-#include "urids.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"

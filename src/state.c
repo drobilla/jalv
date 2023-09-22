@@ -5,14 +5,11 @@
 
 #include "jalv_internal.h"
 #include "log.h"
-#include "nodes.h"
 #include "port.h"
 
 #include "lilv/lilv.h"
-#include "lv2/atom/forge.h"
 #include "lv2/core/lv2.h"
 #include "lv2/state/state.h"
-#include "lv2/urid/urid.h"
 #include "zix/attributes.h"
 #include "zix/sem.h"
 

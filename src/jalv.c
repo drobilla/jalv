@@ -9,7 +9,6 @@
 #include "log.h"
 #include "lv2_evbuf.h"
 #include "nodes.h"
-#include "options.h"
 #include "port.h"
 #include "state.h"
 #include "types.h"
