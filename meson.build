@@ -1,16 +1,19 @@
 # Copyright 2020-2022 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
-project('jalv', ['c', 'cpp'],
-        version: '1.6.9',
-        license: 'ISC',
-        meson_version: '>= 0.56.0',
-        default_options: [
-          'b_ndebug=if-release',
-          'buildtype=release',
-          'c_std=c99',
-          'cpp_std=c++14',
-        ])
+project(
+  'jalv',
+  ['c', 'cpp'],
+  default_options: [
+    'b_ndebug=if-release',
+    'buildtype=release',
+    'c_std=c99',
+    'cpp_std=c++14',
+  ],
+  license: 'ISC',
+  meson_version: '>= 0.56.0',
+  version: '1.6.9',
+)
 
 jalv_src_root = meson.current_source_dir()
 major_version = meson.project_version().split('.')[0]
@@ -221,29 +224,28 @@ int main(void) { void* mem; posix_memalign(&mem, 8, 8); }'''
 int main(void) { return sigaction(SIGINT, 0, 0); }'''
 
     platform_defines += '-DHAVE_FILENO=@0@'.format(
-      cc.compiles(fileno_code,
-                  args: platform_defines,
-                  name: 'fileno').to_int())
+      cc.compiles(fileno_code, args: platform_defines, name: 'fileno').to_int(),
+    )
 
     platform_defines += '-DHAVE_ISATTY=@0@'.format(
-      cc.compiles(isatty_code,
-                  args: platform_defines,
-                  name: 'isatty').to_int())
+      cc.compiles(isatty_code, args: platform_defines, name: 'isatty').to_int(),
+    )
 
     platform_defines += '-DHAVE_MLOCK=@0@'.format(
-      cc.compiles(mlock_code,
-                  args: platform_defines,
-                  name: 'mlock').to_int())
+      cc.compiles(mlock_code, args: platform_defines, name: 'mlock').to_int(),
+    )
 
     platform_defines += '-DHAVE_POSIX_MEMALIGN=@0@'.format(
-      cc.compiles(posix_memalign_code,
-                  args: platform_defines,
-                  name: 'posix_memalign').to_int())
+      cc.compiles(
+        posix_memalign_code,
+        args: platform_defines,
+        name: 'posix_memalign',
+      ).to_int(),
+    )
 
     platform_defines += '-DHAVE_SIGACTION=@0@'.format(
-      cc.compiles(sigaction_code,
-                  args: platform_defines,
-                  name: 'sigaction').to_int())
+      cc.compiles(sigaction_code, args: platform_defines, name: 'sigaction').to_int(),
+    )
   endif
 
   jack_metadata_code = '''#include <jack/metadata.h>
@@ -253,28 +255,36 @@ int main(void) { return !!&jack_set_property; }'''
 int main(void) { return !!&jack_port_type_get_buffer_size; }'''
 
   platform_defines += '-DHAVE_JACK_METADATA=@0@'.format(
-    cc.compiles(jack_metadata_code,
-                args: platform_defines,
-                name: 'jack_metadata').to_int())
+    cc.compiles(
+      jack_metadata_code,
+      args: platform_defines,
+      name: 'jack_metadata',
+    ).to_int(),
+  )
 
   platform_defines += '-DHAVE_JACK_PORT_TYPE_GET_BUFFER_SIZE=@0@'.format(
-    cc.compiles(jack_port_type_get_buffer_size_code,
-                args: platform_defines,
-                name: 'jack_port_type_get_buffer_size').to_int())
+    cc.compiles(
+      jack_port_type_get_buffer_size_code,
+      args: platform_defines,
+      name: 'jack_port_type_get_buffer_size',
+    ).to_int(),
+  )
 endif
 
 ############
 # Programs #
 ############
 
-sources = backend_sources + files(
-  'src/control.c',
-  'src/jalv.c',
-  'src/log.c',
-  'src/lv2_evbuf.c',
-  'src/state.c',
-  'src/symap.c',
-  'src/worker.c',
+sources = (
+  backend_sources + files(
+    'src/control.c',
+    'src/jalv.c',
+    'src/log.c',
+    'src/lv2_evbuf.c',
+    'src/state.c',
+    'src/symap.c',
+    'src/worker.c',
+  )
 )
 
 common_dependencies = [
@@ -334,11 +344,13 @@ if not get_option('gtk3').disabled()
     config.set('APP_HUMAN_NAME', 'Jalv')
     config.set('BINDIR', get_option('prefix') / get_option('bindir'))
 
-    configure_file(configuration: config,
-                   input: files('jalv.desktop.in'),
-                   output: 'jalv.desktop',
-                   install: true,
-                   install_dir: get_option('datadir') / 'applications')
+    configure_file(
+      configuration: config,
+      input: files('jalv.desktop.in'),
+      install: true,
+      install_dir: get_option('datadir') / 'applications',
+      output: 'jalv.desktop',
+    )
 
     executable(
       'jalv.gtk3',

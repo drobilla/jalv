@@ -7,7 +7,8 @@ if get_option('lint')
     autoship = find_program('autoship', required: get_option('tests'))
     if autoship.found()
       test(
-        'autoship', autoship,
+        'autoship',
+        autoship,
         args: ['test', jalv_src_root],
         suite: 'data',
       )
@@ -18,7 +19,8 @@ if get_option('lint')
   reuse = find_program('reuse', required: false)
   if reuse.found()
     test(
-      'REUSE', reuse,
+      'REUSE',
+      reuse,
       args: ['--root', jalv_src_root, 'lint'],
       suite: 'data',
     )
