@@ -136,11 +136,15 @@
 #  define USE_FILENO 0
 #endif
 
+/*
 #if HAVE_ISATTY
 #  define USE_ISATTY 1
 #else
 #  define USE_ISATTY 0
 #endif
+*/
+// Disable ANSI TTY codes for zynthian.
+#  define USE_ISATTY 0
 
 #if HAVE_MLOCK
 #  define USE_MLOCK 1
