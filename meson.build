@@ -66,7 +66,7 @@ serd_dep = dependency(
     'tools=disabled',
   ],
   fallback: ['serd', 'serd_dep'],
-  version: '>= 0.30.0',
+  version: '>= 0.32.2',
 )
 
 sord_dep = dependency(
@@ -77,7 +77,7 @@ sord_dep = dependency(
     'tools=disabled',
   ],
   fallback: ['sord', 'sord_dep'],
-  version: '>= 0.14.0',
+  version: '>= 0.16.16',
 )
 
 lv2_dep = dependency(
@@ -111,7 +111,7 @@ lilv_dep = dependency(
     'tools=disabled',
   ],
   fallback: ['lilv', 'lilv_dep'],
-  version: '>= 0.24.0',
+  version: '>= 0.24.24',
 )
 
 suil_dep = dependency(
