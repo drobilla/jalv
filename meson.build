@@ -409,7 +409,9 @@ endif
 # Documentation #
 #################
 
-subdir('doc')
+if not get_option('man').disabled()
+  subdir('doc')
+endif
 
 #########
 # Tests #

@@ -1,6 +1,7 @@
-jalv (1.6.9) stable; urgency=medium
+jalv (1.6.9) unstable; urgency=medium
 
   * Add missing short versions of command line options
+  * Add option to install tool man pages
   * Build Qt UI with -fPIC
   * Clean up command line help output
   * Fix clashing command line options
@@ -9,7 +10,7 @@ jalv (1.6.9) stable; urgency=medium
   * Switch to external zix dependency
   * Use Gtk switches instead of checkboxes for toggle controls
 
- -- David Robillard <d@drobilla.net>  Sun, 11 Dec 2022 21:51:58 +0000
+ -- David Robillard <d@drobilla.net>  Thu, 14 Mar 2024 18:26:10 +0000
 
 jalv (1.6.8) stable; urgency=medium
 

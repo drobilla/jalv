@@ -19,6 +19,9 @@ option('jack', type: 'feature', value: 'auto', yield: true,
 option('lint', type: 'boolean', value: false, yield: true,
        description: 'Run code quality checks')
 
+option('man', type: 'feature', value: 'enabled', yield: true,
+       description: 'Install man pages')
+
 option('posix', type: 'feature', value: 'auto', yield: true,
        description: 'Use POSIX system facilities')
 
