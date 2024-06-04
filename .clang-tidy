@@ -25,6 +25,7 @@ Checks: >
   -hicpp-signed-bitwise,
   -llvm-header-guard,
   -llvmlibc-*,
+  -misc-include-cleaner,
   -misc-no-recursion,
   -misc-use-anonymous-namespace,
   -modernize-macro-to-enum,
