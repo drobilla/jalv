@@ -298,6 +298,8 @@ common_dependencies = [
   zix_dep,
 ]
 
+common_c_args = c_suppressions + platform_defines + suil_defines
+
 # Internal JACK client library
 if jack_dep.found()
   shared_library(
@@ -316,7 +318,7 @@ endif
 executable(
   'jalv',
   sources + files('src/jalv_console.c'),
-  c_args: c_suppressions + platform_defines + suil_defines,
+  c_args: common_c_args,
   dependencies: common_dependencies + [suil_dep],
   include_directories: include_directories('src'),
   install: true,
@@ -355,7 +357,7 @@ if not get_option('gtk3').disabled()
     executable(
       'jalv.gtk3',
       sources + files('src/jalv_gtk.c'),
-      c_args: c_suppressions + platform_defines + suil_defines,
+      c_args: common_c_args,
       dependencies: common_dependencies + [gdk3_dep, gtk3_dep, suil_dep],
       include_directories: include_directories('src'),
       install: true,
@@ -363,45 +365,53 @@ if not get_option('gtk3').disabled()
   endif
 endif
 
-# Qt 5 GUI version
-if not get_option('qt5').disabled()
-  qt5_dep = dependency(
-    'Qt5Widgets',
-    include_type: 'system',
-    required: get_option('qt5'),
-    version: '>= 5.1.0',
-  )
+if is_variable('cpp')
+  common_cpp_args = cpp_suppressions + platform_defines + suil_defines
 
-  moc = find_program('moc-qt5', required: false)
-  if not moc.found()
-    moc = find_program('moc', required: get_option('qt5'))
+  qt_args = []
+  if cpp.get_id() in ['clang', 'gcc']
+    qt_args = ['-fPIC']
   endif
 
-  if moc.found()
-    qt_args = []
-    if cpp.get_id() in ['clang', 'gcc']
-      qt_args = ['-fPIC']
+  jalv_qt_cpp = files('src' / 'jalv_qt.cpp')
+  jalv_qt_hpp = files(jalv_src_root / 'src' / 'jalv_qt.hpp')
+
+  # Qt 5 GUI version
+  qt5_opt = get_option('qt5')
+  if not qt5_opt.disabled()
+    qt5_dep = dependency(
+      'Qt5Widgets',
+      include_type: 'system',
+      required: qt5_opt,
+      version: '>= 5.1.0',
+    )
+
+    if qt5_dep.found()
+      moc_qt5 = find_program('moc-qt5', required: false)
+      if not moc_qt5.found()
+        moc_qt5 = find_program('moc', required: get_option('qt5'))
+      endif
+
+      if moc_qt5.found()
+        jalv_qt5_meta_cpp = custom_target(
+          'jalv_qt5_meta.cpp',
+          capture: true,
+          command: [moc_qt5, '@INPUT@'],
+          input: jalv_qt_hpp,
+          output: 'jalv_qt5_meta.cpp',
+        )
+
+        executable(
+          'jalv.qt5',
+          sources + jalv_qt_cpp + [jalv_qt5_meta_cpp],
+          c_args: common_c_args,
+          cpp_args: common_cpp_args + qt_args,
+          dependencies: common_dependencies + [qt5_dep, suil_dep],
+          include_directories: include_directories('src'),
+          install: true,
+        )
+      endif
     endif
-
-    jalv_qt_hpp = files(jalv_src_root / 'src' / 'jalv_qt.hpp')
-
-    jalv_qt5_meta_cpp = custom_target(
-      'jalv_qt5_meta.cpp',
-      capture: true,
-      command: [moc, '@INPUT@'],
-      input: jalv_qt_hpp,
-      output: 'jalv_qt5_meta.cpp',
-    )
-
-    executable(
-      'jalv.qt5',
-      sources + files('src/jalv_qt.cpp') + [jalv_qt5_meta_cpp],
-      c_args: c_suppressions + platform_defines + suil_defines,
-      cpp_args: cpp_suppressions + platform_defines + suil_defines + qt_args,
-      dependencies: common_dependencies + [qt5_dep, suil_dep],
-      include_directories: include_directories('src'),
-      install: true,
-    )
   endif
 endif
 
