@@ -1,4 +1,4 @@
 {
   "version": "1.0.0",
-  "mapping_files": ["qt5_11.imp"]
+  "mapping_files": [".includes.imp", "qt5_11.imp"]
 }

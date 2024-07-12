@@ -8,6 +8,7 @@
 
 #include <QAction>
 #include <QGroupBox>
+#include <QObject>
 #include <QString>
 #include <QtCore>
 

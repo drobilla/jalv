@@ -1,4 +1,4 @@
-# Copyright 2020-2023 David Robillard <d@drobilla.net>
+# Copyright 2020-2024 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
 option('checks', type: 'feature', value: 'enabled', yield: true,
@@ -27,6 +27,15 @@ option('posix', type: 'feature', value: 'auto', yield: true,
 
 option('qt5', type: 'feature', value: 'auto', yield: true,
        description: 'Build Qt5 GUI')
+
+option('qt5_moc', type: 'string', yield: true,
+       description: 'Path to Qt5 moc executable')
+
+option('qt6', type: 'feature', value: 'auto', yield: true,
+       description: 'Build Qt6 GUI')
+
+option('qt6_moc', type: 'string', yield: true,
+       description: 'Path to Qt6 moc executable')
 
 option('suil', type: 'feature', value: 'auto', yield: true,
        description: 'Use suil to load plugin UIs')

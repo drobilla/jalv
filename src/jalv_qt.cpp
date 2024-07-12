@@ -25,6 +25,7 @@
 #include <QLayoutItem>
 #include <QList>
 #include <QMainWindow>
+#include <QMargins>
 #include <QMenu>
 #include <QMenuBar>
 #include <QObject>
@@ -40,6 +41,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QtCore>
+#include <QtGlobal>
 
 #include <algorithm>
 #include <cmath>
@@ -200,7 +202,8 @@ FlowLayout::minimumSize() const
     size = size.expandedTo(item->minimumSize());
   }
 
-  return size + QSize(2 * margin(), 2 * margin());
+  const auto m = contentsMargins();
+  return size + QSize{m.left() + m.right(), m.top() + m.bottom()};
 }
 
 int
@@ -285,7 +288,11 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions*)
 const char*
 jalv_frontend_ui_type(void)
 {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
   return "http://lv2plug.in/ns/extensions/ui#Qt5UI";
+#else
+  return "http://lv2plug.in/ns/extensions/ui#Qt6UI";
+#endif
 }
 
 void

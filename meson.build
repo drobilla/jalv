@@ -1,4 +1,4 @@
-# Copyright 2020-2022 David Robillard <d@drobilla.net>
+# Copyright 2020-2024 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
 project(
@@ -8,7 +8,7 @@ project(
     'b_ndebug=if-release',
     'buildtype=release',
     'c_std=c99',
-    'cpp_std=c++14',
+    'cpp_std=c++17',
   ],
   license: 'ISC',
   meson_version: '>= 0.56.0',
@@ -387,9 +387,17 @@ if is_variable('cpp')
     )
 
     if qt5_dep.found()
-      moc_qt5 = find_program('moc-qt5', required: false)
-      if not moc_qt5.found()
-        moc_qt5 = find_program('moc', required: get_option('qt5'))
+      if get_option('qt5_moc') != ''
+        moc_qt5 = find_program(get_option('qt5_moc'), required: qt5_opt)
+      else
+        moc_qt5 = find_program('moc-qt5', required: false)
+        if not moc_qt5.found()
+          moc_qt5 = find_program(
+            'moc',
+            required: qt5_opt,
+            version: ['>=5.0.0', '<=6.0.0'],
+          )
+        endif
       endif
 
       if moc_qt5.found()
@@ -407,6 +415,51 @@ if is_variable('cpp')
           c_args: common_c_args,
           cpp_args: common_cpp_args + qt_args,
           dependencies: common_dependencies + [qt5_dep, suil_dep],
+          include_directories: include_directories('src'),
+          install: true,
+        )
+      endif
+    endif
+  endif
+
+  # Qt 6 GUI version
+  qt6_opt = get_option('qt6')
+  if not qt6_opt.disabled()
+    qt6_dep = dependency(
+      'Qt6Widgets',
+      include_type: 'system',
+      required: qt6_opt,
+      version: '>= 6.2.0',
+    )
+
+    if qt6_dep.found()
+      moc_qt6_name = get_option('qt6_moc')
+      if moc_qt6_name == ''
+        qt6_libexecdir = qt6_dep.get_variable(
+          default_value: get_option('prefix') / get_option('libexecdir'),
+          internal: 'libexecdir',
+          pkgconfig: 'libexecdir',
+        )
+
+        moc_qt6_name = qt6_libexecdir / 'moc'
+      endif
+
+      moc_qt6 = find_program(moc_qt6_name, required: qt6_opt)
+      if moc_qt6.found()
+        jalv_qt6_meta_cpp = custom_target(
+          'jalv_qt6_meta.cpp',
+          capture: true,
+          command: [moc_qt6, '@INPUT@'],
+          input: jalv_qt_hpp,
+          output: 'jalv_qt6_meta.cpp',
+        )
+
+        executable(
+          'jalv.qt6',
+          sources + jalv_qt_cpp + [jalv_qt6_meta_cpp],
+          c_args: common_c_args,
+          cpp_args: common_cpp_args + qt_args,
+          dependencies: common_dependencies + [qt6_dep, suil_dep],
           include_directories: include_directories('src'),
           install: true,
         )
