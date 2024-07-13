@@ -1443,6 +1443,7 @@ jalv_close(Jalv* const jalv)
   }
 
   // Clean up
+  lilv_state_free(jalv->preset);
   free(jalv->ports);
   zix_ring_free(jalv->ui_to_plugin);
   zix_ring_free(jalv->plugin_to_ui);

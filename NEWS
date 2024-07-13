@@ -6,12 +6,13 @@ jalv (1.6.9) unstable; urgency=medium
   * Build Qt UI with -fPIC
   * Clean up command line help output
   * Fix clashing command line options
+  * Fix minor memory leaks
   * Remove Gtk2 interface
   * Replace use of deprecated Gtk interfaces
   * Switch to external zix dependency
   * Use Gtk switches instead of checkboxes for toggle controls
 
- -- David Robillard <d@drobilla.net>  Fri, 12 Jul 2024 17:26:57 +0000
+ -- David Robillard <d@drobilla.net>  Sat, 13 Jul 2024 00:46:42 +0000
 
 jalv (1.6.8) stable; urgency=medium
 

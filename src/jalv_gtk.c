@@ -1175,6 +1175,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
                                          GTK_ALIGN_START,
                                          GTK_ALIGN_BASELINE);
 
+      lilv_node_free(group_name);
       gtk_grid_attach(GTK_GRID(port_grid), group_label, 0, n_rows, 3, 1);
       ++n_rows;
     }
@@ -1507,6 +1508,11 @@ jalv_frontend_open(Jalv* jalv)
 
   gtk_main();
   suil_instance_free(jalv->ui_instance);
+
+  for (unsigned i = 0U; i < jalv->controls.n_controls; ++i) {
+    free(jalv->controls.controls[i]->widget); // free Controller
+  }
+
   jalv->ui_instance = NULL;
   zix_sem_post(&jalv->done);
   return 0;
