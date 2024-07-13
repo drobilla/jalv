@@ -71,7 +71,6 @@ struct JalvImpl {
   LV2_URID_Unmap    unmap;        ///< Int => URI map
   SerdEnv*          env;          ///< Environment for RDF printing
   Sratom*           sratom;       ///< Atom serialiser
-  Sratom*           ui_sratom;    ///< Atom serialiser for UI thread
   Symap*            symap;        ///< URI map
   ZixSem            symap_lock;   ///< Lock for URI map
   JalvBackend*      backend;      ///< Audio system backend
@@ -102,7 +101,7 @@ struct JalvImpl {
   uint32_t            block_length;    ///< Audio buffer size (block length)
   size_t              midi_buf_size;   ///< Size of MIDI port buffers
   uint32_t            control_in;      ///< Index of control input port
-  uint32_t            num_ports;       ///< Size of the two following arrays:
+  uint32_t            num_ports;       ///< Total number of ports on the plugin
   uint32_t            plugin_latency;  ///< Latency reported by plugin (if any)
   float               ui_update_hz;    ///< Frequency of UI updates
   float               ui_scale_factor; ///< UI scale factor

@@ -1153,8 +1153,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   // Set up atom reading and writing environment
   jalv->sratom = sratom_new(&jalv->map);
   sratom_set_env(jalv->sratom, jalv->env);
-  jalv->ui_sratom = sratom_new(&jalv->map);
-  sratom_set_env(jalv->ui_sratom, jalv->env);
 
   // Create temporary directory for plugin state
 #ifdef _WIN32
@@ -1470,7 +1468,6 @@ jalv_close(Jalv* const jalv)
   free(jalv->controls.controls);
 
   sratom_free(jalv->sratom);
-  sratom_free(jalv->ui_sratom);
   serd_env_free(jalv->env);
   lilv_uis_free(jalv->uis);
   lilv_world_free(jalv->world);
