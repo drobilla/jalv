@@ -32,6 +32,7 @@ if is_variable('cc')
         '-Wno-reserved-id-macro', # MacOS
         '-Wno-shorten-64-to-32',
         '-Wno-sign-conversion',
+        '-Wno-switch-default',
         '-Wno-switch-enum',
         '-Wno-unsafe-buffer-usage',
         '-Wno-unused-macros',
