@@ -539,7 +539,8 @@ portGroupLessThan(const PortContainer& p1, const PortContainer& p2)
 
   const int cmp = (group1 && group2) ? strcmp(lilv_node_as_string(group1),
                                               lilv_node_as_string(group2))
-                                     : (intptr_t(group1) - intptr_t(group2));
+                                     : (reinterpret_cast<intptr_t>(group1) -
+                                        reinterpret_cast<intptr_t>(group2));
 
   lilv_node_free(group2);
   lilv_node_free(group1);
