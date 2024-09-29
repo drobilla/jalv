@@ -53,7 +53,9 @@
 constexpr int CONTROL_WIDTH = 150;
 constexpr int DIAL_STEPS    = 10000;
 
-static QApplication* app = nullptr;
+namespace {
+
+QApplication* app = nullptr;
 
 class FlowLayout final : public QLayout
 {
@@ -264,46 +266,6 @@ FlowLayout::smartSpacing(QStyle::PixelMetric pm) const
   return static_cast<QLayout*>(parent)->spacing();
 }
 
-extern "C" {
-
-int
-jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions*)
-{
-  app = new QApplication(*args->argc, *args->argv, true);
-  app->setStyleSheet("QGroupBox::title { subcontrol-position: top center }");
-  --*args->argc;
-  ++*args->argv;
-  return 0;
-}
-
-const char*
-jalv_frontend_ui_type(void)
-{
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-  return "http://lv2plug.in/ns/extensions/ui#Qt5UI";
-#else
-  return "http://lv2plug.in/ns/extensions/ui#Qt6UI";
-#endif
-}
-
-void
-jalv_ui_port_event(Jalv*       jalv,
-                   uint32_t    port_index,
-                   uint32_t    buffer_size,
-                   uint32_t    protocol,
-                   const void* buffer)
-{
-  if (jalv->ui_instance) {
-    suil_instance_port_event(
-      jalv->ui_instance, port_index, buffer_size, protocol, buffer);
-  } else {
-    auto* const control = static_cast<Control*>(jalv->ports[port_index].widget);
-    if (control) {
-      control->setValue(*static_cast<const float*>(buffer));
-    }
-  }
-}
-
 class Timer : public QTimer
 {
 public:
@@ -317,7 +279,7 @@ private:
   Jalv* _jalv;
 };
 
-static int
+int
 add_preset_to_menu(Jalv*           jalv,
                    const LilvNode* node,
                    const LilvNode* title,
@@ -331,6 +293,8 @@ add_preset_to_menu(Jalv*           jalv,
   menu->addAction(action);
   return 0;
 }
+
+} // namespace
 
 Control::Control(PortContainer portContainer, QWidget* parent)
   : QGroupBox(parent)
@@ -527,7 +491,9 @@ Control::dialChanged(int)
   port->control = value;
 }
 
-static bool
+namespace {
+
+bool
 portGroupLessThan(const PortContainer& p1, const PortContainer& p2)
 {
   const Jalv*     jalv  = p1.jalv;
@@ -548,7 +514,7 @@ portGroupLessThan(const PortContainer& p1, const PortContainer& p2)
   return cmp < 0;
 }
 
-static QWidget*
+QWidget*
 build_control_widget(Jalv* jalv)
 {
   const LilvPlugin* plugin = jalv->plugin;
@@ -614,6 +580,48 @@ build_control_widget(Jalv* jalv)
   grid->setLayout(layout);
 
   return grid;
+}
+
+} // namespace
+
+extern "C" {
+
+int
+jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions*)
+{
+  app = new QApplication(*args->argc, *args->argv, true);
+  app->setStyleSheet("QGroupBox::title { subcontrol-position: top center }");
+  --*args->argc;
+  ++*args->argv;
+  return 0;
+}
+
+const char*
+jalv_frontend_ui_type(void)
+{
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+  return "http://lv2plug.in/ns/extensions/ui#Qt5UI";
+#else
+  return "http://lv2plug.in/ns/extensions/ui#Qt6UI";
+#endif
+}
+
+void
+jalv_ui_port_event(Jalv*       jalv,
+                   uint32_t    port_index,
+                   uint32_t    buffer_size,
+                   uint32_t    protocol,
+                   const void* buffer)
+{
+  if (jalv->ui_instance) {
+    suil_instance_port_event(
+      jalv->ui_instance, port_index, buffer_size, protocol, buffer);
+  } else {
+    auto* const control = static_cast<Control*>(jalv->ports[port_index].widget);
+    if (control) {
+      control->setValue(*static_cast<const float*>(buffer));
+    }
+  }
 }
 
 bool

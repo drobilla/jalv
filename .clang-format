@@ -14,6 +14,7 @@ BraceWrapping:
   SplitEmptyRecord: false
 BreakBeforeBraces: Custom
 Cpp11BracedListStyle: true
+FixNamespaceComments: true
 ForEachMacros:
   - LILV_FOREACH
   - foreach

@@ -29,7 +29,6 @@ Checks: >
   -llvmlibc-*,
   -misc-include-cleaner,
   -misc-no-recursion,
-  -misc-use-anonymous-namespace,
   -modernize-use-nodiscard,
   -modernize-use-trailing-return-type,
   -readability-function-cognitive-complexity,
