@@ -58,8 +58,6 @@ static QApplication* app = nullptr;
 class FlowLayout final : public QLayout
 {
 public:
-  explicit FlowLayout(QWidget* parent, int margin, int hSpacing, int vSpacing);
-
   explicit FlowLayout(int margin, int hSpacing, int vSpacing);
 
   FlowLayout(const FlowLayout&)            = delete;
@@ -91,14 +89,6 @@ private:
   int                 m_hSpace;
   int                 m_vSpace;
 };
-
-FlowLayout::FlowLayout(QWidget* parent, int margin, int hSpacing, int vSpacing)
-  : QLayout(parent)
-  , m_hSpace(hSpacing)
-  , m_vSpace(vSpacing)
-{
-  setContentsMargins(margin, margin, margin, margin);
-}
 
 FlowLayout::FlowLayout(int margin, int hSpacing, int vSpacing)
   : m_hSpace(hSpacing)
