@@ -1271,11 +1271,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
       }
 #endif
 
-      if (jalv->ui) {
-        jalv_log(JALV_LOG_INFO,
-                 "UI:           %s\n",
-                 lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
-      }
+      jalv_log(JALV_LOG_INFO,
+               "UI:           %s\n",
+               lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
     }
   }
 

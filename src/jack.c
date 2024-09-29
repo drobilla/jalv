@@ -295,8 +295,6 @@ jack_latency_cb(jack_latency_callback_mode_t mode, void* data)
 static jack_client_t*
 jack_create_client(Jalv* jalv)
 {
-  jack_client_t* client = NULL;
-
   // Determine the name of the JACK client
   char* jack_name = NULL;
   if (jalv->opts.name) {
@@ -315,12 +313,10 @@ jack_create_client(Jalv* jalv)
   }
 
   // Connect to JACK
-  if (!client) {
-    client = jack_client_open(
-      jack_name,
-      (jalv->opts.name_exact ? JackUseExactName : JackNullOption),
-      NULL);
-  }
+  jack_client_t* const client = jack_client_open(
+    jack_name,
+    (jalv->opts.name_exact ? JackUseExactName : JackNullOption),
+    NULL);
 
   free(jack_name);
 
