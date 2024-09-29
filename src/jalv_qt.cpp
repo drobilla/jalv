@@ -277,11 +277,12 @@ FlowLayout::smartSpacing(QStyle::PixelMetric pm) const
 extern "C" {
 
 int
-jalv_frontend_init(int* argc, char*** argv, JalvOptions*)
+jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions*)
 {
-  app = new QApplication(*argc, *argv, true);
+  app = new QApplication(*args->argc, *args->argv, true);
   app->setStyleSheet("QGroupBox::title { subcontrol-position: top center }");
-
+  --*args->argc;
+  ++*args->argv;
   return 0;
 }
 

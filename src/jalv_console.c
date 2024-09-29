@@ -95,42 +95,45 @@ jalv_ui_port_event(Jalv*       jalv,
 }
 
 int
-jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
+jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
 {
-  const char* const cmd = (*argv)[0];
+  const int argc = *args->argc;
+  char**    argv = *args->argv;
+
+  const char* const cmd = argv[0];
 
   int n_controls = 0;
   int a          = 1;
-  for (; a < *argc && (*argv)[a][0] == '-'; ++a) {
-    if ((*argv)[a][1] == 'h' || !strcmp((*argv)[a], "--help")) {
+  for (; a < argc && argv[a][0] == '-'; ++a) {
+    if (argv[a][1] == 'h' || !strcmp(argv[a], "--help")) {
       return print_usage(cmd, true);
     }
 
-    if ((*argv)[a][1] == 'V' || !strcmp((*argv)[a], "--version")) {
+    if (argv[a][1] == 'V' || !strcmp(argv[a], "--version")) {
       return print_version();
     }
 
-    if ((*argv)[a][1] == 's') {
+    if (argv[a][1] == 's') {
       opts->show_ui = true;
-    } else if ((*argv)[a][1] == 'p') {
+    } else if (argv[a][1] == 'p') {
       opts->print_controls = true;
-    } else if ((*argv)[a][1] == 'U') {
-      if (++a == *argc) {
+    } else if (argv[a][1] == 'U') {
+      if (++a == argc) {
         return print_arg_error(cmd, "option requires an argument -- 'U'");
       }
-      opts->ui_uri = jalv_strdup((*argv)[a]);
-    } else if ((*argv)[a][1] == 'l') {
-      if (++a == *argc) {
+      opts->ui_uri = jalv_strdup(argv[a]);
+    } else if (argv[a][1] == 'l') {
+      if (++a == argc) {
         return print_arg_error(cmd, "option requires an argument -- 'l'");
       }
-      opts->load = jalv_strdup((*argv)[a]);
-    } else if ((*argv)[a][1] == 'b') {
-      if (++a == *argc) {
+      opts->load = jalv_strdup(argv[a]);
+    } else if (argv[a][1] == 'b') {
+      if (++a == argc) {
         return print_arg_error(cmd, "option requires an argument -- 'b'");
       }
-      opts->buffer_size = atoi((*argv)[a]);
-    } else if ((*argv)[a][1] == 'c') {
-      if (++a == *argc) {
+      opts->buffer_size = atoi(argv[a]);
+    } else if (argv[a][1] == 'c') {
+      if (++a == argc) {
         return print_arg_error(cmd, "option requires an argument -- 'c'");
       }
 
@@ -142,28 +145,30 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
       }
 
       opts->controls               = new_controls;
-      opts->controls[n_controls++] = (*argv)[a];
+      opts->controls[n_controls++] = argv[a];
       opts->controls[n_controls]   = NULL;
-    } else if ((*argv)[a][1] == 'i') {
+    } else if (argv[a][1] == 'i') {
       opts->non_interactive = true;
-    } else if ((*argv)[a][1] == 'd') {
+    } else if (argv[a][1] == 'd') {
       opts->dump = true;
-    } else if ((*argv)[a][1] == 't') {
+    } else if (argv[a][1] == 't') {
       opts->trace = true;
-    } else if ((*argv)[a][1] == 'n') {
-      if (++a == *argc) {
+    } else if (argv[a][1] == 'n') {
+      if (++a == argc) {
         return print_arg_error(cmd, "option requires an argument -- 'n'");
       }
       free(opts->name);
-      opts->name = jalv_strdup((*argv)[a]);
-    } else if ((*argv)[a][1] == 'x') {
+      opts->name = jalv_strdup(argv[a]);
+    } else if (argv[a][1] == 'x') {
       opts->name_exact = 1;
     } else {
-      fprintf(stderr, "%s: unknown option -- '%c'\n", cmd, (*argv)[a][1]);
-      return print_usage((*argv)[0], true);
+      fprintf(stderr, "%s: unknown option -- '%c'\n", cmd, argv[a][1]);
+      return print_usage(argv[0], true);
     }
   }
 
+  *args->argc = *args->argc - a;
+  *args->argv = *args->argv + a;
   return 0;
 }
 

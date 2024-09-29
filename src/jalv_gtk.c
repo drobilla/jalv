@@ -69,7 +69,7 @@ on_window_destroy(GtkWidget* ZIX_UNUSED(widget), gpointer ZIX_UNUSED(data))
 }
 
 int
-jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
+jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
 {
   const GOptionEntry entries[] = {
     {"preset",
@@ -181,8 +181,8 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
 
   GError*   error = NULL;
   const int err =
-    gtk_init_with_args(argc,
-                       argv,
+    gtk_init_with_args(args->argc,
+                       args->argv,
                        "PLUGIN_URI - Run an LV2 plugin as a Jack application",
                        entries,
                        NULL,
@@ -192,6 +192,8 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
     fprintf(stderr, "%s\n", error->message);
   }
 
+  --*args->argc;
+  ++*args->argv;
   return !err;
 }
 

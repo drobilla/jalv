@@ -1121,8 +1121,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 #endif
 
   // Parse command-line arguments
-  int ret = 0;
-  if ((ret = jalv_frontend_init(argc, argv, &jalv->opts))) {
+  JalvFrontendArgs args = {argc, argv};
+  const int        ret  = jalv_frontend_init(&args, &jalv->opts);
+  if (ret) {
     jalv_close(jalv);
     return ret;
   }
@@ -1187,12 +1188,14 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
       return -2;
     }
     plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
-  } else if (*argc > 1) {
-    plugin_uri = lilv_new_uri(world, (*argv)[*argc - 1]);
-  }
-
-  if (!plugin_uri) {
+  } else if (*args.argc == 0) {
     plugin_uri = jalv_frontend_select_plugin(jalv);
+  } else if (*args.argc == 1) {
+    plugin_uri = lilv_new_uri(world, (*args.argv)[0]);
+  } else {
+    jalv_log(JALV_LOG_ERR, "Unexpected trailing arguments\n");
+    jalv_close(jalv);
+    return -1;
   }
 
   if (!plugin_uri) {

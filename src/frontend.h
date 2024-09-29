@@ -16,9 +16,15 @@ JALV_BEGIN_DECLS
 
 // Interface that must be implemented by UIs
 
-/// Read command-line arguments and set `opts` accordingly
+/// Command-line arguments passed to an executable
+typedef struct {
+  int*    argc; ///< Pointer to `argc` like in `main`
+  char*** argv; ///< Pointer to `argv` like in `main`
+} JalvFrontendArgs;
+
+/// Consume command-line arguments and set `opts` accordingly
 int
-jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts);
+jalv_frontend_init(JalvFrontendArgs* args, JalvOptions* opts);
 
 /// Return the URI of the "native" LV2 UI type
 const char*
