@@ -21,7 +21,7 @@ class QDial;
 class QLabel;
 class QWidget;
 
-class PresetAction : public QAction
+class PresetAction final : public QAction
 {
   Q_OBJECT // NOLINT
 
@@ -46,7 +46,7 @@ struct PortContainer {
   Port* port;
 };
 
-class Control : public QGroupBox
+class Control final : public QGroupBox
 {
   Q_OBJECT // NOLINT
 
