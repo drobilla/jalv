@@ -1,4 +1,4 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2024 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "control.h"
@@ -39,19 +39,19 @@ print_usage(const char* name, bool error)
   fprintf(os, "Usage: %s [OPTION...] PLUGIN_URI\n", name);
   fprintf(os,
           "Run an LV2 plugin as a Jack application.\n"
-          "  -b SIZE      Buffer size for plugin <=> UI communication\n"
-          "  -c SYM=VAL   Set control value (e.g. \"vol=1.4\")\n"
-          "  -d           Dump plugin <=> UI communication\n"
-          "  -h           Display this help and exit\n"
-          "  -i           Ignore keyboard input, run non-interactively\n"
-          "  -l DIR       Load state from save directory\n"
-          "  -n NAME      JACK client name\n"
-          "  -p           Print control output changes to stdout\n"
-          "  -s           Show plugin UI if possible\n"
-          "  -t           Print trace messages from plugin\n"
-          "  -U URI       Load the UI with the given URI\n"
-          "  -V           Display version information and exit\n"
-          "  -x           Exit if the requested JACK client name is taken.\n");
+          "  -b SIZE     Buffer size for plugin <=> UI communication\n"
+          "  -c SYM=VAL  Set control value (like \"vol=1.4\")\n"
+          "  -d          Dump plugin <=> UI communication\n"
+          "  -h          Display this help and exit\n"
+          "  -i          Ignore keyboard input, run non-interactively\n"
+          "  -l DIR      Load state from save directory\n"
+          "  -n NAME     JACK client name\n"
+          "  -p          Print control output changes to stdout\n"
+          "  -s          Show plugin UI if possible\n"
+          "  -t          Print trace messages from plugin\n"
+          "  -U URI      Load the UI with the given URI\n"
+          "  -V          Display version information and exit\n"
+          "  -x          Exit if the requested JACK client name is taken\n");
   return error ? 1 : 0;
 }
 
@@ -59,10 +59,17 @@ static int
 print_version(void)
 {
   printf("jalv " JALV_VERSION " <http://drobilla.net/software/jalv>\n");
-  printf("Copyright 2011-2022 David Robillard <d@drobilla.net>.\n"
+  printf("Copyright 2011-2024 David Robillard <d@drobilla.net>\n"
          "License ISC: <https://spdx.org/licenses/ISC>.\n"
          "This is free software; you are free to change and redistribute it."
          "\nThere is NO WARRANTY, to the extent permitted by law.\n");
+  return 1;
+}
+
+static int
+print_arg_error(const char* const command, const char* const msg)
+{
+  fprintf(stderr, "%s: %s\n", command, msg);
   return 1;
 }
 
@@ -90,14 +97,16 @@ jalv_ui_port_event(Jalv*       jalv,
 int
 jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
 {
+  const char* const cmd = (*argv)[0];
+
   int n_controls = 0;
   int a          = 1;
   for (; a < *argc && (*argv)[a][0] == '-'; ++a) {
-    if ((*argv)[a][1] == 'h') {
-      return print_usage((*argv)[0], true);
+    if ((*argv)[a][1] == 'h' || !strcmp((*argv)[a], "--help")) {
+      return print_usage(cmd, true);
     }
 
-    if ((*argv)[a][1] == 'V') {
+    if ((*argv)[a][1] == 'V' || !strcmp((*argv)[a], "--version")) {
       return print_version();
     }
 
@@ -107,26 +116,22 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
       opts->print_controls = true;
     } else if ((*argv)[a][1] == 'U') {
       if (++a == *argc) {
-        fprintf(stderr, "Missing argument for -U\n");
-        return 1;
+        return print_arg_error(cmd, "option requires an argument -- 'U'");
       }
       opts->ui_uri = jalv_strdup((*argv)[a]);
     } else if ((*argv)[a][1] == 'l') {
       if (++a == *argc) {
-        fprintf(stderr, "Missing argument for -l\n");
-        return 1;
+        return print_arg_error(cmd, "option requires an argument -- 'l'");
       }
       opts->load = jalv_strdup((*argv)[a]);
     } else if ((*argv)[a][1] == 'b') {
       if (++a == *argc) {
-        fprintf(stderr, "Missing argument for -b\n");
-        return 1;
+        return print_arg_error(cmd, "option requires an argument -- 'b'");
       }
       opts->buffer_size = atoi((*argv)[a]);
     } else if ((*argv)[a][1] == 'c') {
       if (++a == *argc) {
-        fprintf(stderr, "Missing argument for -c\n");
-        return 1;
+        return print_arg_error(cmd, "option requires an argument -- 'c'");
       }
 
       char** new_controls =
@@ -147,15 +152,14 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
       opts->trace = true;
     } else if ((*argv)[a][1] == 'n') {
       if (++a == *argc) {
-        fprintf(stderr, "Missing argument for -n\n");
-        return 1;
+        return print_arg_error(cmd, "option requires an argument -- 'n'");
       }
       free(opts->name);
       opts->name = jalv_strdup((*argv)[a]);
     } else if ((*argv)[a][1] == 'x') {
       opts->name_exact = 1;
     } else {
-      fprintf(stderr, "Unknown option %s\n", (*argv)[a]);
+      fprintf(stderr, "%s: unknown option -- '%c'\n", cmd, (*argv)[a][1]);
       return print_usage((*argv)[0], true);
     }
   }
