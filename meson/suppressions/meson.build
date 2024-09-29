@@ -34,7 +34,6 @@ if is_variable('cc')
         '-Wno-switch-default',
         '-Wno-switch-enum',
         '-Wno-unsafe-buffer-usage',
-        '-Wno-unused-macros',
       ]
 
       if not meson.is_cross_build()
@@ -80,7 +79,6 @@ if is_variable('cc')
         '-Wno-switch-enum',
         '-Wno-unsuffixed-float-constants',
         '-Wno-unused-const-variable',
-        '-Wno-unused-macros',
       ]
     endif
 

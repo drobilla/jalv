@@ -65,9 +65,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#define NS_RDF "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-#define NS_XSD "http://www.w3.org/2001/XMLSchema#"
-
 #ifndef MIN
 #  define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
@@ -115,8 +112,6 @@ unmap_uri(LV2_URID_Unmap_Handle handle, LV2_URID urid)
   zix_sem_post(&jalv->symap_lock);
   return uri;
 }
-
-#define NS_EXT "http://lv2plug.in/ns/ext/"
 
 /// These features have no data
 static const LV2_Feature static_features[] = {
@@ -984,7 +979,7 @@ jalv_init_env(SerdEnv* const env)
   serd_env_set_prefix_from_strings(
     env, (const uint8_t*)"time", (const uint8_t*)LV2_TIME_PREFIX);
   serd_env_set_prefix_from_strings(
-    env, (const uint8_t*)"xsd", (const uint8_t*)NS_XSD);
+    env, (const uint8_t*)"xsd", (const uint8_t*)LILV_NS_XSD);
 }
 
 static void
