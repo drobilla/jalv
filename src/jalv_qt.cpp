@@ -253,17 +253,22 @@ FlowLayout::doLayout(const QRect& rect, bool testOnly) const
 int
 FlowLayout::smartSpacing(QStyle::PixelMetric pm) const
 {
-  QObject* parent = this->parent();
+  QObject* const parent = this->parent();
   if (!parent) {
     return -1;
   }
 
-  if (parent->isWidgetType()) {
-    auto* const pw = static_cast<QWidget*>(parent);
-    return pw->style()->pixelMetric(pm, nullptr, pw);
+  auto* const parentWidget = qobject_cast<QWidget*>(parent);
+  if (parentWidget) {
+    return parentWidget->style()->pixelMetric(pm, nullptr, parentWidget);
   }
 
-  return static_cast<QLayout*>(parent)->spacing();
+  auto* const parentLayout = qobject_cast<QLayout*>(parent);
+  if (parentLayout) {
+    return parentLayout->spacing();
+  }
+
+  return -1;
 }
 
 class Timer : public QTimer
@@ -672,13 +677,13 @@ jalv_frontend_open(Jalv* jalv)
   if (jalv->ui_instance) {
     widget = static_cast<QWidget*>(suil_instance_get_widget(jalv->ui_instance));
   } else {
-    QWidget* controlWidget = build_control_widget(jalv);
-
-    widget = new QScrollArea();
-    static_cast<QScrollArea*>(widget)->setWidget(controlWidget);
-    static_cast<QScrollArea*>(widget)->setWidgetResizable(true);
-    widget->setMinimumWidth(800);
-    widget->setMinimumHeight(600);
+    auto* const controlWidget = build_control_widget(jalv);
+    auto* const scrollArea    = new QScrollArea();
+    scrollArea->setWidget(controlWidget);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setMinimumWidth(800);
+    scrollArea->setMinimumHeight(600);
+    widget = scrollArea;
   }
 
   LilvNode* name = lilv_plugin_get_name(jalv->plugin);

@@ -20,7 +20,6 @@ Checks: >
   -cppcoreguidelines-owning-memory,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-reinterpret-cast,
-  -cppcoreguidelines-pro-type-static-cast-downcast,
   -fuchsia-default-arguments-calls,
   -google-readability-todo,
   -hicpp-signed-bitwise,
