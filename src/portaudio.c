@@ -2,13 +2,18 @@
 // SPDX-License-Identifier: ISC
 
 #include "backend.h"
-
 #include "jalv_internal.h"
+#include "log.h"
+#include "lv2_evbuf.h"
 #include "port.h"
-#include "worker.h"
+#include "types.h"
 
-#include <math.h>
+#include "lilv/lilv.h"
+#include "lv2/atom/atom.h"
+
 #include <portaudio.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -24,6 +29,9 @@ pa_process_cb(const void*                     inputs,
               PaStreamCallbackFlags           flags,
               void*                           handle)
 {
+  (void)time;
+  (void)flags;
+
   Jalv* jalv = (Jalv*)handle;
 
   // Prepare port buffers
@@ -69,8 +77,11 @@ pa_process_cb(const void*                     inputs,
            lv2_evbuf_is_valid(i);
            i = lv2_evbuf_next(i)) {
         // Get event from LV2 buffer
-        uint32_t frames, subframes, type, size;
-        void*    body;
+        uint32_t frames    = 0U;
+        uint32_t subframes = 0U;
+        uint32_t type      = 0U;
+        uint32_t size      = 0U;
+        void*    body      = NULL;
         lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
         if (jalv->has_ui) {
@@ -112,7 +123,9 @@ jalv_backend_init(Jalv* jalv)
   outputParameters.device = Pa_GetDefaultOutputDevice();
   if (inputParameters.device == paNoDevice) {
     return pa_error("No default input device", paDeviceUnavailable);
-  } else if (outputParameters.device == paNoDevice) {
+  }
+
+  if (outputParameters.device == paNoDevice) {
     return pa_error("No default output device", paDeviceUnavailable);
   }
 
