@@ -32,15 +32,15 @@ jalv_frontend_ui_type(void);
 
 /// Return true if an interactive frontend is available
 bool
-jalv_frontend_discover(Jalv* jalv);
+jalv_frontend_discover(const Jalv* jalv);
 
 /// Return the ideal refresh rate of the frontend in Hz
 float
-jalv_frontend_refresh_rate(Jalv* jalv);
+jalv_frontend_refresh_rate(const Jalv* jalv);
 
 /// Return the scale factor of the frontend (for example 2.0 for double sized)
 float
-jalv_frontend_scale_factor(Jalv* jalv);
+jalv_frontend_scale_factor(const Jalv* jalv);
 
 /// Attempt to get a plugin URI selection from the user
 LilvNode*

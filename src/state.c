@@ -160,7 +160,7 @@ set_port_value(const char* port_symbol,
 }
 
 void
-jalv_apply_state(Jalv* jalv, LilvState* state)
+jalv_apply_state(Jalv* jalv, const LilvState* state)
 {
   bool must_pause = !jalv->safe_restore && jalv->play_state == JALV_RUNNING;
   if (state) {

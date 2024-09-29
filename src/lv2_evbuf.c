@@ -110,9 +110,8 @@ lv2_evbuf_next(const LV2_Evbuf_Iterator iter)
   }
 
   LV2_Atom_Sequence* aseq = &iter.evbuf->buf;
-  LV2_Atom_Event*    aev =
-    (LV2_Atom_Event*)((char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq) +
-                      iter.offset);
+  const char* abuf = (const char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq);
+  const LV2_Atom_Event* aev = (const LV2_Atom_Event*)(abuf + iter.offset);
 
   const uint32_t offset =
     iter.offset + lv2_atom_pad_size(sizeof(LV2_Atom_Event) + aev->body.size);

@@ -190,7 +190,7 @@ symap_unmap(const Symap* const map, const uint32_t id)
 #  include <stdio.h>
 
 static void
-symap_dump(Symap* const map)
+symap_dump(const Symap* const map)
 {
   fprintf(stderr, "{\n");
   for (uint32_t i = 0; i < map->size; ++i) {

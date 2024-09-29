@@ -186,7 +186,7 @@ jalv_ui_port_event(Jalv*       jalv,
    @return 0 on success, non-zero on failure (overflow).
 */
 int
-jalv_write_event(Jalv*       jalv,
+jalv_write_event(const Jalv* jalv,
                  ZixRing*    target,
                  uint32_t    port_index,
                  uint32_t    size,
@@ -206,10 +206,10 @@ jalv_write_event(Jalv*       jalv,
    @return 0 on success, non-zero on failure (overflow).
 */
 int
-jalv_write_control(Jalv*    jalv,
-                   ZixRing* target,
-                   uint32_t port_index,
-                   float    value);
+jalv_write_control(const Jalv* jalv,
+                   ZixRing*    target,
+                   uint32_t    port_index,
+                   float       value);
 
 void
 jalv_dump_atom(Jalv*           jalv,

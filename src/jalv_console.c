@@ -266,7 +266,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 }
 
 bool
-jalv_frontend_discover(Jalv* jalv)
+jalv_frontend_discover(const Jalv* jalv)
 {
   return jalv->opts.show_ui;
 }
@@ -313,13 +313,13 @@ jalv_run_custom_ui(Jalv* jalv)
 }
 
 float
-jalv_frontend_refresh_rate(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_refresh_rate(const Jalv* ZIX_UNUSED(jalv))
 {
   return 30.0f;
 }
 
 float
-jalv_frontend_scale_factor(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_scale_factor(const Jalv* ZIX_UNUSED(jalv))
 {
   return 1.0f;
 }

@@ -22,7 +22,7 @@
 #include <string.h>
 
 void
-jalv_print_control(Jalv* const              jalv,
+jalv_print_control(const Jalv* const        jalv,
                    const struct Port* const port,
                    const float              value)
 {

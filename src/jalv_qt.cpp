@@ -349,8 +349,8 @@ Control::Control(PortContainer portContainer, QWidget* parent)
   , port(portContainer.port)
   , label(new QLabel())
 {
-  JalvNodes*      nodes    = &portContainer.jalv->nodes;
-  const LilvPort* lilvPort = port->lilv_port;
+  const JalvNodes* nodes    = &portContainer.jalv->nodes;
+  const LilvPort*  lilvPort = port->lilv_port;
 
   LilvNode* nmin = nullptr;
   LilvNode* nmax = nullptr;
@@ -540,7 +540,7 @@ Control::dialChanged(int)
 static bool
 portGroupLessThan(const PortContainer& p1, const PortContainer& p2)
 {
-  Jalv*           jalv  = p1.jalv;
+  const Jalv*     jalv  = p1.jalv;
   const LilvPort* port1 = p1.port->lilv_port;
   const LilvPort* port2 = p2.port->lilv_port;
 
@@ -586,7 +586,7 @@ build_control_widget(Jalv* jalv)
   QHBoxLayout* groupLayout = nullptr;
   for (int i = 0; i < portContainers.count(); ++i) {
     const PortContainer portContainer = portContainers[i];
-    Port* const         port          = portContainer.port;
+    const Port* const   port          = portContainer.port;
 
     auto* const control = new Control(portContainer, nullptr);
     LilvNode*   group =
@@ -594,7 +594,7 @@ build_control_widget(Jalv* jalv)
     if (group) {
       if (!groupLayout || !lilv_node_equals(group, lastGroup)) {
         // Group has changed
-        LilvNode* groupName =
+        const LilvNode* groupName =
           lilv_world_get(world, group, jalv->nodes.lv2_name, nullptr);
         if (!groupName) {
           groupName =
@@ -626,19 +626,19 @@ build_control_widget(Jalv* jalv)
 }
 
 bool
-jalv_frontend_discover(Jalv*)
+jalv_frontend_discover(const Jalv*)
 {
   return true;
 }
 
 float
-jalv_frontend_refresh_rate(Jalv*)
+jalv_frontend_refresh_rate(const Jalv*)
 {
   return static_cast<float>(QGuiApplication::primaryScreen()->refreshRate());
 }
 
 float
-jalv_frontend_scale_factor(Jalv*)
+jalv_frontend_scale_factor(const Jalv*)
 {
   return static_cast<float>(
     QGuiApplication::primaryScreen()->devicePixelRatio());

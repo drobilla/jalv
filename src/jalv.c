@@ -122,7 +122,7 @@ static const LV2_Feature static_features[] = {
 
 /// Return true iff Jalv supports the given feature
 static bool
-feature_is_supported(Jalv* jalv, const char* uri)
+feature_is_supported(const Jalv* jalv, const char* uri)
 {
   if (!strcmp(uri, "http://lv2plug.in/ns/lv2core#isLive") ||
       !strcmp(uri, "http://lv2plug.in/ns/lv2core#inPlaceBroken")) {
@@ -628,7 +628,7 @@ jalv_init_ui(Jalv* jalv)
 }
 
 static int
-jalv_write_control_change(Jalv* const       jalv,
+jalv_write_control_change(const Jalv* const jalv,
                           ZixRing* const    target,
                           const void* const header,
                           const uint32_t    header_size,
@@ -649,7 +649,7 @@ jalv_write_control_change(Jalv* const       jalv,
 }
 
 int
-jalv_write_event(Jalv* const       jalv,
+jalv_write_event(const Jalv* const jalv,
                  ZixRing* const    target,
                  const uint32_t    port_index,
                  const uint32_t    size,
@@ -672,10 +672,10 @@ jalv_write_event(Jalv* const       jalv,
 }
 
 int
-jalv_write_control(Jalv* const    jalv,
-                   ZixRing* const target,
-                   const uint32_t port_index,
-                   const float    value)
+jalv_write_control(const Jalv* const jalv,
+                   ZixRing* const    target,
+                   const uint32_t    port_index,
+                   const float       value)
 {
   const ControlChange header = {port_index, 0, sizeof(value)};
 
@@ -785,7 +785,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
     return false;
   }
 
-  ControlID* control = jalv_control_by_symbol(jalv, sym);
+  const ControlID* control = jalv_control_by_symbol(jalv, sym);
   if (!control) {
     jalv_log(
       JALV_LOG_WARNING, "Ignoring value for unknown control `%s'\n", sym);
@@ -1394,7 +1394,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
     ControlID* control = jalv->controls.controls[i];
     if (control->type == PORT && control->is_writable) {
-      struct Port* port = &jalv->ports[control->index];
+      const struct Port* port = &jalv->ports[control->index];
       jalv_print_control(jalv, port, port->control);
     }
   }

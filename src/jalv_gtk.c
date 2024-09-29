@@ -63,8 +63,10 @@ get_float(const LilvNode* node, float fallback)
 }
 
 static void
-on_window_destroy(GtkWidget* ZIX_UNUSED(widget), gpointer ZIX_UNUSED(data))
+on_window_destroy(GtkWidget* widget, gpointer data)
 {
+  (void)widget;
+  (void)data;
   gtk_main_quit();
 }
 
@@ -388,7 +390,7 @@ add_preset_to_menu(Jalv*           jalv,
     active_preset_item = GTK_CHECK_MENU_ITEM(item);
   }
 
-  LilvNode* bank =
+  const LilvNode* bank =
     lilv_world_get(jalv->world, node, jalv->nodes.pset_bank, NULL);
 
   if (bank) {
@@ -608,7 +610,7 @@ set_float_control(const ControlID* control, float value)
 }
 
 static double
-get_atom_double(Jalv*       jalv,
+get_atom_double(const Jalv* jalv,
                 uint32_t    ZIX_UNUSED(size),
                 LV2_URID    type,
                 const void* body)
@@ -633,7 +635,7 @@ get_atom_double(Jalv*       jalv,
 }
 
 static void
-control_changed(Jalv*       jalv,
+control_changed(const Jalv* jalv,
                 Controller* controller,
                 uint32_t    size,
                 LV2_URID    type,
@@ -731,8 +733,8 @@ on_request_value(LV2UI_Feature_Handle      handle,
                  const LV2_URID            ZIX_UNUSED(type),
                  const LV2_Feature* const* ZIX_UNUSED(features))
 {
-  Jalv*      jalv    = (Jalv*)handle;
-  ControlID* control = get_property_control(&jalv->controls, key);
+  Jalv* const      jalv    = (Jalv*)handle;
+  const ControlID* control = get_property_control(&jalv->controls, key);
 
   if (!control) {
     return LV2UI_REQUEST_VALUE_ERR_UNKNOWN;
@@ -901,8 +903,8 @@ switch_changed(GtkSwitch* toggle_switch, gboolean state, gpointer data)
 static void
 string_changed(GtkEntry* widget, gpointer data)
 {
-  ControlID*  control = (ControlID*)data;
-  const char* string  = gtk_entry_get_text(widget);
+  const ControlID* control = (const ControlID*)data;
+  const char*      string  = gtk_entry_get_text(widget);
 
   set_control(control, strlen(string) + 1, control->forge->String, string);
 }
@@ -910,8 +912,8 @@ string_changed(GtkEntry* widget, gpointer data)
 static void
 file_changed(GtkFileChooserButton* widget, gpointer data)
 {
-  ControlID*  control = (ControlID*)data;
-  const char* filename =
+  const ControlID* control = (const ControlID*)data;
+  const char*      filename =
     gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
 
   set_control(control, strlen(filename) + 1, s_jalv->forge.Path, filename);
@@ -1170,8 +1172,8 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
   g_array_sort_with_data(controls, control_group_cmp, jalv);
 
   // Add controls in group order
-  LilvNode* last_group = NULL;
-  int       n_rows     = 0;
+  const LilvNode* last_group = NULL;
+  int             n_rows     = 0;
   for (size_t i = 0; i < controls->len; ++i) {
     ControlID*  record     = g_array_index(controls, ControlID*, i);
     Controller* controller = NULL;
@@ -1307,13 +1309,13 @@ build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
 }
 
 bool
-jalv_frontend_discover(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_discover(const Jalv* ZIX_UNUSED(jalv))
 {
   return TRUE;
 }
 
 float
-jalv_frontend_refresh_rate(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_refresh_rate(const Jalv* ZIX_UNUSED(jalv))
 {
   GdkDisplay* const display = gdk_display_get_default();
   GdkMonitor* const monitor = gdk_display_get_primary_monitor(display);
@@ -1324,7 +1326,7 @@ jalv_frontend_refresh_rate(Jalv* ZIX_UNUSED(jalv))
 }
 
 float
-jalv_frontend_scale_factor(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_scale_factor(const Jalv* ZIX_UNUSED(jalv))
 {
   GdkDisplay* const display = gdk_display_get_default();
   GdkMonitor* const monitor = gdk_display_get_primary_monitor(display);
@@ -1536,8 +1538,9 @@ jalv_frontend_open(Jalv* jalv)
 }
 
 int
-jalv_frontend_close(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_close(Jalv* jalv)
 {
+  (void)jalv;
   gtk_main_quit();
   s_jalv = NULL;
   return 0;

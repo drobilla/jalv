@@ -51,7 +51,7 @@ char*
 jalv_make_path(LV2_State_Make_Path_Handle handle, const char* path);
 
 void
-jalv_apply_state(Jalv* jalv, LilvState* state);
+jalv_apply_state(Jalv* jalv, const LilvState* state);
 
 char*
 atom_to_turtle(LV2_URID_Unmap* unmap,

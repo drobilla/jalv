@@ -39,7 +39,7 @@ typedef struct {
 } JalvLog;
 
 void
-jalv_print_control(Jalv* jalv, const struct Port* port, float value);
+jalv_print_control(const Jalv* jalv, const struct Port* port, float value);
 
 char*
 jalv_strdup(const char* str);
