@@ -778,9 +778,9 @@ jalv_update(Jalv* jalv)
 static bool
 jalv_apply_control_arg(Jalv* jalv, const char* s)
 {
-  char  sym[256];
-  float val = 0.0f;
-  if (sscanf(s, "%[^=]=%f", sym, &val) != 2) {
+  char  sym[256] = {'\0'};
+  float val      = 0.0f;
+  if (sscanf(s, "%240[^=]=%f", sym, &val) != 2) {
     jalv_log(JALV_LOG_WARNING, "Ignoring invalid value `%s'\n", s);
     return false;
   }

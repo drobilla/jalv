@@ -2,7 +2,6 @@ constParameterCallback
 constParameterPointer
 constVariablePointer
 cstyleCast
-invalidscanf
 knownConditionTrueFalse
 normalCheckLevelMaxBranches
 unusedStructMember
