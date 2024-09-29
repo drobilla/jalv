@@ -475,20 +475,27 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 int
 jack_initialize(jack_client_t* const client, const char* const load_init)
 {
+#ifndef E2BIG
+#  define E2BIG 7
+#endif
+#ifndef ENOMEM
+#  define ENOMEM 12
+#endif
+
   const size_t args_len = strlen(load_init);
   if (args_len > JACK_LOAD_INIT_LIMIT) {
     jalv_log(JALV_LOG_ERR, "Too many arguments given\n");
-    return -1;
+    return E2BIG;
   }
 
   Jalv* const jalv = (Jalv*)calloc(1, sizeof(Jalv));
   if (!jalv) {
-    return -1;
+    return ENOMEM;
   }
 
   if (!(jalv->backend = (JalvBackend*)calloc(1, sizeof(JalvBackend)))) {
     free(jalv);
-    return -1;
+    return ENOMEM;
   }
 
   jalv->backend->client             = client;
@@ -522,6 +529,9 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
   free(argv);
   free(cmd);
   return err;
+
+#undef ENOMEM
+#undef E2BIG
 }
 
 void
