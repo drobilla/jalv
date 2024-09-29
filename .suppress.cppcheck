@@ -4,6 +4,5 @@ constVariablePointer
 cstyleCast
 invalidscanf
 knownConditionTrueFalse
-memleakOnRealloc
 normalCheckLevelMaxBranches
 unusedStructMember

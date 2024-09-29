@@ -511,17 +511,23 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
   int    argc = 0;
   char** argv = NULL;
   char*  tok  = cmd;
-  for (size_t i = 0; i <= cmd_len; ++i) {
+  int    err  = 0;
+  for (size_t i = 0; !err && i <= cmd_len; ++i) {
     if (isspace(cmd[i]) || !cmd[i]) {
-      argv           = (char**)realloc(argv, sizeof(char*) * ++argc);
+      char** const new_argv = (char**)realloc(argv, sizeof(char*) * ++argc);
+      if (!new_argv) {
+        err = ENOMEM;
+        break;
+      }
+
+      argv           = new_argv;
       cmd[i]         = '\0';
       argv[argc - 1] = tok;
       tok            = cmd + i + 1;
     }
   }
 
-  const int err = jalv_open(jalv, &argc, &argv);
-  if (err) {
+  if (err || (err = jalv_open(jalv, &argc, &argv))) {
     jalv_backend_close(jalv);
     free(jalv);
   }
