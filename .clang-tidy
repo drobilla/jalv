@@ -7,7 +7,6 @@ Checks: >
   -*-narrowing-conversions,
   -altera-*,
   -bugprone-assignment-in-if-condition,
-  -bugprone-branch-clone,
   -bugprone-casting-through-void,
   -bugprone-easily-swappable-parameters,
   -bugprone-multi-level-implicit-pointer-conversion,

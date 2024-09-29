@@ -153,16 +153,10 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   // Prepare port buffers
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
     struct Port* port = &jalv->ports[p];
-    if (port->type == TYPE_AUDIO && port->sys_port) {
+    if (port->sys_port && (port->type == TYPE_AUDIO || port->type == TYPE_CV)) {
       // Connect plugin port directly to Jack port buffer
       lilv_instance_connect_port(
         jalv->instance, p, jack_port_get_buffer(port->sys_port, nframes));
-#if USE_JACK_METADATA
-    } else if (port->type == TYPE_CV && port->sys_port) {
-      // Connect plugin port directly to Jack port buffer
-      lilv_instance_connect_port(
-        jalv->instance, p, jack_port_get_buffer(port->sys_port, nframes));
-#endif
     } else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
       lv2_evbuf_reset(port->evbuf, true);
 
