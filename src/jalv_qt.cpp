@@ -197,7 +197,7 @@ FlowLayout::sizeHint() const
 QSize
 FlowLayout::minimumSize() const
 {
-  QSize        size = {};
+  QSize size = {};
   for (QLayoutItem* const item : itemList) {
     size = size.expandedTo(item->minimumSize());
   }

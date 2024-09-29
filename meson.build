@@ -275,17 +275,17 @@ endif
 # Programs #
 ############
 
-sources = (
-  backend_sources + files(
-    'src/control.c',
-    'src/jalv.c',
-    'src/log.c',
-    'src/lv2_evbuf.c',
-    'src/state.c',
-    'src/symap.c',
-    'src/worker.c',
-  )
+common_sources = files(
+  'src/control.c',
+  'src/jalv.c',
+  'src/log.c',
+  'src/lv2_evbuf.c',
+  'src/state.c',
+  'src/symap.c',
+  'src/worker.c',
 )
+
+sources = backend_sources + common_sources
 
 common_dependencies = [
   backend_dep,
