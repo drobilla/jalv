@@ -751,8 +751,12 @@ jalv_update(Jalv* jalv)
     zix_ring_read(jalv->plugin_to_ui, &ev, sizeof(ev));
 
     // Resize read buffer if necessary
-    jalv->ui_event_buf = realloc(jalv->ui_event_buf, ev.size);
-    void* const buf    = jalv->ui_event_buf;
+    void* const buf = realloc(jalv->ui_event_buf, ev.size);
+    if (!buf) {
+      return 12;
+    }
+
+    jalv->ui_event_buf = buf;
 
     // Read event body
     zix_ring_read(jalv->plugin_to_ui, buf, ev.size);

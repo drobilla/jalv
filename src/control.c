@@ -170,10 +170,13 @@ new_property_control(LilvWorld* const       world,
 void
 add_control(Controls* controls, ControlID* control)
 {
-  controls->controls = (ControlID**)realloc(
+  ControlID** const new_controls = (ControlID**)realloc(
     controls->controls, (controls->n_controls + 1) * sizeof(ControlID*));
 
-  controls->controls[controls->n_controls++] = control;
+  if (new_controls) {
+    controls->controls                         = new_controls;
+    controls->controls[controls->n_controls++] = control;
+  }
 }
 
 ControlID*

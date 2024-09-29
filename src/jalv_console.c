@@ -128,10 +128,17 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
         fprintf(stderr, "Missing argument for -c\n");
         return 1;
       }
-      opts->controls =
-        (char**)realloc(opts->controls, (++n_controls + 1) * sizeof(char*));
-      opts->controls[n_controls - 1] = (*argv)[a];
-      opts->controls[n_controls]     = NULL;
+
+      char** new_controls =
+        (char**)realloc(opts->controls, (n_controls + 2) * sizeof(char*));
+      if (!new_controls) {
+        fprintf(stderr, "Out of memory\n");
+        return 12;
+      }
+
+      opts->controls               = new_controls;
+      opts->controls[n_controls++] = (*argv)[a];
+      opts->controls[n_controls]   = NULL;
     } else if ((*argv)[a][1] == 'i') {
       opts->non_interactive = true;
     } else if ((*argv)[a][1] == 'd') {
