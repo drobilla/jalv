@@ -21,14 +21,12 @@ if is_variable('cc')
         '-Wno-cast-qual',
         '-Wno-declaration-after-statement',
         '-Wno-disabled-macro-expansion',
-        '-Wno-documentation-unknown-command', # MacOS
         '-Wno-double-promotion',
         '-Wno-float-conversion',
         '-Wno-float-equal',
         '-Wno-implicit-float-conversion',
         '-Wno-missing-noreturn',
         '-Wno-padded',
-        '-Wno-reserved-id-macro', # MacOS
         '-Wno-shorten-64-to-32',
         '-Wno-sign-conversion',
         '-Wno-switch-default',
@@ -38,6 +36,13 @@ if is_variable('cc')
       if not meson.is_cross_build()
         c_suppressions += [
           '-Wno-poison-system-directories',
+        ]
+      endif
+
+      if host_machine.system() == 'darwin'
+        c_suppressions += [
+          '-Wno-documentation-unknown-command',
+          '-Wno-reserved-id-macro',
         ]
       endif
     endif
