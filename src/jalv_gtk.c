@@ -305,10 +305,10 @@ typedef struct {
 } PresetMenu;
 
 static PresetMenu*
-pset_menu_new(const char* label)
+pset_menu_new(char* const label)
 {
   PresetMenu* menu = (PresetMenu*)malloc(sizeof(PresetMenu));
-  menu->label      = g_strdup(label);
+  menu->label      = label;
   menu->item       = GTK_MENU_ITEM(gtk_menu_item_new_with_label(menu->label));
   menu->menu       = GTK_MENU(gtk_menu_new());
   menu->banks      = NULL;
@@ -338,22 +338,35 @@ menu_cmp(gconstpointer a, gconstpointer b, gpointer ZIX_UNUSED(data))
   return strcmp(((const PresetMenu*)a)->label, ((const PresetMenu*)b)->label);
 }
 
+static char*
+get_label_string(Jalv* const jalv, const LilvNode* const node)
+{
+  LilvNode* const label_node =
+    lilv_world_get(jalv->world, node, jalv->nodes.rdfs_label, NULL);
+
+  if (!label_node) {
+    return g_strdup(lilv_node_as_string(node));
+  }
+
+  char* const label = g_strdup(lilv_node_as_string(label_node));
+  lilv_node_free(label_node);
+  return label;
+}
+
 static PresetMenu*
 get_bank_menu(Jalv* jalv, PresetMenu* menu, const LilvNode* bank)
 {
-  LilvNode* label =
-    lilv_world_get(jalv->world, bank, jalv->nodes.rdfs_label, NULL);
-
-  const char*    uri = lilv_node_as_string(bank);
-  const char*    str = label ? lilv_node_as_string(label) : uri;
-  PresetMenu     key = {NULL, (char*)str, NULL, NULL};
-  GSequenceIter* i   = g_sequence_lookup(menu->banks, &key, menu_cmp, NULL);
+  char* const    label = get_label_string(jalv, bank);
+  PresetMenu     key   = {NULL, label, NULL, NULL};
+  GSequenceIter* i     = g_sequence_lookup(menu->banks, &key, menu_cmp, NULL);
   if (!i) {
-    PresetMenu* bank_menu = pset_menu_new(str);
+    PresetMenu* const bank_menu = pset_menu_new(label);
     gtk_menu_item_set_submenu(bank_menu->item, GTK_WIDGET(bank_menu->menu));
     g_sequence_insert_sorted(menu->banks, bank_menu, menu_cmp, NULL);
     return bank_menu;
   }
+
+  g_free(label);
   return (PresetMenu*)g_sequence_get(i);
 }
 
@@ -1319,7 +1332,7 @@ static void
 on_row_activated(GtkTreeView* const       tree_view,
                  GtkTreePath* const       path,
                  GtkTreeViewColumn* const column,
-                 const void* const        user_data)
+                 void* const              user_data)
 {
   (void)tree_view;
   (void)path;

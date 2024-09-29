@@ -90,7 +90,6 @@ if is_variable('cc')
     if warning_level == 'everything'
       c_suppressions += [
         '/wd4061', # enumerator in switch is not explicitly handled
-        '/wd4090', # different const qualifiers
         '/wd4191', # unsafe function conversion
         '/wd4200', # zero-sized array in struct/union
         '/wd4242', # possible loss of data from float conversion
