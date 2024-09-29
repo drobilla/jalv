@@ -51,12 +51,6 @@ if is_variable('cc')
       ]
     endif
 
-    if warning_level in ['everything', '3', '2']
-      c_suppressions += [
-        '-Wno-unused-parameter',
-      ]
-    endif
-
     if host_machine.system() == 'darwin'
       c_suppressions += [
         '-Wno-documentation', # JACK
@@ -92,18 +86,11 @@ if is_variable('cc')
       ]
     endif
 
-    if warning_level in ['everything', '3', '2']
-      c_suppressions += [
-        '-Wno-unused-parameter',
-      ]
-    endif
-
   elif cc.get_id() == 'msvc'
     if warning_level == 'everything'
       c_suppressions += [
         '/wd4061', # enumerator in switch is not explicitly handled
         '/wd4090', # different const qualifiers
-        '/wd4100', # unreferenced formal parameter
         '/wd4191', # unsafe function conversion
         '/wd4200', # zero-sized array in struct/union
         '/wd4242', # possible loss of data from float conversion

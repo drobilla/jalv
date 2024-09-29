@@ -466,6 +466,10 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 
   lilv_free(binary_path);
   lilv_free(bundle_path);
+#else
+  (void)jalv;
+  (void)native_ui_type;
+  (void)parent;
 #endif
 }
 
