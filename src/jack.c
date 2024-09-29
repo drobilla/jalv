@@ -129,6 +129,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   jalv->rolling  = rolling;
 
   switch (jalv->play_state) {
+  case JALV_RUNNING:
+    break;
   case JALV_PAUSE_REQUESTED:
     jalv->play_state = JALV_PAUSED;
     zix_sem_post(&jalv->paused);
@@ -146,8 +148,6 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       }
     }
     return 0;
-  default:
-    break;
   }
 
   // Prepare port buffers
@@ -415,6 +415,8 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 
   // Connect the port based on its type
   switch (port->type) {
+  case TYPE_UNKNOWN:
+    break;
   case TYPE_CONTROL:
     lilv_instance_connect_port(jalv->instance, port_index, &port->control);
     break;
@@ -444,8 +446,6 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
                                           jack_flags,
                                           0);
     }
-    break;
-  default:
     break;
   }
 

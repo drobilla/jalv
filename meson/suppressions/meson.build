@@ -32,7 +32,6 @@ if is_variable('cc')
         '-Wno-shorten-64-to-32',
         '-Wno-sign-conversion',
         '-Wno-switch-default',
-        '-Wno-switch-enum',
         '-Wno-unsafe-buffer-usage',
       ]
 
@@ -76,7 +75,6 @@ if is_variable('cc')
         '-Wno-suggest-attribute=const',
         '-Wno-suggest-attribute=pure',
         '-Wno-switch-default',
-        '-Wno-switch-enum',
         '-Wno-unsuffixed-float-constants',
         '-Wno-unused-const-variable',
       ]
@@ -85,7 +83,6 @@ if is_variable('cc')
   elif cc.get_id() == 'msvc'
     if warning_level == 'everything'
       c_suppressions += [
-        '/wd4061', # enumerator in switch is not explicitly handled
         '/wd4191', # unsafe function conversion
         '/wd4200', # zero-sized array in struct/union
         '/wd4242', # possible loss of data from float conversion
