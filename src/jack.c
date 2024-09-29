@@ -94,8 +94,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     (rolling != jalv->rolling || pos.frame != jalv->position ||
      (has_bbt && pos.beats_per_minute != jalv->bpm));
 
-  uint8_t   pos_buf[256];
-  LV2_Atom* lv2_pos = (LV2_Atom*)pos_buf;
+  uint8_t   pos_buf[256] = {0};
+  LV2_Atom* lv2_pos      = (LV2_Atom*)pos_buf;
   if (xport_changed) {
     // Build an LV2 position object to report change to plugin
     lv2_atom_forge_set_buffer(&jalv->forge, pos_buf, sizeof(pos_buf));

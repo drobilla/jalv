@@ -6,5 +6,4 @@ invalidscanf
 knownConditionTrueFalse
 memleakOnRealloc
 normalCheckLevelMaxBranches
-uninitvar
 unusedStructMember
