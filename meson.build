@@ -16,6 +16,7 @@ project(
 )
 
 jalv_src_root = meson.current_source_dir()
+jalv_build_root = meson.current_build_dir()
 major_version = meson.project_version().split('.')[0]
 version_suffix = '@0@-@1@'.format(meson.project_name(), major_version)
 
