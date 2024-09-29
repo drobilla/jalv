@@ -1108,9 +1108,11 @@ make_controller(ControlID* control, float value)
 static GtkWidget*
 new_label(const char* text, bool title, GtkAlign xalign, GtkAlign yalign)
 {
-  GtkWidget*  label = gtk_label_new(NULL);
-  const char* fmt   = title ? "<span font_weight=\"bold\">%s</span>" : "%s:";
-  gchar*      str   = g_markup_printf_escaped(fmt, text);
+  GtkWidget* const label = gtk_label_new(NULL);
+  gchar* const     str =
+    title
+          ? g_markup_printf_escaped("<span font_weight=\"bold\">%s</span>", text)
+          : g_markup_printf_escaped("%s:", text);
 
   gtk_widget_set_halign(label, xalign);
   gtk_widget_set_valign(label, yalign);
