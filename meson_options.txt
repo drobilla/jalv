@@ -4,16 +4,16 @@
 option('checks', type: 'feature', value: 'enabled', yield: true,
        description: 'Check for platform-specific features')
 
-option('cxx', type: 'feature', value: 'auto', yield: true,
+option('cxx', type: 'feature', yield: true,
        description: 'Build C++ programs')
 
-option('gtk3', type: 'feature', value: 'auto', yield: true,
+option('gtk3', type: 'feature', yield: true,
        description: 'Build Gtk3 GUI')
 
-option('portaudio', type: 'feature', value: 'auto', yield: true,
+option('portaudio', type: 'feature', yield: true,
        description: 'Build PortAudio driver')
 
-option('jack', type: 'feature', value: 'auto', yield: true,
+option('jack', type: 'feature', yield: true,
        description: 'Build JACK driver')
 
 option('lint', type: 'boolean', value: false, yield: true,
@@ -22,26 +22,26 @@ option('lint', type: 'boolean', value: false, yield: true,
 option('man', type: 'feature', value: 'enabled', yield: true,
        description: 'Install man pages')
 
-option('posix', type: 'feature', value: 'auto', yield: true,
+option('posix', type: 'feature', yield: true,
        description: 'Use POSIX system facilities')
 
-option('qt5', type: 'feature', value: 'auto', yield: true,
+option('qt5', type: 'feature', yield: true,
        description: 'Build Qt5 GUI')
 
 option('qt5_moc', type: 'string', yield: true,
        description: 'Path to Qt5 moc executable')
 
-option('qt6', type: 'feature', value: 'auto', yield: true,
+option('qt6', type: 'feature', yield: true,
        description: 'Build Qt6 GUI')
 
 option('qt6_moc', type: 'string', yield: true,
        description: 'Path to Qt6 moc executable')
 
-option('suil', type: 'feature', value: 'auto', yield: true,
+option('suil', type: 'feature', yield: true,
        description: 'Use suil to load plugin UIs')
 
 option('title', type: 'string', value: 'Jalv',
        description: 'Project title')
 
-option('tests', type: 'feature', value: 'auto', yield: true,
+option('tests', type: 'feature', yield: true,
        description: 'Build tests')
