@@ -98,7 +98,7 @@ test(
   executable(
     'test_symap',
     files('../src/symap.c'),
-    c_args: ['-DSYMAP_STANDALONE'],
+    c_args: c_suppressions + ['-DSYMAP_STANDALONE'],
     dependencies: [zix_dep],
   ),
 )
