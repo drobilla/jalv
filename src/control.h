@@ -88,9 +88,11 @@ new_property_control(LilvWorld*       world,
                      LV2_URID_Map*    map,
                      LV2_Atom_Forge*  forge);
 
+/// Add a control to the given controls set, reallocating as necessary
 void
 add_control(Controls* controls, ControlID* control);
 
+/// Return a pointer to the control for the given property, or null
 ControlID*
 get_property_control(const Controls* controls, LV2_URID property);
 

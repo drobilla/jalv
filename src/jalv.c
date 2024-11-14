@@ -253,7 +253,6 @@ jalv_create_ports(Jalv* jalv)
   free(default_values);
 }
 
-/// Allocate port buffers (only necessary for MIDI)
 void
 jalv_allocate_port_buffers(Jalv* jalv)
 {

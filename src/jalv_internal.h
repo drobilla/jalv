@@ -41,6 +41,7 @@
 
 JALV_BEGIN_DECLS
 
+/// LV2 features and associated data to be passed to plugins
 typedef struct {
   LV2_Feature                map_feature;
   LV2_Feature                unmap_feature;
@@ -60,6 +61,7 @@ typedef struct {
   LV2_Extension_Data_Feature ext_data;
 } JalvFeatures;
 
+/// Internal application state
 struct JalvImpl {
   JalvOptions       opts;         ///< Command-line options
   JalvURIDs         urids;        ///< URIDs
@@ -118,18 +120,23 @@ struct JalvImpl {
   const LV2_Feature** feature_list;
 };
 
+/// Load the plugin and set up the application
 int
 jalv_open(Jalv* jalv, int* argc, char*** argv);
 
+/// Shut down the application (counterpart to jalv_open)
 int
 jalv_close(Jalv* jalv);
 
+/// Allocate appropriately-sized port buffers and connect the plugin to them
 void
 jalv_allocate_port_buffers(Jalv* jalv);
 
+/// Find a port by symbol
 struct Port*
 jalv_port_by_symbol(Jalv* jalv, const char* sym);
 
+/// Set a control to the given value
 void
 jalv_set_control(Jalv*            jalv,
                  const ControlID* control,
@@ -137,15 +144,19 @@ jalv_set_control(Jalv*            jalv,
                  LV2_URID         type,
                  const void*      body);
 
+/// Request and/or set initial control values to initialize the UI
 void
 jalv_init_ui(Jalv* jalv);
 
+/// Instantiate the UI instance using suil if available
 void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent);
 
+/// Return true if the plugin UI isn't declared as non-resizable
 bool
 jalv_ui_is_resizable(Jalv* jalv);
 
+/// Called when a port event (control change or other message) is sent to the UI
 void
 jalv_ui_port_event(Jalv*       jalv,
                    uint32_t    port_index,
@@ -192,6 +203,7 @@ jalv_write_control(const Jalv* jalv,
                    uint32_t    port_index,
                    float       value);
 
+/// Dump an atom to stdout in a "developer-readable" format (Turtle)
 void
 jalv_dump_atom(Jalv*           jalv,
                FILE*           stream,
@@ -199,9 +211,11 @@ jalv_dump_atom(Jalv*           jalv,
                const LV2_Atom* atom,
                int             color);
 
+/// Run plugin instance for one buffer
 bool
 jalv_run(Jalv* jalv, uint32_t nframes);
 
+/// Periodically update user interface
 int
 jalv_update(Jalv* jalv);
 
