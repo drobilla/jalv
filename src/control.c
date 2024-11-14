@@ -15,7 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-int
+/// Order scale points by value
+static int
 scale_point_cmp(const ScalePoint* a, const ScalePoint* b)
 {
   if (a->value < b->value) {

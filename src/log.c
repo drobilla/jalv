@@ -53,7 +53,8 @@ jalv_strjoin(const char* const a, const char* const b)
   return out;
 }
 
-int
+JALV_LOG_FUNC(2, 0)
+static int
 jalv_vlog(const JalvLogLevel level, const char* const fmt, va_list ap)
 {
   bool fancy = false;

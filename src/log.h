@@ -47,10 +47,6 @@ jalv_strdup(const char* str);
 char*
 jalv_strjoin(const char* a, const char* b);
 
-JALV_LOG_FUNC(2, 0)
-int
-jalv_vlog(JalvLogLevel level, const char* fmt, va_list ap);
-
 JALV_LOG_FUNC(2, 3)
 int
 jalv_log(JalvLogLevel level, const char* fmt, ...);

@@ -125,19 +125,10 @@ int
 jalv_close(Jalv* jalv);
 
 void
-jalv_create_ports(Jalv* jalv);
-
-void
 jalv_allocate_port_buffers(Jalv* jalv);
 
 struct Port*
 jalv_port_by_symbol(Jalv* jalv, const char* sym);
-
-void
-jalv_create_controls(Jalv* jalv, bool writable);
-
-ControlID*
-jalv_control_by_symbol(Jalv* jalv, const char* sym);
 
 void
 jalv_set_control(Jalv*            jalv,
@@ -154,16 +145,6 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent);
 
 bool
 jalv_ui_is_resizable(Jalv* jalv);
-
-void
-jalv_send_to_plugin(void*       jalv_handle,
-                    uint32_t    port_index,
-                    uint32_t    buffer_size,
-                    uint32_t    protocol,
-                    const void* buffer);
-
-void
-jalv_apply_ui_events(Jalv* jalv, uint32_t nframes);
 
 void
 jalv_ui_port_event(Jalv*       jalv,

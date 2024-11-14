@@ -224,7 +224,7 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
 }
 
 /// Create port structures from data (via create_port()) for all ports
-void
+static void
 jalv_create_ports(Jalv* jalv)
 {
   jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
@@ -302,7 +302,7 @@ jalv_port_by_symbol(Jalv* jalv, const char* sym)
   return NULL;
 }
 
-ControlID*
+static ControlID*
 jalv_control_by_symbol(Jalv* jalv, const char* sym)
 {
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
@@ -313,7 +313,7 @@ jalv_control_by_symbol(Jalv* jalv, const char* sym)
   return NULL;
 }
 
-void
+static void
 jalv_create_controls(Jalv* jalv, bool writable)
 {
   const LilvPlugin* plugin         = jalv->plugin;
@@ -370,6 +370,13 @@ jalv_create_controls(Jalv* jalv, bool writable)
   lilv_node_free(patch_readable);
   lilv_node_free(patch_writable);
 }
+
+static void
+jalv_send_to_plugin(void*       jalv_handle,
+                    uint32_t    port_index,
+                    uint32_t    buffer_size,
+                    uint32_t    protocol,
+                    const void* buffer);
 
 void
 jalv_set_control(Jalv*            jalv,
@@ -528,7 +535,7 @@ jalv_send_event_to_plugin(Jalv* const jalv,
   }
 }
 
-void
+static void
 jalv_send_to_plugin(void* const jalv_handle,
                     uint32_t    port_index,
                     uint32_t    buffer_size,
@@ -554,7 +561,7 @@ jalv_send_to_plugin(void* const jalv_handle,
   }
 }
 
-void
+static void
 jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
 {
   if (!jalv->has_ui) {

@@ -70,10 +70,6 @@ typedef struct {
   // Followed immediately by size bytes of data
 } ControlChange;
 
-/// Order scale points by value
-int
-scale_point_cmp(const ScalePoint* a, const ScalePoint* b);
-
 /// Create a new ID for a control port
 ControlID*
 new_port_control(LilvWorld*        world,
