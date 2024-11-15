@@ -60,15 +60,6 @@
 #    endif
 #  endif
 
-// POSIX.1-2001: mlock()
-#  ifndef HAVE_MLOCK
-#    if defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L
-#      define HAVE_MLOCK 1
-#    else
-#      define HAVE_MLOCK 0
-#    endif
-#  endif
-
 // POSIX.1-2001: posix_memalign()
 #  ifndef HAVE_POSIX_MEMALIGN
 #    if defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L
@@ -140,12 +131,6 @@
 #  define USE_ISATTY 1
 #else
 #  define USE_ISATTY 0
-#endif
-
-#if HAVE_MLOCK
-#  define USE_MLOCK 1
-#else
-#  define USE_MLOCK 0
 #endif
 
 #if HAVE_POSIX_MEMALIGN

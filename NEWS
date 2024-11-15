@@ -12,9 +12,10 @@ jalv (1.6.9) unstable; urgency=medium
   * Replace use of deprecated Gtk interfaces
   * Switch to external zix dependency
   * Use Gtk switches instead of checkboxes for toggle controls
+  * Use fewer platform-specific APIs
   * Use portable zix filesystem API
 
- -- David Robillard <d@drobilla.net>  Thu, 14 Nov 2024 18:16:02 +0000
+ -- David Robillard <d@drobilla.net>  Thu, 14 Nov 2024 18:26:43 +0000
 
 jalv (1.6.8) stable; urgency=medium
 

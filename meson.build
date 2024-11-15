@@ -334,18 +334,9 @@ no_posix = get_option('posix').disabled() or host_machine.system() == 'windows'
 if no_posix
   platform_defines += ['-DJALV_NO_POSIX']
 elif host_machine.system() == 'darwin'
-  platform_defines += [
-    '-D_DARWIN_C_SOURCE',
-    '-D_POSIX_C_SOURCE=200809L',
-    '-D_XOPEN_SOURCE=600',
-  ]
+  platform_defines += ['-D_POSIX_C_SOURCE=200809L']
 else
-  platform_defines += [
-    '-D_BSD_SOURCE',
-    '-D_DEFAULT_SOURCE',
-    '-D_POSIX_C_SOURCE=200809L',
-    '-D_XOPEN_SOURCE=600',
-  ]
+  platform_defines += ['-D_POSIX_C_SOURCE=200809L']
 endif
 
 # Build platform-specific configuration arguments
@@ -359,7 +350,6 @@ elif get_option('checks').enabled()
   if no_posix
     platform_defines += ['-DHAVE_FILENO=0']
     platform_defines += ['-DHAVE_ISATTY=0']
-    platform_defines += ['-DHAVE_MLOCK=0']
     platform_defines += ['-DHAVE_POSIX_MEMALIGN=0']
     platform_defines += ['-DHAVE_SIGACTION=0']
   else
@@ -368,9 +358,6 @@ int main(void) { return fileno(stdin); }'''
 
     isatty_code = '''#include <unistd.h>
 int main(void) { return isatty(0); }'''
-
-    mlock_code = '''#include <sys/mman.h>
-int main(void) { return mlock(0, 0); }'''
 
     posix_memalign_code = '''#include <stdlib.h>
 int main(void) { void* mem; posix_memalign(&mem, 8, 8); }'''
@@ -384,10 +371,6 @@ int main(void) { return sigaction(SIGINT, 0, 0); }'''
 
     platform_defines += '-DHAVE_ISATTY=@0@'.format(
       cc.compiles(isatty_code, args: platform_defines, name: 'isatty').to_int(),
-    )
-
-    platform_defines += '-DHAVE_MLOCK=@0@'.format(
-      cc.compiles(mlock_code, args: platform_defines, name: 'mlock').to_int(),
     )
 
     platform_defines += '-DHAVE_POSIX_MEMALIGN=@0@'.format(
