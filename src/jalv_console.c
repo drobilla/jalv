@@ -132,7 +132,7 @@ jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
       if (++a == argc) {
         return print_arg_error(cmd, "option requires an argument -- 'b'");
       }
-      opts->buffer_size = atoi(argv[a]);
+      opts->ring_size = atoi(argv[a]);
     } else if (argv[a][1] == 'c') {
       if (++a == argc) {
         return print_arg_error(cmd, "option requires an argument -- 'c'");

@@ -237,8 +237,8 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
     lilv_port_get(jalv->plugin, port->lilv_port, jalv->nodes.rsz_minimumSize);
   if (min_size && lilv_node_is_int(min_size)) {
     port->buf_size = lilv_node_as_int(min_size);
-    jalv->opts.buffer_size =
-      MAX(jalv->opts.buffer_size, port->buf_size * N_BUFFER_CYCLES);
+    jalv->opts.ring_size =
+      MAX(jalv->opts.ring_size, port->buf_size * N_BUFFER_CYCLES);
   }
   lilv_node_free(min_size);
 
@@ -1069,9 +1069,9 @@ jalv_init_display(Jalv* const jalv)
   }
 
   // The UI can only go so fast, clamp to reasonable limits
-  jalv->ui_update_hz     = MIN(60, jalv->ui_update_hz);
-  jalv->opts.buffer_size = MAX(4096, jalv->opts.buffer_size);
-  jalv_log(JALV_LOG_INFO, "Comm buffers: %u bytes\n", jalv->opts.buffer_size);
+  jalv->ui_update_hz   = MIN(60, jalv->ui_update_hz);
+  jalv->opts.ring_size = MAX(4096, jalv->opts.ring_size);
+  jalv_log(JALV_LOG_INFO, "Comm buffers: %u bytes\n", jalv->opts.ring_size);
   jalv_log(JALV_LOG_INFO, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
   jalv_log(JALV_LOG_INFO, "Scale factor: %.01f\n", jalv->ui_scale_factor);
 }
@@ -1252,21 +1252,19 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_log(JALV_LOG_INFO, "Block length: %u frames\n", jalv->block_length);
   jalv_log(JALV_LOG_INFO, "MIDI buffers: %zu bytes\n", jalv->midi_buf_size);
 
-  if (jalv->opts.buffer_size == 0) {
+  if (!jalv->opts.ring_size) {
     /* The UI ring is fed by plugin output ports (usually one), and the UI
        updates roughly once per cycle.  The ring size is a few times the size
-       of the MIDI output to give the UI a chance to keep up.  The UI should be
-       able to keep up with 4 cycles, and tests show this works for me, but
-       this value might need increasing to avoid overflows. */
-    jalv->opts.buffer_size = jalv->midi_buf_size * N_BUFFER_CYCLES;
+       of the MIDI output to give the UI a chance to keep up. */
+    jalv->opts.ring_size = jalv->midi_buf_size * N_BUFFER_CYCLES;
   }
 
   jalv_init_display(jalv);
   jalv_init_options(jalv);
 
   // Create Plugin <=> UI communication buffers
-  jalv->ui_to_plugin = zix_ring_new(NULL, jalv->opts.buffer_size);
-  jalv->plugin_to_ui = zix_ring_new(NULL, jalv->opts.buffer_size);
+  jalv->ui_to_plugin = zix_ring_new(NULL, jalv->opts.ring_size);
+  jalv->plugin_to_ui = zix_ring_new(NULL, jalv->opts.ring_size);
   zix_ring_mlock(jalv->ui_to_plugin);
   zix_ring_mlock(jalv->plugin_to_ui);
 

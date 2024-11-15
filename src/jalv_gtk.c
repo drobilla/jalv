@@ -99,7 +99,7 @@ jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
      'b',
      0,
      G_OPTION_ARG_INT,
-     &opts->buffer_size,
+     &opts->ring_size,
      "Buffer size for plugin <=> UI communication",
      "SIZE"},
     {"control",
