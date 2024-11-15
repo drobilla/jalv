@@ -210,6 +210,7 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
     die("Mandatory port has unknown data type");
   }
 
+  // Set buffer size
   LilvNode* min_size =
     lilv_port_get(jalv->plugin, port->lilv_port, jalv->nodes.rsz_minimumSize);
   if (min_size && lilv_node_is_int(min_size)) {
@@ -218,6 +219,13 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
       MAX(jalv->opts.buffer_size, port->buf_size * N_BUFFER_CYCLES);
   }
   lilv_node_free(min_size);
+
+  // Set reports_latency flag
+  if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
+      lilv_port_has_property(
+        jalv->plugin, port->lilv_port, jalv->nodes.lv2_reportsLatency)) {
+    port->reports_latency = true;
+  }
 }
 
 /// Create port structures from data (via create_port()) for all ports

@@ -202,8 +202,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
     struct Port* const port = &jalv->ports[p];
     if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
-        lilv_port_has_property(
-          jalv->plugin, port->lilv_port, jalv->nodes.lv2_reportsLatency)) {
+        port->reports_latency) {
       if (jalv->plugin_latency != port->control) {
         jalv->plugin_latency = port->control;
         jack_recompute_total_latencies(client);
