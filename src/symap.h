@@ -19,8 +19,7 @@
 typedef struct SymapImpl Symap;
 
 /// Create a new symbol map
-ZIX_MALLOC_FUNC
-Symap*
+ZIX_MALLOC_FUNC Symap*
 symap_new(void);
 
 /// Free a symbol map
@@ -28,8 +27,7 @@ void
 symap_free(Symap* map);
 
 /// Map a string to a symbol if it is already mapped, otherwise return 0
-ZIX_PURE_FUNC
-uint32_t
+ZIX_PURE_FUNC uint32_t
 symap_try_map(const Symap* map, const char* sym);
 
 /// Map a string to a symbol
@@ -37,8 +35,7 @@ uint32_t
 symap_map(Symap* map, const char* sym);
 
 /// Unmap a symbol back to a string if possible, otherwise return NULL
-ZIX_PURE_FUNC
-const char*
+ZIX_PURE_FUNC const char*
 symap_unmap(const Symap* map, uint32_t id);
 
 #endif // SYMAP_H

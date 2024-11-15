@@ -820,8 +820,7 @@ jalv_ui_port_event(Jalv*       jalv,
     } else if (obj->body.otype == jalv->urids.patch_Put) {
       const LV2_Atom_Object* body = NULL;
       if (!patch_put_get(jalv, obj, &body)) {
-        LV2_ATOM_OBJECT_FOREACH(body, prop)
-        {
+        LV2_ATOM_OBJECT_FOREACH (body, prop) {
           property_changed(jalv, prop->key, &prop->value);
         }
       }

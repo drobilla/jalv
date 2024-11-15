@@ -1,7 +1,10 @@
 ---
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
-AlignEscapedNewlinesLeft: true
+AlignEscapedNewlines: Left
+AttributeMacros:
+  - ZIX_MALLOC_FUNC
+  - ZIX_PURE_FUNC
 BasedOnStyle: Mozilla
 BraceWrapping:
   AfterNamespace: false
@@ -17,7 +20,12 @@ Cpp11BracedListStyle: true
 FixNamespaceComments: true
 ForEachMacros:
   - LILV_FOREACH
-  - foreach
+  - LV2_ATOM_OBJECT_BODY_FOREACH
+  - LV2_ATOM_OBJECT_FOREACH
+  - LV2_ATOM_SEQUENCE_BODY_FOREACH
+  - LV2_ATOM_SEQUENCE_FOREACH
+  - LV2_ATOM_TUPLE_BODY_FOREACH
+  - LV2_ATOM_TUPLE_FOREACH
 IndentCaseLabels: false
 IndentPPDirectives: AfterHash
 KeepEmptyLinesAtTheStartOfBlocks: false
