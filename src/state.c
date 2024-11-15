@@ -3,6 +3,7 @@
 
 #include "state.h"
 
+#include "comm.h"
 #include "jalv_internal.h"
 #include "log.h"
 #include "port.h"

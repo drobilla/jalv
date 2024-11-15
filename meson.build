@@ -414,6 +414,7 @@ endif
 ############
 
 common_sources = files(
+  'src/comm.c',
   'src/control.c',
   'src/jalv.c',
   'src/log.c',

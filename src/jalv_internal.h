@@ -17,7 +17,6 @@
 
 #include "zix/ring.h"
 #include "zix/sem.h"
-#include "zix/status.h"
 
 #include "lilv/lilv.h"
 #include "serd/serd.h"
@@ -156,41 +155,6 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent);
 /// Return true if the plugin UI isn't declared as non-resizable
 bool
 jalv_ui_is_resizable(Jalv* jalv);
-
-/**
-   Write a port event using the atom:eventTransfer protocol.
-
-   This is used to transfer atoms between the plugin and UI via sequence ports.
-
-   @param target Communication ring (jalv->plugin_to_ui or jalv->ui_to_plugin).
-   @param port_index Index of the port this change is for.
-   @param protocol Port protocol (0 for float control, or atom:eventTransfer).o
-   @param size Size of body in bytes.
-   @param type Atom type URID.
-   @param body Atom body.
-   @return 0 on success, non-zero on failure (overflow).
-*/
-ZixStatus
-jalv_write_event(ZixRing*    target,
-                 uint32_t    port_index,
-                 uint32_t    protocol,
-                 uint32_t    size,
-                 LV2_URID    type,
-                 const void* body);
-
-/**
-   Write a control port change using the default (0) protocol.
-
-   This is used to transfer control port value changes between the plugin and
-   UI.
-
-   @param target Communication ring (jalv->plugin_to_ui or jalv->ui_to_plugin).
-   @param port_index Index of the port this change is for.
-   @param value New control port value.
-   @return 0 on success, non-zero on failure (overflow).
-*/
-ZixStatus
-jalv_write_control(ZixRing* target, uint32_t port_index, float value);
 
 /// Dump an atom to stdout in a "developer-readable" format (Turtle)
 void

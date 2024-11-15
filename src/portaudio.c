@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: ISC
 
 #include "backend.h"
+#include "comm.h"
 #include "jalv_internal.h"
 #include "log.h"
 #include "lv2_evbuf.h"
