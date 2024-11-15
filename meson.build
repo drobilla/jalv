@@ -436,6 +436,7 @@ common_sources = files(
   'src/log.c',
   'src/lv2_evbuf.c',
   'src/state.c',
+  'src/string_utils.c',
   'src/symap.c',
   'src/worker.c',
 )

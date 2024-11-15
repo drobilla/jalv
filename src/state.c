@@ -6,6 +6,7 @@
 #include "jalv_internal.h"
 #include "log.h"
 #include "port.h"
+#include "string_utils.h"
 
 #include "lilv/lilv.h"
 #include "lv2/core/lv2.h"

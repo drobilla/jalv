@@ -4,6 +4,7 @@
 #include "control.h"
 
 #include "log.h"
+#include "string_utils.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
@@ -13,7 +14,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 
 /// Order scale points by value
 static int
@@ -89,7 +89,7 @@ new_port_control(LilvWorld* const        world,
         id->points[np].value =
           lilv_node_as_float(lilv_scale_point_get_value(p));
         id->points[np].label =
-          strdup(lilv_node_as_string(lilv_scale_point_get_label(p)));
+          jalv_strdup(lilv_node_as_string(lilv_scale_point_get_label(p)));
         ++np;
       }
       // TODO: Non-float scale points?

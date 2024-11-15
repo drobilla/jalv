@@ -18,8 +18,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 void
 jalv_print_control(const Jalv* const        jalv,
@@ -28,29 +26,6 @@ jalv_print_control(const Jalv* const        jalv,
 {
   const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
   jalv_log(JALV_LOG_INFO, "%s = %f\n", lilv_node_as_string(sym), value);
-}
-
-char*
-jalv_strdup(const char* const str)
-{
-  const size_t len  = strlen(str);
-  char*        copy = (char*)malloc(len + 1);
-  memcpy(copy, str, len + 1);
-  return copy;
-}
-
-char*
-jalv_strjoin(const char* const a, const char* const b)
-{
-  const size_t a_len = strlen(a);
-  const size_t b_len = strlen(b);
-  char* const  out   = (char*)malloc(a_len + b_len + 1);
-
-  memcpy(out, a, a_len);
-  memcpy(out + a_len, b, b_len);
-  out[a_len + b_len] = '\0';
-
-  return out;
 }
 
 JALV_LOG_FUNC(2, 0)

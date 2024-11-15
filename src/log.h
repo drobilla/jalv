@@ -42,14 +42,6 @@ typedef struct {
 void
 jalv_print_control(const Jalv* jalv, const struct Port* port, float value);
 
-/// Return a newly allocated copy of a string
-char*
-jalv_strdup(const char* str);
-
-/// Return a newly allocated concatenation of two strings
-char*
-jalv_strjoin(const char* a, const char* b);
-
 /// Print a log message to stderr with a GCC-like prefix and color
 JALV_LOG_FUNC(2, 3)
 int

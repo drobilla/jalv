@@ -11,6 +11,7 @@
 #include "nodes.h"
 #include "port.h"
 #include "state.h"
+#include "string_utils.h"
 #include "types.h"
 #include "urids.h"
 #include "worker.h"

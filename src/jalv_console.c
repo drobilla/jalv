@@ -9,6 +9,7 @@
 #include "options.h"
 #include "port.h"
 #include "state.h"
+#include "string_utils.h"
 #include "types.h"
 
 #include "lilv/lilv.h"
