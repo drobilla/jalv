@@ -121,8 +121,6 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       lv2_atom_forge_key(forge, jalv->urids.time_beatsPerMinute);
       lv2_atom_forge_float(forge, pos.beats_per_minute);
     }
-
-    jalv_dump_atom(jalv, stdout, "Position", lv2_pos, 32);
   }
 
   // Update transport state to expected values for next cycle
