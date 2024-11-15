@@ -495,47 +495,6 @@ jalv_ui_is_resizable(Jalv* jalv)
   return !fs_matches && !nrs_matches;
 }
 
-static ZixStatus
-jalv_send_control_to_plugin(Jalv* const jalv,
-                            uint32_t    port_index,
-                            uint32_t    buffer_size,
-                            const void* buffer)
-{
-  if (buffer_size != sizeof(float)) {
-    return ZIX_STATUS_BAD_ARG;
-  }
-
-  return jalv_write_control(
-    jalv->ui_to_plugin, port_index, *(const float*)buffer);
-}
-
-static ZixStatus
-jalv_send_event_to_plugin(Jalv* const jalv,
-                          uint32_t    port_index,
-                          uint32_t    buffer_size,
-                          const void* buffer)
-{
-  const LV2_Atom* const atom = (const LV2_Atom*)buffer;
-
-  if (buffer_size < sizeof(LV2_Atom)) {
-    jalv_log(JALV_LOG_ERR, "UI wrote impossible atom size\n");
-
-  } else if (sizeof(LV2_Atom) + atom->size != buffer_size) {
-    jalv_log(JALV_LOG_ERR, "UI wrote corrupt atom size\n");
-
-  } else {
-    jalv_dump_atom(jalv, stdout, "UI => Plugin", atom, 36);
-    return jalv_write_event(jalv->ui_to_plugin,
-                            port_index,
-                            jalv->urids.atom_eventTransfer,
-                            atom->size,
-                            atom->type,
-                            atom + 1U);
-  }
-
-  return ZIX_STATUS_SUCCESS;
-}
-
 static void
 jalv_send_to_plugin(void* const jalv_handle,
                     uint32_t    port_index,
@@ -550,10 +509,27 @@ jalv_send_to_plugin(void* const jalv_handle,
     jalv_log(JALV_LOG_ERR, "UI wrote to invalid port index %u\n", port_index);
 
   } else if (protocol == 0U) {
-    st = jalv_send_control_to_plugin(jalv, port_index, buffer_size, buffer);
+    if (buffer_size != sizeof(float)) {
+      st = ZIX_STATUS_BAD_ARG;
+    } else {
+      const float value = *(const float*)buffer;
+      st = jalv_write_control(jalv->ui_to_plugin, port_index, value);
+    }
 
   } else if (protocol == jalv->urids.atom_eventTransfer) {
-    st = jalv_send_event_to_plugin(jalv, port_index, buffer_size, buffer);
+    const LV2_Atom* const atom = (const LV2_Atom*)buffer;
+    if (buffer_size < sizeof(LV2_Atom) ||
+        (sizeof(LV2_Atom) + atom->size != buffer_size)) {
+      st = ZIX_STATUS_BAD_ARG;
+    } else {
+      jalv_dump_atom(jalv, stdout, "UI => Plugin", atom, 36);
+      st = jalv_write_event(jalv->ui_to_plugin,
+                            port_index,
+                            jalv->urids.atom_eventTransfer,
+                            atom->size,
+                            atom->type,
+                            atom + 1U);
+    }
 
   } else {
     jalv_log(JALV_LOG_ERR,
