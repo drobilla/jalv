@@ -24,9 +24,11 @@ typedef struct {
   LilvNode* lv2_connectionOptional;
   LilvNode* lv2_control;
   LilvNode* lv2_default;
+  LilvNode* lv2_designation;
   LilvNode* lv2_enumeration;
   LilvNode* lv2_extensionData;
   LilvNode* lv2_integer;
+  LilvNode* lv2_latency;
   LilvNode* lv2_maximum;
   LilvNode* lv2_minimum;
   LilvNode* lv2_name;

@@ -142,6 +142,28 @@ die(const char* msg)
   exit(EXIT_FAILURE);
 }
 
+static bool
+has_designation(const JalvNodes* const   nodes,
+                const LilvPlugin* const  plugin,
+                const struct Port* const port,
+                const LilvNode* const    designation)
+{
+  LilvNodes* const designations =
+    lilv_port_get_value(plugin, port->lilv_port, nodes->lv2_designation);
+
+  bool found = false;
+  LILV_FOREACH (nodes, n, designations) {
+    const LilvNode* const node = lilv_nodes_get(designations, n);
+    if (lilv_node_equals(node, designation)) {
+      found = true;
+      break;
+    }
+  }
+
+  lilv_nodes_free(designations);
+  return found;
+}
+
 /**
    Create a port structure from data description.
 
@@ -222,8 +244,10 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
 
   // Set reports_latency flag
   if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
-      lilv_port_has_property(
-        jalv->plugin, port->lilv_port, jalv->nodes.lv2_reportsLatency)) {
+      (lilv_port_has_property(
+         jalv->plugin, port->lilv_port, jalv->nodes.lv2_reportsLatency) ||
+       has_designation(
+         &jalv->nodes, jalv->plugin, port, jalv->nodes.lv2_latency))) {
     port->reports_latency = true;
   }
 }
@@ -883,9 +907,11 @@ jalv_init_nodes(LilvWorld* const world, JalvNodes* const nodes)
   nodes->lv2_connectionOptional = MAP_NODE(LV2_CORE__connectionOptional);
   nodes->lv2_control            = MAP_NODE(LV2_CORE__control);
   nodes->lv2_default            = MAP_NODE(LV2_CORE__default);
+  nodes->lv2_designation        = MAP_NODE(LV2_CORE__designation);
   nodes->lv2_enumeration        = MAP_NODE(LV2_CORE__enumeration);
   nodes->lv2_extensionData      = MAP_NODE(LV2_CORE__extensionData);
   nodes->lv2_integer            = MAP_NODE(LV2_CORE__integer);
+  nodes->lv2_latency            = MAP_NODE(LV2_CORE__latency);
   nodes->lv2_maximum            = MAP_NODE(LV2_CORE__maximum);
   nodes->lv2_minimum            = MAP_NODE(LV2_CORE__minimum);
   nodes->lv2_name               = MAP_NODE(LV2_CORE__name);
