@@ -78,7 +78,8 @@ struct JalvImpl {
   JalvBackend*      backend;      ///< Audio system backend
   ZixRing*          ui_to_plugin; ///< Port events from UI
   ZixRing*          plugin_to_ui; ///< Port events from plugin
-  void*             ui_event_buf; ///< Buffer for reading UI port events
+  void*             audio_msg;    ///< Buffer for messages in the audio thread
+  void*             ui_msg;       ///< Buffer for messages in the UI thread
   JalvWorker*       worker;       ///< Worker thread implementation
   JalvWorker*       state_worker; ///< Synchronous worker for state restore
   ZixSem            work_lock;    ///< Lock for plugin work() method
@@ -102,6 +103,7 @@ struct JalvImpl {
   Controls            controls;        ///< Available plugin controls
   uint32_t            block_length;    ///< Audio buffer size (block length)
   size_t              midi_buf_size;   ///< Size of MIDI port buffers
+  size_t              msg_buf_size;    ///< Maximum size of a single message
   uint32_t            control_in;      ///< Index of control input port
   uint32_t            num_ports;       ///< Total number of ports on the plugin
   uint32_t            plugin_latency;  ///< Latency reported by plugin (if any)

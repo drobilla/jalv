@@ -74,10 +74,6 @@
 #  define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
-#ifndef MSG_BUFFER_SIZE
-#  define MSG_BUFFER_SIZE 1024
-#endif
-
 /**
    Size factor for UI ring buffers.
 
@@ -239,6 +235,7 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
     port->buf_size = lilv_node_as_int(min_size);
     jalv->opts.ring_size =
       MAX(jalv->opts.ring_size, port->buf_size * N_BUFFER_CYCLES);
+    jalv->msg_buf_size = MAX(jalv->msg_buf_size, port->buf_size);
   }
   lilv_node_free(min_size);
 
@@ -463,8 +460,7 @@ jalv_set_control(Jalv*            jalv,
     // Copy forge since it is used by process thread
     LV2_Atom_Forge       forge = jalv->forge;
     LV2_Atom_Forge_Frame frame;
-    uint8_t              buf[MSG_BUFFER_SIZE];
-    lv2_atom_forge_set_buffer(&forge, buf, sizeof(buf));
+    lv2_atom_forge_set_buffer(&forge, jalv->ui_msg, jalv->msg_buf_size);
 
     lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Set);
     lv2_atom_forge_key(&forge, jalv->urids.patch_property);
@@ -585,15 +581,8 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
       break;
     }
 
-    struct {
-      union {
-        LV2_Atom atom;
-        float    control;
-      } head;
-      uint8_t body[MSG_BUFFER_SIZE];
-    } buffer;
-
-    if (zix_ring_read(jalv->ui_to_plugin, &buffer, ev.size) != ev.size) {
+    void* const body = jalv->audio_msg;
+    if (zix_ring_read(jalv->ui_to_plugin, body, ev.size) != ev.size) {
       jalv_log(JALV_LOG_ERR, "Failed to read from UI ring buffer\n");
       break;
     }
@@ -602,10 +591,10 @@ jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
     struct Port* const port = &jalv->ports[ev.index];
     if (ev.protocol == 0) {
       assert(ev.size == sizeof(float));
-      port->control = buffer.head.control;
+      port->control = *(const float*)body;
     } else if (ev.protocol == jalv->urids.atom_eventTransfer) {
       LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
-      const LV2_Atom* const atom = &buffer.head.atom;
+      const LV2_Atom* const atom = (const LV2_Atom*)body;
       lv2_evbuf_write(
         &e, nframes, 0, atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
     } else {
@@ -630,8 +619,8 @@ jalv_init_ui(Jalv* jalv)
     // Send patch:Get message for initial parameters/etc
     LV2_Atom_Forge       forge = jalv->forge;
     LV2_Atom_Forge_Frame frame;
-    uint8_t              buf[MSG_BUFFER_SIZE];
-    lv2_atom_forge_set_buffer(&forge, buf, sizeof(buf));
+    uint64_t             buf[4U] = {0U, 0U, 0U, 0U};
+    lv2_atom_forge_set_buffer(&forge, (uint8_t*)buf, sizeof(buf));
     lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Get);
 
     const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);
@@ -711,25 +700,18 @@ jalv_update(Jalv* jalv)
     // Read event header to get the size
     zix_ring_read(jalv->plugin_to_ui, &ev, sizeof(ev));
 
-    // Resize read buffer if necessary
-    void* const buf = realloc(jalv->ui_event_buf, ev.size);
-    if (!buf) {
-      return 12;
-    }
-
-    jalv->ui_event_buf = buf;
-
     // Read event body
-    zix_ring_read(jalv->plugin_to_ui, buf, ev.size);
+    void* const body = jalv->ui_msg;
+    zix_ring_read(jalv->plugin_to_ui, body, ev.size);
 
     if (ev.protocol == jalv->urids.atom_eventTransfer) {
-      jalv_dump_atom(jalv, stdout, "Plugin => UI", (const LV2_Atom*)buf, 35);
+      jalv_dump_atom(jalv, stdout, "Plugin => UI", (const LV2_Atom*)body, 35);
     }
 
-    jalv_frontend_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
+    jalv_frontend_port_event(jalv, ev.index, ev.size, ev.protocol, body);
 
     if (ev.protocol == 0 && jalv->opts.print_controls) {
-      jalv_print_control(jalv, &jalv->ports[ev.index], *(float*)buf);
+      jalv_print_control(jalv, &jalv->ports[ev.index], *(float*)body);
     }
   }
 
@@ -1100,6 +1082,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->symap         = symap_new();
   jalv->block_length  = 4096U;
   jalv->midi_buf_size = 1024U;
+  jalv->msg_buf_size  = 1024U;
   jalv->play_state    = JALV_PAUSED;
   jalv->bpm           = 120.0f;
   jalv->control_in    = (uint32_t)-1;
@@ -1263,6 +1246,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_init_options(jalv);
 
   // Create Plugin <=> UI communication buffers
+  jalv->audio_msg    = zix_aligned_alloc(NULL, 8U, jalv->msg_buf_size);
+  jalv->ui_msg       = zix_aligned_alloc(NULL, 8U, jalv->msg_buf_size);
   jalv->ui_to_plugin = zix_ring_new(NULL, jalv->opts.ring_size);
   jalv->plugin_to_ui = zix_ring_new(NULL, jalv->opts.ring_size);
   zix_ring_mlock(jalv->ui_to_plugin);
@@ -1404,6 +1389,8 @@ jalv_close(Jalv* const jalv)
   free(jalv->ports);
   zix_ring_free(jalv->ui_to_plugin);
   zix_ring_free(jalv->plugin_to_ui);
+  zix_free(NULL, jalv->ui_msg);
+  zix_free(NULL, jalv->audio_msg);
   for (LilvNode** n = (LilvNode**)&jalv->nodes; *n; ++n) {
     lilv_node_free(*n);
   }
@@ -1445,7 +1432,6 @@ jalv_close(Jalv* const jalv)
   }
 
   zix_free(NULL, jalv->temp_dir);
-  free(jalv->ui_event_buf);
   free(jalv->feature_list);
 
   free(jalv->opts.name);
