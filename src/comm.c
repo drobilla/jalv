@@ -3,9 +3,6 @@
 
 #include "comm.h"
 
-#include "control.h"
-
-#include "lv2/atom/atom.h"
 #include "lv2/urid/urid.h"
 
 ZixStatus
@@ -29,7 +26,6 @@ jalv_write_split_message(ZixRing* const    target,
 ZixStatus
 jalv_write_event(ZixRing* const    target,
                  const uint32_t    port_index,
-                 const uint32_t    protocol,
                  const uint32_t    size,
                  const LV2_URID    type,
                  const void* const body)
@@ -37,12 +33,12 @@ jalv_write_event(ZixRing* const    target,
   // TODO: Be more discriminate about what to send
 
   typedef struct {
-    ControlChange change;
-    LV2_Atom      atom;
+    JalvMessageHeader message;
+    JalvEventTransfer event;
   } Header;
 
-  const Header header = {{port_index, protocol, sizeof(LV2_Atom) + size},
-                         {size, type}};
+  const Header header = {{EVENT_TRANSFER, sizeof(JalvEventTransfer) + size},
+                         {port_index, {size, type}}};
 
   return jalv_write_split_message(target, &header, sizeof(header), body, size);
 }
@@ -52,8 +48,15 @@ jalv_write_control(ZixRing* const target,
                    const uint32_t port_index,
                    const float    value)
 {
-  const ControlChange header = {port_index, 0, sizeof(value)};
+  typedef struct {
+    JalvMessageHeader message;
+    JalvControlChange control;
+  } Message;
 
-  return jalv_write_split_message(
-    target, &header, sizeof(header), &value, sizeof(value));
+  const Message msg = {{CONTROL_PORT_CHANGE, sizeof(JalvControlChange)},
+                       {port_index, value}};
+
+  return zix_ring_write(target, &msg, sizeof(msg)) == sizeof(msg)
+           ? ZIX_STATUS_SUCCESS
+           : ZIX_STATUS_ERROR;
 }

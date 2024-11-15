@@ -62,14 +62,6 @@ typedef struct {
   ControlID** controls;
 } Controls;
 
-/// Control change event, sent through ring buffers for UI updates
-typedef struct {
-  uint32_t index;
-  uint32_t protocol;
-  uint32_t size;
-  // Followed immediately by size bytes of data
-} ControlChange;
-
 /// Create a new ID for a control port
 ControlID*
 new_port_control(LilvWorld*        world,

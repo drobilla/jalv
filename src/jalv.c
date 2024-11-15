@@ -424,12 +424,8 @@ jalv_send_to_plugin(void* const       jalv_handle,
       st = ZIX_STATUS_BAD_ARG;
     } else {
       jalv_dump_atom(jalv, stdout, "UI => Plugin", atom, 36);
-      st = jalv_write_event(jalv->ui_to_plugin,
-                            port_index,
-                            jalv->urids.atom_eventTransfer,
-                            atom->size,
-                            atom->type,
-                            atom + 1U);
+      st = jalv_write_event(
+        jalv->ui_to_plugin, port_index, atom->size, atom->type, atom + 1U);
     }
 
   } else {
@@ -566,42 +562,60 @@ jalv_ui_is_resizable(Jalv* jalv)
   return !fs_matches && !nrs_matches;
 }
 
-static void
+static int
+ring_error(const char* const message)
+{
+  jalv_log(JALV_LOG_ERR, "%s", message);
+  return 1;
+}
+
+static int
 jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
 {
   if (!jalv->has_ui) {
-    return;
+    return 0;
   }
 
-  ControlChange ev    = {0U, 0U, 0U};
-  const size_t  space = zix_ring_read_space(jalv->ui_to_plugin);
-  for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
-    if (zix_ring_read(jalv->ui_to_plugin, &ev, sizeof(ev)) != sizeof(ev)) {
-      jalv_log(JALV_LOG_ERR, "Failed to read header from UI ring buffer\n");
-      break;
+  ZixRing* const    ring   = jalv->ui_to_plugin;
+  JalvMessageHeader header = {NO_MESSAGE, 0U};
+  const size_t      space  = zix_ring_read_space(ring);
+  for (size_t i = 0; i < space; i += sizeof(header) + header.size) {
+    // Read message header (which includes the body size)
+    if (zix_ring_read(ring, &header, sizeof(header)) != sizeof(header)) {
+      return ring_error("Failed to read header from UI ring\n");
     }
 
-    void* const body = jalv->audio_msg;
-    if (zix_ring_read(jalv->ui_to_plugin, body, ev.size) != ev.size) {
-      jalv_log(JALV_LOG_ERR, "Failed to read from UI ring buffer\n");
-      break;
-    }
+    if (header.type == CONTROL_PORT_CHANGE) {
+      assert(header.size == sizeof(JalvControlChange));
+      JalvControlChange msg = {0U, 0.0f};
+      if (zix_ring_read(ring, &msg, sizeof(msg)) != sizeof(msg)) {
+        return ring_error("Failed to read control value from UI ring\n");
+      }
 
-    assert(ev.index < jalv->num_ports);
-    struct Port* const port = &jalv->ports[ev.index];
-    if (ev.protocol == 0) {
-      assert(ev.size == sizeof(float));
-      port->control = *(const float*)body;
-    } else if (ev.protocol == jalv->urids.atom_eventTransfer) {
+      assert(msg.port_index < jalv->num_ports);
+      jalv->ports[msg.port_index].control = msg.value;
+
+    } else if (header.type == EVENT_TRANSFER) {
+      assert(header.size <= jalv->msg_buf_size);
+      void* const body = jalv->audio_msg;
+      if (zix_ring_read(ring, body, header.size) != header.size) {
+        return ring_error("Failed to read event from UI ring\n");
+      }
+
+      const JalvEventTransfer* const msg = (const JalvEventTransfer*)body;
+      assert(msg->port_index < jalv->num_ports);
+      struct Port* const    port = &jalv->ports[msg->port_index];
       LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
-      const LV2_Atom* const atom = (const LV2_Atom*)body;
+      const LV2_Atom* const atom = &msg->atom;
       lv2_evbuf_write(
         &e, nframes, 0, atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
+
     } else {
-      jalv_log(
-        JALV_LOG_ERR, "Unknown control change protocol %u\n", ev.protocol);
+      return ring_error("Unknown message type received from UI ring\n");
     }
   }
+
+  return 0;
 }
 
 void
@@ -694,24 +708,37 @@ jalv_update(Jalv* jalv)
   }
 
   // Emit UI events
-  ControlChange ev;
-  const size_t  space = zix_ring_read_space(jalv->plugin_to_ui);
-  for (size_t i = 0; i + sizeof(ev) < space; i += sizeof(ev) + ev.size) {
-    // Read event header to get the size
-    zix_ring_read(jalv->plugin_to_ui, &ev, sizeof(ev));
-
-    // Read event body
-    void* const body = jalv->ui_msg;
-    zix_ring_read(jalv->plugin_to_ui, body, ev.size);
-
-    if (ev.protocol == jalv->urids.atom_eventTransfer) {
-      jalv_dump_atom(jalv, stdout, "Plugin => UI", (const LV2_Atom*)body, 35);
+  ZixRing* const    ring   = jalv->plugin_to_ui;
+  JalvMessageHeader header = {NO_MESSAGE, 0U};
+  const size_t      space  = zix_ring_read_space(ring);
+  for (size_t i = 0; i < space; i += sizeof(header) + header.size) {
+    // Read message header (which includes the body size)
+    if (zix_ring_read(ring, &header, sizeof(header)) != sizeof(header)) {
+      return ring_error("Failed to read header from process ring\n");
     }
 
-    jalv_frontend_port_event(jalv, ev.index, ev.size, ev.protocol, body);
+    // Read message body
+    void* const body = jalv->ui_msg;
+    if (zix_ring_read(ring, body, header.size) != header.size) {
+      return ring_error("Failed to read message from process ring\n");
+    }
 
-    if (ev.protocol == 0 && jalv->opts.print_controls) {
-      jalv_print_control(jalv, &jalv->ports[ev.index], *(float*)body);
+    if (header.type == CONTROL_PORT_CHANGE) {
+      const JalvControlChange* const msg = (const JalvControlChange*)body;
+      jalv_frontend_port_event(jalv, msg->port_index, sizeof(float), 0, body);
+      if (jalv->opts.print_controls) {
+        jalv_print_control(jalv, &jalv->ports[msg->port_index], *(float*)body);
+      }
+    } else if (header.type == EVENT_TRANSFER) {
+      const JalvEventTransfer* const msg = (const JalvEventTransfer*)body;
+      jalv_dump_atom(jalv, stdout, "Plugin => UI", &msg->atom, 35);
+      jalv_frontend_port_event(jalv,
+                               msg->port_index,
+                               sizeof(LV2_Atom) + msg->atom.size,
+                               jalv->urids.atom_eventTransfer,
+                               &msg->atom);
+    } else {
+      return ring_error("Unknown message type received from process ring\n");
     }
   }
 
