@@ -40,19 +40,15 @@
 #include "serd/serd.h"
 #include "sratom/sratom.h"
 #include "symap.h"
+#include "zix/allocator.h"
 #include "zix/attributes.h"
+#include "zix/filesystem.h"
 #include "zix/ring.h"
 #include "zix/sem.h"
+#include "zix/status.h"
 
 #if USE_SUIL
 #  include "suil/suil.h"
-#endif
-
-#if defined(_WIN32)
-#  include <io.h> // for _mktemp
-#  define snprintf _snprintf
-#elif defined(__APPLE__)
-#  include <unistd.h> // for mkdtemp on Darwin
 #endif
 
 #include <assert.h>
@@ -63,7 +59,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 #ifndef MIN
 #  define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -1165,22 +1160,16 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   sratom_set_env(jalv->sratom, jalv->env);
 
   // Create temporary directory for plugin state
-#ifdef _WIN32
-  jalv->temp_dir = jalv_strdup("jalvXXXXXX");
-  _mktemp(jalv->temp_dir);
-#else
-  char* templ    = jalv_strdup("/tmp/jalv-XXXXXX");
-  jalv->temp_dir = jalv_strjoin(mkdtemp(templ), "/");
-  free(templ);
-#endif
+  jalv->temp_dir = zix_create_temporary_directory(NULL, "jalvXXXXXX");
+  if (!jalv->temp_dir) {
+    jalv_log(JALV_LOG_WARNING, "Failed to create temporary state directory\n");
+  }
 
   // Get plugin URI from loaded state or command line
   LilvState* state      = NULL;
   LilvNode*  plugin_uri = NULL;
   if (jalv->opts.load) {
-    struct stat info;
-    stat(jalv->opts.load, &info);
-    if ((info.st_mode & S_IFMT) == S_IFDIR) {
+    if (zix_file_type(jalv->opts.load) == ZIX_FILE_TYPE_DIRECTORY) {
       char* path = jalv_strjoin(jalv->opts.load, "/state.ttl");
       state = lilv_state_new_from_file(jalv->world, &jalv->map, NULL, path);
       free(path);
@@ -1484,8 +1473,18 @@ jalv_close(Jalv* const jalv)
 
   zix_sem_destroy(&jalv->done);
 
-  remove(jalv->temp_dir);
-  free(jalv->temp_dir);
+  if (jalv->temp_dir) {
+    // Remove temporary state directory
+    const ZixStatus zst = zix_remove(jalv->temp_dir);
+    if (zst) {
+      jalv_log(JALV_LOG_WARNING,
+               "Failed to remove temporary directory %s (%s)\n",
+               jalv->temp_dir,
+               zix_strerror(zst));
+    }
+  }
+
+  zix_free(NULL, jalv->temp_dir);
   free(jalv->ui_event_buf);
   free(jalv->feature_list);
 
