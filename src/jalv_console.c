@@ -24,7 +24,7 @@
 #ifdef _WIN32
 #  include <synchapi.h>
 #else
-#  include <unistd.h>
+#  include <time.h>
 #endif
 
 #include <stdbool.h>
@@ -299,7 +299,8 @@ jalv_run_custom_ui(Jalv* jalv)
 #  ifdef _WIN32
       Sleep(33);
 #  else
-      usleep(33333);
+      const struct timespec delay = {0, 33333000};
+      nanosleep(&delay, NULL);
 #  endif
     }
 
