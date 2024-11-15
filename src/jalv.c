@@ -368,11 +368,54 @@ jalv_create_controls(Jalv* jalv, bool writable)
 }
 
 static void
-jalv_send_to_plugin(void*       jalv_handle,
-                    uint32_t    port_index,
-                    uint32_t    buffer_size,
-                    uint32_t    protocol,
-                    const void* buffer);
+jalv_send_to_plugin(void* const       jalv_handle,
+                    const uint32_t    port_index,
+                    const uint32_t    buffer_size,
+                    const uint32_t    protocol,
+                    const void* const buffer)
+{
+  Jalv* const jalv = (Jalv*)jalv_handle;
+  ZixStatus   st   = ZIX_STATUS_SUCCESS;
+
+  if (port_index >= jalv->num_ports) {
+    jalv_log(JALV_LOG_ERR, "UI wrote to invalid port index %u\n", port_index);
+
+  } else if (protocol == 0U) {
+    if (buffer_size != sizeof(float)) {
+      st = ZIX_STATUS_BAD_ARG;
+    } else {
+      const float value = *(const float*)buffer;
+      st = jalv_write_control(jalv->ui_to_plugin, port_index, value);
+    }
+
+  } else if (protocol == jalv->urids.atom_eventTransfer) {
+    const LV2_Atom* const atom = (const LV2_Atom*)buffer;
+    if (buffer_size < sizeof(LV2_Atom) ||
+        (sizeof(LV2_Atom) + atom->size != buffer_size)) {
+      st = ZIX_STATUS_BAD_ARG;
+    } else {
+      jalv_dump_atom(jalv, stdout, "UI => Plugin", atom, 36);
+      st = jalv_write_event(jalv->ui_to_plugin,
+                            port_index,
+                            jalv->urids.atom_eventTransfer,
+                            atom->size,
+                            atom->type,
+                            atom + 1U);
+    }
+
+  } else {
+    jalv_log(JALV_LOG_ERR,
+             "UI wrote with unsupported protocol %u (%s)\n",
+             protocol,
+             unmap_uri(jalv, protocol));
+  }
+
+  if (st) {
+    jalv_log(JALV_LOG_ERR,
+             "Failed to write to plugin from UI (%s)\n",
+             zix_strerror(st));
+  }
+}
 
 void
 jalv_set_control(Jalv*            jalv,
@@ -493,56 +536,6 @@ jalv_ui_is_resizable(Jalv* jalv)
   lilv_node_free(p);
 
   return !fs_matches && !nrs_matches;
-}
-
-static void
-jalv_send_to_plugin(void* const jalv_handle,
-                    uint32_t    port_index,
-                    uint32_t    buffer_size,
-                    uint32_t    protocol,
-                    const void* buffer)
-{
-  Jalv* const jalv = (Jalv*)jalv_handle;
-  ZixStatus   st   = ZIX_STATUS_SUCCESS;
-
-  if (port_index >= jalv->num_ports) {
-    jalv_log(JALV_LOG_ERR, "UI wrote to invalid port index %u\n", port_index);
-
-  } else if (protocol == 0U) {
-    if (buffer_size != sizeof(float)) {
-      st = ZIX_STATUS_BAD_ARG;
-    } else {
-      const float value = *(const float*)buffer;
-      st = jalv_write_control(jalv->ui_to_plugin, port_index, value);
-    }
-
-  } else if (protocol == jalv->urids.atom_eventTransfer) {
-    const LV2_Atom* const atom = (const LV2_Atom*)buffer;
-    if (buffer_size < sizeof(LV2_Atom) ||
-        (sizeof(LV2_Atom) + atom->size != buffer_size)) {
-      st = ZIX_STATUS_BAD_ARG;
-    } else {
-      jalv_dump_atom(jalv, stdout, "UI => Plugin", atom, 36);
-      st = jalv_write_event(jalv->ui_to_plugin,
-                            port_index,
-                            jalv->urids.atom_eventTransfer,
-                            atom->size,
-                            atom->type,
-                            atom + 1U);
-    }
-
-  } else {
-    jalv_log(JALV_LOG_ERR,
-             "UI wrote with unsupported protocol %u (%s)\n",
-             protocol,
-             unmap_uri(jalv, protocol));
-  }
-
-  if (st) {
-    jalv_log(JALV_LOG_ERR,
-             "Failed to write to plugin from UI (%s)\n",
-             zix_strerror(st));
-  }
 }
 
 static void
