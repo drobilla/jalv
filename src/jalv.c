@@ -607,7 +607,8 @@ jalv_init_ui(Jalv* jalv)
   // Set initial control port values
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     if (jalv->ports[i].type == TYPE_CONTROL) {
-      jalv_ui_port_event(jalv, i, sizeof(float), 0, &jalv->ports[i].control);
+      jalv_frontend_port_event(
+        jalv, i, sizeof(float), 0, &jalv->ports[i].control);
     }
   }
 
@@ -767,7 +768,7 @@ jalv_update(Jalv* jalv)
       jalv_dump_atom(jalv, stdout, "Plugin => UI", (const LV2_Atom*)buf, 35);
     }
 
-    jalv_ui_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
+    jalv_frontend_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
 
     if (ev.protocol == 0 && jalv->opts.print_controls) {
       jalv_print_control(jalv, &jalv->ports[ev.index], *(float*)buf);

@@ -75,11 +75,11 @@ print_arg_error(const char* const command, const char* const msg)
 }
 
 void
-jalv_ui_port_event(Jalv*       jalv,
-                   uint32_t    port_index,
-                   uint32_t    buffer_size,
-                   uint32_t    protocol,
-                   const void* buffer)
+jalv_frontend_port_event(Jalv*       jalv,
+                         uint32_t    port_index,
+                         uint32_t    buffer_size,
+                         uint32_t    protocol,
+                         const void* buffer)
 {
 #if USE_SUIL
   if (jalv->ui_instance) {

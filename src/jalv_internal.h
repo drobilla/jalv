@@ -156,14 +156,6 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent);
 bool
 jalv_ui_is_resizable(Jalv* jalv);
 
-/// Called when a port event (control change or other message) is sent to the UI
-void
-jalv_ui_port_event(Jalv*       jalv,
-                   uint32_t    port_index,
-                   uint32_t    buffer_size,
-                   uint32_t    protocol,
-                   const void* buffer);
-
 /**
    Write a port event using the atom:eventTransfer protocol.
 

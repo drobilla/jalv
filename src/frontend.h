@@ -54,6 +54,14 @@ jalv_frontend_open(Jalv* jalv);
 int
 jalv_frontend_close(Jalv* jalv);
 
+/// Called when a port event (control change or other message) is sent to the UI
+void
+jalv_frontend_port_event(Jalv*       jalv,
+                         uint32_t    port_index,
+                         uint32_t    buffer_size,
+                         uint32_t    protocol,
+                         const void* buffer);
+
 JALV_END_DECLS
 
 #endif // JALV_UI_H

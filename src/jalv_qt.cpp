@@ -612,11 +612,11 @@ jalv_frontend_ui_type(void)
 }
 
 void
-jalv_ui_port_event(Jalv*       jalv,
-                   uint32_t    port_index,
-                   uint32_t    buffer_size,
-                   uint32_t    protocol,
-                   const void* buffer)
+jalv_frontend_port_event(Jalv*       jalv,
+                         uint32_t    port_index,
+                         uint32_t    buffer_size,
+                         uint32_t    protocol,
+                         const void* buffer)
 {
   if (jalv->ui_instance) {
     suil_instance_port_event(
