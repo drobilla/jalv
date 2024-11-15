@@ -13,6 +13,7 @@
 #include "lv2/state/state.h"
 #include "zix/attributes.h"
 #include "zix/sem.h"
+#include "zix/status.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -146,17 +147,23 @@ set_port_value(const char* port_symbol,
     return;
   }
 
+  ZixStatus st = ZIX_STATUS_SUCCESS;
   if (jalv->play_state != JALV_RUNNING) {
     // Set value on port struct directly
     port->control = fvalue;
   } else {
     // Send value to plugin (as if from UI)
-    jalv_write_control(jalv, jalv->ui_to_plugin, port->index, fvalue);
+    st = jalv_write_control(jalv->ui_to_plugin, port->index, fvalue);
   }
 
   if (jalv->has_ui) {
     // Update UI (as if from plugin)
-    jalv_write_control(jalv, jalv->plugin_to_ui, port->index, fvalue);
+    st = jalv_write_control(jalv->plugin_to_ui, port->index, fvalue);
+  }
+
+  if (st) {
+    jalv_log(
+      JALV_LOG_ERR, "Failed to write control change (%s)\n", zix_strerror(st));
   }
 }
 

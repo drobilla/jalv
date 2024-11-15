@@ -17,6 +17,7 @@
 
 #include "zix/ring.h"
 #include "zix/sem.h"
+#include "zix/status.h"
 
 #include "lilv/lilv.h"
 #include "serd/serd.h"
@@ -161,18 +162,18 @@ jalv_ui_is_resizable(Jalv* jalv);
 
    This is used to transfer atoms between the plugin and UI via sequence ports.
 
-   @param jalv Jalv instance.
    @param target Communication ring (jalv->plugin_to_ui or jalv->ui_to_plugin).
    @param port_index Index of the port this change is for.
+   @param protocol Port protocol (0 for float control, or atom:eventTransfer).o
    @param size Size of body in bytes.
    @param type Atom type URID.
    @param body Atom body.
    @return 0 on success, non-zero on failure (overflow).
 */
-int
-jalv_write_event(const Jalv* jalv,
-                 ZixRing*    target,
+ZixStatus
+jalv_write_event(ZixRing*    target,
                  uint32_t    port_index,
+                 uint32_t    protocol,
                  uint32_t    size,
                  LV2_URID    type,
                  const void* body);
@@ -183,17 +184,13 @@ jalv_write_event(const Jalv* jalv,
    This is used to transfer control port value changes between the plugin and
    UI.
 
-   @param jalv Jalv instance.
    @param target Communication ring (jalv->plugin_to_ui or jalv->ui_to_plugin).
    @param port_index Index of the port this change is for.
    @param value New control port value.
    @return 0 on success, non-zero on failure (overflow).
 */
-int
-jalv_write_control(const Jalv* jalv,
-                   ZixRing*    target,
-                   uint32_t    port_index,
-                   float       value);
+ZixStatus
+jalv_write_control(ZixRing* target, uint32_t port_index, float value);
 
 /// Dump an atom to stdout in a "developer-readable" format (Turtle)
 void

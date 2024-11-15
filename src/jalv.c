@@ -494,22 +494,21 @@ jalv_ui_is_resizable(Jalv* jalv)
   return !fs_matches && !nrs_matches;
 }
 
-static void
+static ZixStatus
 jalv_send_control_to_plugin(Jalv* const jalv,
                             uint32_t    port_index,
                             uint32_t    buffer_size,
                             const void* buffer)
 {
   if (buffer_size != sizeof(float)) {
-    jalv_log(JALV_LOG_ERR, "UI wrote invalid control size %u\n", buffer_size);
-
-  } else {
-    jalv_write_control(
-      jalv, jalv->ui_to_plugin, port_index, *(const float*)buffer);
+    return ZIX_STATUS_BAD_ARG;
   }
+
+  return jalv_write_control(
+    jalv->ui_to_plugin, port_index, *(const float*)buffer);
 }
 
-static void
+static ZixStatus
 jalv_send_event_to_plugin(Jalv* const jalv,
                           uint32_t    port_index,
                           uint32_t    buffer_size,
@@ -525,9 +524,15 @@ jalv_send_event_to_plugin(Jalv* const jalv,
 
   } else {
     jalv_dump_atom(jalv, stdout, "UI => Plugin", atom, 36);
-    jalv_write_event(
-      jalv, jalv->ui_to_plugin, port_index, atom->size, atom->type, atom + 1U);
+    return jalv_write_event(jalv->ui_to_plugin,
+                            port_index,
+                            jalv->urids.atom_eventTransfer,
+                            atom->size,
+                            atom->type,
+                            atom + 1U);
   }
+
+  return ZIX_STATUS_SUCCESS;
 }
 
 static void
@@ -538,21 +543,28 @@ jalv_send_to_plugin(void* const jalv_handle,
                     const void* buffer)
 {
   Jalv* const jalv = (Jalv*)jalv_handle;
+  ZixStatus   st   = ZIX_STATUS_SUCCESS;
 
   if (port_index >= jalv->num_ports) {
     jalv_log(JALV_LOG_ERR, "UI wrote to invalid port index %u\n", port_index);
 
   } else if (protocol == 0U) {
-    jalv_send_control_to_plugin(jalv, port_index, buffer_size, buffer);
+    st = jalv_send_control_to_plugin(jalv, port_index, buffer_size, buffer);
 
   } else if (protocol == jalv->urids.atom_eventTransfer) {
-    jalv_send_event_to_plugin(jalv, port_index, buffer_size, buffer);
+    st = jalv_send_event_to_plugin(jalv, port_index, buffer_size, buffer);
 
   } else {
     jalv_log(JALV_LOG_ERR,
              "UI wrote with unsupported protocol %u (%s)\n",
              protocol,
              unmap_uri(jalv, protocol));
+  }
+
+  if (st) {
+    jalv_log(JALV_LOG_ERR,
+             "Failed to write to plugin from UI (%s)\n",
+             zix_strerror(st));
   }
 }
 
@@ -630,31 +642,28 @@ jalv_init_ui(Jalv* jalv)
   }
 }
 
-static int
-jalv_write_control_change(const Jalv* const jalv,
-                          ZixRing* const    target,
+static ZixStatus
+jalv_write_control_change(ZixRing* const    target,
                           const void* const header,
                           const uint32_t    header_size,
                           const void* const body,
                           const uint32_t    body_size)
 {
   ZixRingTransaction tx = zix_ring_begin_write(target);
-  if (zix_ring_amend_write(target, &tx, header, header_size) ||
-      zix_ring_amend_write(target, &tx, body, body_size)) {
-    jalv_log(JALV_LOG_ERR,
-             target == jalv->plugin_to_ui ? "Plugin => UI buffer overflow"
-                                          : "UI => Plugin buffer overflow");
-    return -1;
+
+  ZixStatus st = ZIX_STATUS_SUCCESS;
+  if (!(st = zix_ring_amend_write(target, &tx, header, header_size)) &&
+      !(st = zix_ring_amend_write(target, &tx, body, body_size))) {
+    st = zix_ring_commit_write(target, &tx);
   }
 
-  zix_ring_commit_write(target, &tx);
-  return 0;
+  return st;
 }
 
-int
-jalv_write_event(const Jalv* const jalv,
-                 ZixRing* const    target,
+ZixStatus
+jalv_write_event(ZixRing* const    target,
                  const uint32_t    port_index,
+                 const uint32_t    protocol,
                  const uint32_t    size,
                  const LV2_URID    type,
                  const void* const body)
@@ -666,24 +675,21 @@ jalv_write_event(const Jalv* const jalv,
     LV2_Atom      atom;
   } Header;
 
-  const Header header = {
-    {port_index, jalv->urids.atom_eventTransfer, sizeof(LV2_Atom) + size},
-    {size, type}};
+  const Header header = {{port_index, protocol, sizeof(LV2_Atom) + size},
+                         {size, type}};
 
-  return jalv_write_control_change(
-    jalv, target, &header, sizeof(header), body, size);
+  return jalv_write_control_change(target, &header, sizeof(header), body, size);
 }
 
-int
-jalv_write_control(const Jalv* const jalv,
-                   ZixRing* const    target,
-                   const uint32_t    port_index,
-                   const float       value)
+ZixStatus
+jalv_write_control(ZixRing* const target,
+                   const uint32_t port_index,
+                   const float    value)
 {
   const ControlChange header = {port_index, 0, sizeof(value)};
 
   return jalv_write_control_change(
-    jalv, target, &header, sizeof(header), &value, sizeof(value));
+    target, &header, sizeof(header), &value, sizeof(value));
 }
 
 void
