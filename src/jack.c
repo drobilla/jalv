@@ -109,6 +109,25 @@ forge_position(LV2_Atom_Forge* const        forge,
   }
 }
 
+static int
+process_silent(Jalv* const jalv, const jack_nframes_t nframes)
+{
+  for (uint32_t p = 0U; p < jalv->num_ports; ++p) {
+    JalvPort* const    port  = &jalv->ports[p];
+    jack_port_t* const jport = (jack_port_t*)jalv->ports[p].sys_port;
+    if (jport && port->flow == FLOW_OUTPUT) {
+      void* const buf = jack_port_get_buffer(jport, nframes);
+      if (port->type == TYPE_EVENT) {
+        jack_midi_clear_buffer(buf);
+      } else {
+        memset(buf, '\0', nframes * sizeof(float));
+      }
+    }
+  }
+
+  return 0;
+}
+
 /// Jack process callback
 static REALTIME int
 jack_process_cb(jack_nframes_t nframes, void* data)
@@ -149,18 +168,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     zix_sem_post(&jalv->paused);
     break;
   case JALV_PAUSED:
-    for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-      jack_port_t* jport = jalv->ports[p].sys_port;
-      if (jport && jalv->ports[p].flow == FLOW_OUTPUT) {
-        void* buf = jack_port_get_buffer(jport, nframes);
-        if (jalv->ports[p].type == TYPE_EVENT) {
-          jack_midi_clear_buffer(buf);
-        } else {
-          memset(buf, '\0', nframes * sizeof(float));
-        }
-      }
-    }
-    return 0;
+    return process_silent(jalv, nframes);
   }
 
   // Prepare port buffers
