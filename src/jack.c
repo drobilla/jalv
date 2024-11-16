@@ -1,4 +1,4 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2024 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "backend.h"
@@ -45,6 +45,9 @@ struct JalvBackendImpl {
   jack_client_t* client;             ///< Jack client
   bool           is_internal_client; ///< Running inside jackd
 };
+
+/// Maximum supported latency in frames (at most 2^24 so all integers work)
+static const float max_latency = 16777216.0f;
 
 /// Internal Jack client initialization entry point
 int
@@ -201,9 +204,19 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     struct Port* const port = &jalv->ports[p];
     if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
         port->reports_latency) {
-      if (jalv->plugin_latency != port->control) {
-        jalv->plugin_latency = port->control;
-        jack_recompute_total_latencies(client);
+      // Get the latency in frames from the control output truncated to integer
+      const float    value = port->control;
+      const uint32_t frames =
+        (value >= 0.0f && value <= max_latency) ? (uint32_t)value : 0U;
+
+      if (jalv->plugin_latency != frames) {
+        // Update the cached value and notify the UI if the latency changed
+        jalv->plugin_latency = frames;
+
+        const JalvLatencyChange body   = {frames};
+        const JalvMessageHeader header = {LATENCY_CHANGE, sizeof(body)};
+        jalv_write_split_message(
+          jalv->plugin_to_ui, &header, sizeof(header), &body, sizeof(body));
       }
     } else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
       void* buf = NULL;
@@ -459,6 +472,12 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
     lilv_node_free(name);
   }
 #endif
+}
+
+void
+jalv_backend_recompute_latencies(Jalv* const jalv)
+{
+  jack_recompute_total_latencies(jalv->backend->client);
 }
 
 int

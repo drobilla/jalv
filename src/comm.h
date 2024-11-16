@@ -22,6 +22,7 @@ typedef enum {
   NO_MESSAGE,          ///< Sentinel type for uninitialized messages
   CONTROL_PORT_CHANGE, ///< Value change for a control port (float)
   EVENT_TRANSFER,      ///< Event transfer for a sequence port (atom)
+  LATENCY_CHANGE,      ///< Change to plugin latency
 } JalvMessageType;
 
 /**
@@ -57,6 +58,16 @@ typedef struct {
   uint32_t port_index; ///< Sequence port index
   LV2_Atom atom;       ///< Event payload header
 } JalvEventTransfer;
+
+/**
+   The payload of a LATENCY_CHANGE message.
+
+   This message has a fixed sized, and is described in its entirety by this
+   struct.
+*/
+typedef struct {
+  float value; ///< Latency in frames at the current sample rate
+} JalvLatencyChange;
 
 /**
    Write a message in two parts to a ring.

@@ -33,6 +33,10 @@ jalv_backend_close(Jalv* jalv);
 void
 jalv_backend_activate_port(Jalv* jalv, uint32_t port_index);
 
+/// Recompute latencies based on plugin port latencies if necessary
+void
+jalv_backend_recompute_latencies(Jalv* jalv);
+
 JALV_END_DECLS
 
 #endif // JALV_BACKEND_H

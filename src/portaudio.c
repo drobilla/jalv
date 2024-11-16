@@ -11,6 +11,7 @@
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
+#include "zix/attributes.h"
 
 #include <portaudio.h>
 #include <stdbool.h>
@@ -215,3 +216,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
     lilv_instance_connect_port(jalv->instance, port_index, &port->control);
   }
 }
+
+void
+jalv_backend_recompute_latencies(Jalv* const ZIX_UNUSED(jalv))
+{}

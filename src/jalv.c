@@ -737,6 +737,8 @@ jalv_update(Jalv* jalv)
                                sizeof(LV2_Atom) + msg->atom.size,
                                jalv->urids.atom_eventTransfer,
                                &msg->atom);
+    } else if (header.type == LATENCY_CHANGE) {
+      jalv_backend_recompute_latencies(jalv);
     } else {
       return ring_error("Unknown message type received from process ring\n");
     }
