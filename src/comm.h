@@ -23,6 +23,7 @@ typedef enum {
   CONTROL_PORT_CHANGE, ///< Value change for a control port (float)
   EVENT_TRANSFER,      ///< Event transfer for a sequence port (atom)
   LATENCY_CHANGE,      ///< Change to plugin latency
+  STATE_REQUEST,       ///< Request for a plugin state update (no payload)
 } JalvMessageType;
 
 /**

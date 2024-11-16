@@ -116,7 +116,6 @@ struct JalvImpl {
   bool                rolling;         ///< Transport speed (0=stop, 1=play)
   bool                buf_size_set;    ///< True iff buffer size callback fired
   bool                has_ui;          ///< True iff a control UI is present
-  bool                request_update;  ///< True iff a plugin update is needed
   bool                safe_restore;    ///< Plugin restore() is thread-safe
   JalvFeatures        features;
   const LV2_Feature** feature_list;

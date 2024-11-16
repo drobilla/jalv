@@ -199,11 +199,6 @@ jack_process_cb(jack_nframes_t nframes, void* data)
           &iter, 0, 0, lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
       }
 
-      if (port->is_primary && jalv->request_update) {
-        // Plugin state has changed, request an update
-        jalv_write_get_message(&iter, &jalv->urids);
-      }
-
       if (port->sys_port) {
         // Write Jack MIDI input
         void* buf = jack_port_get_buffer(port->sys_port, nframes);
@@ -219,7 +214,6 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       lv2_evbuf_reset(port->evbuf, false);
     }
   }
-  jalv->request_update = false;
 
   // Run plugin for this cycle
   const bool send_ui_updates = jalv_run(jalv, nframes);

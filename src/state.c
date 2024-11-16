@@ -13,6 +13,7 @@
 #include "lv2/core/lv2.h"
 #include "lv2/state/state.h"
 #include "zix/attributes.h"
+#include "zix/ring.h"
 #include "zix/sem.h"
 #include "zix/status.h"
 
@@ -193,8 +194,9 @@ jalv_apply_state(Jalv* jalv, const LilvState* state)
     state, jalv->instance, set_port_value, jalv, 0, state_features);
 
   if (must_pause) {
-    jalv->request_update = true;
-    jalv->play_state     = JALV_RUNNING;
+    const JalvMessageHeader msg = {STATE_REQUEST, 0U};
+    zix_ring_write(jalv->ui_to_plugin, &msg, sizeof(msg));
+    jalv->play_state = JALV_RUNNING;
   }
 }
 

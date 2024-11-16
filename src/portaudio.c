@@ -49,19 +49,10 @@ pa_process_cb(const void*                     inputs,
         lilv_instance_connect_port(
           jalv->instance, i, ((float**)outputs)[out_index++]);
       }
-    } else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
-      lv2_evbuf_reset(port->evbuf, true);
-      if (port->is_primary && jalv->request_update) {
-        // Plugin state has changed, request an update
-        LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
-        jalv_write_get_message(&iter, &jalv->urids);
-      }
     } else if (port->type == TYPE_EVENT) {
-      // Clear event output for plugin to write to
-      lv2_evbuf_reset(port->evbuf, false);
+      lv2_evbuf_reset(port->evbuf, port->flow == FLOW_INPUT);
     }
   }
-  jalv->request_update = false;
 
   // Run plugin for this cycle
   const bool send_ui_updates = jalv_run(jalv, nframes);
