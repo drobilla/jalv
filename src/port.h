@@ -14,14 +14,20 @@
 
 JALV_BEGIN_DECLS
 
-enum PortFlow { FLOW_UNKNOWN, FLOW_INPUT, FLOW_OUTPUT };
+typedef enum { FLOW_UNKNOWN, FLOW_INPUT, FLOW_OUTPUT } PortFlow;
 
-enum PortType { TYPE_UNKNOWN, TYPE_CONTROL, TYPE_AUDIO, TYPE_EVENT, TYPE_CV };
+typedef enum {
+  TYPE_UNKNOWN,
+  TYPE_CONTROL,
+  TYPE_AUDIO,
+  TYPE_EVENT,
+  TYPE_CV
+} PortType;
 
 typedef struct {
   const LilvPort* lilv_port;       ///< LV2 port
-  enum PortType   type;            ///< Data type
-  enum PortFlow   flow;            ///< Data flow direction
+  PortType        type;            ///< Data type
+  PortFlow        flow;            ///< Data flow direction
   void*           sys_port;        ///< For audio/MIDI ports, otherwise NULL
   LV2_Evbuf*      evbuf;           ///< For MIDI ports, otherwise NULL
   void*           widget;          ///< Control widget, if applicable

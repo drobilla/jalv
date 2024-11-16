@@ -260,8 +260,8 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 static void
 jack_latency_cb(const jack_latency_callback_mode_t mode, void* const data)
 {
-  const Jalv* const   jalv = (const Jalv*)data;
-  const enum PortFlow flow =
+  const Jalv* const jalv = (const Jalv*)data;
+  const PortFlow    flow =
     ((mode == JackCaptureLatency) ? FLOW_INPUT : FLOW_OUTPUT);
 
   // First calculate the min/max latency of all feeding ports
