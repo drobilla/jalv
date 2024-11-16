@@ -13,6 +13,7 @@
 #include "process.h"
 #include "string_utils.h"
 #include "types.h"
+#include "urids.h"
 
 #include "lilv/lilv.h"
 #include "lv2/atom/atom.h"
@@ -82,6 +83,32 @@ jack_shutdown_cb(void* data)
   zix_sem_post(&jalv->done);
 }
 
+static void
+forge_position(LV2_Atom_Forge* const        forge,
+               const JalvURIDs* const       urids,
+               const jack_transport_state_t state,
+               const jack_position_t        pos)
+{
+  LV2_Atom_Forge_Frame frame;
+  lv2_atom_forge_object(forge, &frame, 0, urids->time_Position);
+  lv2_atom_forge_key(forge, urids->time_frame);
+  lv2_atom_forge_long(forge, pos.frame);
+  lv2_atom_forge_key(forge, urids->time_speed);
+  lv2_atom_forge_float(forge, (state == JackTransportRolling) ? 1.0 : 0.0);
+  if ((pos.valid & JackPositionBBT)) {
+    lv2_atom_forge_key(forge, urids->time_barBeat);
+    lv2_atom_forge_float(forge, pos.beat - 1 + (pos.tick / pos.ticks_per_beat));
+    lv2_atom_forge_key(forge, urids->time_bar);
+    lv2_atom_forge_long(forge, pos.bar - 1);
+    lv2_atom_forge_key(forge, urids->time_beatUnit);
+    lv2_atom_forge_int(forge, pos.beat_type);
+    lv2_atom_forge_key(forge, urids->time_beatsPerBar);
+    lv2_atom_forge_float(forge, pos.beats_per_bar);
+    lv2_atom_forge_key(forge, urids->time_beatsPerMinute);
+    lv2_atom_forge_float(forge, pos.beats_per_minute);
+  }
+}
+
 /// Jack process callback
 static REALTIME int
 jack_process_cb(jack_nframes_t nframes, void* data)
@@ -89,10 +116,10 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   Jalv* const    jalv   = (Jalv*)data;
   jack_client_t* client = jalv->backend->client;
 
-  // Get Jack transport position
-  jack_position_t pos;
-  const bool      rolling =
-    (jack_transport_query(client, &pos) == JackTransportRolling);
+  // Get transport state and position
+  jack_position_t              pos;
+  const jack_transport_state_t state   = jack_transport_query(client, &pos);
+  const bool                   rolling = state == JackTransportRolling;
 
   // If transport state is not as expected, then something has changed
   const bool has_bbt = (pos.valid & JackPositionBBT);
@@ -100,31 +127,13 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     (rolling != jalv->rolling || pos.frame != jalv->position ||
      (has_bbt && pos.beats_per_minute != jalv->bpm));
 
-  uint8_t   pos_buf[256] = {0};
-  LV2_Atom* lv2_pos      = (LV2_Atom*)pos_buf;
+  uint8_t         pos_buf[256] = {0};
+  LV2_Atom* const lv2_pos      = (LV2_Atom*)pos_buf;
   if (xport_changed) {
     // Build an LV2 position object to report change to plugin
     lv2_atom_forge_set_buffer(&jalv->forge, pos_buf, sizeof(pos_buf));
-    LV2_Atom_Forge*      forge = &jalv->forge;
-    LV2_Atom_Forge_Frame frame;
-    lv2_atom_forge_object(forge, &frame, 0, jalv->urids.time_Position);
-    lv2_atom_forge_key(forge, jalv->urids.time_frame);
-    lv2_atom_forge_long(forge, pos.frame);
-    lv2_atom_forge_key(forge, jalv->urids.time_speed);
-    lv2_atom_forge_float(forge, rolling ? 1.0 : 0.0);
-    if (has_bbt) {
-      lv2_atom_forge_key(forge, jalv->urids.time_barBeat);
-      lv2_atom_forge_float(forge,
-                           pos.beat - 1 + (pos.tick / pos.ticks_per_beat));
-      lv2_atom_forge_key(forge, jalv->urids.time_bar);
-      lv2_atom_forge_long(forge, pos.bar - 1);
-      lv2_atom_forge_key(forge, jalv->urids.time_beatUnit);
-      lv2_atom_forge_int(forge, pos.beat_type);
-      lv2_atom_forge_key(forge, jalv->urids.time_beatsPerBar);
-      lv2_atom_forge_float(forge, pos.beats_per_bar);
-      lv2_atom_forge_key(forge, jalv->urids.time_beatsPerMinute);
-      lv2_atom_forge_float(forge, pos.beats_per_minute);
-    }
+    LV2_Atom_Forge* forge = &jalv->forge;
+    forge_position(forge, &jalv->urids, state, pos);
   }
 
   // Update transport state to expected values for next cycle
