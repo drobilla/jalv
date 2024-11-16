@@ -244,9 +244,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
 /// Calculate latency assuming all ports depend on each other
 static void
-jack_latency_cb(jack_latency_callback_mode_t mode, void* data)
+jack_latency_cb(const jack_latency_callback_mode_t mode, void* const data)
 {
-  Jalv* const         jalv = (Jalv*)data;
+  const Jalv* const   jalv = (const Jalv*)data;
   const enum PortFlow flow =
     ((mode == JackCaptureLatency) ? FLOW_INPUT : FLOW_OUTPUT);
 
@@ -254,7 +254,7 @@ jack_latency_cb(jack_latency_callback_mode_t mode, void* data)
   uint32_t             ports_found = 0;
   jack_latency_range_t range       = {UINT32_MAX, 0};
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    struct Port* port = &jalv->ports[p];
+    struct Port* const port = &jalv->ports[p];
     if (port->sys_port && port->flow == flow) {
       jack_latency_range_t r;
       jack_port_get_latency_range(port->sys_port, mode, &r);
@@ -278,7 +278,7 @@ jack_latency_cb(jack_latency_callback_mode_t mode, void* data)
 
   // Tell Jack about it
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    struct Port* port = &jalv->ports[p];
+    const struct Port* const port = &jalv->ports[p];
     if (port->sys_port && port->flow == flow) {
       jack_port_set_latency_range(port->sys_port, mode, &range);
     }
