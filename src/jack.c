@@ -10,6 +10,7 @@
 #include "log.h"
 #include "lv2_evbuf.h"
 #include "port.h"
+#include "process.h"
 #include "string_utils.h"
 #include "types.h"
 

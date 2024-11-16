@@ -166,10 +166,6 @@ jalv_dump_atom(Jalv*           jalv,
                const LV2_Atom* atom,
                int             color);
 
-/// Run plugin instance for one buffer
-bool
-jalv_run(Jalv* jalv, uint32_t nframes);
-
 /// Periodically update user interface
 int
 jalv_update(Jalv* jalv);

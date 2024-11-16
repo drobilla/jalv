@@ -53,7 +53,6 @@
 #  include "suil/suil.h"
 #endif
 
-#include <assert.h>
 #include <math.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -562,62 +561,6 @@ jalv_ui_is_resizable(Jalv* jalv)
   return !fs_matches && !nrs_matches;
 }
 
-static int
-ring_error(const char* const message)
-{
-  jalv_log(JALV_LOG_ERR, "%s", message);
-  return 1;
-}
-
-static int
-jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
-{
-  if (!jalv->has_ui) {
-    return 0;
-  }
-
-  ZixRing* const    ring   = jalv->ui_to_plugin;
-  JalvMessageHeader header = {NO_MESSAGE, 0U};
-  const size_t      space  = zix_ring_read_space(ring);
-  for (size_t i = 0; i < space; i += sizeof(header) + header.size) {
-    // Read message header (which includes the body size)
-    if (zix_ring_read(ring, &header, sizeof(header)) != sizeof(header)) {
-      return ring_error("Failed to read header from UI ring\n");
-    }
-
-    if (header.type == CONTROL_PORT_CHANGE) {
-      assert(header.size == sizeof(JalvControlChange));
-      JalvControlChange msg = {0U, 0.0f};
-      if (zix_ring_read(ring, &msg, sizeof(msg)) != sizeof(msg)) {
-        return ring_error("Failed to read control value from UI ring\n");
-      }
-
-      assert(msg.port_index < jalv->num_ports);
-      jalv->ports[msg.port_index].control = msg.value;
-
-    } else if (header.type == EVENT_TRANSFER) {
-      assert(header.size <= jalv->msg_buf_size);
-      void* const body = jalv->audio_msg;
-      if (zix_ring_read(ring, body, header.size) != header.size) {
-        return ring_error("Failed to read event from UI ring\n");
-      }
-
-      const JalvEventTransfer* const msg = (const JalvEventTransfer*)body;
-      assert(msg->port_index < jalv->num_ports);
-      struct Port* const    port = &jalv->ports[msg->port_index];
-      LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
-      const LV2_Atom* const atom = &msg->atom;
-      lv2_evbuf_write(
-        &e, nframes, 0, atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
-
-    } else {
-      return ring_error("Unknown message type received from UI ring\n");
-    }
-  }
-
-  return 0;
-}
-
 void
 jalv_init_ui(Jalv* jalv)
 {
@@ -671,31 +614,11 @@ jalv_dump_atom(Jalv* const           jalv,
   }
 }
 
-bool
-jalv_run(Jalv* jalv, uint32_t nframes)
+static int
+ring_error(const char* const message)
 {
-  // Read and apply control change events from UI
-  jalv_apply_ui_events(jalv, nframes);
-
-  // Run plugin for this cycle
-  lilv_instance_run(jalv->instance, nframes);
-
-  // Process any worker replies and end the cycle
-  LV2_Handle handle = lilv_instance_get_handle(jalv->instance);
-  jalv_worker_emit_responses(jalv->state_worker, handle);
-  jalv_worker_emit_responses(jalv->worker, handle);
-  jalv_worker_end_run(jalv->worker);
-
-  // Check if it's time to send updates to the UI
-  jalv->event_delta_t += nframes;
-  bool     send_ui_updates = false;
-  uint32_t update_frames   = (uint32_t)(jalv->sample_rate / jalv->ui_update_hz);
-  if (jalv->has_ui && (jalv->event_delta_t > update_frames)) {
-    send_ui_updates     = true;
-    jalv->event_delta_t = 0;
-  }
-
-  return send_ui_updates;
+  jalv_log(JALV_LOG_ERR, "%s", message);
+  return 1;
 }
 
 int
