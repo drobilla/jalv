@@ -340,7 +340,7 @@ jalv_backend_init(Jalv* jalv)
     return NULL;
   }
 
-  jalv_log(JALV_LOG_INFO, "JACK Name:    %s\n", jack_get_client_name(client));
+  jalv_log(JALV_LOG_INFO, "JACK name:    %s\n", jack_get_client_name(client));
 
   // Set audio engine properties
   jalv->sample_rate   = (float)jack_get_sample_rate(client);
