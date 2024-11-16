@@ -53,6 +53,9 @@ typedef struct {
   LilvNode* end; ///< NULL terminator for easy freeing of entire structure
 } JalvNodes;
 
+void
+jalv_init_nodes(LilvWorld* world, JalvNodes* nodes);
+
 JALV_END_DECLS
 
 #endif // JALV_NODES_H

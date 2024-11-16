@@ -5,6 +5,7 @@
 #define JALV_URIDS_H
 
 #include "attributes.h"
+#include "symap.h"
 
 #include "lv2/urid/urid.h"
 
@@ -42,6 +43,9 @@ typedef struct {
   LV2_URID ui_scaleFactor;
   LV2_URID ui_updateRate;
 } JalvURIDs;
+
+void
+jalv_init_urids(Symap* symap, JalvURIDs* urids);
 
 JALV_END_DECLS
 

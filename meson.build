@@ -419,10 +419,12 @@ common_sources = files(
   'src/jalv.c',
   'src/log.c',
   'src/lv2_evbuf.c',
+  'src/nodes.c',
   'src/process.c',
   'src/state.c',
   'src/string_utils.c',
   'src/symap.c',
+  'src/urids.c',
   'src/worker.c',
 )
 
