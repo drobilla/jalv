@@ -41,7 +41,7 @@ pa_process_cb(const void*                     inputs,
   uint32_t in_index  = 0;
   uint32_t out_index = 0;
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    struct Port* port = &jalv->ports[i];
+    JalvPort* const port = &jalv->ports[i];
     if (port->type == TYPE_AUDIO) {
       if (port->flow == FLOW_INPUT) {
         lilv_instance_connect_port(
@@ -74,7 +74,7 @@ pa_process_cb(const void*                     inputs,
 
   // Deliver UI events
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    struct Port* const port = &jalv->ports[p];
+    JalvPort* const port = &jalv->ports[p];
     if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
       for (LV2_Evbuf_Iterator i = lv2_evbuf_begin(port->evbuf);
            lv2_evbuf_is_valid(i);
@@ -211,7 +211,7 @@ jalv_backend_deactivate(Jalv* jalv)
 void
 jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 {
-  struct Port* const port = &jalv->ports[port_index];
+  JalvPort* const port = &jalv->ports[port_index];
 
   if (port->type == TYPE_CONTROL) {
     lilv_instance_connect_port(jalv->instance, port_index, &port->control);

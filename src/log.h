@@ -5,6 +5,7 @@
 #define JALV_LOG_H
 
 #include "attributes.h"
+#include "port.h"
 #include "types.h"
 #include "urids.h"
 
@@ -22,8 +23,6 @@
 
 JALV_BEGIN_DECLS
 
-struct Port;
-
 // String and log utilities
 
 typedef enum {
@@ -40,7 +39,7 @@ typedef struct {
 
 /// Print a control value to stderr, like "sym = 1.234"
 void
-jalv_print_control(const Jalv* jalv, const struct Port* port, float value);
+jalv_print_control(const Jalv* jalv, const JalvPort* port, float value);
 
 /// Print a log message to stderr with a GCC-like prefix and color
 JALV_LOG_FUNC(2, 3)

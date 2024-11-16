@@ -138,10 +138,10 @@ die(const char* msg)
 }
 
 static bool
-has_designation(const JalvNodes* const   nodes,
-                const LilvPlugin* const  plugin,
-                const struct Port* const port,
-                const LilvNode* const    designation)
+has_designation(const JalvNodes* const  nodes,
+                const LilvPlugin* const plugin,
+                const JalvPort* const   port,
+                const LilvNode* const   designation)
 {
   LilvNodes* const designations =
     lilv_port_get_value(plugin, port->lilv_port, nodes->lv2_designation);
@@ -168,7 +168,7 @@ has_designation(const JalvNodes* const   nodes,
 static void
 create_port(Jalv* jalv, uint32_t port_index, float default_value)
 {
-  struct Port* const port = &jalv->ports[port_index];
+  JalvPort* const port = &jalv->ports[port_index];
 
   port->lilv_port = lilv_plugin_get_port_by_index(jalv->plugin, port_index);
   port->sys_port  = NULL;
@@ -253,7 +253,7 @@ static void
 jalv_create_ports(Jalv* jalv)
 {
   jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
-  jalv->ports     = (struct Port*)calloc(jalv->num_ports, sizeof(struct Port));
+  jalv->ports     = (JalvPort*)calloc(jalv->num_ports, sizeof(JalvPort));
   float* default_values =
     (float*)calloc(lilv_plugin_get_num_ports(jalv->plugin), sizeof(float));
   lilv_plugin_get_port_ranges_float(jalv->plugin, NULL, NULL, default_values);
@@ -288,7 +288,7 @@ jalv_allocate_port_buffers(Jalv* jalv)
     jalv->map.handle, lilv_node_as_string(jalv->nodes.atom_Sequence));
 
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    struct Port* const port = &jalv->ports[i];
+    JalvPort* const port = &jalv->ports[i];
     if (port->type == TYPE_EVENT) {
       lv2_evbuf_free(port->evbuf);
 
@@ -310,12 +310,12 @@ jalv_allocate_port_buffers(Jalv* jalv)
    TODO: Build an index to make this faster, currently O(n) which may be
    a problem when restoring the state of plugins with many ports.
 */
-struct Port*
+JalvPort*
 jalv_port_by_symbol(Jalv* jalv, const char* sym)
 {
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    struct Port* const port = &jalv->ports[i];
-    const LilvNode*    port_sym =
+    JalvPort* const port = &jalv->ports[i];
+    const LilvNode* port_sym =
       lilv_port_get_symbol(jalv->plugin, port->lilv_port);
 
     if (!strcmp(lilv_node_as_string(port_sym), sym)) {
@@ -449,8 +449,8 @@ jalv_set_control(Jalv*            jalv,
                  const void*      body)
 {
   if (control->type == PORT && type == jalv->forge.Float) {
-    struct Port* port = &jalv->ports[control->index];
-    port->control     = *(const float*)body;
+    JalvPort* const port = &jalv->ports[control->index];
+    port->control        = *(const float*)body;
   } else if (control->type == PROPERTY) {
     // Copy forge since it is used by process thread
     LV2_Atom_Forge       forge = jalv->forge;
@@ -477,8 +477,8 @@ jalv_set_control(Jalv*            jalv,
 static uint32_t
 jalv_ui_port_index(void* const controller, const char* symbol)
 {
-  Jalv* const  jalv = (Jalv*)controller;
-  struct Port* port = jalv_port_by_symbol(jalv, symbol);
+  Jalv* const     jalv = (Jalv*)controller;
+  JalvPort* const port = jalv_port_by_symbol(jalv, symbol);
 
   return port ? port->index : LV2UI_INVALID_PORT_INDEX;
 }
@@ -1286,7 +1286,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
     ControlID* control = jalv->controls.controls[i];
     if (control->type == PORT && control->is_writable) {
-      const struct Port* port = &jalv->ports[control->index];
+      const JalvPort* const port = &jalv->ports[control->index];
       jalv_print_control(jalv, port, port->control);
     }
   }

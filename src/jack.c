@@ -156,7 +156,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
   // Prepare port buffers
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    struct Port* port = &jalv->ports[p];
+    JalvPort* const port = &jalv->ports[p];
     if (port->sys_port && (port->type == TYPE_AUDIO || port->type == TYPE_CV)) {
       // Connect plugin port directly to Jack port buffer
       lilv_instance_connect_port(
@@ -202,7 +202,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
   // Deliver MIDI output and UI events
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    struct Port* const port = &jalv->ports[p];
+    JalvPort* const port = &jalv->ports[p];
     if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
         port->reports_latency) {
       // Get the latency in frames from the control output truncated to integer
@@ -268,7 +268,7 @@ jack_latency_cb(const jack_latency_callback_mode_t mode, void* const data)
   uint32_t             ports_found = 0;
   jack_latency_range_t range       = {UINT32_MAX, 0};
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    struct Port* const port = &jalv->ports[p];
+    JalvPort* const port = &jalv->ports[p];
     if (port->sys_port && port->flow == flow) {
       jack_latency_range_t r;
       jack_port_get_latency_range(port->sys_port, mode, &r);
@@ -292,7 +292,7 @@ jack_latency_cb(const jack_latency_callback_mode_t mode, void* const data)
 
   // Tell Jack about it
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    const struct Port* const port = &jalv->ports[p];
+    const JalvPort* const port = &jalv->ports[p];
     if (port->sys_port && port->flow == flow) {
       jack_port_set_latency_range(port->sys_port, mode, &range);
     }
@@ -401,8 +401,8 @@ jalv_backend_deactivate(Jalv* jalv)
 void
 jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 {
-  jack_client_t*     client = jalv->backend->client;
-  struct Port* const port   = &jalv->ports[port_index];
+  jack_client_t*  client = jalv->backend->client;
+  JalvPort* const port   = &jalv->ports[port_index];
 
   const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
 

@@ -60,7 +60,7 @@ apply_ui_events(Jalv* const jalv, const uint32_t nframes)
 
       const JalvEventTransfer* const msg = (const JalvEventTransfer*)body;
       assert(msg->port_index < jalv->num_ports);
-      struct Port* const    port = &jalv->ports[msg->port_index];
+      JalvPort* const       port = &jalv->ports[msg->port_index];
       LV2_Evbuf_Iterator    e    = lv2_evbuf_end(port->evbuf);
       const LV2_Atom* const atom = &msg->atom;
       lv2_evbuf_write(

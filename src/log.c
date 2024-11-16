@@ -20,9 +20,9 @@
 #include <stdio.h>
 
 void
-jalv_print_control(const Jalv* const        jalv,
-                   const struct Port* const port,
-                   const float              value)
+jalv_print_control(const Jalv* const     jalv,
+                   const JalvPort* const port,
+                   const float           value)
 {
   const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
   jalv_log(JALV_LOG_INFO, "%s = %f\n", lilv_node_as_string(sym), value);

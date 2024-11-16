@@ -18,7 +18,7 @@ enum PortFlow { FLOW_UNKNOWN, FLOW_INPUT, FLOW_OUTPUT };
 
 enum PortType { TYPE_UNKNOWN, TYPE_CONTROL, TYPE_AUDIO, TYPE_EVENT, TYPE_CV };
 
-struct Port {
+typedef struct {
   const LilvPort* lilv_port;       ///< LV2 port
   enum PortType   type;            ///< Data type
   enum PortFlow   flow;            ///< Data flow direction
@@ -29,7 +29,7 @@ struct Port {
   uint32_t        index;           ///< Port index
   float           control;         ///< For control ports, otherwise 0.0f
   bool            reports_latency; ///< For control port outputs
-};
+} JalvPort;
 
 JALV_END_DECLS
 

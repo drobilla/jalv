@@ -1,6 +1,7 @@
 // Copyright 2007-2022 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
+#include "port.h"
 #include "state.h"
 #include "types.h"
 
@@ -14,8 +15,6 @@
 
 #include <map>
 #include <vector>
-
-struct Port;
 
 class QDial;
 class QLabel;
@@ -42,8 +41,8 @@ private:
 };
 
 struct PortContainer {
-  Jalv* jalv;
-  Port* port;
+  Jalv*     jalv;
+  JalvPort* port;
 };
 
 class Control final : public QGroupBox
@@ -65,7 +64,7 @@ private:
 
   QDial*            dial;
   const LilvPlugin* plugin;
-  Port*             port;
+  JalvPort*         port;
 
   QLabel* label;
   QString name;

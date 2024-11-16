@@ -547,8 +547,8 @@ build_control_widget(Jalv* jalv)
   LilvNode*    lastGroup   = nullptr;
   QHBoxLayout* groupLayout = nullptr;
   for (int i = 0; i < portContainers.count(); ++i) {
-    const PortContainer portContainer = portContainers[i];
-    const Port* const   port          = portContainer.port;
+    const PortContainer   portContainer = portContainers[i];
+    const JalvPort* const port          = portContainer.port;
 
     auto* const control = new Control(portContainer, nullptr);
     LilvNode*   group =

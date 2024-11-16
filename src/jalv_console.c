@@ -186,7 +186,7 @@ jalv_print_controls(Jalv* jalv, bool writable, bool readable)
     ControlID* const control = jalv->controls.controls[i];
     if ((control->is_writable && writable) ||
         (control->is_readable && readable)) {
-      struct Port* const port = &jalv->ports[control->index];
+      JalvPort* const port = &jalv->ports[control->index];
       jalv_log(JALV_LOG_INFO,
                "%s = %f\n",
                lilv_node_as_string(control->symbol),
@@ -246,9 +246,9 @@ jalv_process_command(Jalv* jalv, const char* cmd)
     }
   } else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2 ||
              sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
-    struct Port* port = NULL;
+    JalvPort* port = NULL;
     for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-      struct Port*    p = &jalv->ports[i];
+      JalvPort* const p = &jalv->ports[i];
       const LilvNode* s = lilv_port_get_symbol(jalv->plugin, p->lilv_port);
       if (!strcmp(lilv_node_as_string(s), sym)) {
         port = p;

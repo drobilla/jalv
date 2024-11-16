@@ -99,7 +99,7 @@ struct JalvImpl {
   SuilInstance* ui_instance; ///< Plugin UI instance (shared library)
 #endif
   void*               window;          ///< Window (if applicable)
-  struct Port*        ports;           ///< Port array of size num_ports
+  JalvPort*           ports;           ///< Port array of size num_ports
   Controls            controls;        ///< Available plugin controls
   uint32_t            block_length;    ///< Audio buffer size (block length)
   size_t              midi_buf_size;   ///< Size of MIDI port buffers
@@ -135,7 +135,7 @@ void
 jalv_allocate_port_buffers(Jalv* jalv);
 
 /// Find a port by symbol
-struct Port*
+JalvPort*
 jalv_port_by_symbol(Jalv* jalv, const char* sym);
 
 /// Set a control to the given value
