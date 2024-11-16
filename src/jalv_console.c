@@ -246,15 +246,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
     }
   } else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2 ||
              sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
-    JalvPort* port = NULL;
-    for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-      JalvPort* const p = &jalv->ports[i];
-      const LilvNode* s = lilv_port_get_symbol(jalv->plugin, p->lilv_port);
-      if (!strcmp(lilv_node_as_string(s), sym)) {
-        port = p;
-        break;
-      }
-    }
+    JalvPort* const port = jalv_port_by_symbol(jalv, sym);
     if (port) {
       port->control = value;
       jalv_print_control(jalv, port, value);
