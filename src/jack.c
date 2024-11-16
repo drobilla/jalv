@@ -128,38 +128,49 @@ process_silent(Jalv* const jalv, const jack_nframes_t nframes)
   return 0;
 }
 
-/// Jack process callback
-static REALTIME int
-jack_process_cb(jack_nframes_t nframes, void* data)
+static bool
+process_transport(Jalv* const                  jalv,
+                  const jack_transport_state_t state,
+                  const jack_position_t        pos,
+                  const jack_nframes_t         nframes)
 {
-  Jalv* const    jalv   = (Jalv*)data;
-  jack_client_t* client = jalv->backend->client;
-
-  // Get transport state and position
-  jack_position_t              pos;
-  const jack_transport_state_t state   = jack_transport_query(client, &pos);
-  const bool                   rolling = state == JackTransportRolling;
-
   // If transport state is not as expected, then something has changed
+  const bool rolling = state == JackTransportRolling;
   const bool has_bbt = (pos.valid & JackPositionBBT);
   const bool xport_changed =
     (rolling != jalv->rolling || pos.frame != jalv->position ||
      (has_bbt && pos.beats_per_minute != jalv->bpm));
-
-  uint8_t         pos_buf[256] = {0};
-  LV2_Atom* const lv2_pos      = (LV2_Atom*)pos_buf;
-  if (xport_changed) {
-    // Build an LV2 position object to report change to plugin
-    lv2_atom_forge_set_buffer(&jalv->forge, pos_buf, sizeof(pos_buf));
-    LV2_Atom_Forge* forge = &jalv->forge;
-    forge_position(forge, &jalv->urids, state, pos);
-  }
 
   // Update transport state to expected values for next cycle
   jalv->position = rolling ? pos.frame + nframes : pos.frame;
   jalv->bpm      = has_bbt ? pos.beats_per_minute : jalv->bpm;
   jalv->rolling  = rolling;
 
+  return xport_changed;
+}
+
+/// Jack process callback
+static REALTIME int
+jack_process_cb(jack_nframes_t nframes, void* data)
+{
+  Jalv* const          jalv        = (Jalv*)data;
+  jack_client_t* const client      = jalv->backend->client;
+  uint64_t             pos_buf[64] = {0U};
+  LV2_Atom* const      lv2_pos     = (LV2_Atom*)pos_buf;
+
+  // Get transport state and position
+  jack_position_t              pos   = {0U};
+  const jack_transport_state_t state = jack_transport_query(client, &pos);
+
+  // Check if transport is discontinuous from last time and update state
+  const bool xport_changed = process_transport(jalv, state, pos, nframes);
+  if (xport_changed) {
+    // Build an LV2 position object to report change to plugin
+    lv2_atom_forge_set_buffer(&jalv->forge, (uint8_t*)pos_buf, sizeof(pos_buf));
+    forge_position(&jalv->forge, &jalv->urids, state, pos);
+  }
+
+  // Update play state and signal UI if necessary
   switch (jalv->play_state) {
   case JALV_RUNNING:
     break;
