@@ -171,30 +171,30 @@ set_port_value(const char* port_symbol,
 void
 jalv_apply_state(Jalv* jalv, const LilvState* state)
 {
-  bool must_pause = !jalv->safe_restore && jalv->play_state == JALV_RUNNING;
-  if (state) {
-    if (must_pause) {
-      jalv->play_state = JALV_PAUSE_REQUESTED;
-      zix_sem_wait(&jalv->paused);
-    }
+  const bool must_pause =
+    !jalv->safe_restore && jalv->play_state == JALV_RUNNING;
+  if (must_pause) {
+    jalv->play_state = JALV_PAUSE_REQUESTED;
+    zix_sem_wait(&jalv->paused);
+  }
 
-    const LV2_Feature* state_features[9] = {
-      &jalv->features.map_feature,
-      &jalv->features.unmap_feature,
-      &jalv->features.make_path_feature,
-      &jalv->features.state_sched_feature,
-      &jalv->features.safe_restore_feature,
-      &jalv->features.log_feature,
-      &jalv->features.options_feature,
-      NULL};
+  const LV2_Feature* state_features[9] = {
+    &jalv->features.map_feature,
+    &jalv->features.unmap_feature,
+    &jalv->features.make_path_feature,
+    &jalv->features.state_sched_feature,
+    &jalv->features.safe_restore_feature,
+    &jalv->features.log_feature,
+    &jalv->features.options_feature,
+    NULL,
+  };
 
-    lilv_state_restore(
-      state, jalv->instance, set_port_value, jalv, 0, state_features);
+  lilv_state_restore(
+    state, jalv->instance, set_port_value, jalv, 0, state_features);
 
-    if (must_pause) {
-      jalv->request_update = true;
-      jalv->play_state     = JALV_RUNNING;
-    }
+  if (must_pause) {
+    jalv->request_update = true;
+    jalv->play_state     = JALV_RUNNING;
   }
 }
 
@@ -203,7 +203,9 @@ jalv_apply_preset(Jalv* jalv, const LilvNode* preset)
 {
   lilv_state_free(jalv->preset);
   jalv->preset = lilv_state_new_from_world(jalv->world, &jalv->map, preset);
-  jalv_apply_state(jalv, jalv->preset);
+  if (jalv->preset) {
+    jalv_apply_state(jalv, jalv->preset);
+  }
   return 0;
 }
 
