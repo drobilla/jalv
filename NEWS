@@ -10,6 +10,7 @@ jalv (1.6.9) unstable; urgency=medium
   * Fix Jack latency recomputation when plugin latency changes
   * Fix clashing command line options
   * Fix minor memory leaks
+  * Only send control messages to designated lv2:control ports
   * Reduce Jack process callback overhead
   * Remove Gtk2 interface
   * Remove limits on the size of messages sent from plugin to UI

@@ -221,6 +221,16 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
   }
   lilv_node_free(min_size);
 
+  // Set primary flag for designated control port
+  if (port->type == TYPE_EVENT &&
+      has_designation(
+        &jalv->nodes, jalv->plugin, port, jalv->nodes.lv2_control)) {
+    port->is_primary = true;
+    if (port->flow == FLOW_INPUT && jalv->control_in == UINT32_MAX) {
+      jalv->control_in = port->index;
+    }
+  }
+
   // Set reports_latency flag
   if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
       (lilv_port_has_property(
@@ -243,19 +253,6 @@ jalv_create_ports(Jalv* jalv)
 
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     create_port(jalv, i, default_values[i]);
-  }
-
-  const LilvPort* control_input = lilv_plugin_get_port_by_designation(
-    jalv->plugin, jalv->nodes.lv2_InputPort, jalv->nodes.lv2_control);
-  if (control_input) {
-    const uint32_t index = lilv_port_get_index(jalv->plugin, control_input);
-    if (jalv->ports[index].type == TYPE_EVENT) {
-      jalv->control_in = index;
-    } else {
-      jalv_log(JALV_LOG_WARNING,
-               "Non-event port %u has lv2:control designation, ignored\n",
-               index);
-    }
   }
 
   free(default_values);
@@ -431,7 +428,7 @@ jalv_set_control(Jalv*            jalv,
   if (control->type == PORT && type == jalv->forge.Float) {
     JalvPort* const port = &jalv->ports[control->index];
     port->control        = *(const float*)body;
-  } else if (control->type == PROPERTY) {
+  } else if (control->type == PROPERTY && jalv->control_in != UINT32_MAX) {
     // Copy forge since it is used by process thread
     LV2_Atom_Forge       forge = jalv->forge;
     LV2_Atom_Forge_Frame frame;
@@ -552,7 +549,7 @@ jalv_init_ui(Jalv* jalv)
     }
   }
 
-  if (jalv->control_in != (uint32_t)-1) {
+  if (jalv->control_in != UINT32_MAX) {
     // Send patch:Get message for initial parameters/etc
     LV2_Atom_Forge       forge = jalv->forge;
     LV2_Atom_Forge_Frame frame;
@@ -929,7 +926,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->msg_buf_size  = 1024U;
   jalv->play_state    = JALV_PAUSED;
   jalv->bpm           = 120.0f;
-  jalv->control_in    = (uint32_t)-1;
+  jalv->control_in    = UINT32_MAX;
   jalv->log.urids     = &jalv->urids;
   jalv->log.tracing   = jalv->opts.trace;
 

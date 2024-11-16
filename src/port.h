@@ -35,6 +35,7 @@ typedef struct {
   uint32_t        index;           ///< Port index
   float           control;         ///< For control ports, otherwise 0.0f
   bool            reports_latency; ///< For control port outputs
+  bool            is_primary;      ///< True for main control/reponse channel
 } JalvPort;
 
 JALV_END_DECLS

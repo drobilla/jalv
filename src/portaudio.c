@@ -51,8 +51,7 @@ pa_process_cb(const void*                     inputs,
       }
     } else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
       lv2_evbuf_reset(port->evbuf, true);
-
-      if (jalv->request_update) {
+      if (port->is_primary && jalv->request_update) {
         // Plugin state has changed, request an update
         LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
         jalv_write_get_message(&iter, &jalv->urids);

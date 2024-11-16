@@ -191,15 +191,15 @@ jack_process_cb(jack_nframes_t nframes, void* data)
         jalv->instance, p, jack_port_get_buffer(port->sys_port, nframes));
     } else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
       lv2_evbuf_reset(port->evbuf, true);
-
-      // Write transport change event if applicable
       LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
-      if (xport_changed) {
+
+      if (port->is_primary && xport_changed) {
+        // Write new transport position
         lv2_evbuf_write(
           &iter, 0, 0, lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
       }
 
-      if (jalv->request_update) {
+      if (port->is_primary && jalv->request_update) {
         // Plugin state has changed, request an update
         jalv_write_get_message(&iter, &jalv->urids);
       }
