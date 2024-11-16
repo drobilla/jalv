@@ -9,6 +9,7 @@
 #include "jalv_internal.h"
 #include "log.h"
 #include "lv2_evbuf.h"
+#include "macros.h"
 #include "nodes.h"
 #include "port.h"
 #include "state.h"
@@ -54,18 +55,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifndef MIN
-#  define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#endif
-
-#ifndef MAX
-#  define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef ARRAY_SIZE
-#  define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-#endif
 
 /**
    Size factor for UI ring buffers.
