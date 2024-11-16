@@ -5,7 +5,9 @@
 #define JALV_PROCESS_H
 
 #include "attributes.h"
+#include "lv2_evbuf.h"
 #include "types.h"
+#include "urids.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -13,6 +15,15 @@
 JALV_BEGIN_DECLS
 
 // Code and data used in the realtime process thread
+
+/**
+   Write a patch:Get message to an event buffer.
+
+   This is used to request an update of plugin state when it has changed or the
+   UI needs updating for whatever reason.
+*/
+int
+jalv_write_get_message(LV2_Evbuf_Iterator* iter, const JalvURIDs* urids);
 
 /**
    Run the plugin for a block of frames.

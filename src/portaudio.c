@@ -11,7 +11,6 @@
 #include "types.h"
 
 #include "lilv/lilv.h"
-#include "lv2/atom/atom.h"
 #include "zix/attributes.h"
 
 #include <portaudio.h>
@@ -55,12 +54,8 @@ pa_process_cb(const void*                     inputs,
 
       if (jalv->request_update) {
         // Plugin state has changed, request an update
-        const LV2_Atom_Object get = {
-          {sizeof(LV2_Atom_Object_Body), jalv->urids.atom_Object},
-          {0, jalv->urids.patch_Get}};
         LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
-        lv2_evbuf_write(
-          &iter, 0, 0, get.atom.type, get.atom.size, LV2_ATOM_BODY(&get));
+        jalv_write_get_message(&iter, &jalv->urids);
       }
     } else if (port->type == TYPE_EVENT) {
       // Clear event output for plugin to write to

@@ -18,6 +18,19 @@
 #include <assert.h>
 #include <stddef.h>
 
+int
+jalv_write_get_message(LV2_Evbuf_Iterator* const iter,
+                       const JalvURIDs* const    urids)
+{
+  const LV2_Atom_Object get = {
+    {sizeof(LV2_Atom_Object_Body), urids->atom_Object},
+    {0U, urids->patch_Get},
+  };
+
+  return lv2_evbuf_write(
+    iter, 0, 0, get.atom.type, get.atom.size, LV2_ATOM_BODY_CONST(&get));
+}
+
 static int
 ring_error(const char* const message)
 {
