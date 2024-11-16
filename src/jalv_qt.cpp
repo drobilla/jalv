@@ -87,14 +87,14 @@ private:
   int doLayout(const QRect& rect, bool testOnly) const;
   int smartSpacing(QStyle::PixelMetric pm) const;
 
-  QList<QLayoutItem*> itemList;
-  int                 m_hSpace;
-  int                 m_vSpace;
+  QList<QLayoutItem*> _itemList;
+  int                 _hSpace;
+  int                 _vSpace;
 };
 
 FlowLayout::FlowLayout(int margin, int hSpacing, int vSpacing)
-  : m_hSpace(hSpacing)
-  , m_vSpace(vSpacing)
+  : _hSpace(hSpacing)
+  , _vSpace(vSpacing)
 {
   setContentsMargins(margin, margin, margin, margin);
 }
@@ -110,14 +110,14 @@ FlowLayout::~FlowLayout()
 void
 FlowLayout::addItem(QLayoutItem* item)
 {
-  itemList.append(item);
+  _itemList.append(item);
 }
 
 int
 FlowLayout::horizontalSpacing() const
 {
-  if (m_hSpace >= 0) {
-    return m_hSpace;
+  if (_hSpace >= 0) {
+    return _hSpace;
   }
 
   return smartSpacing(QStyle::PM_LayoutHorizontalSpacing);
@@ -126,8 +126,8 @@ FlowLayout::horizontalSpacing() const
 int
 FlowLayout::verticalSpacing() const
 {
-  if (m_vSpace >= 0) {
-    return m_vSpace;
+  if (_vSpace >= 0) {
+    return _vSpace;
   }
 
   return smartSpacing(QStyle::PM_LayoutVerticalSpacing);
@@ -136,20 +136,20 @@ FlowLayout::verticalSpacing() const
 int
 FlowLayout::count() const
 {
-  return itemList.size();
+  return _itemList.size();
 }
 
 QLayoutItem*
 FlowLayout::itemAt(int index) const
 {
-  return itemList.value(index);
+  return _itemList.value(index);
 }
 
 QLayoutItem*
 FlowLayout::takeAt(int index)
 {
-  if (index >= 0 && index < itemList.size()) {
-    return itemList.takeAt(index);
+  if (index >= 0 && index < _itemList.size()) {
+    return _itemList.takeAt(index);
   }
 
   return nullptr;
@@ -190,7 +190,7 @@ QSize
 FlowLayout::minimumSize() const
 {
   QSize size = {};
-  for (QLayoutItem* const item : itemList) {
+  for (QLayoutItem* const item : _itemList) {
     size = size.expandedTo(item->minimumSize());
   }
 
@@ -212,7 +212,7 @@ FlowLayout::doLayout(const QRect& rect, bool testOnly) const
   int         y             = effectiveRect.y();
   int         lineHeight    = 0;
 
-  for (QLayoutItem* const item : itemList) {
+  for (QLayoutItem* const item : _itemList) {
     QWidget* wid = item->widget();
 
     int spaceX = horizontalSpacing();
@@ -303,13 +303,14 @@ add_preset_to_menu(Jalv*           jalv,
 
 Control::Control(PortContainer portContainer, QWidget* parent)
   : QGroupBox(parent)
-  , dial(new QDial())
-  , plugin(portContainer.jalv->plugin)
-  , port(portContainer.port)
-  , label(new QLabel())
+  , _dial(new QDial())
+  , _plugin(portContainer.jalv->plugin)
+  , _port(portContainer.port)
+  , _label(new QLabel())
 {
-  const JalvNodes* nodes    = &portContainer.jalv->nodes;
-  const LilvPort*  lilvPort = port->lilv_port;
+  const JalvNodes*  nodes    = &portContainer.jalv->nodes;
+  const LilvPlugin* plugin   = _plugin;
+  const LilvPort*   lilvPort = _port->lilv_port;
 
   LilvNode* nmin = nullptr;
   LilvNode* nmax = nullptr;
@@ -319,9 +320,9 @@ Control::Control(PortContainer portContainer, QWidget* parent)
   LilvNode* stepsNode =
     lilv_port_get(plugin, lilvPort, nodes->pprops_rangeSteps);
   if (lilv_node_is_int(stepsNode)) {
-    steps = std::max(lilv_node_as_int(stepsNode), 2);
+    _steps = std::max(lilv_node_as_int(stepsNode), 2);
   } else {
-    steps = DIAL_STEPS;
+    _steps = DIAL_STEPS;
   }
   lilv_node_free(stepsNode);
 
@@ -336,52 +337,52 @@ Control::Control(PortContainer portContainer, QWidget* parent)
       }
 
       const float f = lilv_node_as_float(val);
-      scalePoints.push_back(f);
-      scaleMap[f] = lilv_node_as_string(lilv_scale_point_get_label(p));
+      _scalePoints.push_back(f);
+      _scaleMap[f] = lilv_node_as_string(lilv_scale_point_get_label(p));
     }
 
     lilv_scale_points_free(sp);
   }
 
   // Check port properties
-  isLogarithmic =
+  _isLogarithmic =
     lilv_port_has_property(plugin, lilvPort, nodes->pprops_logarithmic);
-  isInteger = lilv_port_has_property(plugin, lilvPort, nodes->lv2_integer);
-  isEnum    = lilv_port_has_property(plugin, lilvPort, nodes->lv2_enumeration);
+  _isInteger = lilv_port_has_property(plugin, lilvPort, nodes->lv2_integer);
+  _isEnum    = lilv_port_has_property(plugin, lilvPort, nodes->lv2_enumeration);
 
   if (lilv_port_has_property(plugin, lilvPort, nodes->lv2_toggled)) {
-    isInteger = true;
+    _isInteger = true;
 
-    if (!scaleMap[0]) {
-      scaleMap[0] = "Off";
+    if (!_scaleMap[0]) {
+      _scaleMap[0] = "Off";
     }
-    if (!scaleMap[1]) {
-      scaleMap[1] = "On";
+    if (!_scaleMap[1]) {
+      _scaleMap[1] = "On";
     }
   }
 
   // Find and set min, max and default values for port
-  const float defaultValue = ndef ? lilv_node_as_float(ndef) : port->control;
+  const float defaultValue = ndef ? lilv_node_as_float(ndef) : _port->control;
   setRange(lilv_node_as_float(nmin), lilv_node_as_float(nmax));
   setValue(defaultValue);
 
   // Fill layout
   auto* const layout = new QVBoxLayout();
-  layout->addWidget(label, 0, Qt::AlignHCenter);
-  layout->addWidget(dial, 0, Qt::AlignHCenter);
+  layout->addWidget(_label, 0, Qt::AlignHCenter);
+  layout->addWidget(_dial, 0, Qt::AlignHCenter);
   setLayout(layout);
 
   setMinimumWidth(CONTROL_WIDTH);
   setMaximumWidth(CONTROL_WIDTH);
 
   LilvNode* nname = lilv_port_get_name(plugin, lilvPort);
-  name            = QString("%1").arg(lilv_node_as_string(nname));
+  _name           = QString("%1").arg(lilv_node_as_string(nname));
 
   // Handle long names
-  if (stringWidth(name) > CONTROL_WIDTH) {
-    setTitle(fontMetrics().elidedText(name, Qt::ElideRight, CONTROL_WIDTH));
+  if (stringWidth(_name) > CONTROL_WIDTH) {
+    setTitle(fontMetrics().elidedText(_name, Qt::ElideRight, CONTROL_WIDTH));
   } else {
-    setTitle(name);
+    setTitle(_name);
   }
 
   // Set tooltip if comment is available
@@ -394,7 +395,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 
   setFlat(true);
 
-  connect(dial, SIGNAL(valueChanged(int)), this, SLOT(dialChanged(int)));
+  connect(_dial, SIGNAL(valueChanged(int)), this, SLOT(dialChanged(int)));
 
   lilv_node_free(nmin);
   lilv_node_free(nmax);
@@ -408,31 +409,31 @@ Control::setValue(float value)
 {
   float step = 0.0f;
 
-  if (isInteger) {
+  if (_isInteger) {
     step = value;
-  } else if (isEnum) {
-    step = (std::find(scalePoints.begin(), scalePoints.end(), value) -
-            scalePoints.begin());
-  } else if (isLogarithmic) {
-    step = steps * logf(value / min) / logf(max / min);
+  } else if (_isEnum) {
+    step = (std::find(_scalePoints.begin(), _scalePoints.end(), value) -
+            _scalePoints.begin());
+  } else if (_isLogarithmic) {
+    step = _steps * logf(value / _min) / logf(_max / _min);
   } else {
-    step = value * steps;
+    step = value * _steps;
   }
 
-  dial->setValue(step);
-  label->setText(getValueLabel(value));
+  _dial->setValue(step);
+  _label->setText(getValueLabel(value));
 }
 
 QString
 Control::getValueLabel(float value)
 {
-  if (scaleMap[value]) {
-    if (stringWidth(scaleMap[value]) > CONTROL_WIDTH) {
-      label->setToolTip(scaleMap[value]);
+  if (_scaleMap[value]) {
+    if (stringWidth(_scaleMap[value]) > CONTROL_WIDTH) {
+      _label->setToolTip(_scaleMap[value]);
       return fontMetrics().elidedText(
-        QString(scaleMap[value]), Qt::ElideRight, CONTROL_WIDTH);
+        QString(_scaleMap[value]), Qt::ElideRight, CONTROL_WIDTH);
     }
-    return scaleMap[value];
+    return _scaleMap[value];
   }
 
   return QString("%1").arg(value);
@@ -441,40 +442,40 @@ Control::getValueLabel(float value)
 void
 Control::setRange(float minRange, float maxRange)
 {
-  min = minRange;
-  max = maxRange;
+  _min = minRange;
+  _max = maxRange;
 
-  if (isLogarithmic) {
+  if (_isLogarithmic) {
     minRange = 1;
-    maxRange = steps;
-  } else if (isEnum) {
+    maxRange = _steps;
+  } else if (_isEnum) {
     minRange = 0;
-    maxRange = scalePoints.size() - 1;
-  } else if (!isInteger) {
-    minRange *= steps;
-    maxRange *= steps;
+    maxRange = _scalePoints.size() - 1;
+  } else if (!_isInteger) {
+    minRange *= _steps;
+    maxRange *= _steps;
   }
 
-  dial->setRange(minRange, maxRange);
+  _dial->setRange(minRange, maxRange);
 }
 
 float
 Control::getValue()
 {
-  if (isEnum) {
-    return scalePoints[dial->value()];
+  if (_isEnum) {
+    return _scalePoints[_dial->value()];
   }
 
-  if (isInteger) {
-    return dial->value();
+  if (_isInteger) {
+    return _dial->value();
   }
 
-  if (isLogarithmic) {
-    return min *
-           powf(max / min, static_cast<float>(dial->value()) / (steps - 1));
+  if (_isLogarithmic) {
+    return _min *
+           powf(_max / _min, static_cast<float>(_dial->value()) / (_steps - 1));
   }
 
-  return static_cast<float>(dial->value()) / steps;
+  return static_cast<float>(_dial->value()) / _steps;
 }
 
 int
@@ -492,8 +493,8 @@ Control::dialChanged(int)
 {
   const float value = getValue();
 
-  label->setText(getValueLabel(value));
-  port->control = value;
+  _label->setText(getValueLabel(value));
+  _port->control = value;
 }
 
 namespace {

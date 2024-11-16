@@ -62,19 +62,19 @@ private:
   float   getValue();
   int     stringWidth(const QString& str);
 
-  QDial*            dial;
-  const LilvPlugin* plugin;
-  JalvPort*         port;
+  QDial*            _dial;
+  const LilvPlugin* _plugin;
+  JalvPort*         _port;
 
-  QLabel* label;
-  QString name;
-  int     steps;
-  float   max{1.0f};
-  float   min{0.0f};
-  bool    isInteger{};
-  bool    isEnum{};
-  bool    isLogarithmic{};
+  QLabel* _label;
+  QString _name;
+  int     _steps;
+  float   _max{1.0f};
+  float   _min{0.0f};
+  bool    _isInteger{};
+  bool    _isEnum{};
+  bool    _isLogarithmic{};
 
-  std::vector<float>           scalePoints;
-  std::map<float, const char*> scaleMap;
+  std::vector<float>           _scalePoints;
+  std::map<float, const char*> _scaleMap;
 };
