@@ -19,10 +19,12 @@ jalv_init_urids(Symap* const symap, JalvURIDs* const urids)
 {
 #define MAP_URI(uri) symap_map(symap, (uri))
 
+  urids->atom_Chunk           = MAP_URI(LV2_ATOM__Chunk);
   urids->atom_Float           = MAP_URI(LV2_ATOM__Float);
   urids->atom_Int             = MAP_URI(LV2_ATOM__Int);
   urids->atom_Object          = MAP_URI(LV2_ATOM__Object);
   urids->atom_Path            = MAP_URI(LV2_ATOM__Path);
+  urids->atom_Sequence        = MAP_URI(LV2_ATOM__Sequence);
   urids->atom_String          = MAP_URI(LV2_ATOM__String);
   urids->atom_eventTransfer   = MAP_URI(LV2_ATOM__eventTransfer);
   urids->bufsz_maxBlockLength = MAP_URI(LV2_BUF_SIZE__maxBlockLength);

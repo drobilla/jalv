@@ -275,11 +275,7 @@ jalv_create_ports(Jalv* jalv)
 void
 jalv_allocate_port_buffers(Jalv* jalv)
 {
-  const LV2_URID atom_Chunk = jalv->map.map(
-    jalv->map.handle, lilv_node_as_string(jalv->nodes.atom_Chunk));
-
-  const LV2_URID atom_Sequence = jalv->map.map(
-    jalv->map.handle, lilv_node_as_string(jalv->nodes.atom_Sequence));
+  const JalvURIDs* const urids = &jalv->urids;
 
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     JalvPort* const port = &jalv->ports[i];
@@ -288,7 +284,8 @@ jalv_allocate_port_buffers(Jalv* jalv)
 
       const size_t size = port->buf_size ? port->buf_size : jalv->midi_buf_size;
 
-      port->evbuf = lv2_evbuf_new(size, atom_Chunk, atom_Sequence);
+      port->evbuf =
+        lv2_evbuf_new(size, urids->atom_Chunk, urids->atom_Sequence);
 
       lilv_instance_connect_port(
         jalv->instance, i, lv2_evbuf_get_buffer(port->evbuf));

@@ -12,10 +12,12 @@
 JALV_BEGIN_DECLS
 
 typedef struct {
+  LV2_URID atom_Chunk;
   LV2_URID atom_Float;
   LV2_URID atom_Int;
   LV2_URID atom_Object;
   LV2_URID atom_Path;
+  LV2_URID atom_Sequence;
   LV2_URID atom_String;
   LV2_URID atom_eventTransfer;
   LV2_URID bufsz_maxBlockLength;
