@@ -15,17 +15,23 @@
 
 #define MAX_PACKET_SIZE 4096U
 
+typedef enum {
+  STATE_SINGLE_THREADED, ///< Single-threaded worker (only state)
+  STATE_STOPPED,         ///< Thread is exited
+  STATE_LAUNCHED,        ///< Thread is running
+  STATE_MUST_EXIT,       ///< Thread exit requested
+} WorkerState;
+
 struct JalvWorkerImpl {
   ZixRing*                    requests;  ///< Requests to the worker
   ZixRing*                    responses; ///< Responses from the worker
   void*                       response;  ///< Worker response buffer
   ZixSem*                     lock;      ///< Lock for plugin work() method
-  bool                        exit;      ///< Exit flag
   ZixSem                      sem;       ///< Worker semaphore
+  WorkerState                 state;     ///< Worker state
   ZixThread                   thread;    ///< Worker thread
   LV2_Handle                  handle;    ///< Plugin handle
   const LV2_Worker_Interface* iface;     ///< Plugin worker interface
-  bool                        threaded;  ///< Run work in another thread
 };
 
 static LV2_Worker_Status
@@ -60,7 +66,7 @@ worker_func(void* const data)
   while (true) {
     // Wait for a request
     zix_sem_wait(&worker->sem);
-    if (worker->exit) {
+    if (worker->state == STATE_MUST_EXIT) {
       break;
     }
 
@@ -88,77 +94,35 @@ worker_func(void* const data)
   }
 
   free(buf);
+  worker->state = STATE_STOPPED;
   return NULL;
-}
-
-static ZixStatus
-jalv_worker_launch(JalvWorker* const worker)
-{
-  ZixStatus st = ZIX_STATUS_SUCCESS;
-
-  if ((st = zix_sem_init(&worker->sem, 0)) ||
-      (st = zix_thread_create(&worker->thread, 4096U, worker_func, worker))) {
-    return st;
-  }
-
-  ZixRing* const requests = zix_ring_new(NULL, MAX_PACKET_SIZE);
-  if (!requests) {
-    zix_thread_join(worker->thread);
-    zix_sem_destroy(&worker->sem);
-    return ZIX_STATUS_NO_MEM;
-  }
-
-  zix_ring_mlock(requests);
-  worker->requests = requests;
-  return ZIX_STATUS_SUCCESS;
 }
 
 JalvWorker*
 jalv_worker_new(ZixSem* const lock, const bool threaded)
 {
   JalvWorker* const worker    = (JalvWorker*)calloc(1, sizeof(JalvWorker));
+  ZixRing* const    requests  = zix_ring_new(NULL, MAX_PACKET_SIZE);
   ZixRing* const    responses = zix_ring_new(NULL, MAX_PACKET_SIZE);
   void* const       response  = calloc(1, MAX_PACKET_SIZE);
 
   if (worker && responses && response) {
-    worker->threaded  = threaded;
+    worker->requests  = requests;
     worker->responses = responses;
     worker->response  = response;
     worker->lock      = lock;
-    worker->exit      = false;
+    worker->state     = threaded ? STATE_STOPPED : STATE_SINGLE_THREADED;
 
+    zix_ring_mlock(requests);
     zix_ring_mlock(responses);
-    if (!threaded || !jalv_worker_launch(worker)) {
-      return worker;
-    }
+    return worker;
   }
 
   free(response);
   zix_ring_free(responses);
+  zix_ring_free(requests);
   free(worker);
   return NULL;
-}
-
-void
-jalv_worker_attach(JalvWorker* const                 worker,
-                   const LV2_Worker_Interface* const iface,
-                   LV2_Handle                        handle)
-{
-  if (worker) {
-    worker->iface  = iface;
-    worker->handle = handle;
-  }
-}
-
-void
-jalv_worker_exit(JalvWorker* const worker)
-{
-  if (worker && worker->threaded) {
-    worker->exit = true;
-    zix_sem_post(&worker->sem);
-    zix_thread_join(worker->thread);
-    worker->threaded = false;
-  }
 }
 
 void
@@ -173,6 +137,46 @@ jalv_worker_free(JalvWorker* const worker)
   }
 }
 
+ZixStatus
+jalv_worker_launch(JalvWorker* const worker)
+{
+  ZixStatus st = ZIX_STATUS_SUCCESS;
+  if (worker->state == STATE_STOPPED) {
+    if ((st = zix_sem_init(&worker->sem, 0))) {
+      return st;
+    }
+
+    if ((st = zix_thread_create(&worker->thread, 4096U, worker_func, worker))) {
+      zix_sem_destroy(&worker->sem);
+      return st;
+    }
+
+    worker->state = STATE_LAUNCHED;
+  }
+  return ZIX_STATUS_SUCCESS;
+}
+
+void
+jalv_worker_exit(JalvWorker* const worker)
+{
+  if (worker && worker->state == STATE_LAUNCHED) {
+    worker->state = STATE_MUST_EXIT;
+    zix_sem_post(&worker->sem);
+    zix_thread_join(worker->thread);
+  }
+}
+
+void
+jalv_worker_attach(JalvWorker* const                 worker,
+                   const LV2_Worker_Interface* const iface,
+                   LV2_Handle                        handle)
+{
+  if (worker) {
+    worker->iface  = iface;
+    worker->handle = handle;
+  }
+}
+
 LV2_Worker_Status
 jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
                      const uint32_t             size,
@@ -181,17 +185,16 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
   JalvWorker* const worker = (JalvWorker*)handle;
   LV2_Worker_Status st     = LV2_WORKER_SUCCESS;
 
-  if (!worker || !size) {
-    return LV2_WORKER_ERR_UNKNOWN;
-  }
+  if (!worker || !size || worker->state == STATE_STOPPED) {
+    st = LV2_WORKER_ERR_UNKNOWN;
 
-  if (worker->threaded) {
+  } else if (worker->state == STATE_LAUNCHED) {
     // Schedule a request to be executed by the worker thread
     if (!(st = jalv_worker_write_packet(worker->requests, size, data))) {
       zix_sem_post(&worker->sem);
     }
 
-  } else {
+  } else if (worker->state == STATE_SINGLE_THREADED) {
     // Execute work immediately in this thread
     zix_sem_wait(worker->lock);
     st = worker->iface->work(

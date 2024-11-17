@@ -1118,6 +1118,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     }
   }
 
+  jalv_worker_launch(jalv->worker);
+
   // Activate plugin
   lilv_instance_activate(jalv->instance);
 
