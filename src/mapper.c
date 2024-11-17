@@ -70,13 +70,13 @@ jalv_mapper_free(JalvMapper* const mapper)
 LV2_URID_Map*
 jalv_mapper_urid_map(JalvMapper* const mapper)
 {
-  return &mapper->map;
+  return mapper ? &mapper->map : NULL;
 }
 
 LV2_URID_Unmap*
 jalv_mapper_urid_unmap(JalvMapper* const mapper)
 {
-  return &mapper->unmap;
+  return mapper ? &mapper->unmap : NULL;
 }
 
 LV2_URID
@@ -88,5 +88,5 @@ jalv_mapper_map_uri(JalvMapper* const mapper, const char* const sym)
 const char*
 jalv_mapper_unmap_uri(const JalvMapper* mapper, uint32_t id)
 {
-  return symap_unmap(mapper->symap, id);
+  return mapper ? symap_unmap(mapper->symap, id) : NULL;
 }

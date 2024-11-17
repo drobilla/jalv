@@ -416,6 +416,7 @@ endif
 common_sources = files(
   'src/comm.c',
   'src/control.c',
+  'src/dumper.c',
   'src/jalv.c',
   'src/log.c',
   'src/lv2_evbuf.c',

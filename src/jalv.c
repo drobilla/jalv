@@ -4,6 +4,7 @@
 #include "backend.h"
 #include "comm.h"
 #include "control.h"
+#include "dumper.h"
 #include "frontend.h"
 #include "jalv_config.h"
 #include "jalv_internal.h"
@@ -31,12 +32,9 @@
 #include "lv2/options/options.h"
 #include "lv2/patch/patch.h"
 #include "lv2/state/state.h"
-#include "lv2/time/time.h"
 #include "lv2/ui/ui.h"
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
-#include "serd/serd.h"
-#include "sratom/sratom.h"
 #include "zix/allocator.h"
 #include "zix/attributes.h"
 #include "zix/filesystem.h"
@@ -379,7 +377,7 @@ jalv_send_to_plugin(void* const       jalv_handle,
         (sizeof(LV2_Atom) + atom->size != buffer_size)) {
       st = ZIX_STATUS_BAD_ARG;
     } else {
-      jalv_dump_atom(jalv, stdout, "UI => Plugin", atom, 36);
+      jalv_dump_atom(jalv->dumper, stdout, "UI => Plugin", atom, 36);
       st = jalv_write_event(
         jalv->ui_to_plugin, port_index, atom->size, atom->type, atom + 1U);
     }
@@ -546,30 +544,6 @@ jalv_init_ui(Jalv* jalv)
   }
 }
 
-void
-jalv_dump_atom(Jalv* const           jalv,
-               FILE* const           stream,
-               const char* const     label,
-               const LV2_Atom* const atom,
-               const int             color)
-{
-  if (jalv->opts.dump) {
-    char* const str = sratom_to_turtle(jalv->sratom,
-                                       jalv_mapper_urid_unmap(jalv->mapper),
-                                       "jalv:",
-                                       NULL,
-                                       NULL,
-                                       atom->type,
-                                       atom->size,
-                                       LV2_ATOM_BODY_CONST(atom));
-
-    jalv_ansi_start(stream, color);
-    fprintf(stream, "\n# %s (%u bytes):\n%s\n", label, atom->size, str);
-    jalv_ansi_reset(stream);
-    free(str);
-  }
-}
-
 static int
 ring_error(const char* const message)
 {
@@ -610,7 +584,7 @@ jalv_update(Jalv* jalv)
       }
     } else if (header.type == EVENT_TRANSFER) {
       const JalvEventTransfer* const msg = (const JalvEventTransfer*)body;
-      jalv_dump_atom(jalv, stdout, "Plugin => UI", &msg->atom, 35);
+      jalv_dump_atom(jalv->dumper, stdout, "Plugin => UI", &msg->atom, 35);
       jalv_frontend_port_event(jalv,
                                msg->port_index,
                                sizeof(LV2_Atom) + msg->atom.size,
@@ -738,21 +712,6 @@ jalv_select_custom_ui(const Jalv* const jalv)
   }
 
   return NULL;
-}
-
-static SerdEnv*
-jalv_new_env(void)
-{
-  SerdEnv* const env = serd_env_new(NULL);
-  if (env) {
-    serd_env_set_prefix_from_strings(
-      env, (const uint8_t*)"patch", (const uint8_t*)LV2_PATCH_PREFIX);
-    serd_env_set_prefix_from_strings(
-      env, (const uint8_t*)"time", (const uint8_t*)LV2_TIME_PREFIX);
-    serd_env_set_prefix_from_strings(
-      env, (const uint8_t*)"xsd", (const uint8_t*)LILV_NS_XSD);
-  }
-  return env;
 }
 
 static void
@@ -920,7 +879,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   jalv->world         = world;
   jalv->mapper        = jalv_mapper_new();
-  jalv->env           = jalv_new_env();
   jalv->block_length  = 4096U;
   jalv->midi_buf_size = 1024U;
   jalv->msg_buf_size  = 1024U;
@@ -930,6 +888,13 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->log.urids     = &jalv->urids;
   jalv->log.tracing   = jalv->opts.trace;
 
+  // Set up atom dumping for debugging if enabled
+  LV2_URID_Map* const   urid_map   = jalv_mapper_urid_map(jalv->mapper);
+  LV2_URID_Unmap* const urid_unmap = jalv_mapper_urid_unmap(jalv->mapper);
+  if (jalv->opts.dump) {
+    jalv->dumper = jalv_dumper_new(urid_map, urid_unmap);
+  }
+
   zix_sem_init(&jalv->work_lock, 1);
   zix_sem_init(&jalv->done, 0);
   zix_sem_init(&jalv->paused, 0);
@@ -937,13 +902,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_init_urids(jalv->mapper, &jalv->urids);
   jalv_init_nodes(world, &jalv->nodes);
   jalv_init_features(jalv);
-
-  LV2_URID_Map* const urid_map = jalv_mapper_urid_map(jalv->mapper);
   lv2_atom_forge_init(&jalv->forge, urid_map);
-
-  // Set up atom reading and writing environment
-  jalv->sratom = sratom_new(urid_map);
-  sratom_set_env(jalv->sratom, jalv->env);
 
   // Create temporary directory for plugin state
   jalv->temp_dir = zix_create_temporary_directory(NULL, "jalvXXXXXX");
@@ -1222,8 +1181,7 @@ jalv_close(Jalv* const jalv)
   }
   free(jalv->controls.controls);
 
-  sratom_free(jalv->sratom);
-  serd_env_free(jalv->env);
+  jalv_dumper_free(jalv->dumper);
   lilv_uis_free(jalv->uis);
   jalv_mapper_free(jalv->mapper);
   lilv_world_free(jalv->world);

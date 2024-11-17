@@ -6,6 +6,7 @@
 
 #include "attributes.h"
 #include "control.h"
+#include "dumper.h"
 #include "jalv_config.h"
 #include "log.h"
 #include "mapper.h"
@@ -19,8 +20,6 @@
 #include "zix/sem.h"
 
 #include "lilv/lilv.h"
-#include "serd/serd.h"
-#include "sratom/sratom.h"
 #if USE_SUIL
 #  include "suil/suil.h"
 #endif
@@ -71,8 +70,7 @@ struct JalvImpl {
   JalvNodes         nodes;        ///< Nodes
   JalvLog           log;          ///< Log for error/warning/debug messages
   LV2_Atom_Forge    forge;        ///< Atom forge
-  SerdEnv*          env;          ///< Environment for RDF printing
-  Sratom*           sratom;       ///< Atom serialiser
+  JalvDumper*       dumper;       ///< Atom dumper (console debug output)
   JalvBackend*      backend;      ///< Audio system backend
   ZixRing*          ui_to_plugin; ///< Port events from UI
   ZixRing*          plugin_to_ui; ///< Port events from plugin
@@ -155,14 +153,6 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent);
 /// Return true if the plugin UI isn't declared as non-resizable
 bool
 jalv_ui_is_resizable(Jalv* jalv);
-
-/// Dump an atom to stdout in a "developer-readable" format (Turtle)
-void
-jalv_dump_atom(Jalv*           jalv,
-               FILE*           stream,
-               const char*     label,
-               const LV2_Atom* atom,
-               int             color);
 
 /// Periodically update user interface
 int
