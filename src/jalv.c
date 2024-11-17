@@ -895,6 +895,24 @@ jalv_init_display(Jalv* const jalv)
   jalv_log(JALV_LOG_INFO, "Scale factor: %.01f\n", jalv->ui_scale_factor);
 }
 
+static LilvState*
+initial_state(LilvWorld* const    world,
+              LV2_URID_Map* const urid_map,
+              const char* const   state_path)
+{
+  LilvState* state = NULL;
+  if (state_path) {
+    if (zix_file_type(state_path) == ZIX_FILE_TYPE_DIRECTORY) {
+      char* const path = jalv_strjoin(state_path, "/state.ttl");
+      state            = lilv_state_new_from_file(world, urid_map, NULL, path);
+      free(path);
+    } else {
+      state = lilv_state_new_from_file(world, urid_map, NULL, state_path);
+    }
+  }
+  return state;
+}
+
 int
 jalv_open(Jalv* const jalv, int* argc, char*** argv)
 {
@@ -946,35 +964,27 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv_log(JALV_LOG_WARNING, "Failed to create temporary state directory\n");
   }
 
+  // Load initial state given in options if any
+  LilvState* state = initial_state(world, &jalv->map, jalv->opts.load);
+  if (jalv->opts.load && !state) {
+    jalv_log(JALV_LOG_ERR, "Failed to load state from %s\n", jalv->opts.load);
+    return -2;
+  }
+
   // Get plugin URI from loaded state or command line
-  LilvState* state      = NULL;
-  LilvNode*  plugin_uri = NULL;
-  if (jalv->opts.load) {
-    if (zix_file_type(jalv->opts.load) == ZIX_FILE_TYPE_DIRECTORY) {
-      char* path = jalv_strjoin(jalv->opts.load, "/state.ttl");
-      state = lilv_state_new_from_file(jalv->world, &jalv->map, NULL, path);
-      free(path);
-    } else {
-      state = lilv_state_new_from_file(
-        jalv->world, &jalv->map, NULL, jalv->opts.load);
-    }
-    if (!state) {
-      jalv_log(JALV_LOG_ERR, "Failed to load state from %s\n", jalv->opts.load);
-      return -2;
-    }
+  LilvNode* plugin_uri = NULL;
+  if (state) {
     plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
   } else if (*args.argc == 0) {
-    plugin_uri = jalv_frontend_select_plugin(jalv);
+    if (!(plugin_uri = jalv_frontend_select_plugin(jalv))) {
+      jalv_log(JALV_LOG_ERR, "Missing plugin URI, try lv2ls to list plugins\n");
+      return -3;
+    }
   } else if (*args.argc == 1) {
     plugin_uri = lilv_new_uri(world, (*args.argv)[0]);
   } else {
     jalv_log(JALV_LOG_ERR, "Unexpected trailing arguments\n");
     return -1;
-  }
-
-  if (!plugin_uri) {
-    jalv_log(JALV_LOG_ERR, "Missing plugin URI, try lv2ls to list plugins\n");
-    return -3;
   }
 
   // Find plugin
