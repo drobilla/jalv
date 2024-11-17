@@ -1024,12 +1024,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   }
 
   // Check for thread-safe state restore() method
-  LilvNode* state_threadSafeRestore =
-    lilv_new_uri(jalv->world, LV2_STATE__threadSafeRestore);
-  if (lilv_plugin_has_feature(jalv->plugin, state_threadSafeRestore)) {
-    jalv->safe_restore = true;
-  }
-  lilv_node_free(state_threadSafeRestore);
+  jalv->safe_restore =
+    lilv_plugin_has_feature(jalv->plugin, jalv->nodes.state_threadSafeRestore);
 
   if (!state) {
     // Not restoring state, load the plugin as a preset to get default

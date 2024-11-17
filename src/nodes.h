@@ -47,6 +47,7 @@ typedef struct {
   LilvNode* rdfs_label;
   LilvNode* rdfs_range;
   LilvNode* rsz_minimumSize;
+  LilvNode* state_threadSafeRestore;
   LilvNode* ui_showInterface;
   LilvNode* work_interface;
   LilvNode* work_schedule;
