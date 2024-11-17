@@ -6,12 +6,14 @@
 #include "comm.h"
 #include "jalv_internal.h"
 #include "log.h"
+#include "mapper.h"
 #include "port.h"
 #include "string_utils.h"
 
 #include "lilv/lilv.h"
 #include "lv2/core/lv2.h"
 #include "lv2/state/state.h"
+#include "lv2/urid/urid.h"
 #include "zix/attributes.h"
 #include "zix/ring.h"
 #include "zix/sem.h"
@@ -51,12 +53,15 @@ get_port_value(const char* port_symbol,
 void
 jalv_save(Jalv* jalv, const char* dir)
 {
+  LV2_URID_Map* const   map   = jalv_mapper_urid_map(jalv->mapper);
+  LV2_URID_Unmap* const unmap = jalv_mapper_urid_unmap(jalv->mapper);
+
   jalv->save_dir = jalv_strjoin(dir, "/");
 
   LilvState* const state =
     lilv_state_new_from_instance(jalv->plugin,
                                  jalv->instance,
-                                 &jalv->map,
+                                 map,
                                  jalv->temp_dir,
                                  dir,
                                  dir,
@@ -66,11 +71,8 @@ jalv_save(Jalv* jalv, const char* dir)
                                  LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE,
                                  NULL);
 
-  lilv_state_save(
-    jalv->world, &jalv->map, &jalv->unmap, state, NULL, dir, "state.ttl");
-
+  lilv_state_save(jalv->world, map, unmap, state, NULL, dir, "state.ttl");
   lilv_state_free(state);
-
   free(jalv->save_dir);
   jalv->save_dir = NULL;
 }
@@ -145,7 +147,7 @@ set_port_value(const char* port_symbol,
     jalv_log(JALV_LOG_ERR,
              "Preset `%s' value has bad type <%s>\n",
              port_symbol,
-             jalv->unmap.unmap(jalv->unmap.handle, type));
+             jalv_mapper_unmap_uri(jalv->mapper, type));
     return;
   }
 
@@ -215,7 +217,8 @@ int
 jalv_apply_preset(Jalv* jalv, const LilvNode* preset)
 {
   lilv_state_free(jalv->preset);
-  jalv->preset = lilv_state_new_from_world(jalv->world, &jalv->map, preset);
+  jalv->preset = lilv_state_new_from_world(
+    jalv->world, jalv_mapper_urid_map(jalv->mapper), preset);
   if (jalv->preset) {
     jalv_apply_state(jalv, jalv->preset);
   }
@@ -229,10 +232,13 @@ jalv_save_preset(Jalv*       jalv,
                  const char* label,
                  const char* filename)
 {
+  LV2_URID_Map* const   map   = jalv_mapper_urid_map(jalv->mapper);
+  LV2_URID_Unmap* const unmap = jalv_mapper_urid_unmap(jalv->mapper);
+
   LilvState* const state =
     lilv_state_new_from_instance(jalv->plugin,
                                  jalv->instance,
-                                 &jalv->map,
+                                 map,
                                  jalv->temp_dir,
                                  dir,
                                  dir,
@@ -246,8 +252,7 @@ jalv_save_preset(Jalv*       jalv,
     lilv_state_set_label(state, label);
   }
 
-  int ret = lilv_state_save(
-    jalv->world, &jalv->map, &jalv->unmap, state, uri, dir, filename);
+  int ret = lilv_state_save(jalv->world, map, unmap, state, uri, dir, filename);
 
   lilv_state_free(jalv->preset);
   jalv->preset = state;

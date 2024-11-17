@@ -5,7 +5,7 @@
 #define JALV_URIDS_H
 
 #include "attributes.h"
-#include "symap.h"
+#include "mapper.h"
 
 #include "lv2/urid/urid.h"
 
@@ -48,7 +48,7 @@ typedef struct {
 } JalvURIDs;
 
 void
-jalv_init_urids(Symap* symap, JalvURIDs* urids);
+jalv_init_urids(JalvMapper* mapper, JalvURIDs* urids);
 
 JALV_END_DECLS
 

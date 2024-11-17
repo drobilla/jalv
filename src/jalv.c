@@ -10,6 +10,7 @@
 #include "log.h"
 #include "lv2_evbuf.h"
 #include "macros.h"
+#include "mapper.h"
 #include "nodes.h"
 #include "port.h"
 #include "state.h"
@@ -36,7 +37,6 @@
 #include "lv2/worker/worker.h"
 #include "serd/serd.h"
 #include "sratom/sratom.h"
-#include "symap.h"
 #include "zix/allocator.h"
 #include "zix/attributes.h"
 #include "zix/filesystem.h"
@@ -66,26 +66,6 @@
 #define N_BUFFER_CYCLES 16
 
 static ZixSem* exit_sem = NULL; ///< Exit semaphore used by signal handler
-
-static LV2_URID
-map_uri(LV2_URID_Map_Handle handle, const char* uri)
-{
-  Jalv* jalv = (Jalv*)handle;
-  zix_sem_wait(&jalv->symap_lock);
-  const LV2_URID id = symap_map(jalv->symap, uri);
-  zix_sem_post(&jalv->symap_lock);
-  return id;
-}
-
-static const char*
-unmap_uri(LV2_URID_Unmap_Handle handle, LV2_URID urid)
-{
-  Jalv* jalv = (Jalv*)handle;
-  zix_sem_wait(&jalv->symap_lock);
-  const char* uri = symap_unmap(jalv->symap, urid);
-  zix_sem_post(&jalv->symap_lock);
-  return uri;
-}
 
 /// These features have no data
 static const LV2_Feature static_features[] = {
@@ -345,8 +325,11 @@ jalv_create_controls(Jalv* jalv, bool writable)
       }
     }
 
-    record = new_property_control(
-      jalv->world, property, &jalv->nodes, &jalv->map, &jalv->forge);
+    record = new_property_control(jalv->world,
+                                  property,
+                                  &jalv->nodes,
+                                  jalv_mapper_urid_map(jalv->mapper),
+                                  &jalv->forge);
 
     if (writable) {
       record->is_writable = true;
@@ -405,7 +388,7 @@ jalv_send_to_plugin(void* const       jalv_handle,
     jalv_log(JALV_LOG_ERR,
              "UI wrote with unsupported protocol %u (%s)\n",
              protocol,
-             unmap_uri(jalv, protocol));
+             jalv_mapper_unmap_uri(jalv->mapper, protocol));
   }
 
   if (st) {
@@ -572,7 +555,7 @@ jalv_dump_atom(Jalv* const           jalv,
 {
   if (jalv->opts.dump) {
     char* const str = sratom_to_turtle(jalv->sratom,
-                                       &jalv->unmap,
+                                       jalv_mapper_urid_unmap(jalv->mapper),
                                        "jalv:",
                                        NULL,
                                        NULL,
@@ -776,14 +759,14 @@ static void
 jalv_init_features(Jalv* const jalv)
 {
   // urid:map
-  jalv->map.handle = jalv;
-  jalv->map.map    = map_uri;
-  init_feature(&jalv->features.map_feature, LV2_URID__map, &jalv->map);
+  init_feature(&jalv->features.map_feature,
+               LV2_URID__map,
+               jalv_mapper_urid_map(jalv->mapper));
 
   // urid:unmap
-  jalv->unmap.handle = jalv;
-  jalv->unmap.unmap  = unmap_uri;
-  init_feature(&jalv->features.unmap_feature, LV2_URID__unmap, &jalv->unmap);
+  init_feature(&jalv->features.unmap_feature,
+               LV2_URID__unmap,
+               jalv_mapper_urid_unmap(jalv->mapper));
 
   // state:makePath
   jalv->features.make_path.handle = jalv;
@@ -936,8 +919,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   lilv_world_load_all(world);
 
   jalv->world         = world;
+  jalv->mapper        = jalv_mapper_new();
   jalv->env           = jalv_new_env();
-  jalv->symap         = symap_new();
   jalv->block_length  = 4096U;
   jalv->midi_buf_size = 1024U;
   jalv->msg_buf_size  = 1024U;
@@ -947,18 +930,19 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->log.urids     = &jalv->urids;
   jalv->log.tracing   = jalv->opts.trace;
 
-  zix_sem_init(&jalv->symap_lock, 1);
   zix_sem_init(&jalv->work_lock, 1);
   zix_sem_init(&jalv->done, 0);
   zix_sem_init(&jalv->paused, 0);
 
-  jalv_init_urids(jalv->symap, &jalv->urids);
+  jalv_init_urids(jalv->mapper, &jalv->urids);
   jalv_init_nodes(world, &jalv->nodes);
   jalv_init_features(jalv);
-  lv2_atom_forge_init(&jalv->forge, &jalv->map);
+
+  LV2_URID_Map* const urid_map = jalv_mapper_urid_map(jalv->mapper);
+  lv2_atom_forge_init(&jalv->forge, urid_map);
 
   // Set up atom reading and writing environment
-  jalv->sratom = sratom_new(&jalv->map);
+  jalv->sratom = sratom_new(urid_map);
   sratom_set_env(jalv->sratom, jalv->env);
 
   // Create temporary directory for plugin state
@@ -968,7 +952,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   }
 
   // Load initial state given in options if any
-  LilvState* state = initial_state(world, &jalv->map, jalv->opts.load);
+  LilvState* state = initial_state(world, urid_map, jalv->opts.load);
   if (jalv->opts.load && !state) {
     jalv_log(JALV_LOG_ERR, "Failed to load state from %s\n", jalv->opts.load);
     return -2;
@@ -1017,7 +1001,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     LilvNode* preset = lilv_new_uri(jalv->world, jalv->opts.preset);
 
     jalv_load_presets(jalv, NULL, NULL);
-    state        = lilv_state_new_from_world(jalv->world, &jalv->map, preset);
+    state        = lilv_state_new_from_world(jalv->world, urid_map, preset);
     jalv->preset = state;
     lilv_node_free(preset);
     if (!state) {
@@ -1033,7 +1017,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   if (!state) {
     // Not restoring state, load the plugin as a preset to get default
     state = lilv_state_new_from_world(
-      jalv->world, &jalv->map, lilv_plugin_get_uri(jalv->plugin));
+      jalv->world, urid_map, lilv_plugin_get_uri(jalv->plugin));
   }
 
   // Get a plugin UI
@@ -1231,8 +1215,6 @@ jalv_close(Jalv* const jalv)
   for (LilvNode** n = (LilvNode**)&jalv->nodes; *n; ++n) {
     lilv_node_free(*n);
   }
-  symap_free(jalv->symap);
-  zix_sem_destroy(&jalv->symap_lock);
 #if USE_SUIL
   suil_host_free(jalv->ui_host);
 #endif
@@ -1245,6 +1227,7 @@ jalv_close(Jalv* const jalv)
   sratom_free(jalv->sratom);
   serd_env_free(jalv->env);
   lilv_uis_free(jalv->uis);
+  jalv_mapper_free(jalv->mapper);
   lilv_world_free(jalv->world);
 
   zix_sem_destroy(&jalv->done);

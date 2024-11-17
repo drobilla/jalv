@@ -8,9 +8,9 @@
 #include "control.h"
 #include "jalv_config.h"
 #include "log.h"
+#include "mapper.h"
 #include "nodes.h"
 #include "options.h"
-#include "symap.h"
 #include "types.h"
 #include "urids.h"
 #include "worker.h"
@@ -65,17 +65,14 @@ typedef struct {
 /// Internal application state
 struct JalvImpl {
   JalvOptions       opts;         ///< Command-line options
+  LilvWorld*        world;        ///< Lilv World
+  JalvMapper*       mapper;       ///< URI mapper/unmapper
   JalvURIDs         urids;        ///< URIDs
   JalvNodes         nodes;        ///< Nodes
   JalvLog           log;          ///< Log for error/warning/debug messages
   LV2_Atom_Forge    forge;        ///< Atom forge
-  LilvWorld*        world;        ///< Lilv World
-  LV2_URID_Map      map;          ///< URI => Int map
-  LV2_URID_Unmap    unmap;        ///< Int => URI map
   SerdEnv*          env;          ///< Environment for RDF printing
   Sratom*           sratom;       ///< Atom serialiser
-  Symap*            symap;        ///< URI map
-  ZixSem            symap_lock;   ///< Lock for URI map
   JalvBackend*      backend;      ///< Audio system backend
   ZixRing*          ui_to_plugin; ///< Port events from UI
   ZixRing*          plugin_to_ui; ///< Port events from plugin

@@ -3,7 +3,7 @@
 
 #include "urids.h"
 
-#include "symap.h"
+#include "mapper.h"
 
 #include "lv2/atom/atom.h"
 #include "lv2/buf-size/buf-size.h"
@@ -15,9 +15,9 @@
 #include "lv2/ui/ui.h"
 
 void
-jalv_init_urids(Symap* const symap, JalvURIDs* const urids)
+jalv_init_urids(JalvMapper* const mapper, JalvURIDs* const urids)
 {
-#define MAP_URI(uri) symap_map(symap, (uri))
+#define MAP_URI(uri) jalv_mapper_map_uri(mapper, (uri))
 
   urids->atom_Chunk           = MAP_URI(LV2_ATOM__Chunk);
   urids->atom_Float           = MAP_URI(LV2_ATOM__Float);

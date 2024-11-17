@@ -419,6 +419,7 @@ common_sources = files(
   'src/jalv.c',
   'src/log.c',
   'src/lv2_evbuf.c',
+  'src/mapper.c',
   'src/nodes.c',
   'src/process.c',
   'src/state.c',
