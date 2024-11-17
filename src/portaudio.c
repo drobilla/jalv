@@ -1,4 +1,4 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2024 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "backend.h"
@@ -18,10 +18,23 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct JalvBackendImpl {
   PaStream* stream;
 };
+
+static int
+process_silent(Jalv* const         jalv,
+               void* const         outputs,
+               const unsigned long nframes)
+{
+  for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+    memset(((float**)outputs)[i], '\0', nframes * sizeof(float));
+  }
+
+  return jalv_bypass(jalv, nframes);
+}
 
 static int
 pa_process_cb(const void*                     inputs,
@@ -35,6 +48,11 @@ pa_process_cb(const void*                     inputs,
   (void)flags;
 
   Jalv* jalv = (Jalv*)handle;
+
+  // If execution is paused, emit silence and return
+  if (jalv->run_state == JALV_PAUSED) {
+    return process_silent(jalv, outputs, nframes);
+  }
 
   // Prepare port buffers
   uint32_t in_index  = 0;

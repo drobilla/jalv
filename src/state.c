@@ -1,4 +1,4 @@
-// Copyright 2007-2016 David Robillard <d@drobilla.net>
+// Copyright 2007-2024 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "state.h"
@@ -150,7 +150,7 @@ set_port_value(const char* port_symbol,
   }
 
   ZixStatus st = ZIX_STATUS_SUCCESS;
-  if (jalv->play_state != JALV_RUNNING) {
+  if (jalv->run_state != JALV_RUNNING) {
     // Set value on port struct directly
     port->control = fvalue;
   } else {
@@ -172,10 +172,18 @@ set_port_value(const char* port_symbol,
 void
 jalv_apply_state(Jalv* jalv, const LilvState* state)
 {
+  typedef struct {
+    JalvMessageHeader  head;
+    JalvRunStateChange body;
+  } PauseMessage;
+
   const bool must_pause =
-    !jalv->safe_restore && jalv->play_state == JALV_RUNNING;
+    !jalv->safe_restore && jalv->run_state == JALV_RUNNING;
   if (must_pause) {
-    jalv->play_state = JALV_PAUSE_REQUESTED;
+    const PauseMessage pause_msg = {
+      {RUN_STATE_CHANGE, sizeof(JalvRunStateChange)}, {JALV_PAUSED}};
+    zix_ring_write(jalv->ui_to_plugin, &pause_msg, sizeof(pause_msg));
+
     zix_sem_wait(&jalv->paused);
   }
 
@@ -194,9 +202,12 @@ jalv_apply_state(Jalv* jalv, const LilvState* state)
     state, jalv->instance, set_port_value, jalv, 0, state_features);
 
   if (must_pause) {
-    const JalvMessageHeader msg = {STATE_REQUEST, 0U};
-    zix_ring_write(jalv->ui_to_plugin, &msg, sizeof(msg));
-    jalv->play_state = JALV_RUNNING;
+    const JalvMessageHeader state_msg = {STATE_REQUEST, 0U};
+    zix_ring_write(jalv->ui_to_plugin, &state_msg, sizeof(state_msg));
+
+    const PauseMessage run_msg = {
+      {RUN_STATE_CHANGE, sizeof(JalvRunStateChange)}, {JALV_RUNNING}};
+    zix_ring_write(jalv->ui_to_plugin, &run_msg, sizeof(run_msg));
   }
 }
 

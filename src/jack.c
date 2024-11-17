@@ -125,7 +125,7 @@ process_silent(Jalv* const jalv, const jack_nframes_t nframes)
     }
   }
 
-  return 0;
+  return jalv_bypass(jalv, nframes);
 }
 
 static bool
@@ -158,6 +158,11 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   uint64_t             pos_buf[64] = {0U};
   LV2_Atom* const      lv2_pos     = (LV2_Atom*)pos_buf;
 
+  // If execution is paused, emit silence and return
+  if (jalv->run_state == JALV_PAUSED) {
+    return process_silent(jalv, nframes);
+  }
+
   // Get transport state and position
   jack_position_t              pos   = {0U};
   const jack_transport_state_t state = jack_transport_query(client, &pos);
@@ -168,18 +173,6 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     // Build an LV2 position object to report change to plugin
     lv2_atom_forge_set_buffer(&jalv->forge, (uint8_t*)pos_buf, sizeof(pos_buf));
     forge_position(&jalv->forge, &jalv->urids, state, pos);
-  }
-
-  // Update play state and signal UI if necessary
-  switch (jalv->play_state) {
-  case JALV_RUNNING:
-    break;
-  case JALV_PAUSE_REQUESTED:
-    jalv->play_state = JALV_PAUSED;
-    zix_sem_post(&jalv->paused);
-    break;
-  case JALV_PAUSED:
-    return process_silent(jalv, nframes);
   }
 
   // Prepare port buffers

@@ -924,7 +924,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->block_length  = 4096U;
   jalv->midi_buf_size = 1024U;
   jalv->msg_buf_size  = 1024U;
-  jalv->play_state    = JALV_PAUSED;
+  jalv->run_state     = JALV_PAUSED;
   jalv->bpm           = 120.0f;
   jalv->control_in    = UINT32_MAX;
   jalv->log.urids     = &jalv->urids;
@@ -1187,8 +1187,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->has_ui = jalv_frontend_discover(jalv);
 
   // Activate audio backend
+  jalv->run_state = JALV_RUNNING;
   jalv_backend_activate(jalv);
-  jalv->play_state = JALV_RUNNING;
 
   return 0;
 }

@@ -14,6 +14,7 @@
 #include "lv2/atom/atom.h"
 #include "lv2/core/lv2.h"
 #include "zix/ring.h"
+#include "zix/sem.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -81,6 +82,18 @@ apply_ui_events(Jalv* const jalv, const uint32_t nframes)
       lv2_evbuf_write(
         &iter, nframes, 0U, get.atom.type, get.atom.size, &get.body);
 
+    } else if (header.type == RUN_STATE_CHANGE) {
+      assert(header.size == sizeof(JalvRunStateChange));
+      JalvRunStateChange msg = {JALV_RUNNING};
+      if (zix_ring_read(ring, &msg, sizeof(msg)) != sizeof(msg)) {
+        return ring_error("Failed to read run state change from UI ring\n");
+      }
+
+      jalv->run_state = msg.state;
+      if (msg.state == JALV_PAUSED) {
+        zix_sem_post(&jalv->paused);
+      }
+
     } else {
       return ring_error("Unknown message type received from UI ring\n");
     }
@@ -114,4 +127,12 @@ jalv_run(Jalv* const jalv, const uint32_t nframes)
   }
 
   return send_ui_updates;
+}
+
+int
+jalv_bypass(Jalv* const jalv, const uint32_t nframes)
+{
+  // Read and apply control change events from UI
+  apply_ui_events(jalv, nframes);
+  return 0;
 }

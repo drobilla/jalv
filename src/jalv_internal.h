@@ -85,7 +85,7 @@ struct JalvImpl {
   ZixSem            work_lock;    ///< Lock for plugin work() method
   ZixSem            done;         ///< Exit semaphore
   ZixSem            paused;       ///< Paused signal from process thread
-  JalvPlayState     play_state;   ///< Current play state
+  JalvRunState      run_state;    ///< Current process thread run state
   char*             temp_dir;     ///< Temporary plugin state directory
   char*             save_dir;     ///< Plugin save directory
   const LilvPlugin* plugin;       ///< Plugin class (RDF data)

@@ -5,6 +5,7 @@
 #define JALV_COMM_H
 
 #include "attributes.h"
+#include "types.h"
 
 #include "lv2/atom/atom.h"
 #include "lv2/urid/urid.h"
@@ -24,6 +25,7 @@ typedef enum {
   EVENT_TRANSFER,      ///< Event transfer for a sequence port (atom)
   LATENCY_CHANGE,      ///< Change to plugin latency
   STATE_REQUEST,       ///< Request for a plugin state update (no payload)
+  RUN_STATE_CHANGE,    ///< Request to pause or resume running
 } JalvMessageType;
 
 /**
@@ -69,6 +71,16 @@ typedef struct {
 typedef struct {
   float value; ///< Latency in frames at the current sample rate
 } JalvLatencyChange;
+
+/**
+   The payload of a RUN_STATE_CHANGE message.
+
+   This message has a fixed sized, and is described in its entirety by this
+   struct.
+*/
+typedef struct {
+  JalvRunState state; ///< Run state to change to
+} JalvRunStateChange;
 
 /**
    Write a message in two parts to a ring.
