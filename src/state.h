@@ -8,10 +8,7 @@
 #include "types.h"
 
 #include "lilv/lilv.h"
-#include "lv2/atom/atom.h"
 #include "lv2/state/state.h"
-#include "lv2/urid/urid.h"
-#include "serd/serd.h"
 
 // State and preset utilities
 JALV_BEGIN_DECLS
@@ -43,20 +40,11 @@ jalv_save_preset(Jalv*       jalv,
 void
 jalv_save(Jalv* jalv, const char* dir);
 
-void
-jalv_save_port_values(Jalv* jalv, SerdWriter* writer, const SerdNode* subject);
-
 char*
 jalv_make_path(LV2_State_Make_Path_Handle handle, const char* path);
 
 void
 jalv_apply_state(Jalv* jalv, const LilvState* state);
-
-char*
-atom_to_turtle(LV2_URID_Unmap* unmap,
-               const SerdNode* subject,
-               const SerdNode* predicate,
-               const LV2_Atom* atom);
 
 JALV_END_DECLS
 
