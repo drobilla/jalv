@@ -37,17 +37,18 @@ JalvWorker*
 jalv_worker_new(ZixSem* lock, bool threaded);
 
 /**
-   Start performing work for a plugin, launching the thread if necessary.
+   Attach the worker to a plugin instance.
 
    This must be called before scheduling any work.
 
+   @param worker Worker to activate and attach to a plugin.
    @param iface Worker interface from plugin.
    @param handle Handle to the LV2 plugin this worker is for.
 */
 void
-jalv_worker_start(JalvWorker*                 worker,
-                  const LV2_Worker_Interface* iface,
-                  LV2_Handle                  handle);
+jalv_worker_attach(JalvWorker*                 worker,
+                   const LV2_Worker_Interface* iface,
+                   LV2_Handle                  handle);
 
 /**
    Terminate the worker's thread if necessary.

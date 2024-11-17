@@ -133,16 +133,16 @@ jalv_worker_new(ZixSem* const lock, const bool threaded)
     }
   }
 
-  free(worker);
-  zix_ring_free(responses);
   free(response);
+  zix_ring_free(responses);
+  free(worker);
   return NULL;
 }
 
 void
-jalv_worker_start(JalvWorker* const                 worker,
-                  const LV2_Worker_Interface* const iface,
-                  LV2_Handle                        handle)
+jalv_worker_attach(JalvWorker* const                 worker,
+                   const LV2_Worker_Interface* const iface,
+                   LV2_Handle                        handle)
 {
   if (worker) {
     worker->iface  = iface;

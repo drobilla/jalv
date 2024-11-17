@@ -1082,8 +1082,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     (const LV2_Worker_Interface*)lilv_instance_get_extension_data(
       jalv->instance, LV2_WORKER__interface);
 
-  jalv_worker_start(jalv->worker, worker_iface, jalv->instance->lv2_handle);
-  jalv_worker_start(
+  jalv_worker_attach(jalv->worker, worker_iface, jalv->instance->lv2_handle);
+  jalv_worker_attach(
     jalv->state_worker, worker_iface, jalv->instance->lv2_handle);
 
   jalv_log(JALV_LOG_INFO, "\n");
