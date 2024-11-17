@@ -757,15 +757,19 @@ jalv_select_custom_ui(const Jalv* const jalv)
   return NULL;
 }
 
-static void
-jalv_init_env(SerdEnv* const env)
+static SerdEnv*
+jalv_new_env(void)
 {
-  serd_env_set_prefix_from_strings(
-    env, (const uint8_t*)"patch", (const uint8_t*)LV2_PATCH_PREFIX);
-  serd_env_set_prefix_from_strings(
-    env, (const uint8_t*)"time", (const uint8_t*)LV2_TIME_PREFIX);
-  serd_env_set_prefix_from_strings(
-    env, (const uint8_t*)"xsd", (const uint8_t*)LILV_NS_XSD);
+  SerdEnv* const env = serd_env_new(NULL);
+  if (env) {
+    serd_env_set_prefix_from_strings(
+      env, (const uint8_t*)"patch", (const uint8_t*)LV2_PATCH_PREFIX);
+    serd_env_set_prefix_from_strings(
+      env, (const uint8_t*)"time", (const uint8_t*)LV2_TIME_PREFIX);
+    serd_env_set_prefix_from_strings(
+      env, (const uint8_t*)"xsd", (const uint8_t*)LILV_NS_XSD);
+  }
+  return env;
 }
 
 static void
@@ -932,7 +936,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   lilv_world_load_all(world);
 
   jalv->world         = world;
-  jalv->env           = serd_env_new(NULL);
+  jalv->env           = jalv_new_env();
   jalv->symap         = symap_new();
   jalv->block_length  = 4096U;
   jalv->midi_buf_size = 1024U;
@@ -948,7 +952,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   zix_sem_init(&jalv->done, 0);
   zix_sem_init(&jalv->paused, 0);
 
-  jalv_init_env(jalv->env);
   jalv_init_urids(jalv->symap, &jalv->urids);
   jalv_init_nodes(world, &jalv->nodes);
   jalv_init_features(jalv);
