@@ -169,6 +169,19 @@ new_property_control(LilvWorld* const       world,
 }
 
 void
+free_control(ControlID* const control)
+{
+  lilv_node_free(control->node);
+  lilv_node_free(control->symbol);
+  lilv_node_free(control->label);
+  lilv_node_free(control->group);
+  lilv_node_free(control->min);
+  lilv_node_free(control->max);
+  lilv_node_free(control->def);
+  free(control);
+}
+
+void
 add_control(Controls* controls, ControlID* control)
 {
   ControlID** const new_controls = (ControlID**)realloc(

@@ -80,6 +80,10 @@ new_property_control(LilvWorld*       world,
                      LV2_URID_Map*    map,
                      LV2_Atom_Forge*  forge);
 
+/// Free a control allocated with new_port_control() or new_property_control()
+void
+free_control(ControlID* control);
+
 /// Add a control to the given controls set, reallocating as necessary
 void
 add_control(Controls* controls, ControlID* control);

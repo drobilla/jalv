@@ -1229,15 +1229,7 @@ jalv_close(Jalv* const jalv)
 #endif
 
   for (unsigned i = 0; i < jalv->controls.n_controls; ++i) {
-    ControlID* const control = jalv->controls.controls[i];
-    lilv_node_free(control->node);
-    lilv_node_free(control->symbol);
-    lilv_node_free(control->label);
-    lilv_node_free(control->group);
-    lilv_node_free(control->min);
-    lilv_node_free(control->max);
-    lilv_node_free(control->def);
-    free(control);
+    free_control(jalv->controls.controls[i]);
   }
   free(jalv->controls.controls);
 
