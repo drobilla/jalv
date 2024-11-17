@@ -6,6 +6,7 @@
 
 #include "attributes.h"
 #include "lv2_evbuf.h"
+#include "types.h"
 
 #include "lilv/lilv.h"
 
@@ -13,16 +14,6 @@
 #include <stdint.h>
 
 JALV_BEGIN_DECLS
-
-typedef enum { FLOW_UNKNOWN, FLOW_INPUT, FLOW_OUTPUT } PortFlow;
-
-typedef enum {
-  TYPE_UNKNOWN,
-  TYPE_CONTROL,
-  TYPE_AUDIO,
-  TYPE_EVENT,
-  TYPE_CV
-} PortType;
 
 typedef struct {
   const LilvPort* lilv_port;       ///< LV2 port

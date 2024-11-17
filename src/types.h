@@ -20,6 +20,18 @@ typedef struct JalvImpl Jalv;
 /// Audio/MIDI backend
 typedef struct JalvBackendImpl JalvBackend;
 
+/// Plugin port "direction"
+typedef enum { FLOW_UNKNOWN, FLOW_INPUT, FLOW_OUTPUT } PortFlow;
+
+/// Plugin port type
+typedef enum {
+  TYPE_UNKNOWN,
+  TYPE_CONTROL,
+  TYPE_AUDIO,
+  TYPE_EVENT,
+  TYPE_CV
+} PortType;
+
 JALV_END_DECLS
 
 #endif // JALV_TYPES_H
