@@ -89,14 +89,6 @@ feature_is_supported(const Jalv* jalv, const char* uri)
   return false;
 }
 
-/// Abort and exit on error
-static void
-die(const char* msg)
-{
-  jalv_log(JALV_LOG_ERR, "%s\n", msg);
-  exit(EXIT_FAILURE);
-}
-
 static bool
 has_designation(const JalvNodes* const  nodes,
                 const LilvPlugin* const plugin,
@@ -125,7 +117,7 @@ has_designation(const JalvNodes* const  nodes,
    This is called before plugin and Jack instantiation.  The remaining
    instance-specific setup (e.g. buffers) is done later in activate_port().
 */
-static void
+static int
 create_port(Jalv* jalv, uint32_t port_index)
 {
   JalvPort* const port = &jalv->ports[port_index];
@@ -148,7 +140,8 @@ create_port(Jalv* jalv, uint32_t port_index)
                jalv->plugin, port->lilv_port, jalv->nodes.lv2_OutputPort)) {
     port->flow = FLOW_OUTPUT;
   } else if (!optional) {
-    die("Mandatory port has unknown type (neither input nor output)");
+    jalv_log(JALV_LOG_ERR, "Mandatory port is neither input nor output\n");
+    return 1;
   }
 
   const bool hidden = !jalv->opts.show_hidden &&
@@ -182,7 +175,8 @@ create_port(Jalv* jalv, uint32_t port_index)
                jalv->plugin, port->lilv_port, jalv->nodes.atom_AtomPort)) {
     port->type = TYPE_EVENT;
   } else if (!optional) {
-    die("Mandatory port has unknown data type");
+    jalv_log(JALV_LOG_ERR, "Mandatory port has unknown data type\n");
+    return 2;
   }
 
   // Set buffer size
@@ -214,10 +208,12 @@ create_port(Jalv* jalv, uint32_t port_index)
          &jalv->nodes, jalv->plugin, port, jalv->nodes.lv2_latency))) {
     port->reports_latency = true;
   }
+
+  return 0;
 }
 
 /// Create port structures from data (via create_port()) for all ports
-static void
+static int
 jalv_create_ports(Jalv* jalv)
 {
   jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
@@ -229,8 +225,12 @@ jalv_create_ports(Jalv* jalv)
     jalv->plugin, NULL, NULL, jalv->controls_buf);
 
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    create_port(jalv, i);
+    if (create_port(jalv, i)) {
+      return 1;
+    }
   }
+
+  return 0;
 }
 
 void
@@ -1003,8 +1003,12 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     }
   }
 
-  // Create port and control structures
-  jalv_create_ports(jalv);
+  // Create port structures
+  if (jalv_create_ports(jalv)) {
+    return -10;
+  }
+
+  // Create input and output control structures
   jalv_create_controls(jalv, true);
   jalv_create_controls(jalv, false);
 
