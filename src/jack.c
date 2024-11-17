@@ -217,7 +217,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
     if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
         port->reports_latency) {
       // Get the latency in frames from the control output truncated to integer
-      const float    value = port->control;
+      const float    value = jalv->controls_buf[p];
       const uint32_t frames =
         (value >= 0.0f && value <= max_latency) ? (uint32_t)value : 0U;
 
@@ -260,7 +260,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       }
     } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&
                port->type == TYPE_CONTROL) {
-      jalv_write_control(jalv->plugin_to_ui, p, port->control);
+      jalv_write_control(jalv->plugin_to_ui, p, jalv->controls_buf[p]);
     }
   }
 
@@ -432,7 +432,8 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
   case TYPE_UNKNOWN:
     break;
   case TYPE_CONTROL:
-    lilv_instance_connect_port(jalv->instance, port_index, &port->control);
+    lilv_instance_connect_port(
+      jalv->instance, port_index, &jalv->controls_buf[port_index]);
     break;
   case TYPE_AUDIO:
     port->sys_port = jack_port_register(

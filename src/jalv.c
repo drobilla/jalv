@@ -48,7 +48,6 @@
 #  include "suil/suil.h"
 #endif
 
-#include <math.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -149,7 +148,7 @@ has_designation(const JalvNodes* const  nodes,
    instance-specific setup (e.g. buffers) is done later in activate_port().
 */
 static void
-create_port(Jalv* jalv, uint32_t port_index, float default_value)
+create_port(Jalv* jalv, uint32_t port_index)
 {
   JalvPort* const port = &jalv->ports[port_index];
 
@@ -158,7 +157,6 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
   port->evbuf     = NULL;
   port->buf_size  = 0;
   port->index     = port_index;
-  port->control   = 0.0f;
   port->flow      = FLOW_UNKNOWN;
 
   const bool optional = lilv_port_has_property(
@@ -183,8 +181,7 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
   // Set control values
   if (lilv_port_is_a(
         jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
-    port->type    = TYPE_CONTROL;
-    port->control = isnan(default_value) ? 0.0f : default_value;
+    port->type = TYPE_CONTROL;
     if (!hidden) {
       add_control(&jalv->controls,
                   new_port_control(jalv->world,
@@ -247,15 +244,15 @@ jalv_create_ports(Jalv* jalv)
 {
   jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
   jalv->ports     = (JalvPort*)calloc(jalv->num_ports, sizeof(JalvPort));
-  float* default_values =
-    (float*)calloc(lilv_plugin_get_num_ports(jalv->plugin), sizeof(float));
-  lilv_plugin_get_port_ranges_float(jalv->plugin, NULL, NULL, default_values);
+
+  // Allocate control port buffers array and set to default values
+  jalv->controls_buf = (float*)calloc(jalv->num_ports, sizeof(float));
+  lilv_plugin_get_port_ranges_float(
+    jalv->plugin, NULL, NULL, jalv->controls_buf);
 
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    create_port(jalv, i, default_values[i]);
+    create_port(jalv, i);
   }
-
-  free(default_values);
 }
 
 void
@@ -426,8 +423,7 @@ jalv_set_control(Jalv*            jalv,
                  const void*      body)
 {
   if (control->type == PORT && type == jalv->forge.Float) {
-    JalvPort* const port = &jalv->ports[control->index];
-    port->control        = *(const float*)body;
+    jalv->controls_buf[control->index] = *(const float*)body;
   } else if (control->type == PROPERTY && jalv->control_in != UINT32_MAX) {
     // Copy forge since it is used by process thread
     LV2_Atom_Forge       forge = jalv->forge;
@@ -545,7 +541,7 @@ jalv_init_ui(Jalv* jalv)
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     if (jalv->ports[i].type == TYPE_CONTROL) {
       jalv_frontend_port_event(
-        jalv, i, sizeof(float), 0, &jalv->ports[i].control);
+        jalv, i, sizeof(float), 0, &jalv->controls_buf[i]);
     }
   }
 
@@ -1176,7 +1172,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     ControlID* control = jalv->controls.controls[i];
     if (control->type == PORT && control->is_writable) {
       const JalvPort* const port = &jalv->ports[control->index];
-      jalv_print_control(jalv, port, port->control);
+      jalv_print_control(jalv, port, jalv->controls_buf[control->index]);
     }
   }
 
@@ -1232,6 +1228,7 @@ jalv_close(Jalv* const jalv)
   zix_ring_free(jalv->plugin_to_ui);
   zix_free(NULL, jalv->ui_msg);
   zix_free(NULL, jalv->audio_msg);
+  free(jalv->controls_buf);
   for (LilvNode** n = (LilvNode**)&jalv->nodes; *n; ++n) {
     lilv_node_free(*n);
   }

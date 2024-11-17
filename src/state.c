@@ -42,7 +42,7 @@ get_port_value(const char* port_symbol,
   if (port && port->flow == FLOW_INPUT && port->type == TYPE_CONTROL) {
     *size = sizeof(float);
     *type = jalv->forge.Float;
-    return &port->control;
+    return &jalv->controls_buf[port->index];
   }
   *size = *type = 0;
   return NULL;
@@ -152,7 +152,7 @@ set_port_value(const char* port_symbol,
   ZixStatus st = ZIX_STATUS_SUCCESS;
   if (jalv->run_state != JALV_RUNNING) {
     // Set value on port struct directly
-    port->control = fvalue;
+    jalv->controls_buf[port->index] = fvalue;
   } else {
     // Send value to plugin (as if from UI)
     st = jalv_write_control(jalv->ui_to_plugin, port->index, fvalue);

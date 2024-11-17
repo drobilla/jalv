@@ -101,6 +101,7 @@ struct JalvImpl {
   void*               window;          ///< Window (if applicable)
   JalvPort*           ports;           ///< Port array of size num_ports
   Controls            controls;        ///< Available plugin controls
+  float*              controls_buf;    ///< Control port buffers array
   uint32_t            block_length;    ///< Audio buffer size (block length)
   size_t              midi_buf_size;   ///< Size of MIDI port buffers
   size_t              msg_buf_size;    ///< Maximum size of a single message

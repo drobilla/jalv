@@ -50,7 +50,7 @@ apply_ui_events(Jalv* const jalv, const uint32_t nframes)
       }
 
       assert(msg.port_index < jalv->num_ports);
-      jalv->ports[msg.port_index].control = msg.value;
+      jalv->controls_buf[msg.port_index] = msg.value;
 
     } else if (header.type == EVENT_TRANSFER) {
       assert(header.size <= jalv->msg_buf_size);

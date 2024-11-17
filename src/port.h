@@ -24,7 +24,6 @@ typedef struct {
   void*           widget;          ///< Control widget, if applicable
   size_t          buf_size;        ///< Custom buffer size, or 0
   uint32_t        index;           ///< Port index
-  float           control;         ///< For control ports, otherwise 0.0f
   bool            reports_latency; ///< For control port outputs
   bool            is_primary;      ///< True for main control/reponse channel
 } JalvPort;

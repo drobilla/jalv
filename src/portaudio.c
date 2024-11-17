@@ -97,7 +97,7 @@ pa_process_cb(const void*                     inputs,
       }
     } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&
                port->type == TYPE_CONTROL) {
-      jalv_write_control(jalv->plugin_to_ui, p, port->control);
+      jalv_write_control(jalv->plugin_to_ui, p, jalv->controls_buf[p]);
     }
   }
 
@@ -217,7 +217,8 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
   JalvPort* const port = &jalv->ports[port_index];
 
   if (port->type == TYPE_CONTROL) {
-    lilv_instance_connect_port(jalv->instance, port_index, &port->control);
+    lilv_instance_connect_port(
+      jalv->instance, port_index, &jalv->controls_buf[port_index]);
   }
 }
 

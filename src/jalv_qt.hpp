@@ -62,9 +62,9 @@ private:
   float   getValue();
   int     stringWidth(const QString& str);
 
-  QDial*            _dial;
-  const LilvPlugin* _plugin;
-  JalvPort*         _port;
+  QDial*    _dial;
+  Jalv*     _jalv;
+  JalvPort* _port;
 
   QLabel* _label;
   QString _name;

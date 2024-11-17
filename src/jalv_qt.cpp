@@ -304,12 +304,12 @@ add_preset_to_menu(Jalv*           jalv,
 Control::Control(PortContainer portContainer, QWidget* parent)
   : QGroupBox(parent)
   , _dial(new QDial())
-  , _plugin(portContainer.jalv->plugin)
+  , _jalv(portContainer.jalv)
   , _port(portContainer.port)
   , _label(new QLabel())
 {
   const JalvNodes*  nodes    = &portContainer.jalv->nodes;
-  const LilvPlugin* plugin   = _plugin;
+  const LilvPlugin* plugin   = portContainer.jalv->plugin;
   const LilvPort*   lilvPort = _port->lilv_port;
 
   LilvNode* nmin = nullptr;
@@ -362,7 +362,9 @@ Control::Control(PortContainer portContainer, QWidget* parent)
   }
 
   // Find and set min, max and default values for port
-  const float defaultValue = ndef ? lilv_node_as_float(ndef) : _port->control;
+  const float defaultValue = ndef
+                               ? lilv_node_as_float(ndef)
+                               : portContainer.jalv->controls_buf[_port->index];
   setRange(lilv_node_as_float(nmin), lilv_node_as_float(nmax));
   setValue(defaultValue);
 
@@ -494,7 +496,7 @@ Control::dialChanged(int)
   const float value = getValue();
 
   _label->setText(getValueLabel(value));
-  _port->control = value;
+  _jalv->controls_buf[_port->index] = value;
 }
 
 namespace {
