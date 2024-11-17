@@ -906,7 +906,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   JalvFrontendArgs args = {argc, argv};
   const int        ret  = jalv_frontend_init(&args, &jalv->opts);
   if (ret) {
-    jalv_close(jalv);
     return ret;
   }
 
@@ -961,7 +960,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     }
     if (!state) {
       jalv_log(JALV_LOG_ERR, "Failed to load state from %s\n", jalv->opts.load);
-      jalv_close(jalv);
       return -2;
     }
     plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
@@ -971,13 +969,11 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     plugin_uri = lilv_new_uri(world, (*args.argv)[0]);
   } else {
     jalv_log(JALV_LOG_ERR, "Unexpected trailing arguments\n");
-    jalv_close(jalv);
     return -1;
   }
 
   if (!plugin_uri) {
     jalv_log(JALV_LOG_ERR, "Missing plugin URI, try lv2ls to list plugins\n");
-    jalv_close(jalv);
     return -3;
   }
 
@@ -989,7 +985,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   lilv_node_free(plugin_uri);
   if (!jalv->plugin) {
     jalv_log(JALV_LOG_ERR, "Failed to find plugin\n");
-    jalv_close(jalv);
     return -4;
   }
 
@@ -1014,7 +1009,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     lilv_node_free(preset);
     if (!state) {
       jalv_log(JALV_LOG_ERR, "Failed to find preset <%s>\n", jalv->opts.preset);
-      jalv_close(jalv);
       return -5;
     }
   }
@@ -1064,7 +1058,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   if (!(jalv->backend = jalv_backend_init(jalv))) {
     jalv_log(JALV_LOG_ERR, "Failed to connect to audio system\n");
-    jalv_close(jalv);
     return -6;
   }
 
@@ -1105,7 +1098,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->feature_list = (const LV2_Feature**)calloc(1, sizeof(features));
   if (!jalv->feature_list) {
     jalv_log(JALV_LOG_ERR, "Failed to allocate feature list\n");
-    jalv_close(jalv);
     return -7;
   }
   memcpy(jalv->feature_list, features, sizeof(features));
@@ -1116,7 +1108,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     const char* uri = lilv_node_as_uri(lilv_nodes_get(req_feats, f));
     if (!feature_is_supported(jalv, uri)) {
       jalv_log(JALV_LOG_ERR, "Feature %s is not supported\n", uri);
-      jalv_close(jalv);
       return -8;
     }
   }
@@ -1127,7 +1118,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv->plugin, jalv->sample_rate, jalv->feature_list);
   if (!jalv->instance) {
     jalv_log(JALV_LOG_ERR, "Failed to instantiate plugin\n");
-    jalv_close(jalv);
     return -9;
   }
 
@@ -1286,6 +1276,7 @@ main(int argc, char** argv)
   memset(&jalv, '\0', sizeof(Jalv));
 
   if (jalv_open(&jalv, &argc, &argv)) {
+    jalv_close(&jalv);
     return EXIT_FAILURE;
   }
 

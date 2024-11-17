@@ -549,7 +549,7 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
   }
 
   if (err || (err = jalv_open(jalv, &argc, &argv))) {
-    jalv_backend_close(jalv);
+    jalv_close(jalv);
     free(jalv);
   }
 
