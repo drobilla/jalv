@@ -14,6 +14,7 @@
 #include "mapper.h"
 #include "nodes.h"
 #include "port.h"
+#include "query.h"
 #include "state.h"
 #include "string_utils.h"
 #include "types.h"
@@ -87,28 +88,6 @@ feature_is_supported(const Jalv* jalv, const char* uri)
     }
   }
   return false;
-}
-
-static bool
-has_designation(const JalvNodes* const  nodes,
-                const LilvPlugin* const plugin,
-                const JalvPort* const   port,
-                const LilvNode* const   designation)
-{
-  LilvNodes* const designations =
-    lilv_port_get_value(plugin, port->lilv_port, nodes->lv2_designation);
-
-  bool found = false;
-  LILV_FOREACH (nodes, n, designations) {
-    const LilvNode* const node = lilv_nodes_get(designations, n);
-    if (lilv_node_equals(node, designation)) {
-      found = true;
-      break;
-    }
-  }
-
-  lilv_nodes_free(designations);
-  return found;
 }
 
 /**
@@ -192,8 +171,8 @@ create_port(Jalv* jalv, uint32_t port_index)
 
   // Set primary flag for designated control port
   if (port->type == TYPE_EVENT &&
-      has_designation(
-        &jalv->nodes, jalv->plugin, port, jalv->nodes.lv2_control)) {
+      jalv_port_has_designation(
+        &jalv->nodes, jalv->plugin, port->lilv_port, jalv->nodes.lv2_control)) {
     port->is_primary = true;
     if (port->flow == FLOW_INPUT && jalv->control_in == UINT32_MAX) {
       jalv->control_in = port->index;
@@ -204,8 +183,10 @@ create_port(Jalv* jalv, uint32_t port_index)
   if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
       (lilv_port_has_property(
          jalv->plugin, port->lilv_port, jalv->nodes.lv2_reportsLatency) ||
-       has_designation(
-         &jalv->nodes, jalv->plugin, port, jalv->nodes.lv2_latency))) {
+       jalv_port_has_designation(&jalv->nodes,
+                                 jalv->plugin,
+                                 port->lilv_port,
+                                 jalv->nodes.lv2_latency))) {
     port->reports_latency = true;
   }
 
@@ -489,30 +470,6 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
   (void)native_ui_type;
   (void)parent;
 #endif
-}
-
-bool
-jalv_ui_is_resizable(Jalv* jalv)
-{
-  if (!jalv->ui) {
-    return false;
-  }
-
-  const LilvNode* s   = lilv_ui_get_uri(jalv->ui);
-  LilvNode*       p   = lilv_new_uri(jalv->world, LV2_CORE__optionalFeature);
-  LilvNode*       fs  = lilv_new_uri(jalv->world, LV2_UI__fixedSize);
-  LilvNode*       nrs = lilv_new_uri(jalv->world, LV2_UI__noUserResize);
-
-  LilvNodes* fs_matches  = lilv_world_find_nodes(jalv->world, s, p, fs);
-  LilvNodes* nrs_matches = lilv_world_find_nodes(jalv->world, s, p, nrs);
-
-  lilv_nodes_free(nrs_matches);
-  lilv_nodes_free(fs_matches);
-  lilv_node_free(nrs);
-  lilv_node_free(fs);
-  lilv_node_free(p);
-
-  return !fs_matches && !nrs_matches;
 }
 
 void

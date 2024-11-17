@@ -158,10 +158,6 @@ jalv_init_ui(Jalv* jalv);
 void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent);
 
-/// Return true if the plugin UI isn't declared as non-resizable
-bool
-jalv_ui_is_resizable(Jalv* jalv);
-
 /// Periodically update user interface
 int
 jalv_update(Jalv* jalv);

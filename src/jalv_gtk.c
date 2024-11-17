@@ -6,6 +6,7 @@
 #include "jalv_internal.h"
 #include "log.h"
 #include "options.h"
+#include "query.h"
 #include "state.h"
 #include "types.h"
 
@@ -1491,7 +1492,8 @@ jalv_frontend_open(Jalv* jalv)
     GtkWidget* widget = (GtkWidget*)suil_instance_get_widget(jalv->ui_instance);
 
     gtk_container_add(GTK_CONTAINER(ui_box), widget);
-    gtk_window_set_resizable(GTK_WINDOW(window), jalv_ui_is_resizable(jalv));
+    gtk_window_set_resizable(GTK_WINDOW(window),
+                             jalv_ui_is_resizable(jalv->world, jalv->ui));
     gtk_widget_show_all(vbox);
     gtk_widget_grab_focus(widget);
   } else {

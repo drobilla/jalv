@@ -7,6 +7,7 @@
 #include "nodes.h"
 #include "options.h"
 #include "port.h"
+#include "query.h"
 
 #include "lilv/lilv.h"
 #include "suil/suil.h"
@@ -699,7 +700,7 @@ jalv_frontend_open(Jalv* jalv)
   jalv_init_ui(jalv);
 
   win->show();
-  if (jalv->ui_instance && !jalv_ui_is_resizable(jalv)) {
+  if (jalv->ui_instance && !jalv_ui_is_resizable(jalv->world, jalv->ui)) {
     widget->setMinimumSize(widget->width(), widget->height());
     widget->setMaximumSize(widget->width(), widget->height());
     win->adjustSize();
