@@ -1118,30 +1118,47 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     }
   }
 
-  jalv_worker_launch(jalv->worker);
-
-  // Activate plugin
-  lilv_instance_activate(jalv->instance);
-
   // Discover UI
   jalv->has_ui = jalv_frontend_discover(jalv);
+  return 0;
+}
 
-  // Activate audio backend
+int
+jalv_activate(Jalv* const jalv)
+{
   jalv->run_state = JALV_RUNNING;
-  jalv_backend_activate(jalv);
 
+  if (jalv->backend) {
+    if (jalv->worker) {
+      jalv_worker_launch(jalv->worker);
+    }
+    lilv_instance_activate(jalv->instance);
+    jalv_backend_activate(jalv);
+  }
+
+  return 0;
+}
+
+int
+jalv_deactivate(Jalv* const jalv)
+{
+  if (jalv->backend) {
+    jalv_backend_deactivate(jalv);
+    lilv_instance_deactivate(jalv->instance);
+    if (jalv->worker) {
+      jalv_worker_exit(jalv->worker);
+    }
+  }
+
+  jalv->run_state = JALV_PAUSED;
   return 0;
 }
 
 int
 jalv_close(Jalv* const jalv)
 {
-  // Terminate the worker
-  jalv_worker_exit(jalv->worker);
-
-  // Deactivate audio
+  jalv_deactivate(jalv);
   if (jalv->backend) {
-    jalv_backend_deactivate(jalv);
     jalv_backend_close(jalv);
   }
 
@@ -1156,12 +1173,11 @@ jalv_close(Jalv* const jalv)
   jalv_worker_free(jalv->worker);
   jalv_worker_free(jalv->state_worker);
 
-  // Deactivate plugin
+  // Free UI and plugin instances
 #if USE_SUIL
   suil_instance_free(jalv->ui_instance);
 #endif
   if (jalv->instance) {
-    lilv_instance_deactivate(jalv->instance);
     lilv_instance_free(jalv->instance);
   }
 
@@ -1217,13 +1233,15 @@ main(int argc, char** argv)
   Jalv jalv;
   memset(&jalv, '\0', sizeof(Jalv));
 
+  // Initialize application
   if (jalv_open(&jalv, &argc, &argv)) {
     jalv_close(&jalv);
     return EXIT_FAILURE;
   }
 
-  // Set up signal handlers
+  // Set up signal handlers and activate audio processing
   setup_signals(&jalv);
+  jalv_activate(&jalv);
 
   // Run UI (or prompt at console)
   jalv_frontend_open(&jalv);
@@ -1231,5 +1249,7 @@ main(int argc, char** argv)
   // Wait for finish signal from UI or signal handler
   zix_sem_wait(&jalv.done);
 
+  // Deactivate audio processing and tear down application
+  jalv_deactivate(&jalv);
   return jalv_close(&jalv);
 }

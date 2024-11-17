@@ -126,6 +126,14 @@ jalv_open(Jalv* jalv, int* argc, char*** argv);
 int
 jalv_close(Jalv* jalv);
 
+/// Activate audio processing
+int
+jalv_activate(Jalv* jalv);
+
+/// Deactivate audio processing
+int
+jalv_deactivate(Jalv* jalv);
+
 /// Allocate appropriately-sized port buffers and connect the plugin to them
 void
 jalv_allocate_port_buffers(Jalv* jalv);

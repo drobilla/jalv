@@ -404,7 +404,7 @@ jalv_backend_activate(Jalv* jalv)
 void
 jalv_backend_deactivate(Jalv* jalv)
 {
-  if (jalv->backend && !jalv->backend->is_internal_client) {
+  if (!jalv->backend->is_internal_client) {
     jack_deactivate(jalv->backend->client);
   }
 }
@@ -551,6 +551,8 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
   if (err || (err = jalv_open(jalv, &argc, &argv))) {
     jalv_close(jalv);
     free(jalv);
+  } else {
+    jalv_activate(jalv);
   }
 
   free(argv);
@@ -566,6 +568,7 @@ jack_finish(void* const arg)
 {
   Jalv* const jalv = (Jalv*)arg;
   if (jalv) {
+    jalv_deactivate(jalv);
     if (jalv_close(jalv)) {
       jalv_log(JALV_LOG_ERR, "Failed to close Jalv\n");
     }
