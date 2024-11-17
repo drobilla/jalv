@@ -8,6 +8,7 @@
 
 #include "lilv/lilv.h"
 
+// Cached lilv nodes
 JALV_BEGIN_DECLS
 
 typedef struct {

@@ -13,9 +13,8 @@
 #include "lv2/urid/urid.h"
 #include "serd/serd.h"
 
-JALV_BEGIN_DECLS
-
 // State and preset utilities
+JALV_BEGIN_DECLS
 
 typedef int (*PresetSink)(Jalv*           jalv,
                           const LilvNode* node,

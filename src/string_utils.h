@@ -6,6 +6,7 @@
 
 #include "attributes.h"
 
+// String utilities
 JALV_BEGIN_DECLS
 
 /// Return a newly allocated copy of a string

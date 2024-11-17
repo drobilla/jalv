@@ -12,9 +12,8 @@
 
 #include <stdbool.h>
 
-JALV_BEGIN_DECLS
-
 // Interface that must be implemented by UIs
+JALV_BEGIN_DECLS
 
 /// Command-line arguments passed to an executable
 typedef struct {

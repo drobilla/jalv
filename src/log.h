@@ -21,9 +21,8 @@
 #  define JALV_LOG_FUNC(fmt, arg1)
 #endif
 
-JALV_BEGIN_DECLS
-
 // String and log utilities
+JALV_BEGIN_DECLS
 
 typedef enum {
   JALV_LOG_ERR     = 3,

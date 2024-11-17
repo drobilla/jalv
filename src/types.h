@@ -6,6 +6,7 @@
 
 #include "attributes.h"
 
+// Basic internal type declarations
 JALV_BEGIN_DECLS
 
 /// Process thread running state

@@ -9,6 +9,7 @@
 
 #include "lv2/urid/urid.h"
 
+// Cached LV2 URIDs
 JALV_BEGIN_DECLS
 
 typedef struct {

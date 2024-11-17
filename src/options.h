@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 
+// Program options
 JALV_BEGIN_DECLS
 
 typedef struct {

@@ -15,9 +15,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Support for plugin controls (control port or event-based)
 JALV_BEGIN_DECLS
-
-// Plugin control utilities
 
 /// Type of plugin control
 typedef enum {

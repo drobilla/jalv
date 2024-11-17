@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// Worker implementation
 JALV_BEGIN_DECLS
 
 /**

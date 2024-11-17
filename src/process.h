@@ -10,9 +10,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-JALV_BEGIN_DECLS
-
 // Code and data used in the realtime process thread
+JALV_BEGIN_DECLS
 
 /**
    Run the plugin for a block of frames.

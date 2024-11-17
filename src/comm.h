@@ -14,9 +14,8 @@
 
 #include <stdint.h>
 
-JALV_BEGIN_DECLS
-
 // Communication between the audio and main threads via rings
+JALV_BEGIN_DECLS
 
 /// Type of an internal message in a communication ring
 typedef enum {

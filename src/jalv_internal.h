@@ -39,6 +39,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+// "Shared" internal application declarations
 JALV_BEGIN_DECLS
 
 /// LV2 features and associated data to be passed to plugins

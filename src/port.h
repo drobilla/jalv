@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Application port state
 JALV_BEGIN_DECLS
 
 typedef struct {

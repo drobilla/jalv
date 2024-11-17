@@ -9,9 +9,8 @@
 
 #include <stdint.h>
 
-JALV_BEGIN_DECLS
-
 // Interface that must be implemented by audio/MIDI backends
+JALV_BEGIN_DECLS
 
 /// Initialize the audio and MIDI systems
 JalvBackend*
