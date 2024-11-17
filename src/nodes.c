@@ -66,3 +66,11 @@ jalv_init_nodes(LilvWorld* const world, JalvNodes* const nodes)
 
 #undef MAP_NODE
 }
+
+void
+jalv_free_nodes(JalvNodes* const nodes)
+{
+  for (LilvNode** n = (LilvNode**)nodes; *n; ++n) {
+    lilv_node_free(*n);
+  }
+}

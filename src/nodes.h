@@ -58,6 +58,9 @@ typedef struct {
 void
 jalv_init_nodes(LilvWorld* world, JalvNodes* nodes);
 
+void
+jalv_free_nodes(JalvNodes* nodes);
+
 JALV_END_DECLS
 
 #endif // JALV_NODES_H

@@ -1212,9 +1212,7 @@ jalv_close(Jalv* const jalv)
   zix_free(NULL, jalv->ui_msg);
   zix_free(NULL, jalv->audio_msg);
   free(jalv->controls_buf);
-  for (LilvNode** n = (LilvNode**)&jalv->nodes; *n; ++n) {
-    lilv_node_free(*n);
-  }
+  jalv_free_nodes(&jalv->nodes);
 #if USE_SUIL
   suil_host_free(jalv->ui_host);
 #endif
