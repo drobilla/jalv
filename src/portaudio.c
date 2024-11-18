@@ -104,16 +104,28 @@ pa_process_cb(const void*                     inputs,
   return paContinue;
 }
 
-static JalvBackend*
+static int
 pa_error(const char* msg, PaError err)
 {
   jalv_log(JALV_LOG_ERR, "%s (%s)\n", msg, Pa_GetErrorText(err));
   Pa_Terminate();
-  return NULL;
+  return 1;
 }
 
 JalvBackend*
-jalv_backend_init(Jalv* jalv)
+jalv_backend_allocate(void)
+{
+  return (JalvBackend*)calloc(1, sizeof(JalvBackend));
+}
+
+void
+jalv_backend_free(JalvBackend* const backend)
+{
+  free(backend);
+}
+
+int
+jalv_backend_open(Jalv* jalv)
 {
   PaStreamParameters inputParameters;
   PaStreamParameters outputParameters;
@@ -177,18 +189,14 @@ jalv_backend_init(Jalv* jalv)
   // jalv->block_length  = FIXME
   jalv->midi_buf_size = 4096;
 
-  // Allocate and return opaque backend
-  JalvBackend* backend = (JalvBackend*)calloc(1, sizeof(JalvBackend));
-  backend->stream      = stream;
-  return backend;
+  jalv->backend->stream = stream;
+  return 0;
 }
 
 void
-jalv_backend_close(Jalv* jalv)
+jalv_backend_close(Jalv* ZIX_UNUSED(jalv))
 {
   Pa_Terminate();
-  free(jalv->backend);
-  jalv->backend = NULL;
 }
 
 void

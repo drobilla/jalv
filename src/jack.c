@@ -342,13 +342,25 @@ jack_create_client(Jalv* jalv)
 }
 
 JalvBackend*
-jalv_backend_init(Jalv* jalv)
+jalv_backend_allocate(void)
+{
+  return (JalvBackend*)calloc(1, sizeof(JalvBackend));
+}
+
+void
+jalv_backend_free(JalvBackend* const backend)
+{
+  free(backend);
+}
+
+int
+jalv_backend_open(Jalv* jalv)
 {
   jack_client_t* const client =
-    jalv->backend ? jalv->backend->client : jack_create_client(jalv);
+    jalv->backend->client ? jalv->backend->client : jack_create_client(jalv);
 
   if (!client) {
-    return NULL;
+    return 1;
   }
 
   jalv_log(JALV_LOG_INFO, "JACK name:    %s\n", jack_get_client_name(client));
@@ -369,29 +381,17 @@ jalv_backend_init(Jalv* jalv)
   jack_on_shutdown(client, &jack_shutdown_cb, arg);
   jack_set_latency_callback(client, &jack_latency_cb, arg);
 
-  if (jalv->backend) {
-    /* Internal JACK client, jalv->backend->is_internal_client was already set
-       in jack_initialize() when allocating the backend. */
-    return jalv->backend;
-  }
-
-  // External JACK client, allocate and return opaque backend
-  JalvBackend* backend        = (JalvBackend*)calloc(1, sizeof(JalvBackend));
-  backend->client             = client;
-  backend->is_internal_client = false;
-  return backend;
+  jalv->backend->client             = client;
+  jalv->backend->is_internal_client = false;
+  return 0;
 }
 
 void
 jalv_backend_close(Jalv* jalv)
 {
-  if (jalv->backend) {
-    if (!jalv->backend->is_internal_client) {
-      jack_client_close(jalv->backend->client);
-    }
-
-    free(jalv->backend);
-    jalv->backend = NULL;
+  if (jalv->backend && jalv->backend->client &&
+      !jalv->backend->is_internal_client) {
+    jack_client_close(jalv->backend->client);
   }
 }
 
@@ -404,7 +404,7 @@ jalv_backend_activate(Jalv* jalv)
 void
 jalv_backend_deactivate(Jalv* jalv)
 {
-  if (!jalv->backend->is_internal_client) {
+  if (!jalv->backend->is_internal_client && jalv->backend->client) {
     jack_deactivate(jalv->backend->client);
   }
 }
@@ -514,7 +514,7 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
     return ENOMEM;
   }
 
-  if (!(jalv->backend = (JalvBackend*)calloc(1, sizeof(JalvBackend)))) {
+  if (!(jalv->backend = jalv_backend_allocate())) {
     free(jalv);
     return ENOMEM;
   }
@@ -573,6 +573,7 @@ jack_finish(void* const arg)
       jalv_log(JALV_LOG_ERR, "Failed to close Jalv\n");
     }
 
+    jalv_backend_free(jalv->backend);
     free(jalv);
   }
 }

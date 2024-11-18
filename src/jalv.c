@@ -966,7 +966,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_create_controls(jalv, true);
   jalv_create_controls(jalv, false);
 
-  if (!(jalv->backend = jalv_backend_init(jalv))) {
+  if (jalv_backend_open(jalv)) {
     jalv_log(JALV_LOG_ERR, "Failed to connect to audio system\n");
     return -6;
   }
@@ -1093,10 +1093,12 @@ jalv_deactivate(Jalv* const jalv)
 {
   if (jalv->backend) {
     jalv_backend_deactivate(jalv);
+  }
+  if (jalv->instance) {
     lilv_instance_deactivate(jalv->instance);
-    if (jalv->worker) {
-      jalv_worker_exit(jalv->worker);
-    }
+  }
+  if (jalv->worker) {
+    jalv_worker_exit(jalv->worker);
   }
 
   jalv->run_state = JALV_PAUSED;
@@ -1181,6 +1183,7 @@ main(int argc, char** argv)
 {
   Jalv jalv;
   memset(&jalv, '\0', sizeof(Jalv));
+  jalv.backend = jalv_backend_allocate();
 
   // Initialize application
   if (jalv_open(&jalv, &argc, &argv)) {
@@ -1200,5 +1203,7 @@ main(int argc, char** argv)
 
   // Deactivate audio processing and tear down application
   jalv_deactivate(&jalv);
-  return jalv_close(&jalv);
+  const int ret = jalv_close(&jalv);
+  jalv_backend_free(jalv.backend);
+  return ret;
 }
