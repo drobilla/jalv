@@ -7,7 +7,7 @@
 #include "attributes.h"
 #include "mapper.h"
 
-#include "lv2/urid/urid.h"
+#include <lv2/urid/urid.h>
 
 // Cached LV2 URIDs
 JALV_BEGIN_DECLS

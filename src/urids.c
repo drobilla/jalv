@@ -5,14 +5,14 @@
 
 #include "mapper.h"
 
-#include "lv2/atom/atom.h"
-#include "lv2/buf-size/buf-size.h"
-#include "lv2/log/log.h"
-#include "lv2/midi/midi.h"
-#include "lv2/parameters/parameters.h"
-#include "lv2/patch/patch.h"
-#include "lv2/time/time.h"
-#include "lv2/ui/ui.h"
+#include <lv2/atom/atom.h>
+#include <lv2/buf-size/buf-size.h>
+#include <lv2/log/log.h>
+#include <lv2/midi/midi.h>
+#include <lv2/parameters/parameters.h>
+#include <lv2/patch/patch.h>
+#include <lv2/time/time.h>
+#include <lv2/ui/ui.h>
 
 void
 jalv_init_urids(JalvMapper* const mapper, JalvURIDs* const urids)

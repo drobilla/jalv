@@ -8,7 +8,7 @@
 #include "options.h"
 #include "types.h"
 
-#include "lilv/lilv.h"
+#include <lilv/lilv.h>
 
 #include <stdbool.h>
 

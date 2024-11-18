@@ -3,17 +3,17 @@
 
 #include "nodes.h"
 
-#include "lilv/lilv.h"
-#include "lv2/atom/atom.h"
-#include "lv2/core/lv2.h"
-#include "lv2/midi/midi.h"
-#include "lv2/port-groups/port-groups.h"
-#include "lv2/port-props/port-props.h"
-#include "lv2/presets/presets.h"
-#include "lv2/resize-port/resize-port.h"
-#include "lv2/state/state.h"
-#include "lv2/ui/ui.h"
-#include "lv2/worker/worker.h"
+#include <lilv/lilv.h>
+#include <lv2/atom/atom.h>
+#include <lv2/core/lv2.h>
+#include <lv2/midi/midi.h>
+#include <lv2/port-groups/port-groups.h>
+#include <lv2/port-props/port-props.h>
+#include <lv2/presets/presets.h>
+#include <lv2/resize-port/resize-port.h>
+#include <lv2/state/state.h>
+#include <lv2/ui/ui.h>
+#include <lv2/worker/worker.h>
 
 #include <stddef.h>
 

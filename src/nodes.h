@@ -6,7 +6,7 @@
 
 #include "attributes.h"
 
-#include "lilv/lilv.h"
+#include <lilv/lilv.h>
 
 // Cached lilv nodes
 JALV_BEGIN_DECLS

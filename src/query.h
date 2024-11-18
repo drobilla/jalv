@@ -7,7 +7,7 @@
 #include "attributes.h"
 #include "nodes.h"
 
-#include "lilv/lilv.h"
+#include <lilv/lilv.h>
 
 #include <stdbool.h>
 

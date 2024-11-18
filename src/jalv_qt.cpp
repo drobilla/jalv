@@ -9,9 +9,9 @@
 #include "port.h"
 #include "query.h"
 
-#include "lilv/lilv.h"
-#include "suil/suil.h"
-#include "zix/sem.h"
+#include <lilv/lilv.h>
+#include <suil/suil.h>
+#include <zix/sem.h>
 
 #include <QAction>
 #include <QApplication>

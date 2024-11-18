@@ -7,8 +7,8 @@
 #include "attributes.h"
 #include "urids.h"
 
-#include "lv2/log/log.h"
-#include "lv2/urid/urid.h"
+#include <lv2/log/log.h>
+#include <lv2/urid/urid.h>
 
 #include <stdbool.h>
 #include <stdio.h>

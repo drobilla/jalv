@@ -6,10 +6,10 @@
 
 #include "attributes.h"
 
-#include "lv2/core/lv2.h"
-#include "lv2/worker/worker.h"
-#include "zix/sem.h"
-#include "zix/status.h"
+#include <lv2/core/lv2.h>
+#include <lv2/worker/worker.h>
+#include <zix/sem.h>
+#include <zix/status.h>
 
 #include <stdbool.h>
 #include <stdint.h>

@@ -3,7 +3,9 @@
 
 #include "comm.h"
 
-#include "lv2/urid/urid.h"
+#include <lv2/urid/urid.h>
+#include <zix/ring.h>
+#include <zix/status.h>
 
 ZixStatus
 jalv_write_split_message(ZixRing* const    target,

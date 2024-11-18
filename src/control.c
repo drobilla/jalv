@@ -6,10 +6,10 @@
 #include "log.h"
 #include "string_utils.h"
 
-#include "lilv/lilv.h"
-#include "lv2/atom/atom.h"
-#include "lv2/atom/forge.h"
-#include "lv2/urid/urid.h"
+#include <lilv/lilv.h>
+#include <lv2/atom/atom.h>
+#include <lv2/atom/forge.h>
+#include <lv2/urid/urid.h>
 
 #include <stdbool.h>
 #include <stdint.h>

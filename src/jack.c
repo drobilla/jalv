@@ -15,11 +15,11 @@
 #include "types.h"
 #include "urids.h"
 
-#include "lilv/lilv.h"
-#include "lv2/atom/atom.h"
-#include "lv2/atom/forge.h"
-#include "lv2/urid/urid.h"
-#include "zix/sem.h"
+#include <lilv/lilv.h>
+#include <lv2/atom/atom.h>
+#include <lv2/atom/forge.h>
+#include <lv2/urid/urid.h>
+#include <zix/sem.h>
 
 #include <jack/jack.h>
 #include <jack/midiport.h>

@@ -10,11 +10,11 @@
 #include "port.h"
 #include "worker.h"
 
-#include "lilv/lilv.h"
-#include "lv2/atom/atom.h"
-#include "lv2/core/lv2.h"
-#include "zix/ring.h"
-#include "zix/sem.h"
+#include <lilv/lilv.h>
+#include <lv2/atom/atom.h>
+#include <lv2/core/lv2.h>
+#include <zix/ring.h>
+#include <zix/sem.h>
 
 #include <assert.h>
 #include <stddef.h>

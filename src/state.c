@@ -10,14 +10,14 @@
 #include "port.h"
 #include "string_utils.h"
 
-#include "lilv/lilv.h"
-#include "lv2/core/lv2.h"
-#include "lv2/state/state.h"
-#include "lv2/urid/urid.h"
-#include "zix/attributes.h"
-#include "zix/ring.h"
-#include "zix/sem.h"
-#include "zix/status.h"
+#include <lilv/lilv.h>
+#include <lv2/core/lv2.h>
+#include <lv2/state/state.h>
+#include <lv2/urid/urid.h>
+#include <zix/attributes.h>
+#include <zix/ring.h>
+#include <zix/sem.h>
+#include <zix/status.h>
 
 #include <stdbool.h>
 #include <stdint.h>

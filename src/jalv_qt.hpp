@@ -5,7 +5,7 @@
 #include "state.h"
 #include "types.h"
 
-#include "lilv/lilv.h"
+#include <lilv/lilv.h>
 
 #include <QAction>
 #include <QGroupBox>

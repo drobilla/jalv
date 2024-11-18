@@ -3,12 +3,12 @@
 
 #include "worker.h"
 
-#include "lv2/core/lv2.h"
-#include "lv2/worker/worker.h"
-#include "zix/ring.h"
-#include "zix/sem.h"
-#include "zix/status.h"
-#include "zix/thread.h"
+#include <lv2/core/lv2.h>
+#include <lv2/worker/worker.h>
+#include <zix/ring.h>
+#include <zix/sem.h>
+#include <zix/status.h>
+#include <zix/thread.h>
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -7,8 +7,8 @@
 #include "jalv_internal.h"
 #include "types.h"
 
-#include "zix/attributes.h"
-#include "zix/sem.h"
+#include <zix/attributes.h>
+#include <zix/sem.h>
 
 #if USE_SUIL
 #endif

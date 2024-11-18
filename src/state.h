@@ -7,8 +7,8 @@
 #include "attributes.h"
 #include "types.h"
 
-#include "lilv/lilv.h"
-#include "lv2/state/state.h"
+#include <lilv/lilv.h>
+#include <lv2/state/state.h>
 
 // State and preset utilities
 JALV_BEGIN_DECLS

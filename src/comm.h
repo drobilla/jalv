@@ -7,10 +7,10 @@
 #include "attributes.h"
 #include "types.h"
 
-#include "lv2/atom/atom.h"
-#include "lv2/urid/urid.h"
-#include "zix/ring.h"
-#include "zix/status.h"
+#include <lv2/atom/atom.h>
+#include <lv2/urid/urid.h>
+#include <zix/ring.h>
+#include <zix/status.h>
 
 #include <stdint.h>
 

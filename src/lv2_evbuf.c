@@ -4,8 +4,8 @@
 #include "lv2_evbuf.h"
 #include "jalv_config.h"
 
-#include "lv2/atom/atom.h"
-#include "lv2/atom/util.h"
+#include <lv2/atom/atom.h>
+#include <lv2/atom/util.h>
 
 #include <assert.h>
 #include <stdlib.h>

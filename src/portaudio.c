@@ -10,8 +10,8 @@
 #include "process.h"
 #include "types.h"
 
-#include "lilv/lilv.h"
-#include "zix/attributes.h"
+#include <lilv/lilv.h>
+#include <zix/attributes.h>
 
 #include <portaudio.h>
 #include <stdbool.h>

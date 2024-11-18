@@ -12,13 +12,13 @@
 #include "string_utils.h"
 #include "types.h"
 
-#include "lilv/lilv.h"
-#include "lv2/ui/ui.h"
-#include "zix/attributes.h"
-#include "zix/sem.h"
+#include <lilv/lilv.h>
+#include <lv2/ui/ui.h>
+#include <zix/attributes.h>
+#include <zix/sem.h>
 
 #if USE_SUIL
-#  include "suil/suil.h"
+#  include <suil/suil.h>
 #endif
 
 #ifdef _WIN32

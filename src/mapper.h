@@ -6,8 +6,8 @@
 
 #include "attributes.h"
 
-#include "lv2/urid/urid.h"
-#include "zix/attributes.h"
+#include <lv2/urid/urid.h>
+#include <zix/attributes.h>
 
 // URI to URID mapping and unmapping
 JALV_BEGIN_DECLS

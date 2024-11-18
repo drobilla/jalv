@@ -5,8 +5,8 @@
 
 #include "jalv_config.h"
 
-#include "lv2/log/log.h"
-#include "lv2/urid/urid.h"
+#include <lv2/log/log.h>
+#include <lv2/urid/urid.h>
 
 #if USE_ISATTY
 #  include <unistd.h>

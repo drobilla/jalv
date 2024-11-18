@@ -3,8 +3,9 @@
 
 #include "query.h"
 
-#include "lv2/core/lv2.h"
-#include "lv2/ui/ui.h"
+#include <lilv/lilv.h>
+#include <lv2/core/lv2.h>
+#include <lv2/ui/ui.h>
 
 bool
 jalv_port_has_designation(const JalvNodes* const  nodes,

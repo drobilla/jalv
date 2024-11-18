@@ -5,8 +5,8 @@
 
 #include "symap.h"
 
-#include "lv2/urid/urid.h"
-#include "zix/sem.h"
+#include <lv2/urid/urid.h>
+#include <zix/sem.h>
 
 #include <stdint.h>
 #include <stdlib.h>

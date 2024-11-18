@@ -21,29 +21,29 @@
 #include "urids.h"
 #include "worker.h"
 
-#include "lilv/lilv.h"
-#include "lv2/atom/atom.h"
-#include "lv2/atom/forge.h"
-#include "lv2/atom/util.h"
-#include "lv2/buf-size/buf-size.h"
-#include "lv2/core/lv2.h"
-#include "lv2/data-access/data-access.h"
-#include "lv2/instance-access/instance-access.h"
-#include "lv2/log/log.h"
-#include "lv2/options/options.h"
-#include "lv2/patch/patch.h"
-#include "lv2/state/state.h"
-#include "lv2/ui/ui.h"
-#include "lv2/urid/urid.h"
-#include "lv2/worker/worker.h"
-#include "zix/allocator.h"
-#include "zix/filesystem.h"
-#include "zix/ring.h"
-#include "zix/sem.h"
-#include "zix/status.h"
+#include <lilv/lilv.h>
+#include <lv2/atom/atom.h>
+#include <lv2/atom/forge.h>
+#include <lv2/atom/util.h>
+#include <lv2/buf-size/buf-size.h>
+#include <lv2/core/lv2.h>
+#include <lv2/data-access/data-access.h>
+#include <lv2/instance-access/instance-access.h>
+#include <lv2/log/log.h>
+#include <lv2/options/options.h>
+#include <lv2/patch/patch.h>
+#include <lv2/state/state.h>
+#include <lv2/ui/ui.h>
+#include <lv2/urid/urid.h>
+#include <lv2/worker/worker.h>
+#include <zix/allocator.h>
+#include <zix/filesystem.h>
+#include <zix/ring.h>
+#include <zix/sem.h>
+#include <zix/status.h>
 
 #if USE_SUIL
-#  include "suil/suil.h"
+#  include <suil/suil.h>
 #endif
 
 #include <stdbool.h>

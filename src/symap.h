@@ -12,7 +12,7 @@
 #ifndef SYMAP_H
 #define SYMAP_H
 
-#include "zix/attributes.h"
+#include <zix/attributes.h>
 
 #include <stdint.h>
 
