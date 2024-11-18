@@ -9,6 +9,7 @@
 #include "mapper.h"
 #include "port.h"
 #include "string_utils.h"
+#include "types.h"
 
 #include <lilv/lilv.h>
 #include <lv2/core/lv2.h>

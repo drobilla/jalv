@@ -8,6 +8,8 @@
 #include "options.h"
 #include "port.h"
 #include "query.h"
+#include "state.h"
+#include "types.h"
 
 #include <lilv/lilv.h>
 #include <suil/suil.h>

@@ -8,6 +8,7 @@
 #include "log.h"
 #include "lv2_evbuf.h"
 #include "port.h"
+#include "types.h"
 #include "worker.h"
 
 #include <lilv/lilv.h>

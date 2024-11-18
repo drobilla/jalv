@@ -3,6 +3,8 @@
 
 #include "query.h"
 
+#include "nodes.h"
+
 #include <lilv/lilv.h>
 #include <lv2/core/lv2.h>
 #include <lv2/ui/ui.h>

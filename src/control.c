@@ -4,6 +4,7 @@
 #include "control.h"
 
 #include "log.h"
+#include "nodes.h"
 #include "string_utils.h"
 
 #include <lilv/lilv.h>
