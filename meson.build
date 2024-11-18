@@ -420,7 +420,6 @@ common_sources = files(
   'src/jalv.c',
   'src/log.c',
   'src/lv2_evbuf.c',
-  'src/main.c',
   'src/mapper.c',
   'src/nodes.c',
   'src/process.c',
@@ -433,6 +432,7 @@ common_sources = files(
 )
 
 sources = backend_sources + common_sources
+program_sources = sources + files('src/main.c')
 
 common_dependencies = [
   backend_dep,
@@ -463,7 +463,7 @@ endif
 # Console version
 executable(
   'jalv',
-  sources + files('src/jalv_console.c'),
+  program_sources + files('src/jalv_console.c'),
   c_args: common_c_args,
   dependencies: common_dependencies + [suil_dep],
   install: true,
@@ -501,7 +501,7 @@ if not get_option('gtk3').disabled()
 
     executable(
       'jalv.gtk3',
-      sources + files('src/jalv_gtk.c'),
+      program_sources + files('src/jalv_gtk.c'),
       c_args: common_c_args,
       dependencies: common_dependencies + [gdk3_dep, gtk3_dep, suil_dep],
       install: true,
@@ -555,7 +555,7 @@ if is_variable('cpp')
 
         executable(
           'jalv.qt5',
-          sources + jalv_qt_cpp + [jalv_qt5_meta_cpp],
+          program_sources + jalv_qt_cpp + [jalv_qt5_meta_cpp],
           c_args: common_c_args,
           cpp_args: common_cpp_args + qt_args,
           dependencies: common_dependencies + [qt5_dep, suil_dep],
@@ -599,7 +599,7 @@ if is_variable('cpp')
 
         executable(
           'jalv.qt6',
-          sources + jalv_qt_cpp + [jalv_qt6_meta_cpp],
+          program_sources + jalv_qt_cpp + [jalv_qt6_meta_cpp],
           c_args: common_c_args,
           cpp_args: common_cpp_args + qt_args,
           dependencies: common_dependencies + [qt6_dep, suil_dep],
