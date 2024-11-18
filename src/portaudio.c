@@ -194,28 +194,36 @@ jalv_backend_open(Jalv* jalv)
 }
 
 void
-jalv_backend_close(Jalv* ZIX_UNUSED(jalv))
+jalv_backend_close(Jalv* jalv)
 {
-  Pa_Terminate();
+  if (jalv->backend) {
+    PaError st = paNoError;
+    if (jalv->backend->stream && (st = Pa_CloseStream(jalv->backend->stream))) {
+      jalv_log(JALV_LOG_ERR, "Error closing audio (%s)\n", Pa_GetErrorText(st));
+    }
+
+    if ((st = Pa_Terminate())) {
+      jalv_log(
+        JALV_LOG_ERR, "Error terminating audio (%s)\n", Pa_GetErrorText(st));
+    }
+  }
 }
 
 void
 jalv_backend_activate(Jalv* jalv)
 {
-  const int st = Pa_StartStream(jalv->backend->stream);
+  const PaError st = Pa_StartStream(jalv->backend->stream);
   if (st != paNoError) {
-    jalv_log(
-      JALV_LOG_ERR, "Error starting audio stream (%s)\n", Pa_GetErrorText(st));
+    jalv_log(JALV_LOG_ERR, "Error starting audio (%s)\n", Pa_GetErrorText(st));
   }
 }
 
 void
 jalv_backend_deactivate(Jalv* jalv)
 {
-  const int st = Pa_CloseStream(jalv->backend->stream);
+  const PaError st = Pa_StopStream(jalv->backend->stream);
   if (st != paNoError) {
-    jalv_log(
-      JALV_LOG_ERR, "Error closing audio stream (%s)\n", Pa_GetErrorText(st));
+    jalv_log(JALV_LOG_ERR, "Error stopping audio (%s)\n", Pa_GetErrorText(st));
   }
 }
 
