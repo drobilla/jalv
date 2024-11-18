@@ -451,7 +451,7 @@ common_c_args = c_suppressions + platform_defines + suil_defines
 if jack_dep.found()
   shared_library(
     'jalv',
-    sources + files('src/jalv_console.c'),
+    sources + files('src/jack_internal.c', 'src/jalv_console.c'),
     c_args: c_suppressions + platform_defines + ['-DHAVE_SUIL=0'],
     dependencies: common_dependencies,
     install: true,

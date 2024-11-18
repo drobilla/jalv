@@ -5,6 +5,7 @@
 
 #include "comm.h"
 #include "frontend.h"
+#include "jack_impl.h"
 #include "jalv.h"
 #include "jalv_config.h"
 #include "log.h"
@@ -30,7 +31,6 @@
 #  include <jack/metadata.h>
 #endif
 
-#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -43,21 +43,8 @@
 #  define REALTIME
 #endif
 
-struct JalvBackendImpl {
-  jack_client_t* client;             ///< Jack client
-  bool           is_internal_client; ///< Running inside jackd
-};
-
 /// Maximum supported latency in frames (at most 2^24 so all integers work)
 static const float max_latency = 16777216.0f;
-
-/// Internal Jack client initialization entry point
-int
-jack_initialize(jack_client_t* client, const char* load_init);
-
-/// Internal Jack client finalization entry point
-void
-jack_finish(void* arg);
 
 /// Jack buffer size callback
 static int
@@ -491,89 +478,4 @@ void
 jalv_backend_recompute_latencies(Jalv* const jalv)
 {
   jack_recompute_total_latencies(jalv->backend->client);
-}
-
-int
-jack_initialize(jack_client_t* const client, const char* const load_init)
-{
-#ifndef E2BIG
-#  define E2BIG 7
-#endif
-#ifndef ENOMEM
-#  define ENOMEM 12
-#endif
-
-  const size_t args_len = strlen(load_init);
-  if (args_len > JACK_LOAD_INIT_LIMIT) {
-    jalv_log(JALV_LOG_ERR, "Too many arguments given\n");
-    return E2BIG;
-  }
-
-  Jalv* const jalv = (Jalv*)calloc(1, sizeof(Jalv));
-  if (!jalv) {
-    return ENOMEM;
-  }
-
-  if (!(jalv->backend = jalv_backend_allocate())) {
-    free(jalv);
-    return ENOMEM;
-  }
-
-  jalv->backend->client             = client;
-  jalv->backend->is_internal_client = true;
-
-  // Build full command line with "program" name for building argv
-  const size_t cmd_len = strlen("jalv ") + args_len;
-  char* const  cmd     = (char*)calloc(cmd_len + 1, 1);
-  memcpy(cmd, "jalv ", strlen("jalv ") + 1);
-  memcpy(cmd + 5, load_init, args_len + 1);
-
-  // Build argv
-  int    argc = 0;
-  char** argv = NULL;
-  char*  tok  = cmd;
-  int    err  = 0;
-  for (size_t i = 0; !err && i <= cmd_len; ++i) {
-    if (isspace(cmd[i]) || !cmd[i]) {
-      char** const new_argv = (char**)realloc(argv, sizeof(char*) * ++argc);
-      if (!new_argv) {
-        err = ENOMEM;
-        break;
-      }
-
-      argv           = new_argv;
-      cmd[i]         = '\0';
-      argv[argc - 1] = tok;
-      tok            = cmd + i + 1;
-    }
-  }
-
-  if (err || (err = jalv_open(jalv, &argc, &argv))) {
-    jalv_close(jalv);
-    free(jalv);
-  } else {
-    jalv_activate(jalv);
-  }
-
-  free(argv);
-  free(cmd);
-  return err;
-
-#undef ENOMEM
-#undef E2BIG
-}
-
-void
-jack_finish(void* const arg)
-{
-  Jalv* const jalv = (Jalv*)arg;
-  if (jalv) {
-    jalv_deactivate(jalv);
-    if (jalv_close(jalv)) {
-      jalv_log(JALV_LOG_ERR, "Failed to close Jalv\n");
-    }
-
-    jalv_backend_free(jalv->backend);
-    free(jalv);
-  }
 }
