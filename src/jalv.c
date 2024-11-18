@@ -37,7 +37,6 @@
 #include "lv2/urid/urid.h"
 #include "lv2/worker/worker.h"
 #include "zix/allocator.h"
-#include "zix/attributes.h"
 #include "zix/filesystem.h"
 #include "zix/ring.h"
 #include "zix/sem.h"
@@ -47,7 +46,6 @@
 #  include "suil/suil.h"
 #endif
 
-#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -63,8 +61,6 @@
    anybody(TM).
 */
 #define N_BUFFER_CYCLES 16
-
-static ZixSem* exit_sem = NULL; ///< Exit semaphore used by signal handler
 
 /// These features have no data
 static const LV2_Feature static_features[] = {
@@ -578,35 +574,10 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
 }
 
 static void
-signal_handler(int ZIX_UNUSED(sig))
-{
-  zix_sem_post(exit_sem);
-}
-
-static void
 init_feature(LV2_Feature* const dest, const char* const URI, void* data)
 {
   dest->URI  = URI;
   dest->data = data;
-}
-
-static void
-setup_signals(Jalv* const jalv)
-{
-  exit_sem = &jalv->done;
-
-#if !defined(_WIN32) && USE_SIGACTION
-  struct sigaction action;
-  sigemptyset(&action.sa_mask);
-  action.sa_flags   = 0;
-  action.sa_handler = signal_handler;
-  sigaction(SIGINT, &action, NULL);
-  sigaction(SIGTERM, &action, NULL);
-#else
-  // May not work in combination with fgets in the console interface
-  signal(SIGINT, signal_handler);
-  signal(SIGTERM, signal_handler);
-#endif
 }
 
 static const LilvUI*
@@ -1176,34 +1147,4 @@ jalv_close(Jalv* const jalv)
   free(jalv->opts.controls);
 
   return 0;
-}
-
-int
-main(int argc, char** argv)
-{
-  Jalv jalv;
-  memset(&jalv, '\0', sizeof(Jalv));
-  jalv.backend = jalv_backend_allocate();
-
-  // Initialize application
-  if (jalv_open(&jalv, &argc, &argv)) {
-    jalv_close(&jalv);
-    return EXIT_FAILURE;
-  }
-
-  // Set up signal handlers and activate audio processing
-  setup_signals(&jalv);
-  jalv_activate(&jalv);
-
-  // Run UI (or prompt at console)
-  jalv_frontend_open(&jalv);
-
-  // Wait for finish signal from UI or signal handler
-  zix_sem_wait(&jalv.done);
-
-  // Deactivate audio processing and tear down application
-  jalv_deactivate(&jalv);
-  const int ret = jalv_close(&jalv);
-  jalv_backend_free(jalv.backend);
-  return ret;
 }
