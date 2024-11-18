@@ -4,7 +4,7 @@
 #include "process.h"
 
 #include "comm.h"
-#include "jalv_internal.h"
+#include "jalv.h"
 #include "log.h"
 #include "lv2_evbuf.h"
 #include "port.h"

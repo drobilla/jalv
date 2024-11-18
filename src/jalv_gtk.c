@@ -3,7 +3,7 @@
 
 #include "control.h"
 #include "frontend.h"
-#include "jalv_internal.h"
+#include "jalv.h"
 #include "log.h"
 #include "options.h"
 #include "query.h"

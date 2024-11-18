@@ -3,7 +3,7 @@
 
 #include "jalv_qt.hpp"
 #include "frontend.h"
-#include "jalv_internal.h"
+#include "jalv.h"
 #include "nodes.h"
 #include "options.h"
 #include "port.h"

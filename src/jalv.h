@@ -1,8 +1,8 @@
 // Copyright 2007-2022 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
-#ifndef JALV_INTERNAL_H
-#define JALV_INTERNAL_H
+#ifndef JALV_JALV_H
+#define JALV_JALV_H
 
 #include "attributes.h"
 #include "control.h"
@@ -139,4 +139,4 @@ jalv_update(Jalv* jalv);
 
 JALV_END_DECLS
 
-#endif // JALV_INTERNAL_H
+#endif // JALV_JALV_H

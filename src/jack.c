@@ -5,8 +5,8 @@
 
 #include "comm.h"
 #include "frontend.h"
+#include "jalv.h"
 #include "jalv_config.h"
-#include "jalv_internal.h"
 #include "log.h"
 #include "lv2_evbuf.h"
 #include "port.h"

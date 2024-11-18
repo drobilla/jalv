@@ -1,13 +1,14 @@
 // Copyright 2007-2022 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
+#include "jalv.h"
+
 #include "backend.h"
 #include "comm.h"
 #include "control.h"
 #include "dumper.h"
 #include "frontend.h"
 #include "jalv_config.h"
-#include "jalv_internal.h"
 #include "log.h"
 #include "lv2_evbuf.h"
 #include "macros.h"

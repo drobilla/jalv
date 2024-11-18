@@ -3,8 +3,8 @@
 
 #include "backend.h"
 #include "frontend.h"
+#include "jalv.h"
 #include "jalv_config.h"
-#include "jalv_internal.h"
 #include "types.h"
 
 #include <zix/attributes.h>
