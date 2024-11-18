@@ -12,6 +12,7 @@
 #include "mapper.h"
 #include "nodes.h"
 #include "options.h"
+#include "port.h"
 #include "types.h"
 #include "urids.h"
 #include "worker.h"

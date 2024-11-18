@@ -536,9 +536,6 @@ jalv_update(Jalv* jalv)
     if (header.type == CONTROL_PORT_CHANGE) {
       const JalvControlChange* const msg = (const JalvControlChange*)body;
       jalv_frontend_port_event(jalv, msg->port_index, sizeof(float), 0, body);
-      if (jalv->opts.print_controls) {
-        jalv_print_control(jalv, &jalv->ports[msg->port_index], *(float*)body);
-      }
     } else if (header.type == EVENT_TRANSFER) {
       const JalvEventTransfer* const msg = (const JalvEventTransfer*)body;
       jalv_dump_atom(jalv->dumper, stdout, "Plugin => UI", &msg->atom, 35);
@@ -1068,15 +1065,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   // Create Jack ports and connect plugin ports to buffers
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     jalv_backend_activate_port(jalv, i);
-  }
-
-  // Print initial control values
-  for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
-    ControlID* control = jalv->controls.controls[i];
-    if (control->type == PORT && control->is_writable) {
-      const JalvPort* const port = &jalv->ports[control->index];
-      jalv_print_control(jalv, port, jalv->controls_buf[control->index]);
-    }
   }
 
   // Discover UI

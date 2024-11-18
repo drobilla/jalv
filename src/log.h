@@ -5,8 +5,6 @@
 #define JALV_LOG_H
 
 #include "attributes.h"
-#include "port.h"
-#include "types.h"
 #include "urids.h"
 
 #include "lv2/log/log.h"
@@ -35,10 +33,6 @@ typedef struct {
   JalvURIDs* urids;
   bool       tracing;
 } JalvLog;
-
-/// Print a control value to stderr, like "sym = 1.234"
-void
-jalv_print_control(const Jalv* jalv, const JalvPort* port, float value);
 
 /// Print a log message to stderr with a GCC-like prefix and color
 JALV_LOG_FUNC(2, 3)

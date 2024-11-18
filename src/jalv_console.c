@@ -27,6 +27,7 @@
 #  include <time.h>
 #endif
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -74,6 +75,15 @@ print_arg_error(const char* const command, const char* const msg)
   return 1;
 }
 
+static void
+print_control_port(const Jalv* const     jalv,
+                   const JalvPort* const port,
+                   const float           value)
+{
+  const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
+  jalv_log(JALV_LOG_INFO, "%s = %f\n", lilv_node_as_string(sym), value);
+}
+
 void
 jalv_frontend_port_event(Jalv*       jalv,
                          uint32_t    port_index,
@@ -86,13 +96,12 @@ jalv_frontend_port_event(Jalv*       jalv,
     suil_instance_port_event(
       jalv->ui_instance, port_index, buffer_size, protocol, buffer);
   }
-#else
-  (void)jalv;
-  (void)port_index;
-  (void)buffer_size;
-  (void)protocol;
-  (void)buffer;
 #endif
+
+  if (!protocol && jalv->opts.print_controls) {
+    assert(buffer_size == sizeof(float));
+    print_control_port(jalv, &jalv->ports[port_index], *(float*)buffer);
+  }
 }
 
 int
@@ -180,7 +189,7 @@ jalv_frontend_ui_type(void)
 }
 
 static void
-jalv_print_controls(Jalv* jalv, bool writable, bool readable)
+print_controls(const Jalv* const jalv, const bool writable, const bool readable)
 {
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
     ControlID* const control = jalv->controls.controls[i];
@@ -231,15 +240,15 @@ jalv_process_command(Jalv* jalv, const char* cmd)
     lilv_world_load_resource(jalv->world, preset);
     jalv_apply_preset(jalv, preset);
     lilv_node_free(preset);
-    jalv_print_controls(jalv, true, false);
+    print_controls(jalv, true, false);
   } else if (strcmp(cmd, "controls\n") == 0) {
-    jalv_print_controls(jalv, true, false);
+    print_controls(jalv, true, false);
   } else if (strcmp(cmd, "monitors\n") == 0) {
-    jalv_print_controls(jalv, false, true);
+    print_controls(jalv, false, true);
   } else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
     if (index < jalv->num_ports) {
       jalv->controls_buf[index] = value;
-      jalv_print_control(jalv, &jalv->ports[index], value);
+      print_control_port(jalv, &jalv->ports[index], value);
     } else {
       fprintf(stderr, "error: port index out of range\n");
     }
@@ -248,7 +257,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
     JalvPort* const port = jalv_port_by_symbol(jalv, sym);
     if (port) {
       jalv->controls_buf[port->index] = value;
-      jalv_print_control(jalv, port, value);
+      print_control_port(jalv, port, value);
     } else {
       fprintf(stderr, "error: no control named `%s'\n", sym);
     }
@@ -327,6 +336,15 @@ jalv_frontend_select_plugin(Jalv* jalv)
 int
 jalv_frontend_open(Jalv* jalv)
 {
+  // Print initial control values
+  for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+    ControlID* control = jalv->controls.controls[i];
+    if (control->type == PORT && control->is_writable) {
+      const JalvPort* const port = &jalv->ports[control->index];
+      print_control_port(jalv, port, jalv->controls_buf[control->index]);
+    }
+  }
+
   if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
     // Primitive command prompt for setting control values
     while (zix_sem_try_wait(&jalv->done)) {

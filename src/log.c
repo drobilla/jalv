@@ -4,10 +4,7 @@
 #include "log.h"
 
 #include "jalv_config.h"
-#include "jalv_internal.h"
-#include "port.h"
 
-#include "lilv/lilv.h"
 #include "lv2/log/log.h"
 #include "lv2/urid/urid.h"
 
@@ -18,15 +15,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
-
-void
-jalv_print_control(const Jalv* const     jalv,
-                   const JalvPort* const port,
-                   const float           value)
-{
-  const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-  jalv_log(JALV_LOG_INFO, "%s = %f\n", lilv_node_as_string(sym), value);
-}
 
 JALV_LOG_FUNC(2, 0)
 static int
