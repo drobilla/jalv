@@ -140,10 +140,11 @@ process_transport(Jalv* const                  jalv,
 static REALTIME int
 jack_process_cb(jack_nframes_t nframes, void* data)
 {
-  Jalv* const          jalv        = (Jalv*)data;
-  jack_client_t* const client      = jalv->backend->client;
-  uint64_t             pos_buf[64] = {0U};
-  LV2_Atom* const      lv2_pos     = (LV2_Atom*)pos_buf;
+  Jalv* const            jalv        = (Jalv*)data;
+  const JalvURIDs* const urids       = &jalv->urids;
+  jack_client_t* const   client      = jalv->backend->client;
+  uint64_t               pos_buf[64] = {0U};
+  LV2_Atom* const        lv2_pos     = (LV2_Atom*)pos_buf;
 
   // If execution is paused, emit silence and return
   if (jalv->run_state == JALV_PAUSED) {
@@ -159,7 +160,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   if (xport_changed) {
     // Build an LV2 position object to report change to plugin
     lv2_atom_forge_set_buffer(&jalv->forge, (uint8_t*)pos_buf, sizeof(pos_buf));
-    forge_position(&jalv->forge, &jalv->urids, state, pos);
+    forge_position(&jalv->forge, urids, state, pos);
   }
 
   // Prepare port buffers
@@ -186,7 +187,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
           jack_midi_event_t ev;
           jack_midi_event_get(&ev, buf, i);
           lv2_evbuf_write(
-            &iter, ev.time, 0, jalv->urids.midi_MidiEvent, ev.size, ev.buffer);
+            &iter, ev.time, 0, urids->midi_MidiEvent, ev.size, ev.buffer);
         }
       }
     } else if (port->type == TYPE_EVENT) {
@@ -235,7 +236,7 @@ jack_process_cb(jack_nframes_t nframes, void* data)
         void*    body      = NULL;
         lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
-        if (buf && type == jalv->urids.midi_MidiEvent) {
+        if (buf && type == urids->midi_MidiEvent) {
           // Write MIDI event to Jack output
           jack_midi_event_write(buf, frames, body, size);
         }
