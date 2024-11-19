@@ -740,8 +740,15 @@ jalv_init_options(Jalv* const jalv)
 }
 
 static void
-jalv_init_display(Jalv* const jalv)
+jalv_init_ui_settings(Jalv* const jalv)
 {
+  if (!jalv->opts.ring_size) {
+    /* The UI ring is fed by plugin output ports (usually one), and the UI
+       updates roughly once per cycle.  The ring size is a few times the size
+       of the MIDI output to give the UI a chance to keep up. */
+    jalv->opts.ring_size = jalv->midi_buf_size * N_BUFFER_CYCLES;
+  }
+
   if (!jalv->opts.update_rate) {
     // Calculate a reasonable UI update frequency
     jalv->ui_update_hz = jalv_frontend_refresh_rate(jalv);
@@ -947,14 +954,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_log(JALV_LOG_INFO, "Block length: %u frames\n", jalv->block_length);
   jalv_log(JALV_LOG_INFO, "MIDI buffers: %zu bytes\n", jalv->midi_buf_size);
 
-  if (!jalv->opts.ring_size) {
-    /* The UI ring is fed by plugin output ports (usually one), and the UI
-       updates roughly once per cycle.  The ring size is a few times the size
-       of the MIDI output to give the UI a chance to keep up. */
-    jalv->opts.ring_size = jalv->midi_buf_size * N_BUFFER_CYCLES;
-  }
-
-  jalv_init_display(jalv);
+  jalv_init_ui_settings(jalv);
   jalv_init_options(jalv);
 
   // Create Plugin <=> UI communication buffers
