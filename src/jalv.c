@@ -219,18 +219,25 @@ jalv_allocate_port_buffers(Jalv* jalv)
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     JalvPort* const port = &jalv->ports[i];
     if (port->type == TYPE_EVENT) {
-      lv2_evbuf_free(port->evbuf);
-
       const size_t size = port->buf_size ? port->buf_size : jalv->midi_buf_size;
 
+      lv2_evbuf_free(port->evbuf);
       port->evbuf =
         lv2_evbuf_new(size, urids->atom_Chunk, urids->atom_Sequence);
 
+      lv2_evbuf_reset(port->evbuf, port->flow == FLOW_INPUT);
       lilv_instance_connect_port(
         jalv->instance, i, lv2_evbuf_get_buffer(port->evbuf));
-
-      lv2_evbuf_reset(port->evbuf, port->flow == FLOW_INPUT);
     }
+  }
+}
+
+void
+jalv_free_port_buffers(Jalv* const jalv)
+{
+  for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+    lv2_evbuf_free(jalv->ports[i].evbuf);
+    lilv_instance_connect_port(jalv->instance, i, NULL);
   }
 }
 
@@ -1017,9 +1024,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv->state_worker, worker_iface, jalv->instance->lv2_handle);
 
   jalv_log(JALV_LOG_INFO, "\n");
-  if (!jalv->buf_size_set) {
-    jalv_allocate_port_buffers(jalv);
-  }
+  jalv_allocate_port_buffers(jalv);
 
   // Apply loaded state to plugin instance if necessary
   if (state) {
@@ -1080,16 +1085,11 @@ jalv_deactivate(Jalv* const jalv)
 int
 jalv_close(Jalv* const jalv)
 {
+  // Stop audio processing, free event port buffers, and close backend
   jalv_deactivate(jalv);
+  jalv_free_port_buffers(jalv);
   if (jalv->backend) {
     jalv_backend_close(jalv);
-  }
-
-  // Free event port buffers
-  for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    if (jalv->ports[i].evbuf) {
-      lv2_evbuf_free(jalv->ports[i].evbuf);
-    }
   }
 
   // Destroy the worker

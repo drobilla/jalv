@@ -52,12 +52,13 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 {
   Jalv* const jalv   = (Jalv*)data;
   jalv->block_length = nframes;
-  jalv->buf_size_set = true;
 #if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
   jalv->midi_buf_size = jack_port_type_get_buffer_size(jalv->backend->client,
                                                        JACK_DEFAULT_MIDI_TYPE);
 #endif
-  jalv_allocate_port_buffers(jalv);
+  if (jalv->run_state == JALV_RUNNING) {
+    jalv_allocate_port_buffers(jalv);
+  }
   return 0;
 }
 

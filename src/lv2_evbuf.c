@@ -50,7 +50,9 @@ lv2_evbuf_new(uint32_t capacity, uint32_t atom_Chunk, uint32_t atom_Sequence)
 void
 lv2_evbuf_free(LV2_Evbuf* evbuf)
 {
-  free(evbuf);
+  if (evbuf) {
+    free(evbuf);
+  }
 }
 
 void

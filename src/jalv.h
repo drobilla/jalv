@@ -86,7 +86,6 @@ struct JalvImpl {
   uint32_t            position;        ///< Transport position in frames
   float               bpm;             ///< Transport tempo in beats per minute
   bool                rolling;         ///< Transport speed (0=stop, 1=play)
-  bool                buf_size_set;    ///< True iff buffer size callback fired
   bool                has_ui;          ///< True iff a control UI is present
   bool                safe_restore;    ///< Plugin restore() is thread-safe
   JalvFeatures        features;
@@ -112,6 +111,10 @@ jalv_deactivate(Jalv* jalv);
 /// Allocate appropriately-sized port buffers and connect the plugin to them
 void
 jalv_allocate_port_buffers(Jalv* jalv);
+
+/// Clean up memory allocated by jalv_process_activate() and disconnect plugin
+void
+jalv_free_port_buffers(Jalv* jalv);
 
 /// Find a port by symbol
 JalvPort*
