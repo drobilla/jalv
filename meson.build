@@ -424,6 +424,7 @@ common_sources = files(
   'src/mapper.c',
   'src/nodes.c',
   'src/process.c',
+  'src/process_setup.c',
   'src/query.c',
   'src/state.c',
   'src/string_utils.c',

@@ -105,14 +105,6 @@ jalv_activate(Jalv* jalv);
 int
 jalv_deactivate(Jalv* jalv);
 
-/// Allocate appropriately-sized port buffers and connect the plugin to them
-void
-jalv_allocate_port_buffers(Jalv* jalv);
-
-/// Clean up memory allocated by jalv_process_activate() and disconnect plugin
-void
-jalv_free_port_buffers(Jalv* jalv);
-
 /// Find a port by symbol
 JalvPort*
 jalv_port_by_symbol(Jalv* jalv, const char* sym);

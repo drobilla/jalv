@@ -12,6 +12,7 @@
 #include "lv2_evbuf.h"
 #include "port.h"
 #include "process.h"
+#include "process_setup.h"
 #include "settings.h"
 #include "string_utils.h"
 #include "types.h"

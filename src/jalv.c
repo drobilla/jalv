@@ -11,12 +11,12 @@
 #include "frontend.h"
 #include "jalv_config.h"
 #include "log.h"
-#include "lv2_evbuf.h"
 #include "macros.h"
 #include "mapper.h"
 #include "nodes.h"
 #include "options.h"
 #include "port.h"
+#include "process_setup.h"
 #include "query.h"
 #include "settings.h"
 #include "state.h"
@@ -211,37 +211,6 @@ jalv_create_ports(Jalv* jalv)
   }
 
   return 0;
-}
-
-void
-jalv_allocate_port_buffers(Jalv* jalv)
-{
-  const JalvURIDs* const urids = &jalv->urids;
-
-  for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    JalvPort* const port = &jalv->ports[i];
-    if (port->type == TYPE_EVENT) {
-      const size_t size =
-        port->buf_size ? port->buf_size : jalv->settings.midi_buf_size;
-
-      lv2_evbuf_free(port->evbuf);
-      port->evbuf =
-        lv2_evbuf_new(size, urids->atom_Chunk, urids->atom_Sequence);
-
-      lv2_evbuf_reset(port->evbuf, port->flow == FLOW_INPUT);
-      lilv_instance_connect_port(
-        jalv->instance, i, lv2_evbuf_get_buffer(port->evbuf));
-    }
-  }
-}
-
-void
-jalv_free_port_buffers(Jalv* const jalv)
-{
-  for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    lv2_evbuf_free(jalv->ports[i].evbuf);
-    lilv_instance_connect_port(jalv->instance, i, NULL);
-  }
 }
 
 /**
