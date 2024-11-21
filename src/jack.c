@@ -12,6 +12,7 @@
 #include "lv2_evbuf.h"
 #include "port.h"
 #include "process.h"
+#include "settings.h"
 #include "string_utils.h"
 #include "types.h"
 #include "urids.h"
@@ -50,11 +51,13 @@ static const float max_latency = 16777216.0f;
 static int
 jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 {
-  Jalv* const jalv   = (Jalv*)data;
-  jalv->block_length = nframes;
+  Jalv* const         jalv     = (Jalv*)data;
+  JalvSettings* const settings = &jalv->settings;
+
+  settings->block_length = nframes;
 #if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
-  jalv->midi_buf_size = jack_port_type_get_buffer_size(jalv->backend->client,
-                                                       JACK_DEFAULT_MIDI_TYPE);
+  settings->midi_buf_size = jack_port_type_get_buffer_size(
+    jalv->backend->client, JACK_DEFAULT_MIDI_TYPE);
 #endif
   if (jalv->run_state == JALV_RUNNING) {
     jalv_allocate_port_buffers(jalv);
@@ -355,11 +358,12 @@ jalv_backend_open(Jalv* jalv)
   jalv_log(JALV_LOG_INFO, "JACK name:    %s\n", jack_get_client_name(client));
 
   // Set audio engine properties
-  jalv->sample_rate   = (float)jack_get_sample_rate(client);
-  jalv->block_length  = jack_get_buffer_size(client);
-  jalv->midi_buf_size = 4096;
+  JalvSettings* const settings = &jalv->settings;
+  settings->sample_rate        = (float)jack_get_sample_rate(client);
+  settings->block_length       = jack_get_buffer_size(client);
+  settings->midi_buf_size      = 4096;
 #if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
-  jalv->midi_buf_size =
+  settings->midi_buf_size =
     jack_port_type_get_buffer_size(client, JACK_DEFAULT_MIDI_TYPE);
 #endif
 

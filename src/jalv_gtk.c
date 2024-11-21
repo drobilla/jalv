@@ -1521,7 +1521,8 @@ jalv_frontend_open(Jalv* jalv)
 
   jalv_init_ui(jalv);
 
-  g_timeout_add(1000 / jalv->ui_update_hz, (GSourceFunc)jalv_update, jalv);
+  const float update_interval_ms = 1000.0f / jalv->settings.ui_update_hz;
+  g_timeout_add((unsigned)update_interval_ms, (GSourceFunc)jalv_update, jalv);
 
   gtk_window_present(GTK_WINDOW(window));
 

@@ -5,6 +5,8 @@
 #define JALV_FEATURES_H
 
 #include "attributes.h"
+#include "settings.h"
+#include "urids.h"
 
 #include <lv2/core/lv2.h>
 #include <lv2/data-access/data-access.h>
@@ -36,6 +38,12 @@ typedef struct {
   LV2_Feature                request_value_feature;
   LV2_Extension_Data_Feature ext_data;
 } JalvFeatures;
+
+/// Set LV2 options feature for passing to plugin after settings are determined
+void
+jalv_init_lv2_options(JalvFeatures*       features,
+                      const JalvURIDs*    urids,
+                      const JalvSettings* settings);
 
 JALV_END_DECLS
 

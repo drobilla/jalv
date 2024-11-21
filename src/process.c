@@ -120,8 +120,9 @@ jalv_run(Jalv* const jalv, const uint32_t nframes)
 
   // Check if it's time to send updates to the UI
   jalv->event_delta_t += nframes;
-  bool     send_ui_updates = false;
-  uint32_t update_frames   = (uint32_t)(jalv->sample_rate / jalv->ui_update_hz);
+  bool           send_ui_updates = false;
+  const uint32_t update_frames =
+    (uint32_t)(jalv->settings.sample_rate / jalv->settings.ui_update_hz);
   if (jalv->has_ui && (jalv->event_delta_t > update_frames)) {
     send_ui_updates     = true;
     jalv->event_delta_t = 0U;

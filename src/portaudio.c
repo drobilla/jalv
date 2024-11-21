@@ -185,9 +185,9 @@ jalv_backend_open(Jalv* jalv)
   }
 
   // Set audio parameters
-  jalv->sample_rate = in_dev->defaultSampleRate;
-  // jalv->block_length  = FIXME
-  jalv->midi_buf_size = 4096;
+  jalv->settings.sample_rate = in_dev->defaultSampleRate;
+  // jalv->settings.block_length  = FIXME
+  jalv->settings.midi_buf_size = 4096;
 
   jalv->backend->stream = stream;
   return 0;

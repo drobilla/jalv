@@ -7,6 +7,7 @@
 #include "comm.h"
 #include "control.h"
 #include "dumper.h"
+#include "features.h"
 #include "frontend.h"
 #include "jalv_config.h"
 #include "log.h"
@@ -14,8 +15,10 @@
 #include "macros.h"
 #include "mapper.h"
 #include "nodes.h"
+#include "options.h"
 #include "port.h"
 #include "query.h"
+#include "settings.h"
 #include "state.h"
 #include "string_utils.h"
 #include "types.h"
@@ -31,7 +34,6 @@
 #include <lv2/data-access/data-access.h>
 #include <lv2/instance-access/instance-access.h>
 #include <lv2/log/log.h>
-#include <lv2/options/options.h>
 #include <lv2/patch/patch.h>
 #include <lv2/state/state.h>
 #include <lv2/ui/ui.h>
@@ -135,7 +137,7 @@ create_port(Jalv* jalv, uint32_t port_index)
                                    jalv->plugin,
                                    port->lilv_port,
                                    port->index,
-                                   jalv->sample_rate,
+                                   jalv->settings.sample_rate,
                                    &jalv->nodes,
                                    &jalv->forge));
     }
@@ -219,7 +221,8 @@ jalv_allocate_port_buffers(Jalv* jalv)
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     JalvPort* const port = &jalv->ports[i];
     if (port->type == TYPE_EVENT) {
-      const size_t size = port->buf_size ? port->buf_size : jalv->midi_buf_size;
+      const size_t size =
+        port->buf_size ? port->buf_size : jalv->settings.midi_buf_size;
 
       lv2_evbuf_free(port->evbuf);
       port->evbuf =
@@ -698,87 +701,34 @@ jalv_init_features(Jalv* const jalv)
 }
 
 static void
-jalv_init_options(Jalv* const jalv)
-{
-  const LV2_Options_Option options[ARRAY_SIZE(jalv->features.options)] = {
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.param_sampleRate,
-     sizeof(float),
-     jalv->urids.atom_Float,
-     &jalv->sample_rate},
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.bufsz_minBlockLength,
-     sizeof(int32_t),
-     jalv->urids.atom_Int,
-     &jalv->block_length},
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.bufsz_maxBlockLength,
-     sizeof(int32_t),
-     jalv->urids.atom_Int,
-     &jalv->block_length},
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.bufsz_sequenceSize,
-     sizeof(int32_t),
-     jalv->urids.atom_Int,
-     &jalv->midi_buf_size},
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.ui_updateRate,
-     sizeof(float),
-     jalv->urids.atom_Float,
-     &jalv->ui_update_hz},
-    {LV2_OPTIONS_INSTANCE,
-     0,
-     jalv->urids.ui_scaleFactor,
-     sizeof(float),
-     jalv->urids.atom_Float,
-     &jalv->ui_scale_factor},
-    {LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL}};
-
-  memcpy(jalv->features.options, options, sizeof(jalv->features.options));
-
-  init_feature(&jalv->features.options_feature,
-               LV2_OPTIONS__options,
-               (void*)jalv->features.options);
-}
-
-static void
 jalv_init_ui_settings(Jalv* const jalv)
 {
-  if (!jalv->opts.ring_size) {
+  JalvOptions* const  opts     = &jalv->opts;
+  JalvSettings* const settings = &jalv->settings;
+
+  if (!settings->ring_size) {
     /* The UI ring is fed by plugin output ports (usually one), and the UI
        updates roughly once per cycle.  The ring size is a few times the size
        of the MIDI output to give the UI a chance to keep up. */
-    jalv->opts.ring_size = jalv->midi_buf_size * N_BUFFER_CYCLES;
+    settings->ring_size = settings->midi_buf_size * N_BUFFER_CYCLES;
   }
 
-  if (!jalv->opts.update_rate) {
+  if (opts->update_rate <= 0.0f) {
     // Calculate a reasonable UI update frequency
-    jalv->ui_update_hz = jalv_frontend_refresh_rate(jalv);
-  } else {
-    // Use user-specified UI update rate
-    jalv->ui_update_hz = jalv->opts.update_rate;
-    jalv->ui_update_hz = MAX(1.0f, jalv->ui_update_hz);
+    settings->ui_update_hz = jalv_frontend_refresh_rate(jalv);
   }
 
-  if (!jalv->opts.scale_factor) {
+  if (opts->scale_factor <= 0.0f) {
     // Calculate the monitor's scale factor
-    jalv->ui_scale_factor = jalv_frontend_scale_factor(jalv);
-  } else {
-    // Use user-specified UI scale factor
-    jalv->ui_scale_factor = jalv->opts.scale_factor;
+    settings->ui_scale_factor = jalv_frontend_scale_factor(jalv);
   }
 
   // The UI can only go so fast, clamp to reasonable limits
-  jalv->ui_update_hz   = MIN(60, jalv->ui_update_hz);
-  jalv->opts.ring_size = MAX(4096, jalv->opts.ring_size);
-  jalv_log(JALV_LOG_INFO, "Comm buffers: %u bytes\n", jalv->opts.ring_size);
-  jalv_log(JALV_LOG_INFO, "Update rate:  %.01f Hz\n", jalv->ui_update_hz);
-  jalv_log(JALV_LOG_INFO, "Scale factor: %.01f\n", jalv->ui_scale_factor);
+  settings->ui_update_hz = MAX(1.0f, MIN(60.0f, settings->ui_update_hz));
+  settings->ring_size    = MAX(4096, settings->ring_size);
+  jalv_log(JALV_LOG_INFO, "Comm buffers: %u bytes\n", settings->ring_size);
+  jalv_log(JALV_LOG_INFO, "Update rate:  %.01f Hz\n", settings->ui_update_hz);
+  jalv_log(JALV_LOG_INFO, "Scale factor: %.01f\n", settings->ui_scale_factor);
 }
 
 static LilvState*
@@ -813,20 +763,26 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     return ret;
   }
 
+  JalvSettings* const settings = &jalv->settings;
+
+  settings->block_length    = 4096U;
+  settings->midi_buf_size   = 1024U;
+  settings->ring_size       = jalv->opts.ring_size;
+  settings->ui_update_hz    = jalv->opts.update_rate;
+  settings->ui_scale_factor = jalv->opts.scale_factor;
+
   // Load the LV2 world
   LilvWorld* const world = lilv_world_new();
   lilv_world_load_all(world);
 
-  jalv->world         = world;
-  jalv->mapper        = jalv_mapper_new();
-  jalv->block_length  = 4096U;
-  jalv->midi_buf_size = 1024U;
-  jalv->msg_buf_size  = 1024U;
-  jalv->run_state     = JALV_PAUSED;
-  jalv->bpm           = 120.0f;
-  jalv->control_in    = UINT32_MAX;
-  jalv->log.urids     = &jalv->urids;
-  jalv->log.tracing   = jalv->opts.trace;
+  jalv->world        = world;
+  jalv->mapper       = jalv_mapper_new();
+  jalv->msg_buf_size = 1024U;
+  jalv->run_state    = JALV_PAUSED;
+  jalv->bpm          = 120.0f;
+  jalv->control_in   = UINT32_MAX;
+  jalv->log.urids    = &jalv->urids;
+  jalv->log.tracing  = jalv->opts.trace;
 
   // Set up atom dumping for debugging if enabled
   LV2_URID_Map* const   urid_map   = jalv_mapper_urid_map(jalv->mapper);
@@ -957,12 +913,13 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     return -6;
   }
 
-  jalv_log(JALV_LOG_INFO, "Sample rate:  %u Hz\n", (uint32_t)jalv->sample_rate);
-  jalv_log(JALV_LOG_INFO, "Block length: %u frames\n", jalv->block_length);
-  jalv_log(JALV_LOG_INFO, "MIDI buffers: %zu bytes\n", jalv->midi_buf_size);
+  jalv_log(
+    JALV_LOG_INFO, "Sample rate:  %u Hz\n", (uint32_t)settings->sample_rate);
+  jalv_log(JALV_LOG_INFO, "Block length: %u frames\n", settings->block_length);
+  jalv_log(JALV_LOG_INFO, "MIDI buffers: %zu bytes\n", settings->midi_buf_size);
 
   jalv_init_ui_settings(jalv);
-  jalv_init_options(jalv);
+  jalv_init_lv2_options(&jalv->features, &jalv->urids, &jalv->settings);
 
   // Create Plugin <=> UI communication buffers
   jalv->audio_msg    = zix_aligned_alloc(NULL, 8U, jalv->msg_buf_size);
@@ -1004,7 +961,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   // Instantiate the plugin
   jalv->instance = lilv_plugin_instantiate(
-    jalv->plugin, jalv->sample_rate, jalv->feature_list);
+    jalv->plugin, settings->sample_rate, jalv->feature_list);
   if (!jalv->instance) {
     jalv_log(JALV_LOG_ERR, "Failed to instantiate plugin\n");
     return -9;

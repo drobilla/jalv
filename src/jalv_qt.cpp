@@ -712,7 +712,7 @@ jalv_frontend_open(Jalv* jalv)
   }
 
   auto* const timer = new Timer(jalv);
-  timer->start(1000 / jalv->ui_update_hz);
+  timer->start((int)(1000.0f / jalv->settings.ui_update_hz));
 
   const int ret = app->exec();
   zix_sem_post(&jalv->done);

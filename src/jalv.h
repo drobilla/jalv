@@ -14,6 +14,7 @@
 #include "nodes.h"
 #include "options.h"
 #include "port.h"
+#include "settings.h"
 #include "types.h"
 #include "urids.h"
 #include "worker.h"
@@ -47,6 +48,7 @@ struct JalvImpl {
   LV2_Atom_Forge    forge;        ///< Atom forge
   JalvDumper*       dumper;       ///< Atom dumper (console debug output)
   JalvBackend*      backend;      ///< Audio system backend
+  JalvSettings      settings;     ///< Processing settings
   ZixRing*          ui_to_plugin; ///< Port events from UI
   ZixRing*          plugin_to_ui; ///< Port events from plugin
   void*             audio_msg;    ///< Buffer for messages in the audio thread
@@ -69,25 +71,20 @@ struct JalvImpl {
   SuilHost*     ui_host;     ///< Plugin UI host support
   SuilInstance* ui_instance; ///< Plugin UI instance (shared library)
 #endif
-  void*               window;          ///< Window (if applicable)
-  JalvPort*           ports;           ///< Port array of size num_ports
-  Controls            controls;        ///< Available plugin controls
-  float*              controls_buf;    ///< Control port buffers array
-  uint32_t            block_length;    ///< Audio buffer size (block length)
-  size_t              midi_buf_size;   ///< Size of MIDI port buffers
-  size_t              msg_buf_size;    ///< Maximum size of a single message
-  uint32_t            control_in;      ///< Index of control input port
-  uint32_t            num_ports;       ///< Total number of ports on the plugin
-  uint32_t            plugin_latency;  ///< Latency reported by plugin (if any)
-  float               ui_update_hz;    ///< Frequency of UI updates
-  float               ui_scale_factor; ///< UI scale factor
-  float               sample_rate;     ///< Sample rate
-  uint32_t            event_delta_t;   ///< Frames since last update sent to UI
-  uint32_t            position;        ///< Transport position in frames
-  float               bpm;             ///< Transport tempo in beats per minute
-  bool                rolling;         ///< Transport speed (0=stop, 1=play)
-  bool                has_ui;          ///< True iff a control UI is present
-  bool                safe_restore;    ///< Plugin restore() is thread-safe
+  void*               window;         ///< Window (if applicable)
+  JalvPort*           ports;          ///< Port array of size num_ports
+  Controls            controls;       ///< Available plugin controls
+  float*              controls_buf;   ///< Control port buffers array
+  size_t              msg_buf_size;   ///< Maximum size of a single message
+  uint32_t            control_in;     ///< Index of control input port
+  uint32_t            num_ports;      ///< Total number of ports on the plugin
+  uint32_t            plugin_latency; ///< Latency reported by plugin (if any)
+  uint32_t            event_delta_t;  ///< Frames since last update sent to UI
+  uint32_t            position;       ///< Transport position in frames
+  float               bpm;            ///< Transport tempo in beats per minute
+  bool                rolling;        ///< Transport speed (0=stop, 1=play)
+  bool                has_ui;         ///< True iff a control UI is present
+  bool                safe_restore;   ///< Plugin restore() is thread-safe
   JalvFeatures        features;
   const LV2_Feature** feature_list;
 };
