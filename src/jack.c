@@ -50,7 +50,7 @@ static const float max_latency = 16777216.0f;
 
 /// Jack buffer size callback
 static int
-jack_buffer_size_cb(jack_nframes_t nframes, void* data)
+buffer_size_cb(jack_nframes_t nframes, void* data)
 {
   Jalv* const         jalv     = (Jalv*)data;
   JalvSettings* const settings = &jalv->settings;
@@ -68,7 +68,7 @@ jack_buffer_size_cb(jack_nframes_t nframes, void* data)
 
 /// Jack shutdown callback
 static void
-jack_shutdown_cb(void* data)
+shutdown_cb(void* data)
 {
   Jalv* const jalv = (Jalv*)data;
   jalv_frontend_close(jalv);
@@ -143,7 +143,7 @@ process_transport(Jalv* const                  jalv,
 
 /// Jack process callback
 static REALTIME int
-jack_process_cb(jack_nframes_t nframes, void* data)
+process_cb(jack_nframes_t nframes, void* data)
 {
   Jalv* const            jalv        = (Jalv*)data;
   const JalvURIDs* const urids       = &jalv->urids;
@@ -260,10 +260,12 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   return 0;
 }
 
-/// Calculate latency assuming all ports depend on each other
+/// Jack latency callback
 static void
-jack_latency_cb(const jack_latency_callback_mode_t mode, void* const data)
+latency_cb(const jack_latency_callback_mode_t mode, void* const data)
 {
+  // Calculate latency assuming all ports depend on each other
+
   const Jalv* const jalv = (const Jalv*)data;
   const PortFlow    flow =
     ((mode == JackCaptureLatency) ? FLOW_INPUT : FLOW_OUTPUT);
@@ -304,7 +306,7 @@ jack_latency_cb(const jack_latency_callback_mode_t mode, void* const data)
 }
 
 static jack_client_t*
-jack_create_client(Jalv* jalv)
+create_client(Jalv* jalv)
 {
   // Determine the name of the JACK client
   char* jack_name = NULL;
@@ -350,7 +352,7 @@ int
 jalv_backend_open(Jalv* jalv)
 {
   jack_client_t* const client =
-    jalv->backend->client ? jalv->backend->client : jack_create_client(jalv);
+    jalv->backend->client ? jalv->backend->client : create_client(jalv);
 
   if (!client) {
     return 1;
@@ -370,10 +372,10 @@ jalv_backend_open(Jalv* jalv)
 
   // Set JACK callbacks
   void* const arg = (void*)jalv;
-  jack_set_process_callback(client, &jack_process_cb, arg);
-  jack_set_buffer_size_callback(client, &jack_buffer_size_cb, arg);
-  jack_on_shutdown(client, &jack_shutdown_cb, arg);
-  jack_set_latency_callback(client, &jack_latency_cb, arg);
+  jack_set_process_callback(client, &process_cb, arg);
+  jack_set_buffer_size_callback(client, &buffer_size_cb, arg);
+  jack_on_shutdown(client, &shutdown_cb, arg);
+  jack_set_latency_callback(client, &latency_cb, arg);
 
   jalv->backend->client             = client;
   jalv->backend->is_internal_client = false;

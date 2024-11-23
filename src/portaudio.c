@@ -37,12 +37,12 @@ process_silent(Jalv* const         jalv,
 }
 
 static int
-pa_process_cb(const void*                     inputs,
-              void*                           outputs,
-              unsigned long                   nframes,
-              const PaStreamCallbackTimeInfo* time,
-              PaStreamCallbackFlags           flags,
-              void*                           handle)
+process_cb(const void*                     inputs,
+           void*                           outputs,
+           unsigned long                   nframes,
+           const PaStreamCallbackTimeInfo* time,
+           PaStreamCallbackFlags           flags,
+           void*                           handle)
 {
   (void)time;
   (void)flags;
@@ -105,7 +105,7 @@ pa_process_cb(const void*                     inputs,
 }
 
 static int
-pa_error(const char* msg, PaError err)
+setup_error(const char* msg, PaError err)
 {
   jalv_log(JALV_LOG_ERR, "%s (%s)\n", msg, Pa_GetErrorText(err));
   Pa_Terminate();
@@ -133,18 +133,18 @@ jalv_backend_open(Jalv* jalv)
   PaError            st     = paNoError;
 
   if ((st = Pa_Initialize())) {
-    return pa_error("Failed to initialize audio system", st);
+    return setup_error("Failed to initialize audio system", st);
   }
 
   // Get default input and output devices
   inputParameters.device  = Pa_GetDefaultInputDevice();
   outputParameters.device = Pa_GetDefaultOutputDevice();
   if (inputParameters.device == paNoDevice) {
-    return pa_error("No default input device", paDeviceUnavailable);
+    return setup_error("No default input device", paDeviceUnavailable);
   }
 
   if (outputParameters.device == paNoDevice) {
-    return pa_error("No default output device", paDeviceUnavailable);
+    return setup_error("No default output device", paDeviceUnavailable);
   }
 
   const PaDeviceInfo* in_dev  = Pa_GetDeviceInfo(inputParameters.device);
@@ -179,9 +179,9 @@ jalv_backend_open(Jalv* jalv)
                        in_dev->defaultSampleRate,
                        paFramesPerBufferUnspecified,
                        0,
-                       pa_process_cb,
+                       process_cb,
                        jalv))) {
-    return pa_error("Failed to open audio stream", st);
+    return setup_error("Failed to open audio stream", st);
   }
 
   // Set audio parameters
