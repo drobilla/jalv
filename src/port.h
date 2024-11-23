@@ -17,16 +17,11 @@
 JALV_BEGIN_DECLS
 
 typedef struct {
-  const LilvPort* lilv_port;       ///< LV2 port
-  PortType        type;            ///< Data type
-  PortFlow        flow;            ///< Data flow direction
-  void*           sys_port;        ///< For audio/MIDI ports, otherwise NULL
-  LV2_Evbuf*      evbuf;           ///< For MIDI ports, otherwise NULL
-  void*           widget;          ///< Control widget, if applicable
-  size_t          buf_size;        ///< Custom buffer size, or 0
-  uint32_t        index;           ///< Port index
-  bool            reports_latency; ///< For control port outputs
-  bool            is_primary;      ///< True for main control/reponse channel
+  const LilvPort* lilv_port; ///< LV2 port
+  PortType        type;      ///< Data type
+  PortFlow        flow;      ///< Data flow direction
+  void*           widget;    ///< Control widget, if applicable
+  uint32_t        index;     ///< Port index
 } JalvPort;
 
 JALV_END_DECLS

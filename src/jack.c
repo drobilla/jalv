@@ -10,7 +10,6 @@
 #include "jalv_config.h"
 #include "log.h"
 #include "lv2_evbuf.h"
-#include "port.h"
 #include "process.h"
 #include "process_setup.h"
 #include "settings.h"
@@ -54,14 +53,15 @@ buffer_size_cb(jack_nframes_t nframes, void* data)
 {
   Jalv* const         jalv     = (Jalv*)data;
   JalvSettings* const settings = &jalv->settings;
+  JalvProcess* const  proc     = &jalv->process;
 
   settings->block_length = nframes;
 #if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
   settings->midi_buf_size = jack_port_type_get_buffer_size(
     jalv->backend->client, JACK_DEFAULT_MIDI_TYPE);
 #endif
-  if (jalv->run_state == JALV_RUNNING) {
-    jalv_allocate_port_buffers(jalv);
+  if (proc->run_state == JALV_RUNNING) {
+    jalv_process_activate(proc, &jalv->urids, proc->instance, &jalv->settings);
   }
   return 0;
 }
@@ -102,11 +102,11 @@ forge_position(LV2_Atom_Forge* const        forge,
 }
 
 static int
-process_silent(Jalv* const jalv, const jack_nframes_t nframes)
+process_silent(JalvProcess* const proc, const jack_nframes_t nframes)
 {
-  for (uint32_t p = 0U; p < jalv->num_ports; ++p) {
-    JalvPort* const    port  = &jalv->ports[p];
-    jack_port_t* const jport = (jack_port_t*)jalv->ports[p].sys_port;
+  for (uint32_t p = 0U; p < proc->num_ports; ++p) {
+    JalvProcessPort* const port  = &proc->ports[p];
+    jack_port_t* const     jport = (jack_port_t*)proc->ports[p].sys_port;
     if (jport && port->flow == FLOW_OUTPUT) {
       void* const buf = jack_port_get_buffer(jport, nframes);
       if (port->type == TYPE_EVENT) {
@@ -117,11 +117,11 @@ process_silent(Jalv* const jalv, const jack_nframes_t nframes)
     }
   }
 
-  return jalv_bypass(jalv, nframes);
+  return jalv_bypass(proc, nframes);
 }
 
 static bool
-process_transport(Jalv* const                  jalv,
+process_transport(JalvProcess* const           proc,
                   const jack_transport_state_t state,
                   const jack_position_t        pos,
                   const jack_nframes_t         nframes)
@@ -130,13 +130,13 @@ process_transport(Jalv* const                  jalv,
   const bool rolling = state == JackTransportRolling;
   const bool has_bbt = (pos.valid & JackPositionBBT);
   const bool xport_changed =
-    (rolling != jalv->rolling || pos.frame != jalv->position ||
-     (has_bbt && pos.beats_per_minute != jalv->bpm));
+    (rolling != proc->rolling || pos.frame != proc->position ||
+     (has_bbt && pos.beats_per_minute != proc->bpm));
 
   // Update transport state to expected values for next cycle
-  jalv->position = rolling ? pos.frame + nframes : pos.frame;
-  jalv->bpm      = has_bbt ? pos.beats_per_minute : jalv->bpm;
-  jalv->rolling  = rolling;
+  proc->position = rolling ? pos.frame + nframes : pos.frame;
+  proc->bpm      = has_bbt ? pos.beats_per_minute : proc->bpm;
+  proc->rolling  = rolling;
 
   return xport_changed;
 }
@@ -147,13 +147,14 @@ process_cb(jack_nframes_t nframes, void* data)
 {
   Jalv* const            jalv        = (Jalv*)data;
   const JalvURIDs* const urids       = &jalv->urids;
+  JalvProcess* const     proc        = &jalv->process;
   jack_client_t* const   client      = jalv->backend->client;
   uint64_t               pos_buf[64] = {0U};
   LV2_Atom* const        lv2_pos     = (LV2_Atom*)pos_buf;
 
   // If execution is paused, emit silence and return
-  if (jalv->run_state == JALV_PAUSED) {
-    return process_silent(jalv, nframes);
+  if (proc->run_state == JALV_PAUSED) {
+    return process_silent(proc, nframes);
   }
 
   // Get transport state and position
@@ -161,20 +162,20 @@ process_cb(jack_nframes_t nframes, void* data)
   const jack_transport_state_t state = jack_transport_query(client, &pos);
 
   // Check if transport is discontinuous from last time and update state
-  const bool xport_changed = process_transport(jalv, state, pos, nframes);
+  const bool xport_changed = process_transport(proc, state, pos, nframes);
   if (xport_changed) {
     // Build an LV2 position object to report change to plugin
-    lv2_atom_forge_set_buffer(&jalv->forge, (uint8_t*)pos_buf, sizeof(pos_buf));
-    forge_position(&jalv->forge, urids, state, pos);
+    lv2_atom_forge_set_buffer(&proc->forge, (uint8_t*)pos_buf, sizeof(pos_buf));
+    forge_position(&proc->forge, urids, state, pos);
   }
 
   // Prepare port buffers
-  for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    JalvPort* const port = &jalv->ports[p];
+  for (uint32_t p = 0; p < proc->num_ports; ++p) {
+    JalvProcessPort* const port = &proc->ports[p];
     if (port->sys_port && (port->type == TYPE_AUDIO || port->type == TYPE_CV)) {
       // Connect plugin port directly to Jack port buffer
       lilv_instance_connect_port(
-        jalv->instance, p, jack_port_get_buffer(port->sys_port, nframes));
+        proc->instance, p, jack_port_get_buffer(port->sys_port, nframes));
     } else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
       lv2_evbuf_reset(port->evbuf, true);
       LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
@@ -202,26 +203,26 @@ process_cb(jack_nframes_t nframes, void* data)
   }
 
   // Run plugin for this cycle
-  const bool send_ui_updates = jalv_run(jalv, nframes);
+  const bool send_ui_updates = jalv_run(proc, nframes);
 
   // Deliver MIDI output and UI events
-  for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    JalvPort* const port = &jalv->ports[p];
+  for (uint32_t p = 0; p < proc->num_ports; ++p) {
+    JalvProcessPort* const port = &proc->ports[p];
     if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
         port->reports_latency) {
       // Get the latency in frames from the control output truncated to integer
-      const float    value = jalv->controls_buf[p];
+      const float    value = proc->controls_buf[p];
       const uint32_t frames =
         (value >= 0.0f && value <= max_latency) ? (uint32_t)value : 0U;
 
-      if (jalv->plugin_latency != frames) {
+      if (proc->plugin_latency != frames) {
         // Update the cached value and notify the UI if the latency changed
-        jalv->plugin_latency = frames;
+        proc->plugin_latency = frames;
 
         const JalvLatencyChange body   = {frames};
         const JalvMessageHeader header = {LATENCY_CHANGE, sizeof(body)};
         jalv_write_split_message(
-          jalv->plugin_to_ui, &header, sizeof(header), &body, sizeof(body));
+          proc->plugin_to_ui, &header, sizeof(header), &body, sizeof(body));
       }
     } else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
       void* buf = NULL;
@@ -246,14 +247,14 @@ process_cb(jack_nframes_t nframes, void* data)
           jack_midi_event_write(buf, frames, body, size);
         }
 
-        if (jalv->has_ui) {
+        if (proc->has_ui) {
           // Forward event to UI
-          jalv_write_event(jalv->plugin_to_ui, p, size, type, body);
+          jalv_write_event(proc->plugin_to_ui, p, size, type, body);
         }
       }
     } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&
                port->type == TYPE_CONTROL) {
-      jalv_write_control(jalv->plugin_to_ui, p, jalv->controls_buf[p]);
+      jalv_write_control(proc->plugin_to_ui, p, proc->controls_buf[p]);
     }
   }
 
@@ -266,15 +267,16 @@ latency_cb(const jack_latency_callback_mode_t mode, void* const data)
 {
   // Calculate latency assuming all ports depend on each other
 
-  const Jalv* const jalv = (const Jalv*)data;
-  const PortFlow    flow =
+  const Jalv* const        jalv = (const Jalv*)data;
+  const JalvProcess* const proc = &jalv->process;
+  const PortFlow           flow =
     ((mode == JackCaptureLatency) ? FLOW_INPUT : FLOW_OUTPUT);
 
   // First calculate the min/max latency of all feeding ports
   uint32_t             ports_found = 0;
   jack_latency_range_t range       = {UINT32_MAX, 0};
-  for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    JalvPort* const port = &jalv->ports[p];
+  for (uint32_t p = 0; p < proc->num_ports; ++p) {
+    JalvProcessPort* const port = &proc->ports[p];
     if (port->sys_port && port->flow == flow) {
       jack_latency_range_t r;
       jack_port_get_latency_range(port->sys_port, mode, &r);
@@ -293,12 +295,12 @@ latency_cb(const jack_latency_callback_mode_t mode, void* const data)
   }
 
   // Add the plugin's own latency
-  range.min += jalv->plugin_latency;
-  range.max += jalv->plugin_latency;
+  range.min += proc->plugin_latency;
+  range.max += proc->plugin_latency;
 
   // Tell Jack about it
-  for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    const JalvPort* const port = &jalv->ports[p];
+  for (uint32_t p = 0; p < proc->num_ports; ++p) {
+    const JalvProcessPort* const port = &proc->ports[p];
     if (port->sys_port && port->flow == flow) {
       jack_port_set_latency_range(port->sys_port, mode, &range);
     }
@@ -408,14 +410,13 @@ jalv_backend_deactivate(Jalv* jalv)
 void
 jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 {
-  jack_client_t*  client = jalv->backend->client;
-  JalvPort* const port   = &jalv->ports[port_index];
-
-  const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
+  jack_client_t* const   client = jalv->backend->client;
+  JalvProcess* const     proc   = &jalv->process;
+  JalvProcessPort* const port   = &proc->ports[port_index];
 
   // Connect unsupported ports to NULL (known to be optional by this point)
   if (port->flow == FLOW_UNKNOWN || port->type == TYPE_UNKNOWN) {
-    lilv_instance_connect_port(jalv->instance, port_index, NULL);
+    lilv_instance_connect_port(proc->instance, port_index, NULL);
     return;
   }
 
@@ -429,16 +430,16 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
     break;
   case TYPE_CONTROL:
     lilv_instance_connect_port(
-      jalv->instance, port_index, &jalv->controls_buf[port_index]);
+      proc->instance, port_index, &proc->controls_buf[port_index]);
     break;
   case TYPE_AUDIO:
     port->sys_port = jack_port_register(
-      client, lilv_node_as_string(sym), JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
+      client, port->symbol, JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
     break;
 #if USE_JACK_METADATA
   case TYPE_CV:
     port->sys_port = jack_port_register(
-      client, lilv_node_as_string(sym), JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
+      client, port->symbol, JACK_DEFAULT_AUDIO_TYPE, jack_flags, 0);
     if (port->sys_port) {
       jack_set_property(client,
                         jack_port_uuid(port->sys_port),
@@ -449,13 +450,9 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
     break;
 #endif
   case TYPE_EVENT:
-    if (lilv_port_supports_event(
-          jalv->plugin, port->lilv_port, jalv->nodes.midi_MidiEvent)) {
-      port->sys_port = jack_port_register(client,
-                                          lilv_node_as_string(sym),
-                                          JACK_DEFAULT_MIDI_TYPE,
-                                          jack_flags,
-                                          0);
+    if (port->supports_midi) {
+      port->sys_port = jack_port_register(
+        client, port->symbol, JACK_DEFAULT_MIDI_TYPE, jack_flags, 0);
     }
     break;
   }
@@ -472,13 +469,13 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
                       "http://www.w3.org/2001/XMLSchema#integer");
 
     // Set port pretty name to label
-    LilvNode* name = lilv_port_get_name(jalv->plugin, port->lilv_port);
-    jack_set_property(client,
-                      jack_port_uuid(port->sys_port),
-                      JACK_METADATA_PRETTY_NAME,
-                      lilv_node_as_string(name),
-                      "text/plain");
-    lilv_node_free(name);
+    if (port->label) {
+      jack_set_property(client,
+                        jack_port_uuid(port->sys_port),
+                        JACK_METADATA_PRETTY_NAME,
+                        port->label,
+                        "text/plain");
+    }
   }
 #endif
 }

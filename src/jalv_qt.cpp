@@ -365,9 +365,9 @@ Control::Control(PortContainer portContainer, QWidget* parent)
   }
 
   // Find and set min, max and default values for port
-  const float defaultValue = ndef
-                               ? lilv_node_as_float(ndef)
-                               : portContainer.jalv->controls_buf[_port->index];
+  const float defaultValue =
+    ndef ? lilv_node_as_float(ndef)
+         : portContainer.jalv->process.controls_buf[_port->index];
   setRange(lilv_node_as_float(nmin), lilv_node_as_float(nmax));
   setValue(defaultValue);
 
@@ -499,7 +499,7 @@ Control::dialChanged(int)
   const float value = getValue();
 
   _label->setText(getValueLabel(value));
-  _jalv->controls_buf[_port->index] = value;
+  _jalv->process.controls_buf[_port->index] = value;
 }
 
 namespace {

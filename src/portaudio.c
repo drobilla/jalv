@@ -6,7 +6,6 @@
 #include "jalv.h"
 #include "log.h"
 #include "lv2_evbuf.h"
-#include "port.h"
 #include "process.h"
 #include "types.h"
 
@@ -25,15 +24,15 @@ struct JalvBackendImpl {
 };
 
 static int
-process_silent(Jalv* const         jalv,
+process_silent(JalvProcess* const  proc,
                void* const         outputs,
                const unsigned long nframes)
 {
-  for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+  for (uint32_t i = 0; i < proc->num_ports; ++i) {
     memset(((float**)outputs)[i], '\0', nframes * sizeof(float));
   }
 
-  return jalv_bypass(jalv, nframes);
+  return jalv_bypass(proc, nframes);
 }
 
 static int
@@ -47,25 +46,26 @@ process_cb(const void*                     inputs,
   (void)time;
   (void)flags;
 
-  Jalv* jalv = (Jalv*)handle;
+  Jalv* const        jalv = (Jalv*)handle;
+  JalvProcess* const proc = &jalv->process;
 
   // If execution is paused, emit silence and return
-  if (jalv->run_state == JALV_PAUSED) {
-    return process_silent(jalv, outputs, nframes);
+  if (proc->run_state == JALV_PAUSED) {
+    return process_silent(proc, outputs, nframes);
   }
 
   // Prepare port buffers
   uint32_t in_index  = 0;
   uint32_t out_index = 0;
-  for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    JalvPort* const port = &jalv->ports[i];
+  for (uint32_t i = 0; i < proc->num_ports; ++i) {
+    JalvProcessPort* const port = &proc->ports[i];
     if (port->type == TYPE_AUDIO) {
       if (port->flow == FLOW_INPUT) {
         lilv_instance_connect_port(
-          jalv->instance, i, ((float**)inputs)[in_index++]);
+          proc->instance, i, ((float**)inputs)[in_index++]);
       } else if (port->flow == FLOW_OUTPUT) {
         lilv_instance_connect_port(
-          jalv->instance, i, ((float**)outputs)[out_index++]);
+          proc->instance, i, ((float**)outputs)[out_index++]);
       }
     } else if (port->type == TYPE_EVENT) {
       lv2_evbuf_reset(port->evbuf, port->flow == FLOW_INPUT);
@@ -73,11 +73,11 @@ process_cb(const void*                     inputs,
   }
 
   // Run plugin for this cycle
-  const bool send_ui_updates = jalv_run(jalv, nframes);
+  const bool send_ui_updates = jalv_run(proc, nframes);
 
   // Deliver UI events
-  for (uint32_t p = 0; p < jalv->num_ports; ++p) {
-    JalvPort* const port = &jalv->ports[p];
+  for (uint32_t p = 0; p < proc->num_ports; ++p) {
+    JalvProcessPort* const port = &proc->ports[p];
     if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
       for (LV2_Evbuf_Iterator i = lv2_evbuf_begin(port->evbuf);
            lv2_evbuf_is_valid(i);
@@ -90,14 +90,14 @@ process_cb(const void*                     inputs,
         void*    body      = NULL;
         lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
-        if (jalv->has_ui) {
+        if (proc->has_ui) {
           // Forward event to UI
-          jalv_write_event(jalv->plugin_to_ui, p, size, type, body);
+          jalv_write_event(proc->plugin_to_ui, p, size, type, body);
         }
       }
     } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&
                port->type == TYPE_CONTROL) {
-      jalv_write_control(jalv->plugin_to_ui, p, jalv->controls_buf[p]);
+      jalv_write_control(proc->plugin_to_ui, p, proc->controls_buf[p]);
     }
   }
 
@@ -230,11 +230,12 @@ jalv_backend_deactivate(Jalv* jalv)
 void
 jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 {
-  JalvPort* const port = &jalv->ports[port_index];
+  JalvProcess* const     proc = &jalv->process;
+  JalvProcessPort* const port = &proc->ports[port_index];
 
   if (port->type == TYPE_CONTROL) {
     lilv_instance_connect_port(
-      jalv->instance, port_index, &jalv->controls_buf[port_index]);
+      proc->instance, port_index, &proc->controls_buf[port_index]);
   }
 }
 

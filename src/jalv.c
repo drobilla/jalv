@@ -1,4 +1,4 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2024 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "jalv.h"
@@ -16,8 +16,8 @@
 #include "nodes.h"
 #include "options.h"
 #include "port.h"
+#include "process.h"
 #include "process_setup.h"
-#include "query.h"
 #include "settings.h"
 #include "state.h"
 #include "string_utils.h"
@@ -101,36 +101,27 @@ create_port(Jalv* jalv, uint32_t port_index)
   JalvPort* const port = &jalv->ports[port_index];
 
   port->lilv_port = lilv_plugin_get_port_by_index(jalv->plugin, port_index);
-  port->sys_port  = NULL;
-  port->evbuf     = NULL;
-  port->buf_size  = 0;
   port->index     = port_index;
   port->flow      = FLOW_UNKNOWN;
 
-  const bool optional = lilv_port_has_property(
-    jalv->plugin, port->lilv_port, jalv->nodes.lv2_connectionOptional);
-
-  // Set the port flow (input or output)
-  if (lilv_port_is_a(
-        jalv->plugin, port->lilv_port, jalv->nodes.lv2_InputPort)) {
-    port->flow = FLOW_INPUT;
-  } else if (lilv_port_is_a(
-               jalv->plugin, port->lilv_port, jalv->nodes.lv2_OutputPort)) {
-    port->flow = FLOW_OUTPUT;
-  } else if (!optional) {
-    jalv_log(JALV_LOG_ERR, "Mandatory port is neither input nor output\n");
+  JalvProcessPort* const pport = &jalv->process.ports[port_index];
+  if (jalv_process_port_init(&jalv->process.ports[port_index],
+                             &jalv->nodes,
+                             jalv->plugin,
+                             port->lilv_port)) {
     return 1;
   }
 
-  const bool hidden = !jalv->opts.show_hidden &&
-                      lilv_port_has_property(jalv->plugin,
-                                             port->lilv_port,
-                                             jalv->nodes.pprops_notOnGUI);
+  port->type = pport->type;
+  port->flow = pport->flow;
 
-  // Set control values
   if (lilv_port_is_a(
         jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
-    port->type = TYPE_CONTROL;
+    const bool hidden = !jalv->opts.show_hidden &&
+                        lilv_port_has_property(jalv->plugin,
+                                               port->lilv_port,
+                                               jalv->nodes.pprops_notOnGUI);
+
     if (!hidden) {
       add_control(&jalv->controls,
                   new_port_control(jalv->world,
@@ -141,52 +132,19 @@ create_port(Jalv* jalv, uint32_t port_index)
                                    &jalv->nodes,
                                    &jalv->forge));
     }
-  } else if (lilv_port_is_a(
-               jalv->plugin, port->lilv_port, jalv->nodes.lv2_AudioPort)) {
-    port->type = TYPE_AUDIO;
-#if USE_JACK_METADATA
-  } else if (lilv_port_is_a(
-               jalv->plugin, port->lilv_port, jalv->nodes.lv2_CVPort)) {
-    port->type = TYPE_CV;
-#endif
-  } else if (lilv_port_is_a(
-               jalv->plugin, port->lilv_port, jalv->nodes.atom_AtomPort)) {
-    port->type = TYPE_EVENT;
-  } else if (!optional) {
-    jalv_log(JALV_LOG_ERR, "Mandatory port has unknown data type\n");
-    return 2;
   }
 
-  // Set buffer size
-  LilvNode* min_size =
-    lilv_port_get(jalv->plugin, port->lilv_port, jalv->nodes.rsz_minimumSize);
-  if (min_size && lilv_node_is_int(min_size)) {
-    port->buf_size = lilv_node_as_int(min_size);
-    jalv->opts.ring_size =
-      MAX(jalv->opts.ring_size, port->buf_size * N_BUFFER_CYCLES);
-    jalv->msg_buf_size = MAX(jalv->msg_buf_size, port->buf_size);
-  }
-  lilv_node_free(min_size);
-
-  // Set primary flag for designated control port
-  if (port->type == TYPE_EVENT &&
-      jalv_port_has_designation(
-        &jalv->nodes, jalv->plugin, port->lilv_port, jalv->nodes.lv2_control)) {
-    port->is_primary = true;
-    if (port->flow == FLOW_INPUT && jalv->control_in == UINT32_MAX) {
-      jalv->control_in = port->index;
-    }
+  // Store index if this is the designated control input port
+  if (jalv->process.control_in == UINT32_MAX && pport->is_primary &&
+      port->flow == FLOW_INPUT && port->type == TYPE_EVENT) {
+    jalv->process.control_in = port_index;
   }
 
-  // Set reports_latency flag
-  if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
-      (lilv_port_has_property(
-         jalv->plugin, port->lilv_port, jalv->nodes.lv2_reportsLatency) ||
-       jalv_port_has_designation(&jalv->nodes,
-                                 jalv->plugin,
-                                 port->lilv_port,
-                                 jalv->nodes.lv2_latency))) {
-    port->reports_latency = true;
+  // Update maximum buffer sizes
+  const uint32_t buf_size = pport->buf_size;
+  jalv->opts.ring_size = MAX(jalv->opts.ring_size, buf_size * N_BUFFER_CYCLES);
+  if (port->flow == FLOW_OUTPUT) {
+    jalv->ui_msg_size = MAX(jalv->ui_msg_size, buf_size);
   }
 
   return 0;
@@ -196,13 +154,18 @@ create_port(Jalv* jalv, uint32_t port_index)
 static int
 jalv_create_ports(Jalv* jalv)
 {
-  jalv->num_ports = lilv_plugin_get_num_ports(jalv->plugin);
-  jalv->ports     = (JalvPort*)calloc(jalv->num_ports, sizeof(JalvPort));
+  const uint32_t n_ports = lilv_plugin_get_num_ports(jalv->plugin);
+
+  jalv->num_ports         = n_ports;
+  jalv->ports             = (JalvPort*)calloc(n_ports, sizeof(JalvPort));
+  jalv->process.num_ports = n_ports;
+  jalv->process.ports =
+    (JalvProcessPort*)calloc(n_ports, sizeof(JalvProcessPort));
 
   // Allocate control port buffers array and set to default values
-  jalv->controls_buf = (float*)calloc(jalv->num_ports, sizeof(float));
+  jalv->process.controls_buf = (float*)calloc(n_ports, sizeof(float));
   lilv_plugin_get_port_ranges_float(
-    jalv->plugin, NULL, NULL, jalv->controls_buf);
+    jalv->plugin, NULL, NULL, jalv->process.controls_buf);
 
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     if (create_port(jalv, i)) {
@@ -314,8 +277,9 @@ jalv_send_to_plugin(void* const       jalv_handle,
                     const uint32_t    protocol,
                     const void* const buffer)
 {
-  Jalv* const jalv = (Jalv*)jalv_handle;
-  ZixStatus   st   = ZIX_STATUS_SUCCESS;
+  Jalv* const        jalv = (Jalv*)jalv_handle;
+  JalvProcess* const proc = &jalv->process;
+  ZixStatus          st   = ZIX_STATUS_SUCCESS;
 
   if (port_index >= jalv->num_ports) {
     jalv_log(JALV_LOG_ERR, "UI wrote to invalid port index %u\n", port_index);
@@ -325,7 +289,7 @@ jalv_send_to_plugin(void* const       jalv_handle,
       st = ZIX_STATUS_BAD_ARG;
     } else {
       const float value = *(const float*)buffer;
-      st = jalv_write_control(jalv->ui_to_plugin, port_index, value);
+      st = jalv_write_control(proc->ui_to_plugin, port_index, value);
     }
 
   } else if (protocol == jalv->urids.atom_eventTransfer) {
@@ -336,7 +300,7 @@ jalv_send_to_plugin(void* const       jalv_handle,
     } else {
       jalv_dump_atom(jalv->dumper, stdout, "UI => Plugin", atom, 36);
       st = jalv_write_event(
-        jalv->ui_to_plugin, port_index, atom->size, atom->type, atom + 1U);
+        proc->ui_to_plugin, port_index, atom->size, atom->type, atom + 1U);
     }
 
   } else {
@@ -361,23 +325,22 @@ jalv_set_control(Jalv*            jalv,
                  const void*      body)
 {
   if (control->type == PORT && type == jalv->forge.Float) {
-    jalv->controls_buf[control->index] = *(const float*)body;
-  } else if (control->type == PROPERTY && jalv->control_in != UINT32_MAX) {
-    // Copy forge since it is used by process thread
-    LV2_Atom_Forge       forge = jalv->forge;
+    jalv->process.controls_buf[control->index] = *(const float*)body;
+  } else if (control->type == PROPERTY &&
+             jalv->process.control_in != UINT32_MAX) {
     LV2_Atom_Forge_Frame frame;
-    lv2_atom_forge_set_buffer(&forge, jalv->ui_msg, jalv->msg_buf_size);
+    lv2_atom_forge_set_buffer(&jalv->forge, jalv->ui_msg, jalv->ui_msg_size);
 
-    lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Set);
-    lv2_atom_forge_key(&forge, jalv->urids.patch_property);
-    lv2_atom_forge_urid(&forge, control->property);
-    lv2_atom_forge_key(&forge, jalv->urids.patch_value);
-    lv2_atom_forge_atom(&forge, size, type);
-    lv2_atom_forge_write(&forge, body, size);
+    lv2_atom_forge_object(&jalv->forge, &frame, 0, jalv->urids.patch_Set);
+    lv2_atom_forge_key(&jalv->forge, jalv->urids.patch_property);
+    lv2_atom_forge_urid(&jalv->forge, control->property);
+    lv2_atom_forge_key(&jalv->forge, jalv->urids.patch_value);
+    lv2_atom_forge_atom(&jalv->forge, size, type);
+    lv2_atom_forge_write(&jalv->forge, body, size);
 
-    const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);
+    const LV2_Atom* atom = lv2_atom_forge_deref(&jalv->forge, frame.ref);
     jalv_send_to_plugin(jalv,
-                        jalv->control_in,
+                        jalv->process.control_in,
                         lv2_atom_total_size(atom),
                         jalv->urids.atom_eventTransfer,
                         atom);
@@ -399,13 +362,15 @@ void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 {
 #if USE_SUIL
+  LilvInstance* const instance = jalv->process.instance;
+
   jalv->ui_host =
     suil_host_new(jalv_send_to_plugin, jalv_ui_port_index, NULL, NULL);
 
   const LV2_Feature parent_feature = {LV2_UI__parent, parent};
 
-  const LV2_Feature instance_feature = {
-    LV2_INSTANCE_ACCESS_URI, lilv_instance_get_handle(jalv->instance)};
+  const LV2_Feature instance_feature = {LV2_INSTANCE_ACCESS_URI,
+                                        lilv_instance_get_handle(instance)};
 
   const LV2_Feature data_feature = {LV2_DATA_ACCESS_URI,
                                     &jalv->features.ext_data};
@@ -455,25 +420,24 @@ jalv_init_ui(Jalv* jalv)
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
     if (jalv->ports[i].type == TYPE_CONTROL) {
       jalv_frontend_port_event(
-        jalv, i, sizeof(float), 0, &jalv->controls_buf[i]);
+        jalv, i, sizeof(float), 0, &jalv->process.controls_buf[i]);
     }
   }
 
-  if (jalv->control_in != UINT32_MAX) {
+  if (jalv->process.control_in != UINT32_MAX) {
     // Send patch:Get message for initial parameters/etc
-    LV2_Atom_Forge       forge = jalv->forge;
     LV2_Atom_Forge_Frame frame;
     uint64_t             buf[4U] = {0U, 0U, 0U, 0U};
-    lv2_atom_forge_set_buffer(&forge, (uint8_t*)buf, sizeof(buf));
-    lv2_atom_forge_object(&forge, &frame, 0, jalv->urids.patch_Get);
+    lv2_atom_forge_set_buffer(&jalv->forge, (uint8_t*)buf, sizeof(buf));
+    lv2_atom_forge_object(&jalv->forge, &frame, 0, jalv->urids.patch_Get);
 
-    const LV2_Atom* atom = lv2_atom_forge_deref(&forge, frame.ref);
+    const LV2_Atom* atom = lv2_atom_forge_deref(&jalv->forge, frame.ref);
     jalv_send_to_plugin(jalv,
-                        jalv->control_in,
+                        jalv->process.control_in,
                         lv2_atom_total_size(atom),
                         jalv->urids.atom_eventTransfer,
                         atom);
-    lv2_atom_forge_pop(&forge, &frame);
+    lv2_atom_forge_pop(&jalv->forge, &frame);
   }
 }
 
@@ -494,7 +458,7 @@ jalv_update(Jalv* jalv)
   }
 
   // Emit UI events
-  ZixRing* const    ring   = jalv->plugin_to_ui;
+  ZixRing* const    ring   = jalv->process.plugin_to_ui;
   JalvMessageHeader header = {NO_MESSAGE, 0U};
   const size_t      space  = zix_ring_read_space(ring);
   for (size_t i = 0; i < space; i += sizeof(header) + header.size) {
@@ -744,14 +708,10 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   LilvWorld* const world = lilv_world_new();
   lilv_world_load_all(world);
 
-  jalv->world        = world;
-  jalv->mapper       = jalv_mapper_new();
-  jalv->msg_buf_size = 1024U;
-  jalv->run_state    = JALV_PAUSED;
-  jalv->bpm          = 120.0f;
-  jalv->control_in   = UINT32_MAX;
-  jalv->log.urids    = &jalv->urids;
-  jalv->log.tracing  = jalv->opts.trace;
+  jalv->world       = world;
+  jalv->mapper      = jalv_mapper_new();
+  jalv->log.urids   = &jalv->urids;
+  jalv->log.tracing = jalv->opts.trace;
 
   // Set up atom dumping for debugging if enabled
   LV2_URID_Map* const   urid_map   = jalv_mapper_urid_map(jalv->mapper);
@@ -762,8 +722,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   zix_sem_init(&jalv->work_lock, 1);
   zix_sem_init(&jalv->done, 0);
-  zix_sem_init(&jalv->paused, 0);
-
   jalv_init_urids(jalv->mapper, &jalv->urids);
   jalv_init_nodes(world, &jalv->nodes);
   jalv_init_features(jalv);
@@ -812,11 +770,11 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   // Create workers if necessary
   if (lilv_plugin_has_extension_data(jalv->plugin,
                                      jalv->nodes.work_interface)) {
-    jalv->worker                = jalv_worker_new(&jalv->work_lock, true);
-    jalv->features.sched.handle = jalv->worker;
+    jalv->process.worker        = jalv_worker_new(&jalv->work_lock, true);
+    jalv->features.sched.handle = jalv->process.worker;
     if (jalv->safe_restore) {
-      jalv->state_worker           = jalv_worker_new(&jalv->work_lock, false);
-      jalv->features.ssched.handle = jalv->state_worker;
+      jalv->process.state_worker   = jalv_worker_new(&jalv->work_lock, false);
+      jalv->features.ssched.handle = jalv->process.state_worker;
     }
   }
 
@@ -868,6 +826,11 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     }
   }
 
+  // Initialize process thread
+  const uint32_t update_frames =
+    (uint32_t)(settings->sample_rate / settings->ui_update_hz);
+  jalv_process_init(&jalv->process, &jalv->urids, jalv->mapper, update_frames);
+
   // Create port structures
   if (jalv_create_ports(jalv)) {
     return -10;
@@ -888,15 +851,10 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_log(JALV_LOG_INFO, "MIDI buffers: %zu bytes\n", settings->midi_buf_size);
 
   jalv_init_ui_settings(jalv);
-  jalv_init_lv2_options(&jalv->features, &jalv->urids, &jalv->settings);
+  jalv_init_lv2_options(&jalv->features, &jalv->urids, settings);
 
-  // Create Plugin <=> UI communication buffers
-  jalv->audio_msg    = zix_aligned_alloc(NULL, 8U, jalv->msg_buf_size);
-  jalv->ui_msg       = zix_aligned_alloc(NULL, 8U, jalv->msg_buf_size);
-  jalv->ui_to_plugin = zix_ring_new(NULL, jalv->opts.ring_size);
-  jalv->plugin_to_ui = zix_ring_new(NULL, jalv->opts.ring_size);
-  zix_ring_mlock(jalv->ui_to_plugin);
-  zix_ring_mlock(jalv->plugin_to_ui);
+  // Create Plugin => UI communication buffers
+  jalv->ui_msg = zix_aligned_alloc(NULL, 8U, jalv->ui_msg_size);
 
   // Build feature list for passing to plugins
   const LV2_Feature* const features[] = {&jalv->features.map_feature,
@@ -929,28 +887,31 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   lilv_nodes_free(req_feats);
 
   // Instantiate the plugin
-  jalv->instance = lilv_plugin_instantiate(
+  LilvInstance* const instance = lilv_plugin_instantiate(
     jalv->plugin, settings->sample_rate, jalv->feature_list);
-  if (!jalv->instance) {
+  if (!instance) {
     jalv_log(JALV_LOG_ERR, "Failed to instantiate plugin\n");
     return -9;
   }
 
   // Point things to the instance that require it
 
+  // jalv->process.instance = instance;
   jalv->features.ext_data.data_access =
-    lilv_instance_get_descriptor(jalv->instance)->extension_data;
+    lilv_instance_get_descriptor(instance)->extension_data;
 
   const LV2_Worker_Interface* worker_iface =
     (const LV2_Worker_Interface*)lilv_instance_get_extension_data(
-      jalv->instance, LV2_WORKER__interface);
+      instance, LV2_WORKER__interface);
 
-  jalv_worker_attach(jalv->worker, worker_iface, jalv->instance->lv2_handle);
+  jalv_worker_attach(jalv->process.worker, worker_iface, instance->lv2_handle);
   jalv_worker_attach(
-    jalv->state_worker, worker_iface, jalv->instance->lv2_handle);
-
+    jalv->process.state_worker, worker_iface, instance->lv2_handle);
   jalv_log(JALV_LOG_INFO, "\n");
-  jalv_allocate_port_buffers(jalv);
+
+  // Allocate port buffers
+  jalv_process_activate(
+    &jalv->process, &jalv->urids, instance, &jalv->settings);
 
   // Apply loaded state to plugin instance if necessary
   if (state) {
@@ -971,20 +932,20 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   }
 
   // Discover UI
-  jalv->has_ui = jalv_frontend_discover(jalv);
+  jalv->process.has_ui = jalv_frontend_discover(jalv);
   return 0;
 }
 
 int
 jalv_activate(Jalv* const jalv)
 {
-  jalv->run_state = JALV_RUNNING;
+  jalv->process.run_state = JALV_RUNNING;
 
   if (jalv->backend) {
-    if (jalv->worker) {
-      jalv_worker_launch(jalv->worker);
+    if (jalv->process.worker) {
+      jalv_worker_launch(jalv->process.worker);
     }
-    lilv_instance_activate(jalv->instance);
+    lilv_instance_activate(jalv->process.instance);
     jalv_backend_activate(jalv);
   }
 
@@ -997,14 +958,14 @@ jalv_deactivate(Jalv* const jalv)
   if (jalv->backend) {
     jalv_backend_deactivate(jalv);
   }
-  if (jalv->instance) {
-    lilv_instance_deactivate(jalv->instance);
+  if (jalv->process.instance) {
+    lilv_instance_deactivate(jalv->process.instance);
   }
-  if (jalv->worker) {
-    jalv_worker_exit(jalv->worker);
+  if (jalv->process.worker) {
+    jalv_worker_exit(jalv->process.worker);
   }
 
-  jalv->run_state = JALV_PAUSED;
+  jalv->process.run_state = JALV_PAUSED;
   return 0;
 }
 
@@ -1013,31 +974,25 @@ jalv_close(Jalv* const jalv)
 {
   // Stop audio processing, free event port buffers, and close backend
   jalv_deactivate(jalv);
-  jalv_free_port_buffers(jalv);
+  jalv_process_deactivate(&jalv->process);
   if (jalv->backend) {
     jalv_backend_close(jalv);
   }
-
-  // Destroy the worker
-  jalv_worker_free(jalv->worker);
-  jalv_worker_free(jalv->state_worker);
 
   // Free UI and plugin instances
 #if USE_SUIL
   suil_instance_free(jalv->ui_instance);
 #endif
-  if (jalv->instance) {
-    lilv_instance_free(jalv->instance);
+  if (jalv->process.instance) {
+    lilv_instance_free(jalv->process.instance);
   }
 
   // Clean up
   lilv_state_free(jalv->preset);
   free(jalv->ports);
-  zix_ring_free(jalv->ui_to_plugin);
-  zix_ring_free(jalv->plugin_to_ui);
+  jalv_process_cleanup(&jalv->process);
   zix_free(NULL, jalv->ui_msg);
-  zix_free(NULL, jalv->audio_msg);
-  free(jalv->controls_buf);
+  free(jalv->process.controls_buf);
   jalv_free_nodes(&jalv->nodes);
 #if USE_SUIL
   suil_host_free(jalv->ui_host);

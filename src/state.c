@@ -8,6 +8,7 @@
 #include "log.h"
 #include "mapper.h"
 #include "port.h"
+#include "process.h"
 #include "string_utils.h"
 #include "types.h"
 
@@ -45,7 +46,7 @@ get_port_value(const char* port_symbol,
   if (port && port->flow == FLOW_INPUT && port->type == TYPE_CONTROL) {
     *size = sizeof(float);
     *type = jalv->forge.Float;
-    return &jalv->controls_buf[port->index];
+    return &jalv->process.controls_buf[port->index];
   }
   *size = *type = 0;
   return NULL;
@@ -61,7 +62,7 @@ jalv_save(Jalv* jalv, const char* dir)
 
   LilvState* const state =
     lilv_state_new_from_instance(jalv->plugin,
-                                 jalv->instance,
+                                 jalv->process.instance,
                                  map,
                                  jalv->temp_dir,
                                  dir,
@@ -128,8 +129,9 @@ set_port_value(const char* port_symbol,
                uint32_t    ZIX_UNUSED(size),
                uint32_t    type)
 {
-  Jalv* const     jalv = (Jalv*)user_data;
-  JalvPort* const port = jalv_port_by_symbol(jalv, port_symbol);
+  Jalv* const        jalv = (Jalv*)user_data;
+  JalvProcess* const proc = &jalv->process;
+  JalvPort* const    port = jalv_port_by_symbol(jalv, port_symbol);
   if (!port) {
     jalv_log(JALV_LOG_ERR, "Preset port `%s' is missing\n", port_symbol);
     return;
@@ -153,17 +155,17 @@ set_port_value(const char* port_symbol,
   }
 
   ZixStatus st = ZIX_STATUS_SUCCESS;
-  if (jalv->run_state != JALV_RUNNING) {
+  if (proc->run_state != JALV_RUNNING) {
     // Set value on port struct directly
-    jalv->controls_buf[port->index] = fvalue;
+    proc->controls_buf[port->index] = fvalue;
   } else {
     // Send value to plugin (as if from UI)
-    st = jalv_write_control(jalv->ui_to_plugin, port->index, fvalue);
+    st = jalv_write_control(proc->ui_to_plugin, port->index, fvalue);
   }
 
-  if (jalv->has_ui) {
+  if (proc->has_ui) {
     // Update UI (as if from plugin)
-    st = jalv_write_control(jalv->plugin_to_ui, port->index, fvalue);
+    st = jalv_write_control(proc->plugin_to_ui, port->index, fvalue);
   }
 
   if (st) {
@@ -175,19 +177,21 @@ set_port_value(const char* port_symbol,
 void
 jalv_apply_state(Jalv* jalv, const LilvState* state)
 {
+  JalvProcess* const proc = &jalv->process;
+
   typedef struct {
     JalvMessageHeader  head;
     JalvRunStateChange body;
   } PauseMessage;
 
   const bool must_pause =
-    !jalv->safe_restore && jalv->run_state == JALV_RUNNING;
+    !jalv->safe_restore && proc->run_state == JALV_RUNNING;
   if (must_pause) {
     const PauseMessage pause_msg = {
       {RUN_STATE_CHANGE, sizeof(JalvRunStateChange)}, {JALV_PAUSED}};
-    zix_ring_write(jalv->ui_to_plugin, &pause_msg, sizeof(pause_msg));
+    zix_ring_write(proc->ui_to_plugin, &pause_msg, sizeof(pause_msg));
 
-    zix_sem_wait(&jalv->paused);
+    zix_sem_wait(&proc->paused);
   }
 
   const LV2_Feature* state_features[9] = {
@@ -202,15 +206,15 @@ jalv_apply_state(Jalv* jalv, const LilvState* state)
   };
 
   lilv_state_restore(
-    state, jalv->instance, set_port_value, jalv, 0, state_features);
+    state, proc->instance, set_port_value, jalv, 0, state_features);
 
   if (must_pause) {
     const JalvMessageHeader state_msg = {STATE_REQUEST, 0U};
-    zix_ring_write(jalv->ui_to_plugin, &state_msg, sizeof(state_msg));
+    zix_ring_write(proc->ui_to_plugin, &state_msg, sizeof(state_msg));
 
     const PauseMessage run_msg = {
       {RUN_STATE_CHANGE, sizeof(JalvRunStateChange)}, {JALV_RUNNING}};
-    zix_ring_write(jalv->ui_to_plugin, &run_msg, sizeof(run_msg));
+    zix_ring_write(proc->ui_to_plugin, &run_msg, sizeof(run_msg));
   }
 }
 
@@ -238,7 +242,7 @@ jalv_save_preset(Jalv*       jalv,
 
   LilvState* const state =
     lilv_state_new_from_instance(jalv->plugin,
-                                 jalv->instance,
+                                 jalv->process.instance,
                                  map,
                                  jalv->temp_dir,
                                  dir,
