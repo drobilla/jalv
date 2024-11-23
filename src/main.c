@@ -53,9 +53,10 @@ main(int argc, char** argv)
   jalv.backend = jalv_backend_allocate();
 
   // Initialize application
-  if (jalv_open(&jalv, &argc, &argv)) {
+  const int orc = jalv_open(&jalv, &argc, &argv);
+  if (orc) {
     jalv_close(&jalv);
-    return EXIT_FAILURE;
+    return orc == JALV_EARLY_EXIT_STATUS ? EXIT_SUCCESS : EXIT_FAILURE;
   }
 
   // Set up signal handlers and activate audio processing
@@ -70,7 +71,7 @@ main(int argc, char** argv)
 
   // Deactivate audio processing and tear down application
   jalv_deactivate(&jalv);
-  const int ret = jalv_close(&jalv);
+  const int crc = jalv_close(&jalv);
   jalv_backend_free(jalv.backend);
-  return ret;
+  return crc;
 }

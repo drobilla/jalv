@@ -54,7 +54,7 @@ print_usage(const char* name, bool error)
           "  -U URI      Load the UI with the given URI\n"
           "  -V          Display version information and exit\n"
           "  -x          Exit if the requested JACK client name is taken\n");
-  return error ? 1 : 0;
+  return error ? 1 : JALV_EARLY_EXIT_STATUS;
 }
 
 static int
@@ -65,7 +65,7 @@ print_version(void)
          "License ISC: <https://spdx.org/licenses/ISC>.\n"
          "This is free software; you are free to change and redistribute it."
          "\nThere is NO WARRANTY, to the extent permitted by law.\n");
-  return 1;
+  return JALV_EARLY_EXIT_STATUS;
 }
 
 static int
@@ -116,7 +116,7 @@ jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
   int a          = 1;
   for (; a < argc && argv[a][0] == '-'; ++a) {
     if (argv[a][1] == 'h' || !strcmp(argv[a], "--help")) {
-      return print_usage(cmd, true);
+      return print_usage(cmd, false);
     }
 
     if (argv[a][1] == 'V' || !strcmp(argv[a], "--version")) {

@@ -15,6 +15,9 @@
 // Interface that must be implemented by UIs
 JALV_BEGIN_DECLS
 
+/// Arbitrary return code for successful early exit (for --help and so on)
+#define JALV_EARLY_EXIT_STATUS (-431)
+
 /// Command-line arguments passed to an executable
 typedef struct {
   int*    argc; ///< Pointer to `argc` like in `main`
