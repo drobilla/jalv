@@ -1,17 +1,17 @@
 Author:
 	David Robillard <d@drobilla.net>
 
-Original GTK2 Generic Plugin UI:
+Original GTK generic UI:
 	Nick Lanham <nick@afternight.org>
 
-Various UI improvements:
+JACK latency support and other improvements:
 	Robin Gareus <robin@gareus.org>
 
 Preset menu support for Qt:
 	Timo Westkämper <timo.westkamper@gmail.com>
 
-Qt4 Generic Plugin UI:
+Original Qt generic UI:
 	Amadeus Folego <amadeusfolego@gmail.com>
 
-Gtk Plugin Selector UI:
+GTK plugin selector UI:
     Alexandros Theodotou <alex@zrythm.org>
