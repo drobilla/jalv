@@ -4,9 +4,7 @@
 #include "backend.h"
 
 #include "comm.h"
-#include "frontend.h"
 #include "jack_impl.h"
-#include "jalv.h"
 #include "jalv_config.h"
 #include "log.h"
 #include "lv2_evbuf.h"
@@ -51,17 +49,17 @@ static const float max_latency = 16777216.0f;
 static int
 buffer_size_cb(jack_nframes_t nframes, void* data)
 {
-  Jalv* const         jalv     = (Jalv*)data;
-  JalvSettings* const settings = &jalv->settings;
-  JalvProcess* const  proc     = &jalv->process;
+  JalvBackend* const  backend  = (JalvBackend*)data;
+  JalvSettings* const settings = backend->settings;
+  JalvProcess* const  proc     = backend->process;
 
   settings->block_length = nframes;
 #if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
-  settings->midi_buf_size = jack_port_type_get_buffer_size(
-    jalv->backend->client, JACK_DEFAULT_MIDI_TYPE);
+  settings->midi_buf_size =
+    jack_port_type_get_buffer_size(backend->client, JACK_DEFAULT_MIDI_TYPE);
 #endif
   if (proc->run_state == JALV_RUNNING) {
-    jalv_process_activate(proc, &jalv->urids, proc->instance, &jalv->settings);
+    jalv_process_activate(proc, backend->urids, proc->instance, settings);
   }
   return 0;
 }
@@ -70,9 +68,8 @@ buffer_size_cb(jack_nframes_t nframes, void* data)
 static void
 shutdown_cb(void* data)
 {
-  Jalv* const jalv = (Jalv*)data;
-  jalv_frontend_close(jalv);
-  zix_sem_post(&jalv->done);
+  JalvBackend* const backend = (JalvBackend*)data;
+  zix_sem_post(backend->done);
 }
 
 static void
@@ -145,10 +142,10 @@ process_transport(JalvProcess* const           proc,
 static REALTIME int
 process_cb(jack_nframes_t nframes, void* data)
 {
-  Jalv* const            jalv        = (Jalv*)data;
-  const JalvURIDs* const urids       = &jalv->urids;
-  JalvProcess* const     proc        = &jalv->process;
-  jack_client_t* const   client      = jalv->backend->client;
+  JalvBackend* const     backend     = (JalvBackend*)data;
+  const JalvURIDs* const urids       = backend->urids;
+  JalvProcess* const     proc        = backend->process;
+  jack_client_t* const   client      = backend->client;
   uint64_t               pos_buf[64] = {0U};
   LV2_Atom* const        lv2_pos     = (LV2_Atom*)pos_buf;
 
@@ -267,8 +264,8 @@ latency_cb(const jack_latency_callback_mode_t mode, void* const data)
 {
   // Calculate latency assuming all ports depend on each other
 
-  const Jalv* const        jalv = (const Jalv*)data;
-  const JalvProcess* const proc = &jalv->process;
+  JalvBackend* const       backend = (JalvBackend*)data;
+  const JalvProcess* const proc    = backend->process;
   const PortFlow           flow =
     ((mode == JackCaptureLatency) ? FLOW_INPUT : FLOW_OUTPUT);
 
@@ -308,19 +305,9 @@ latency_cb(const jack_latency_callback_mode_t mode, void* const data)
 }
 
 static jack_client_t*
-create_client(Jalv* jalv)
+create_client(const char* const name, const bool exact_name)
 {
-  // Determine the name of the JACK client
-  char* jack_name = NULL;
-  if (jalv->opts.name) {
-    // Name given on command line
-    jack_name = jalv_strdup(jalv->opts.name);
-  } else {
-    // Use plugin name
-    LilvNode* name = lilv_plugin_get_name(jalv->plugin);
-    jack_name      = jalv_strdup(lilv_node_as_string(name));
-    lilv_node_free(name);
-  }
+  char* const jack_name = jalv_strdup(name);
 
   // Truncate client name to suit JACK if necessary
   if (strlen(jack_name) >= (unsigned)jack_client_name_size() - 1) {
@@ -329,9 +316,7 @@ create_client(Jalv* jalv)
 
   // Connect to JACK
   jack_client_t* const client = jack_client_open(
-    jack_name,
-    (jalv->opts.name_exact ? JackUseExactName : JackNullOption),
-    NULL);
+    jack_name, (exact_name ? JackUseExactName : JackNullOption), NULL);
 
   free(jack_name);
 
@@ -351,10 +336,16 @@ jalv_backend_free(JalvBackend* const backend)
 }
 
 int
-jalv_backend_open(Jalv* jalv)
+jalv_backend_open(JalvBackend* const     backend,
+                  const JalvURIDs* const urids,
+                  JalvSettings* const    settings,
+                  JalvProcess* const     process,
+                  ZixSem* const          done,
+                  const char* const      name,
+                  const bool             exact_name)
 {
   jack_client_t* const client =
-    jalv->backend->client ? jalv->backend->client : create_client(jalv);
+    backend->client ? backend->client : create_client(name, exact_name);
 
   if (!client) {
     return 1;
@@ -363,55 +354,58 @@ jalv_backend_open(Jalv* jalv)
   jalv_log(JALV_LOG_INFO, "JACK name:    %s\n", jack_get_client_name(client));
 
   // Set audio engine properties
-  JalvSettings* const settings = &jalv->settings;
-  settings->sample_rate        = (float)jack_get_sample_rate(client);
-  settings->block_length       = jack_get_buffer_size(client);
-  settings->midi_buf_size      = 4096;
+  settings->sample_rate   = (float)jack_get_sample_rate(client);
+  settings->block_length  = jack_get_buffer_size(client);
+  settings->midi_buf_size = 4096;
 #if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
   settings->midi_buf_size =
     jack_port_type_get_buffer_size(client, JACK_DEFAULT_MIDI_TYPE);
 #endif
 
   // Set JACK callbacks
-  void* const arg = (void*)jalv;
+  void* const arg = (void*)backend;
   jack_set_process_callback(client, &process_cb, arg);
   jack_set_buffer_size_callback(client, &buffer_size_cb, arg);
   jack_on_shutdown(client, &shutdown_cb, arg);
   jack_set_latency_callback(client, &latency_cb, arg);
 
-  jalv->backend->client             = client;
-  jalv->backend->is_internal_client = false;
+  backend->urids              = urids;
+  backend->settings           = settings;
+  backend->process            = process;
+  backend->done               = done;
+  backend->client             = client;
+  backend->is_internal_client = false;
   return 0;
 }
 
 void
-jalv_backend_close(Jalv* jalv)
+jalv_backend_close(JalvBackend* const backend)
 {
-  if (jalv->backend && jalv->backend->client &&
-      !jalv->backend->is_internal_client) {
-    jack_client_close(jalv->backend->client);
+  if (backend && backend->client && !backend->is_internal_client) {
+    jack_client_close(backend->client);
   }
 }
 
 void
-jalv_backend_activate(Jalv* jalv)
+jalv_backend_activate(JalvBackend* const backend)
 {
-  jack_activate(jalv->backend->client);
+  jack_activate(backend->client);
 }
 
 void
-jalv_backend_deactivate(Jalv* jalv)
+jalv_backend_deactivate(JalvBackend* const backend)
 {
-  if (!jalv->backend->is_internal_client && jalv->backend->client) {
-    jack_deactivate(jalv->backend->client);
+  if (!backend->is_internal_client && backend->client) {
+    jack_deactivate(backend->client);
   }
 }
 
 void
-jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
+jalv_backend_activate_port(JalvBackend* const backend,
+                           JalvProcess* const proc,
+                           const uint32_t     port_index)
 {
-  jack_client_t* const   client = jalv->backend->client;
-  JalvProcess* const     proc   = &jalv->process;
+  jack_client_t* const   client = backend->client;
   JalvProcessPort* const port   = &proc->ports[port_index];
 
   // Connect unsupported ports to NULL (known to be optional by this point)
@@ -481,7 +475,7 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 }
 
 void
-jalv_backend_recompute_latencies(Jalv* const jalv)
+jalv_backend_recompute_latencies(JalvBackend* const backend)
 {
-  jack_recompute_total_latencies(jalv->backend->client);
+  jack_recompute_total_latencies(backend->client);
 }

@@ -1,12 +1,16 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2024 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_BACKEND_H
 #define JALV_BACKEND_H
 
 #include "attributes.h"
+#include "process.h"
+#include "settings.h"
 #include "types.h"
+#include "urids.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 
 // Interface that must be implemented by audio/MIDI backends
@@ -22,27 +26,35 @@ jalv_backend_free(JalvBackend* backend);
 
 /// Open the audio/MIDI system
 int
-jalv_backend_open(Jalv* jalv);
+jalv_backend_open(JalvBackend*     backend,
+                  const JalvURIDs* urids,
+                  JalvSettings*    settings,
+                  JalvProcess*     process,
+                  ZixSem*          done,
+                  const char*      name,
+                  bool             exact_name);
 
 /// Close the audio/MIDI system
 void
-jalv_backend_close(Jalv* jalv);
+jalv_backend_close(JalvBackend* backend);
 
 /// Activate the backend and start processing audio
 void
-jalv_backend_activate(Jalv* jalv);
+jalv_backend_activate(JalvBackend* backend);
 
 /// Deactivate the backend and stop processing audio
 void
-jalv_backend_deactivate(Jalv* jalv);
+jalv_backend_deactivate(JalvBackend* backend);
 
 /// Expose a port to the system (if applicable) and connect it to its buffer
 void
-jalv_backend_activate_port(Jalv* jalv, uint32_t port_index);
+jalv_backend_activate_port(JalvBackend* backend,
+                           JalvProcess* process,
+                           uint32_t     port_index);
 
 /// Recompute latencies based on plugin port latencies if necessary
 void
-jalv_backend_recompute_latencies(Jalv* jalv);
+jalv_backend_recompute_latencies(JalvBackend* backend);
 
 JALV_END_DECLS
 

@@ -5,6 +5,8 @@
 #define JALV_JACK_IMPL_H
 
 #include "attributes.h"
+#include "settings.h"
+#include "urids.h"
 
 #include <jack/jack.h>
 
@@ -14,8 +16,12 @@
 JALV_BEGIN_DECLS
 
 struct JalvBackendImpl {
-  jack_client_t* client;             ///< Jack client
-  bool           is_internal_client; ///< Running inside jackd
+  const JalvURIDs* urids;              ///< Application vocabulary
+  JalvSettings*    settings;           ///< Run settings
+  JalvProcess*     process;            ///< Process thread state
+  ZixSem*          done;               ///< Shutdown semaphore
+  jack_client_t*   client;             ///< Jack client
+  bool             is_internal_client; ///< Running inside jackd
 };
 
 JALV_END_DECLS

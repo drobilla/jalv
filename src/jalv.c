@@ -485,7 +485,7 @@ jalv_update(Jalv* jalv)
                                jalv->urids.atom_eventTransfer,
                                &msg->atom);
     } else if (header.type == LATENCY_CHANGE) {
-      jalv_backend_recompute_latencies(jalv);
+      jalv_backend_recompute_latencies(jalv->backend);
     } else {
       return ring_error("Unknown message type received from process ring\n");
     }
@@ -767,6 +767,11 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     return -4;
   }
 
+  if (!jalv->opts.name) {
+    jalv->opts.name =
+      jalv_strdup(lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
+  }
+
   // Create workers if necessary
   if (lilv_plugin_has_extension_data(jalv->plugin,
                                      jalv->nodes.work_interface)) {
@@ -840,7 +845,13 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_create_controls(jalv, true);
   jalv_create_controls(jalv, false);
 
-  if (jalv_backend_open(jalv)) {
+  if (jalv_backend_open(jalv->backend,
+                        &jalv->urids,
+                        &jalv->settings,
+                        &jalv->process,
+                        &jalv->done,
+                        jalv->opts.name,
+                        jalv->opts.name_exact)) {
     jalv_log(JALV_LOG_ERR, "Failed to connect to audio system\n");
     return -6;
   }
@@ -928,7 +939,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   // Create Jack ports and connect plugin ports to buffers
   for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    jalv_backend_activate_port(jalv, i);
+    jalv_backend_activate_port(jalv->backend, &jalv->process, i);
   }
 
   // Discover UI
@@ -946,7 +957,7 @@ jalv_activate(Jalv* const jalv)
       jalv_worker_launch(jalv->process.worker);
     }
     lilv_instance_activate(jalv->process.instance);
-    jalv_backend_activate(jalv);
+    jalv_backend_activate(jalv->backend);
   }
 
   return 0;
@@ -956,7 +967,7 @@ int
 jalv_deactivate(Jalv* const jalv)
 {
   if (jalv->backend) {
-    jalv_backend_deactivate(jalv);
+    jalv_backend_deactivate(jalv->backend);
   }
   if (jalv->process.instance) {
     lilv_instance_deactivate(jalv->process.instance);
@@ -976,7 +987,7 @@ jalv_close(Jalv* const jalv)
   jalv_deactivate(jalv);
   jalv_process_deactivate(&jalv->process);
   if (jalv->backend) {
-    jalv_backend_close(jalv);
+    jalv_backend_close(jalv->backend);
   }
 
   // Free UI and plugin instances

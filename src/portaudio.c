@@ -3,14 +3,16 @@
 
 #include "backend.h"
 #include "comm.h"
-#include "jalv.h"
 #include "log.h"
 #include "lv2_evbuf.h"
 #include "process.h"
+#include "settings.h"
 #include "types.h"
+#include "urids.h"
 
 #include <lilv/lilv.h>
 #include <zix/attributes.h>
+#include <zix/sem.h>
 
 #include <portaudio.h>
 #include <stdbool.h>
@@ -46,8 +48,7 @@ process_cb(const void*                     inputs,
   (void)time;
   (void)flags;
 
-  Jalv* const        jalv = (Jalv*)handle;
-  JalvProcess* const proc = &jalv->process;
+  JalvProcess* const proc = (JalvProcess*)handle;
 
   // If execution is paused, emit silence and return
   if (proc->run_state == JALV_PAUSED) {
@@ -125,7 +126,13 @@ jalv_backend_free(JalvBackend* const backend)
 }
 
 int
-jalv_backend_open(Jalv* jalv)
+jalv_backend_open(JalvBackend* const     backend,
+                  const JalvURIDs* const ZIX_UNUSED(urids),
+                  JalvSettings* const    settings,
+                  JalvProcess* const     proc,
+                  ZixSem* const          ZIX_UNUSED(done),
+                  const char* const      ZIX_UNUSED(name),
+                  const bool             ZIX_UNUSED(exact_name))
 {
   PaStreamParameters inputParameters;
   PaStreamParameters outputParameters;
@@ -153,11 +160,11 @@ jalv_backend_open(Jalv* jalv)
   // Count number of input and output audio ports/channels
   inputParameters.channelCount  = 0;
   outputParameters.channelCount = 0;
-  for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-    if (jalv->ports[i].type == TYPE_AUDIO) {
-      if (jalv->ports[i].flow == FLOW_INPUT) {
+  for (uint32_t i = 0; i < proc->num_ports; ++i) {
+    if (proc->ports[i].type == TYPE_AUDIO) {
+      if (proc->ports[i].flow == FLOW_INPUT) {
         ++inputParameters.channelCount;
-      } else if (jalv->ports[i].flow == FLOW_OUTPUT) {
+      } else if (proc->ports[i].flow == FLOW_OUTPUT) {
         ++outputParameters.channelCount;
       }
     }
@@ -180,25 +187,25 @@ jalv_backend_open(Jalv* jalv)
                        paFramesPerBufferUnspecified,
                        0,
                        process_cb,
-                       jalv))) {
+                       proc))) {
     return setup_error("Failed to open audio stream", st);
   }
 
   // Set audio parameters
-  jalv->settings.sample_rate = in_dev->defaultSampleRate;
-  // jalv->settings.block_length  = FIXME
-  jalv->settings.midi_buf_size = 4096;
+  settings->sample_rate = in_dev->defaultSampleRate;
+  // settings->block_length  = FIXME
+  settings->midi_buf_size = 4096;
 
-  jalv->backend->stream = stream;
+  backend->stream = stream;
   return 0;
 }
 
 void
-jalv_backend_close(Jalv* jalv)
+jalv_backend_close(JalvBackend* const backend)
 {
-  if (jalv->backend) {
+  if (backend) {
     PaError st = paNoError;
-    if (jalv->backend->stream && (st = Pa_CloseStream(jalv->backend->stream))) {
+    if (backend->stream && (st = Pa_CloseStream(backend->stream))) {
       jalv_log(JALV_LOG_ERR, "Error closing audio (%s)\n", Pa_GetErrorText(st));
     }
 
@@ -210,27 +217,28 @@ jalv_backend_close(Jalv* jalv)
 }
 
 void
-jalv_backend_activate(Jalv* jalv)
+jalv_backend_activate(JalvBackend* const backend)
 {
-  const PaError st = Pa_StartStream(jalv->backend->stream);
+  const PaError st = Pa_StartStream(backend->stream);
   if (st != paNoError) {
     jalv_log(JALV_LOG_ERR, "Error starting audio (%s)\n", Pa_GetErrorText(st));
   }
 }
 
 void
-jalv_backend_deactivate(Jalv* jalv)
+jalv_backend_deactivate(JalvBackend* const backend)
 {
-  const PaError st = Pa_StopStream(jalv->backend->stream);
+  const PaError st = Pa_StopStream(backend->stream);
   if (st != paNoError) {
     jalv_log(JALV_LOG_ERR, "Error stopping audio (%s)\n", Pa_GetErrorText(st));
   }
 }
 
 void
-jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
+jalv_backend_activate_port(JalvBackend* const ZIX_UNUSED(backend),
+                           JalvProcess* const proc,
+                           const uint32_t     port_index)
 {
-  JalvProcess* const     proc = &jalv->process;
   JalvProcessPort* const port = &proc->ports[port_index];
 
   if (port->type == TYPE_CONTROL) {
@@ -240,5 +248,5 @@ jalv_backend_activate_port(Jalv* jalv, uint32_t port_index)
 }
 
 void
-jalv_backend_recompute_latencies(Jalv* const ZIX_UNUSED(jalv))
+jalv_backend_recompute_latencies(JalvBackend* const ZIX_UNUSED(backend))
 {}
