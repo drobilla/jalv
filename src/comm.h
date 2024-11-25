@@ -42,8 +42,7 @@ typedef struct {
 /**
    The payload of a CONTROL_PORT_CHANGE message.
 
-   This message has a fixed sized, and is described in its entirety by this
-   struct.
+   This message has a fixed size, this struct defines the entire payload.
 */
 typedef struct {
   uint32_t port_index; ///< Control port index
@@ -53,7 +52,7 @@ typedef struct {
 /**
    The start of the payload of an EVENT_TRANSFER message.
 
-   This message has a variable size, the start described by this struct is
+   This message has a variable size, the start, described by this struct, is
    followed immediately by `atom.size` bytes of data (the atom body).
 */
 typedef struct {
@@ -64,8 +63,7 @@ typedef struct {
 /**
    The payload of a LATENCY_CHANGE message.
 
-   This message has a fixed sized, and is described in its entirety by this
-   struct.
+   This message has a fixed size, this struct defines the entire payload.
 */
 typedef struct {
   float value; ///< Latency in frames at the current sample rate
@@ -74,8 +72,7 @@ typedef struct {
 /**
    The payload of a RUN_STATE_CHANGE message.
 
-   This message has a fixed sized, and is described in its entirety by this
-   struct.
+   This message has a fixed size, this struct defines the entire payload.
 */
 typedef struct {
   JalvRunState state; ///< Run state to change to
