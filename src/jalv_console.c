@@ -96,6 +96,8 @@ jalv_frontend_port_event(Jalv*       jalv,
     suil_instance_port_event(
       jalv->ui_instance, port_index, buffer_size, protocol, buffer);
   }
+#else
+  (void)buffer_size;
 #endif
 
   if (!protocol && jalv->opts.print_controls) {
