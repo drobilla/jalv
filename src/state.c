@@ -9,7 +9,6 @@
 #include "mapper.h"
 #include "port.h"
 #include "process.h"
-#include "string_utils.h"
 #include "types.h"
 
 #include <lilv/lilv.h>
@@ -17,6 +16,7 @@
 #include <lv2/state/state.h>
 #include <lv2/urid/urid.h>
 #include <zix/attributes.h>
+#include <zix/path.h>
 #include <zix/ring.h>
 #include <zix/sem.h>
 #include <zix/status.h>
@@ -32,7 +32,8 @@ jalv_make_path(LV2_State_Make_Path_Handle handle, const char* path)
   Jalv* jalv = (Jalv*)handle;
 
   // Create in save directory if saving, otherwise use temp directory
-  return jalv_strjoin(jalv->save_dir ? jalv->save_dir : jalv->temp_dir, path);
+  const char* const dir = jalv->save_dir ? jalv->save_dir : jalv->temp_dir;
+  return zix_path_join(NULL, dir, path);
 }
 
 static const void*
@@ -58,7 +59,7 @@ jalv_save(Jalv* jalv, const char* dir)
   LV2_URID_Map* const   map   = jalv_mapper_urid_map(jalv->mapper);
   LV2_URID_Unmap* const unmap = jalv_mapper_urid_unmap(jalv->mapper);
 
-  jalv->save_dir = jalv_strjoin(dir, "/");
+  jalv->save_dir = zix_path_join(NULL, dir, NULL);
 
   LilvState* const state =
     lilv_state_new_from_instance(jalv->plugin,

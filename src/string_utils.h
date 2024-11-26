@@ -13,10 +13,6 @@ JALV_BEGIN_DECLS
 char*
 jalv_strdup(const char* str);
 
-/// Return a newly allocated concatenation of two strings
-char*
-jalv_strjoin(const char* a, const char* b);
-
 JALV_END_DECLS
 
 #endif // JALV_STRING_UTILS_H

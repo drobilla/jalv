@@ -41,6 +41,7 @@
 #include <lv2/worker/worker.h>
 #include <zix/allocator.h>
 #include <zix/filesystem.h>
+#include <zix/path.h>
 #include <zix/ring.h>
 #include <zix/sem.h>
 #include <zix/status.h>
@@ -672,7 +673,7 @@ initial_state(LilvWorld* const    world,
   LilvState* state = NULL;
   if (state_path) {
     if (zix_file_type(state_path) == ZIX_FILE_TYPE_DIRECTORY) {
-      char* const path = jalv_strjoin(state_path, "/state.ttl");
+      char* const path = zix_path_join(NULL, state_path, "state.ttl");
       state            = lilv_state_new_from_file(world, urid_map, NULL, path);
       free(path);
     } else {

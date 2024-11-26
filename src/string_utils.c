@@ -14,17 +14,3 @@ jalv_strdup(const char* const str)
   memcpy(copy, str, len + 1);
   return copy;
 }
-
-char*
-jalv_strjoin(const char* const a, const char* const b)
-{
-  const size_t a_len = strlen(a);
-  const size_t b_len = strlen(b);
-  char* const  out   = (char*)malloc(a_len + b_len + 1);
-
-  memcpy(out, a, a_len);
-  memcpy(out + a_len, b, b_len);
-  out[a_len + b_len] = '\0';
-
-  return out;
-}
