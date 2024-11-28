@@ -18,12 +18,13 @@ jalv (1.6.9) unstable; urgency=medium
   * Remove limits on the size of messages sent from plugin to UI
   * Remove transport position dumping from Jack process callback
   * Replace use of deprecated Gtk interfaces
+  * Rewrite man pages in mdoc
   * Switch to external zix dependency
   * Use Gtk switches instead of checkboxes for toggle controls
   * Use fewer platform-specific APIs
   * Use portable zix filesystem API
 
- -- David Robillard <d@drobilla.net>  Mon, 25 Nov 2024 01:29:18 +0000
+ -- David Robillard <d@drobilla.net>  Fri, 20 Dec 2024 00:45:28 +0000
 
 jalv (1.6.8) stable; urgency=medium
 

@@ -1,57 +1,101 @@
-.TH JALV.GTK3 1 "27 May 2022"
-
-.SH NAME
-.B jalv.gtk \- Run an LV2 plugin as a JACK application (Gtk3 version).
-
-.SH SYNOPSIS
-.B jalv.gtk [OPTION]... PLUGIN_URI
-
-.SH OPTIONS
-
-.TP
-\fB\-b SIZE\fR
+.\" # Copyright 2024 David Robillard <d@drobilla.net>
+.\" # SPDX-License-Identifier: ISC
+.Dd December 20, 2024
+.Dt JALV.GTK3 1
+.Os
+.Sh NAME
+.Nm jalv.gtk3
+.Nd run an LV2 plugin with a GTK3 interface
+.Sh SYNOPSIS
+.Nm jalv.gtk3
+.Op Fl dghmpstx
+.Op Fl b , Fl Fl buffer-size Ns = Ns Ar size
+.Op Fl c , Fl Fl control Ns = Ns Ar setting
+.Op Fl l , Fl Fl load Ns = Ns Ar dir
+.Op Fl n , Fl Fl jack-name Ns = Ns Ar name
+.Op Fl P , Fl Fl preset Ns = Ns Ar uri
+.Op Fl r , Fl Fl update-frequency Ns = Ns Ar hz
+.Op Fl S , Fl Fl scale-factor Ns = Ns Ar scale
+.Op Fl U , Fl Fl ui-uri Ns = Ns Ar uri
+.Ar plugin_uri
+.Sh DESCRIPTION
+.Nm
+is a simple LV2 host that runs a single plugin.
+This version has a GTK3 interface that shows either generic controls or a custom plugin GUI.
+.Pp
+The options are as follows:
+.Bl -tag -width 3n
+.It Fl b Ar size
 Buffer size for plugin <=> UI communication.
-
-.TP
-\fB\-c SYM=VAL\fR
-Set control value (e.g. "vol=1.4").
-
-.TP
-\fB\-d\fR, \fB\-\-dump\fR
+.It Fl c Ar symbol=value
+Set control value, for example,
+.Fl c Ar vol=1.4
+where
+.Dq vol
+is the symbol of some control port on the plugin.
+.It Fl d
 Dump plugin <=> UI communication.
-
-.TP
-\fB\-U URI\fR
-Load the UI with the given URI.
-
-.TP
-\fB\-g\fR, \fB\-\-generic\-ui\fR
-Use Jalv generic UI and not the plugin UI.
-
-.TP
-\fB\-h\fR, \fB\-\-help\fR
+.It Fl g
+Show generic UI instead of custom plugin GUI.
+.It Fl h
 Print the command line options.
-
-.TP
-\fB\-l DIR\fR, \fB\-\-load DIR\fR
-Load state from state directory.
-
-.TP
-\fB\-p\fR, \fB\-\-print\-controls\fR
-Print control output changes to stdout.
-
-.TP
-\fB\-t\fR, \fB\-\-trace\fR
+.It Fl l Ar dir
+Load state from the given directory before running the plugin.
+.It Fl m
+Hide application menu, showing only the plugin interface.
+.It Fl n Ar name
+Use the given JACK client name.
+Note that JACK may adjust the name if necessary unless
+.Fl x
+is also given.
+.It Fl P uri
+Load the given preset before running plugin.
+.It Fl p
+Print control output changes to
+.Dv stdout .
+.It Fl r Ar hz
+Set the UI update frequency.
+By default the screen refresh rate is used, typically 30 or 60 Hz.
+.It Fl S Ar factor
+Override the UI scale factor.
+.It Fl s
+Show controls that are normally hidden.
+.It Fl t
 Print trace messages from plugin.
-
-.SH "SEE ALSO"
-.BR jalv(1),
-.BR jalv.qt5(1),
-.BR lv2ls(1),
-.BR jackd(1)
-
-.SH AUTHOR
-jalv was written by David Robillard <d@drobilla.net>
-.PP
-This manual page was written by Jaromír Mikes <mira.mikes@seznam.cz>
-and David Robillard <d@drobilla.net>
+.It Fl U
+URI Load the UI with the given URI.
+.It Fl x
+Use only the exact JACK client name given by
+.Fl n
+or exit if it's unavailable.
+.El
+.Sh COMMANDS
+The Jalv prompt supports several commands for interactive control:
+.Pp
+.Bl -tag -width 16n -compact
+.It Ic help
+Display help message.
+.It Ic controls
+Print settable control values.
+.It Ic monitors
+Print output control values.
+.It Ic presets
+Print available presets.
+.It Ic preset Ar uri
+Set preset.
+.It Ic set index value
+Set control value by port index.
+.It Ic set Ar symbol Ar value
+Set control value by symbol.
+.It Ar SYMBOL Cm = Ar VALUE
+Set control value by symbol.
+.El
+.Sh SEE ALSO
+.Xr jalv 1 ,
+.Xr jalv.qt5 1
+.Sh AUTHORS
+jalv was written by
+.An David Robillard
+.Aq Mt d@drobilla.net
+with contributions by others.
+Most of the GTK interface was added by Alexandros Theodotou and Nick Lanham.

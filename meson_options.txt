@@ -22,6 +22,9 @@ option('lint', type: 'boolean', value: false, yield: true,
 option('man', type: 'feature', value: 'enabled', yield: true,
        description: 'Install man pages')
 
+option('man_html', type: 'feature', yield: true,
+       description: 'Build HTML man pages')
+
 option('posix', type: 'feature', yield: true,
        description: 'Use POSIX system facilities')
 
