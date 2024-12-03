@@ -17,7 +17,7 @@
 JALV_BEGIN_DECLS
 
 /// Allocate a new uninitialized backend
-JalvBackend*
+ZIX_MALLOC_FUNC JalvBackend*
 jalv_backend_allocate(void);
 
 /// Free a backend allocated with jalv_backend_allocate()
