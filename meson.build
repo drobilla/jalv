@@ -120,8 +120,6 @@ elif cc.get_id() == 'msvc'
       '/wd4191', # unsafe function conversion
       '/wd4200', # zero-sized array in struct/union
       '/wd4242', # possible loss of data from float conversion
-      '/wd4244', # possible loss of data from integer conversion
-      '/wd4267', # possible loss of data from size conversion
       '/wd4365', # signed/unsigned mismatch
       '/wd4514', # unreferenced inline function has been removed
       '/wd4668', # not defined as a preprocessor macro
@@ -130,8 +128,20 @@ elif cc.get_id() == 'msvc'
       '/wd4711', # function selected for automatic inline expansion
       '/wd4800', # implicit conversion from int to bool
       '/wd4820', # padding added after construct
-      '/wd4996', # POSIX name for this item is deprecated
       '/wd5045', # compiler will insert Spectre mitigation
+    ]
+  endif
+
+  if warning_level in ['everything', '3', '2']
+    c_suppressions += [
+      '/wd4267', # possible loss of data from size conversion
+      '/wd4996', # POSIX name for this item is deprecated
+    ]
+  endif
+
+  if warning_level in ['everything', '3', '2', '1']
+    c_suppressions += [
+      '/wd4244', # conversion from unsigned long to float
     ]
   endif
 endif
