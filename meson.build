@@ -181,6 +181,7 @@ if is_variable('cpp')
         '-Wno-cast-qual', # LV2
         '-Wno-conversion',
         '-Wno-effc++',
+        '-Wno-inline',
         '-Wno-padded',
         '-Wno-strict-overflow',
         '-Wno-suggest-attribute=const',
