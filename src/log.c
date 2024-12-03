@@ -96,6 +96,9 @@ jalv_ansi_start(FILE* stream, int color)
   if (isatty(fileno(stream))) {
     return fprintf(stream, "\033[0;%dm", color);
   }
+#else
+  (void)stream;
+  (void)color;
 #endif
   return 0;
 }
@@ -108,5 +111,7 @@ jalv_ansi_reset(FILE* stream)
     fprintf(stream, "\033[0m");
     fflush(stream);
   }
+#else
+  (void)stream;
 #endif
 }
