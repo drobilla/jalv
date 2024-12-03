@@ -1003,7 +1003,7 @@ jalv_close(Jalv* const jalv)
   lilv_state_free(jalv->preset);
   free(jalv->ports);
   jalv_process_cleanup(&jalv->process);
-  zix_free(NULL, jalv->ui_msg);
+  zix_aligned_free(NULL, jalv->ui_msg);
   free(jalv->process.controls_buf);
   jalv_free_nodes(&jalv->nodes);
 #if USE_SUIL

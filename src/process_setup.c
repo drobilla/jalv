@@ -71,7 +71,7 @@ jalv_process_cleanup(JalvProcess* const proc)
   jalv_worker_free(proc->state_worker);
   zix_ring_free(proc->ui_to_plugin);
   zix_ring_free(proc->plugin_to_ui);
-  zix_free(NULL, proc->process_msg);
+  zix_aligned_free(NULL, proc->process_msg);
 
   for (uint32_t i = 0U; i < proc->num_ports; ++i) {
     jalv_process_port_cleanup(&proc->ports[i]);
@@ -118,7 +118,7 @@ jalv_process_activate(JalvProcess* const        proc,
 void
 jalv_process_deactivate(JalvProcess* const proc)
 {
-  zix_free(NULL, proc->process_msg);
+  zix_aligned_free(NULL, proc->process_msg);
   proc->process_msg = NULL;
 
   for (uint32_t i = 0U; i < proc->num_ports; ++i) {
