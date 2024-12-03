@@ -116,6 +116,7 @@ elif cc.get_id() == 'gcc'
 elif cc.get_id() == 'msvc'
   if warning_level == 'everything'
     c_suppressions += [
+      '/wd4062', # enumerator in switch is not handled
       '/wd4191', # unsafe function conversion
       '/wd4200', # zero-sized array in struct/union
       '/wd4242', # possible loss of data from float conversion
@@ -123,6 +124,7 @@ elif cc.get_id() == 'msvc'
       '/wd4267', # possible loss of data from size conversion
       '/wd4365', # signed/unsigned mismatch
       '/wd4514', # unreferenced inline function has been removed
+      '/wd4668', # not defined as a preprocessor macro
       '/wd4706', # assignment within conditional expression
       '/wd4710', # function not inlined
       '/wd4711', # function selected for automatic inline expansion
@@ -451,7 +453,7 @@ common_dependencies = [
 common_c_args = c_suppressions + platform_defines + suil_defines
 
 # Internal JACK client library
-if jack_dep.found()
+if jack_dep.found() and host_machine.system() != 'windows'
   shared_library(
     'jalv',
     sources + files('src/jack_internal.c', 'src/jalv_console.c'),

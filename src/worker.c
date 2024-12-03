@@ -57,7 +57,7 @@ jalv_worker_respond(LV2_Worker_Respond_Handle handle,
   return jalv_worker_write_packet(((JalvWorker*)handle)->responses, size, data);
 }
 
-static void*
+static ZixThreadResult ZIX_THREAD_FUNC
 worker_func(void* const data)
 {
   JalvWorker* const worker = (JalvWorker*)data;
@@ -95,7 +95,7 @@ worker_func(void* const data)
 
   free(buf);
   worker->state = STATE_STOPPED;
-  return NULL;
+  return ZIX_THREAD_RESULT;
 }
 
 JalvWorker*
