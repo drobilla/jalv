@@ -7,6 +7,7 @@
 #include "jalv_internal.h"
 #include "port.h"
 #include "urids.h"
+#include "state.h"
 
 #include "lilv/lilv.h"
 #include "lv2/log/log.h"
@@ -21,15 +22,92 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+
+//-----------------------------------------------------------------------------
+// Zynthian Extended Terminal Control
+//-----------------------------------------------------------------------------
+
+char * CTR_PREFIX = "#CTR>";
+char * MON_PREFIX = "#MON>";
+char * PRS_PREFIX = "#PRS>";
 
 void
-jalv_print_control(Jalv* const              jalv,
-                   const struct Port* const port,
-                   const float              value)
+jalv_print_port(Jalv* const jalv,
+                const struct Port* const port,
+                const float value)
 {
   const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-  jalv_log(JALV_LOG_INFO, "%s = %f\n", lilv_node_as_string(sym), value);
+  fprintf(stdout, "%s #%s=%f\n", CTR_PREFIX, lilv_node_as_string(sym), value);
+  fflush(stdout);
 }
+
+void
+jalv_print_control(Jalv* const jalv,
+                   const ControlID* control,
+                   const float value)
+{
+  fprintf(stdout, "%s %d#%s=%f\n", CTR_PREFIX, control->control_index, lilv_node_as_string(control->symbol), value);
+  fflush(stdout);
+}
+
+void
+jalv_print_controls(Jalv* const jalv, bool writable, bool readable)
+{
+  for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+    ControlID* const control = jalv->controls.controls[i];
+    char *prefix;
+	if (control->is_writable && writable) {
+	  prefix = CTR_PREFIX;
+	} else if (control->is_readable && readable) {
+	  prefix = MON_PREFIX;
+	} else continue;
+    fprintf(stdout, "%s %d#%s=%f\n", prefix, control->control_index,
+            lilv_node_as_string(control->symbol),
+		    jalv_get_control(jalv, control));
+  }
+  fflush(stdout);
+}
+
+void
+jalv_print_ports(Jalv* const jalv, bool writable, bool readable)
+{
+  for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+	ControlID* const control = jalv->controls.controls[i];
+	if (control->type == PORT) {
+	  char *prefix;
+	  if (control->is_writable && writable) {
+	    prefix = CTR_PREFIX;
+	  } else if (control->is_readable && readable) {
+	    prefix = MON_PREFIX;
+	  } else continue;
+	  struct Port* const port = &jalv->ports[control->index];
+	  fprintf(stdout, "%s %d#%s=%f\n", prefix, control->control_index,
+	          lilv_node_as_string(control->symbol),
+			  port->control);
+	}
+  }
+  fflush(stdout);
+}
+
+int
+jalv_print_preset(Jalv* const jalv,
+                  const LilvNode* node,
+                  const LilvNode* title,
+                  void* data)
+{
+	fprintf(stdout, "%s %s (%s)\n", PRS_PREFIX, lilv_node_as_string(node), lilv_node_as_string(title));
+	fflush(stdout);
+	return 0;
+}
+
+void
+jalv_print_preset_str(char *uri, char *name) {
+	fprintf(stdout, "%s %s (%s)\n", PRS_PREFIX, uri, name);
+	fflush(stdout);
+}
+
+//-----------------------------------------------------------------------------
 
 char*
 jalv_strdup(const char* const str)

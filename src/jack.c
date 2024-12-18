@@ -81,6 +81,66 @@ jack_shutdown_cb(void* data)
   zix_sem_post(&jalv->done);
 }
 
+
+void print_hex_string(void *p, int size) {
+	int i;
+	uint32_t *c = (uint32_t *)p;
+	for (i=0; i<size>>2; i++) {
+	    printf("%d, ", c[i]);
+	}
+	printf("\n");
+}
+
+static double
+get_atom_double(Jalv*       jalv,
+                uint32_t    ZIX_UNUSED(size),
+                LV2_URID    type,
+                const void* body)
+{
+  if (type == jalv->forge.Int || type == jalv->forge.Bool) {
+    return *(const int32_t*)body;
+  }
+
+  if (type == jalv->forge.Long) {
+    return *(const int64_t*)body;
+  }
+
+  if (type == jalv->forge.Float) {
+    return *(const float*)body;
+  }
+
+  if (type == jalv->forge.Double) {
+    return *(const double*)body;
+  }
+
+  return NAN;
+}
+
+static int
+patch_set_get(Jalv*                  jalv,
+              const LV2_Atom_Object* obj,
+              const LV2_Atom_URID**  property,
+              const LV2_Atom**       value)
+{
+  lv2_atom_object_get(obj,
+                      jalv->urids.patch_property,
+                      (const LV2_Atom*)property,
+                      jalv->urids.patch_value,
+                      value,
+                      0);
+  if (!*property) {
+    jalv_log(JALV_LOG_WARNING, "patch:Set message with no property\n");
+    return 1;
+  }
+
+  if ((*property)->atom.type != jalv->forge.URID) {
+    jalv_log(JALV_LOG_WARNING, "patch:Set property is not a URID\n");
+    return 1;
+  }
+
+  return 0;
+}
+
 /// Jack process callback
 static REALTIME int
 jack_process_cb(jack_nframes_t nframes, void* data)
@@ -216,14 +276,19 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   // Deliver MIDI output and UI events
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
     struct Port* const port = &jalv->ports[p];
-    if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
-        lilv_port_has_property(
+    if (port->flow != FLOW_OUTPUT) continue;
+    if (port->type == TYPE_CONTROL) {
+      if (lilv_port_has_property(
           jalv->plugin, port->lilv_port, jalv->nodes.lv2_reportsLatency)) {
-      if (jalv->plugin_latency != port->control) {
-        jalv->plugin_latency = port->control;
-        jack_recompute_total_latencies(client);
+        if (jalv->plugin_latency != port->control) {
+          jalv->plugin_latency = port->control;
+          jack_recompute_total_latencies(client);
+        }
+      } else if (send_ui_updates) {
+        jalv_write_control(jalv, jalv->plugin_to_ui, p, port->control);
+        //printf("JACK => WRITE CONTROL port=%d, value=%f\n", p, port->control);
       }
-    } else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
+    } else if (port->type == TYPE_EVENT) {
       void* buf = NULL;
       if (port->sys_port) {
         buf = jack_port_get_buffer(port->sys_port, nframes);
@@ -239,24 +304,46 @@ jack_process_cb(jack_nframes_t nframes, void* data)
         LV2_URID type      = 0;
         uint32_t size      = 0;
         void*    body      = NULL;
+
         lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
         if (buf && type == jalv->urids.midi_MidiEvent) {
           // Write MIDI event to Jack output
           jack_midi_event_write(buf, frames, body, size);
         }
-
+		else if (type == jalv->urids.atom_Object) {
+		  const LV2_Atom_Object_Body* obj = (const LV2_Atom_Object_Body*)body;
+ 		  //printf("ATOM OBJECT! => id=%d , otype=%d\n", obj->id, obj->otype);
+		  //print_hex_string(body, size);
+  		  // Get the atom object containing the atom object body =>
+		  const LV2_Atom* atom = (const LV2_Atom*)body;
+		  atom--;
+  		  //if (lv2_atom_forge_is_object_type(&jalv->forge, atom->type)) {
+	      if (obj->otype == jalv->urids.patch_Set) {
+	        //printf("IS PATCH SET! => id=%d , type=%d\n", obj->id, obj->otype);
+      		const LV2_Atom_URID* property = NULL;
+      		const LV2_Atom*      value    = NULL;
+      		if (!patch_set_get(jalv, (const LV2_Atom_Object*)atom, &property, &value)) {
+      		  LV2_URID key = property->body;
+      		  const double fvalue = get_atom_double(jalv, value->size, value->type, value + 1);
+			  //printf("GOT PATCH SET! key=%d => %f\n", key, fvalue);
+              ControlID* control = get_property_control(&jalv->controls, key);
+              if (control) {
+                control->fval =  (float)fvalue;
+                // Print property parameter value
+                jalv_print_control(jalv, control, fvalue);
+                //printf("%s = %f\n", lilv_node_as_string(control->symbol), fvalue);
+			  }
+      		}
+      	  }
+    	}
         if (jalv->has_ui) {
           // Forward event to UI
           jalv_write_event(jalv, jalv->plugin_to_ui, p, size, type, body);
         }
       }
-    } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&
-               port->type == TYPE_CONTROL) {
-      jalv_write_control(jalv, jalv->plugin_to_ui, p, port->control);
     }
   }
-
   return 0;
 }
 

@@ -433,7 +433,7 @@ jalv_create_controls(Jalv* jalv, bool writable)
 
 void
 jalv_set_control(Jalv*            jalv,
-                 const ControlID* control,
+                 ControlID* control,
                  uint32_t         size,
                  LV2_URID         type,
                  const void*      body)
@@ -461,6 +461,20 @@ jalv_set_control(Jalv*            jalv,
                         lv2_atom_total_size(atom),
                         jalv->urids.atom_eventTransfer,
                         atom);
+    control->fval = *(const float*)body;
+  }
+}
+
+float
+jalv_get_control(Jalv* jalv, const ControlID* control)
+{
+  switch (control->type) {
+    case PORT:
+      return jalv->ports[control->index].control;
+    case PROPERTY:
+      return control->fval;
+    default:
+      return 0;
   }
 }
 
@@ -556,10 +570,15 @@ jalv_send_control_to_plugin(Jalv* const jalv,
 {
   if (buffer_size != sizeof(float)) {
     jalv_log(JALV_LOG_ERR, "UI wrote invalid control size %u\n", buffer_size);
-
   } else {
-    jalv_write_control(
-      jalv, jalv->ui_to_plugin, port_index, *(const float*)buffer);
+    jalv_write_control(jalv, jalv->ui_to_plugin, port_index, *(const float*)buffer);
+    // Print control value
+    for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
+      if (jalv->controls.controls[i]->index == port_index) {
+        jalv_print_control(jalv, jalv->controls.controls[i], *(const float*)buffer);
+        break;
+      }
+    }
   }
 }
 
@@ -613,10 +632,12 @@ jalv_send_to_plugin(void* const jalv_handle,
 void
 jalv_apply_ui_events(Jalv* jalv, uint32_t nframes)
 {
+  // Allow events to be sent to plugin when no UI => jalv_set_control(), etc.
+  /*
   if (!jalv->has_ui) {
     return;
   }
-
+  */
   ControlChange ev    = {0U, 0U, 0U};
   const size_t  space = zix_ring_read_space(jalv->ui_to_plugin);
   for (size_t i = 0; i < space; i += sizeof(ev) + ev.size) {
@@ -783,6 +804,7 @@ jalv_run(Jalv* jalv, uint32_t nframes)
   bool     send_ui_updates = false;
   uint32_t update_frames   = (uint32_t)(jalv->sample_rate / jalv->ui_update_hz);
   if (jalv->has_ui && (jalv->event_delta_t > update_frames)) {
+  //if (jalv->event_delta_t > update_frames) {
     send_ui_updates     = true;
     jalv->event_delta_t = 0;
   }
@@ -799,12 +821,16 @@ jalv_update(Jalv* jalv)
     return 0;
   }
 
+  //printf("UPDATE: PLUGIN => UI\n");
+
   // Emit UI events
   ControlChange ev;
   const size_t  space = zix_ring_read_space(jalv->plugin_to_ui);
   for (size_t i = 0; i + sizeof(ev) < space; i += sizeof(ev) + ev.size) {
     // Read event header to get the size
     zix_ring_read(jalv->plugin_to_ui, &ev, sizeof(ev));
+
+	//printf("EVENT INDEX %d, size=%d, prot=%d\n", ev.index, ev.size, ev.protocol);
 
     // Resize read buffer if necessary
     jalv->ui_event_buf = realloc(jalv->ui_event_buf, ev.size);
@@ -817,11 +843,17 @@ jalv_update(Jalv* jalv)
       jalv_dump_atom(jalv, stdout, "Plugin => UI", (const LV2_Atom*)buf, 35);
     }
 
+	// Send event to UI
     jalv_ui_port_event(jalv, ev.index, ev.size, ev.protocol, buf);
 
-    if (ev.protocol == 0 && jalv->opts.print_controls) {
-      jalv_print_control(jalv, &jalv->ports[ev.index], *(float*)buf);
+	// Update control fval
+	/*
+	if (ev.protocol==0 || ev.protocol==jalv->urids.atom_eventTransfer) {
+      jalv->controls.controls[ev.index]->fval = *(float*)buf;
+      if (jalv->opts.print_controls)
+        jalv_print_control(jalv, jalv->controls.controls[ev.index], *(float*)buf);
     }
+    */
   }
 
   return 1;
@@ -1451,14 +1483,21 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv->bpm_port_index = lilv_port_get_index(jalv->plugin, bpm_port);
   }
 
-  // Print initial control values
+  // Print initial port control values
+  /*
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
     ControlID* control = jalv->controls.controls[i];
-    if (control->type == PORT && control->is_writable) {
-      struct Port* port = &jalv->ports[control->index];
-      jalv_print_control(jalv, port, port->control);
+    //if (control->type == PORT && control->is_writable) {
+      	//struct Port* const port = &jalv->ports[control->index];
+		//printf("%s = %f\n", lilv_node_as_string(control->symbol), port->control);
+	//}
+    if (control->is_writable) {
+      	jalv_print_control(jalv, control, jalv_get_control(jalv, control));
     }
   }
+  // Request patch properties (patch_Get) => will print values
+  jalv->request_update = true;
+  */
 
   // Activate plugin
   lilv_instance_activate(jalv->instance);
@@ -1574,6 +1613,123 @@ jalv_get_working_dir()
 		return jalv_strdup("./");
 	}
 }
+
+//-----------------------------------------------------------------------------
+// Console
+//-----------------------------------------------------------------------------
+
+static void
+jalv_process_command(Jalv* jalv, const char* cmd)
+{
+	char     sym[1024];
+	uint32_t index = 0;
+	float    value = 0.0f;
+	if (strcmp(cmd, "help\n") == 0) {
+		fprintf(stdout,
+		        "Commands:\n"
+		        "  help              Display this help message\n"
+		        "  controls          Print settable control values\n"
+		        "  monitors          Print output control values\n"
+		        "  presets           Print available presets\n"
+		        "  preset URI        Set preset\n"
+		        "  save preset [BANK_URI,] LABEL\n"
+		        "                    Save preset (BANK_URI is optional)\n"
+		        "  set INDEX VALUE   Set control value by port index\n"
+		        "  set SYMBOL VALUE  Set control value by symbol\n"
+		        "  SYMBOL = VALUE    Set control value by symbol\n");
+	} else if (strcmp(cmd, "presets\n") == 0) {
+		jalv_unload_presets(jalv);
+		jalv_load_presets(jalv, jalv_print_preset, NULL);
+	} else if (sscanf(cmd, "preset %1023[-a-zA-Z0-9_:/.%%#]", sym) == 1) {
+		LilvNode* preset = lilv_new_uri(jalv->world, sym);
+		lilv_world_load_resource(jalv->world, preset);
+		jalv_apply_preset(jalv, preset);
+		update_ui_title(jalv);
+		lilv_node_free(preset);
+		//jalv_print_ports(jalv, true, false);
+	} else if (sscanf(cmd, "save preset %1023[-a-zA-Z0-9_:/.%%#, ]", sym) == 1) {
+		jalv_command_save_preset(jalv,sym);
+		// Rebuild preset menu and update window title
+		update_ui_presets(jalv);
+		update_ui_title(jalv);
+	} else if (strcmp(cmd, "controls\n") == 0) {
+		jalv_print_controls(jalv, true, false);
+	} else if (strcmp(cmd, "monitors\n") == 0) {
+		jalv_print_controls(jalv, false, true);
+	} else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
+		if (index < jalv->controls.n_controls) {
+		  //jalv->ports[index].control = value;
+		  ControlID* control = jalv->controls.controls[index];
+		  jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &value);
+		  if (jalv->has_ui) {
+		  	jalv_write_control(jalv, jalv->plugin_to_ui, control->index, value);
+		  }
+		  //jalv_print_control(jalv, control, value);
+		} else {
+		  fprintf(stderr, "error: port index out of range\n");
+		}
+	} else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2 ||
+			   sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
+		ControlID* control = NULL;
+		for (uint32_t i = 0; i < jalv->controls.n_controls; ++i) {
+		  const LilvNode* s = jalv->controls.controls[i]->symbol;
+		  if (!strcmp(lilv_node_as_string(s), sym)) {
+			control = jalv->controls.controls[i];
+			break;
+		  }
+		}
+		if (control) {
+		  jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &value);
+		  if (jalv->has_ui) {
+		  	jalv_write_control(jalv, jalv->plugin_to_ui, control->index, value);
+		  }
+		  //jalv_print_control(jalv, control, value);
+		} else {
+		  fprintf(stderr, "error: no control named `%s'\n", sym);
+		}
+	} else if (strcmp(cmd, "\n") == 0) {
+		// Prompt again if just pressed enter
+	} else {
+		fprintf(stderr, "error: invalid command (try `help')\n");
+	}
+}
+
+
+void * cli_thread(void *arg) {
+	Jalv* jalv = (Jalv*) arg;
+	fprintf(stdout, "> \n");
+	fflush(stdout);
+	while (1) {
+		char line[1024];
+		if (fgets(line, sizeof(line), stdin)) {
+			jalv_process_command(jalv, line);
+		} else {
+			break;
+		}
+		//fprintf(stdout, "> \n");
+		fflush(stdout);
+	}
+	return NULL;
+}
+
+pthread_t init_cli_thread(Jalv* jalv) {
+	//Drop stderr output
+	//stderr = fopen("/dev/null", "w");
+
+	pthread_t tid;
+	int err=pthread_create(&tid, NULL, &cli_thread, jalv);
+	if (err != 0) {
+		fprintf(stderr, "Can't create CLI thread :[%s]\n", strerror(err));
+		return 0;
+	} else {
+		fprintf(stderr, "CLI thread created successfully\n");
+		return tid;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Main
+//-----------------------------------------------------------------------------
 
 int
 main(int argc, char** argv)

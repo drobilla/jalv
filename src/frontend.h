@@ -48,6 +48,10 @@ jalv_frontend_open(Jalv* jalv);
 int
 jalv_frontend_close(Jalv* jalv);
 
+/// Needed by console
+void update_ui_title(Jalv* jalv);
+void update_ui_presets(Jalv* jalv);
+
 JALV_END_DECLS
 
 #endif // JALV_UI_H

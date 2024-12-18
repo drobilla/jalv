@@ -173,6 +173,8 @@ add_control(Controls* controls, ControlID* control)
   controls->controls = (ControlID**)realloc(
     controls->controls, (controls->n_controls + 1) * sizeof(ControlID*));
 
+  //printf("ADDING CONTROL %s => %ld\n", lilv_node_as_string(control->symbol), controls->n_controls);
+  control->control_index = controls->n_controls;
   controls->controls[controls->n_controls++] = control;
 }
 

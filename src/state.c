@@ -127,11 +127,14 @@ set_port_value(const char* port_symbol,
                uint32_t    type)
 {
   Jalv*        jalv = (Jalv*)user_data;
-  struct Port* port = jalv_port_by_symbol(jalv, port_symbol);
-  if (!port) {
+  //struct Port* port = jalv_port_by_symbol(jalv, port_symbol);
+  //if (!port) {
+  const ControlID* control = jalv_control_by_symbol(jalv, port_symbol);
+  if (!control) {
     jalv_log(JALV_LOG_ERR, "Preset port `%s' is missing\n", port_symbol);
     return;
   }
+  struct Port* port = &jalv->ports[control->index];
 
   float fvalue = 0.0f;
   if (type == jalv->forge.Float) {
@@ -162,6 +165,9 @@ set_port_value(const char* port_symbol,
     // Update UI (as if from plugin)
     jalv_write_control(jalv, jalv->plugin_to_ui, port->index, fvalue);
   }
+
+  // Print control value to console
+  jalv_print_control(jalv, control, fvalue);
 }
 
 void
@@ -287,12 +293,13 @@ jalv_delete_current_preset(Jalv* jalv)
 void
 jalv_command_save_preset(Jalv* jalv, char* sym)
 {
-	char dir_preset[1024];
-	char fname_preset[1024];
+	char dir_preset[256];
+	char fname_preset[256];
+	char uri_preset[540];
 	char *plugin_name = jalv_get_plugin_name(jalv);
-	char *saveptr = sym;
-	char *bank_uri = strtok_r(sym, ",", &saveptr);
-	char *label_preset = strtok_r(NULL, ",", &saveptr);
+	char *name_preset = sym;
+	char *bank_uri = strtok_r(sym, ",", &name_preset);
+	char *label_preset = strtok_r(NULL, ",", &name_preset);
 	if (!label_preset) {
 		label_preset = bank_uri;
 		bank_uri = NULL;
@@ -306,8 +313,10 @@ jalv_command_save_preset(Jalv* jalv, char* sym)
 	} else {
 		jalv_save_preset(jalv, dir_preset, NULL, label_preset, fname_preset);
 	}
-	//Print saved preset uri
-	printf("file://%s%s\n", dir_preset, fname_preset);
+	//Generate preset uri
+	sprintf(uri_preset, "file://%s%s", dir_preset, fname_preset);
+	// Print feedback
+	jalv_print_preset_str(uri_preset, label_preset);
 	// Reload bundle into the world
 	LilvNode* ldir = lilv_new_file_uri(jalv->world, NULL, dir_preset);
 	lilv_world_unload_bundle(jalv->world, ldir);

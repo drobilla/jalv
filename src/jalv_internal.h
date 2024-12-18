@@ -149,10 +149,14 @@ jalv_control_by_symbol(Jalv* jalv, const char* sym);
 
 void
 jalv_set_control(Jalv*            jalv,
-                 const ControlID* control,
+                 ControlID* control,
                  uint32_t         size,
                  LV2_URID         type,
                  const void*      body);
+
+float
+jalv_get_control(Jalv*             jalv,
+                 const ControlID*  control);
 
 void
 jalv_init_ui(Jalv* jalv);
@@ -232,6 +236,13 @@ jalv_run(Jalv* jalv, uint32_t nframes);
 
 int
 jalv_update(Jalv* jalv);
+
+//-----------------------------------------------------------------------------
+// Console
+//-----------------------------------------------------------------------------
+
+void * cli_thread(void *arg);
+pthread_t init_cli_thread(Jalv* jalv);
 
 JALV_END_DECLS
 

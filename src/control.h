@@ -48,12 +48,14 @@ typedef struct {
   LilvNode*       min;            ///< Minimum value
   LilvNode*       max;            ///< Maximum value
   LilvNode*       def;            ///< Default value
+  float           fval;           ///< Last value get from the plugin (float)
   bool            is_toggle;      ///< Boolean (0 and 1 only)
   bool            is_integer;     ///< Integer values only
   bool            is_enumeration; ///< Point values only
   bool            is_logarithmic; ///< Logarithmic scale
   bool            is_writable;    ///< Writable (input)
   bool            is_readable;    ///< Readable (output)
+  uint32_t        control_index;  ///< Index in the Controls array (for faster access)
 } ControlID;
 
 /// Set of plugin controls

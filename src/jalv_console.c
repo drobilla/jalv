@@ -165,97 +165,6 @@ jalv_frontend_ui_type(void)
   return NULL;
 }
 
-static void
-jalv_print_controls(Jalv* jalv, bool writable, bool readable)
-{
-  for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
-    ControlID* const control = jalv->controls.controls[i];
-    if ((control->is_writable && writable) ||
-        (control->is_readable && readable)) {
-      struct Port* const port = &jalv->ports[control->index];
-      jalv_log(JALV_LOG_INFO,
-               "%s = %f\n",
-               lilv_node_as_string(control->symbol),
-               port->control);
-    }
-  }
-
-  fflush(stdout);
-}
-
-static int
-jalv_print_preset(Jalv*           ZIX_UNUSED(jalv),
-                  const LilvNode* node,
-                  const LilvNode* title,
-                  void*           ZIX_UNUSED(data))
-{
-  printf("%s (%s)\n", lilv_node_as_string(node), lilv_node_as_string(title));
-  return 0;
-}
-
-static void
-jalv_process_command(Jalv* jalv, const char* cmd)
-{
-  char     sym[1024];
-  uint32_t index = 0;
-  float    value = 0.0f;
-  if (!strncmp(cmd, "help", 4)) {
-    fprintf(stderr,
-            "Commands:\n"
-            "  help              Display this help message\n"
-            "  controls          Print settable control values\n"
-            "  monitors          Print output control values\n"
-            "  presets           Print available presets\n"
-            "  preset URI        Set preset\n"
-            "  save preset [BANK_URI,] LABEL\n"
-            "                    Save preset (BANK_URI is optional)\n"
-            "  set INDEX VALUE   Set control value by port index\n"
-            "  set SYMBOL VALUE  Set control value by symbol\n"
-            "  SYMBOL = VALUE    Set control value by symbol\n");
-  } else if (strcmp(cmd, "presets\n") == 0) {
-    jalv_unload_presets(jalv);
-    jalv_load_presets(jalv, jalv_print_preset, NULL);
-  } else if (sscanf(cmd, "preset %1023[-a-zA-Z0-9_:/.%%#]\n", sym) == 1) {
-    LilvNode* preset = lilv_new_uri(jalv->world, sym);
-    lilv_world_load_resource(jalv->world, preset);
-    jalv_apply_preset(jalv, preset);
-    lilv_node_free(preset);
-    jalv_print_controls(jalv, true, false);
-  } else if (sscanf(cmd, "save preset %1023[-a-zA-Z0-9_:/.%%#, ]", sym) == 1) {
-    jalv_command_save_preset(jalv,sym);
-  } else if (strcmp(cmd, "controls\n") == 0) {
-    jalv_print_controls(jalv, true, false);
-  } else if (strcmp(cmd, "monitors\n") == 0) {
-    jalv_print_controls(jalv, false, true);
-  } else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
-    if (index < jalv->num_ports) {
-      jalv->ports[index].control = value;
-      jalv_print_control(jalv, &jalv->ports[index], value);
-    } else {
-      fprintf(stderr, "error: port index out of range\n");
-    }
-  } else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2 ||
-             sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
-    struct Port* port = NULL;
-    for (uint32_t i = 0; i < jalv->num_ports; ++i) {
-      struct Port*    p = &jalv->ports[i];
-      const LilvNode* s = lilv_port_get_symbol(jalv->plugin, p->lilv_port);
-      if (!strcmp(lilv_node_as_string(s), sym)) {
-        port = p;
-        break;
-      }
-    }
-    if (port) {
-      port->control = value;
-      jalv_print_control(jalv, port, value);
-    } else {
-      fprintf(stderr, "error: no control named `%s'\n", sym);
-    }
-  } else {
-    fprintf(stderr, "error: invalid command (try `help')\n");
-  }
-}
-
 bool
 jalv_frontend_discover(Jalv* jalv)
 {
@@ -322,19 +231,15 @@ jalv_frontend_select_plugin(Jalv* jalv)
   return NULL;
 }
 
+
 int
 jalv_frontend_open(Jalv* jalv)
 {
   if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
-    // Primitive command prompt for setting control values
+  	init_cli_thread(jalv);
     while (zix_sem_try_wait(&jalv->done)) {
-      char line[1024];
-      printf("> ");
-      if (fgets(line, sizeof(line), stdin)) {
-        jalv_process_command(jalv, line);
-      } else {
-        break;
-      }
+		jalv_update(jalv);
+		usleep(30000);
     }
   } else {
     zix_sem_wait(&jalv->done);
@@ -351,4 +256,14 @@ jalv_frontend_close(Jalv* jalv)
 {
   zix_sem_post(&jalv->done);
   return 0;
+}
+
+//-----------------------------------------------------------------------------
+
+void update_ui_title(Jalv* jalv)
+{
+}
+
+void update_ui_presets(Jalv* jalv)
+{
 }

@@ -7,12 +7,14 @@
 #include "attributes.h"
 #include "types.h"
 #include "urids.h"
+#include "control.h"
 
 #include "lv2/log/log.h"
 #include "lv2/urid/urid.h"
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <pthread.h>
 
 #ifdef __GNUC__
 #  define JALV_LOG_FUNC(fmt, arg1) __attribute__((format(printf, fmt, arg1)))
@@ -38,8 +40,29 @@ typedef struct {
   bool       tracing;
 } JalvLog;
 
+//-----------------------------------------------------------------------------
+// Zynthian Extended Terminal Control
+//-----------------------------------------------------------------------------
+
 void
-jalv_print_control(Jalv* jalv, const struct Port* port, float value);
+jalv_print_port(Jalv* const jalv, const struct Port* port, const float value);
+
+void
+jalv_print_control(Jalv* const jalv, const ControlID* control, const float value);
+
+void
+jalv_print_controls(Jalv* const jalv, bool writable, bool readable);
+
+void
+jalv_print_ports(Jalv* const jalv, bool writable, bool readable);
+
+int
+jalv_print_preset(Jalv* const jalv, const LilvNode* node, const LilvNode* title, void* data);
+
+void
+jalv_print_preset_str(char *uri, char *name);
+
+//-----------------------------------------------------------------------------
 
 char*
 jalv_strdup(const char* str);
