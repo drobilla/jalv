@@ -586,20 +586,21 @@ differ_enough(float a, float b)
 static void
 set_float_control(const ControlID* control, float value)
 {
-  if (control->value_type == control->forge->Int) {
+  LV2_Atom_Forge* const forge = &s_jalv->forge;
+  if (control->value_type == forge->Int) {
     const int32_t ival = lrintf(value);
-    set_control(control, sizeof(ival), control->forge->Int, &ival);
-  } else if (control->value_type == control->forge->Long) {
+    set_control(control, sizeof(ival), forge->Int, &ival);
+  } else if (control->value_type == forge->Long) {
     const int64_t lval = lrintf(value);
-    set_control(control, sizeof(lval), control->forge->Long, &lval);
-  } else if (control->value_type == control->forge->Float) {
-    set_control(control, sizeof(value), control->forge->Float, &value);
-  } else if (control->value_type == control->forge->Double) {
+    set_control(control, sizeof(lval), forge->Long, &lval);
+  } else if (control->value_type == forge->Float) {
+    set_control(control, sizeof(value), forge->Float, &value);
+  } else if (control->value_type == forge->Double) {
     const double dval = value;
-    set_control(control, sizeof(dval), control->forge->Double, &dval);
-  } else if (control->value_type == control->forge->Bool) {
+    set_control(control, sizeof(dval), forge->Double, &dval);
+  } else if (control->value_type == forge->Bool) {
     const int32_t ival = value;
-    set_control(control, sizeof(ival), control->forge->Bool, &ival);
+    set_control(control, sizeof(ival), forge->Bool, &ival);
   }
 
   Controller* controller = (Controller*)control->widget;
@@ -901,7 +902,7 @@ string_changed(GtkEntry* widget, gpointer data)
   const ControlID* control = (const ControlID*)data;
   const char*      string  = gtk_entry_get_text(widget);
 
-  set_control(control, strlen(string) + 1, control->forge->String, string);
+  set_control(control, strlen(string) + 1, s_jalv->forge.String, string);
 }
 
 static void
