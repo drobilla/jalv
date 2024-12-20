@@ -326,7 +326,8 @@ jalv_set_control(Jalv*            jalv,
                  const void*      body)
 {
   if (control->type == PORT && type == jalv->forge.Float) {
-    jalv->process.controls_buf[control->index] = *(const float*)body;
+    const float value = *(const float*)body;
+    jalv_write_control(jalv->process.ui_to_plugin, control->index, value);
   } else if (control->type == PROPERTY &&
              jalv->process.control_in != UINT32_MAX) {
     LV2_Atom_Forge_Frame frame;

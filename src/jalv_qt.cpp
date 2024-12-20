@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: ISC
 
 #include "jalv_qt.hpp"
+#include "comm.h"
 #include "frontend.h"
 #include "jalv.h"
 #include "nodes.h"
@@ -499,7 +500,7 @@ Control::dialChanged(int)
   const float value = getValue();
 
   _label->setText(getValueLabel(value));
-  _jalv->process.controls_buf[_port->index] = value;
+  jalv_write_control(_jalv->process.ui_to_plugin, _port->index, value);
 }
 
 namespace {

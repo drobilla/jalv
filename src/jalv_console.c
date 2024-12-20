@@ -1,6 +1,7 @@
 // Copyright 2007-2024 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
+#include "comm.h"
 #include "control.h"
 #include "frontend.h"
 #include "jalv.h"
@@ -249,7 +250,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
     print_controls(jalv, false, true);
   } else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
     if (index < jalv->num_ports) {
-      jalv->process.controls_buf[index] = value;
+      jalv_write_control(jalv->process.ui_to_plugin, index, value);
       print_control_port(jalv, &jalv->ports[index], value);
     } else {
       fprintf(stderr, "error: port index out of range\n");
