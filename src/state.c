@@ -131,7 +131,7 @@ set_port_value(const char* port_symbol,
   //if (!port) {
   const ControlID* control = jalv_control_by_symbol(jalv, port_symbol);
   if (!control) {
-    jalv_log(JALV_LOG_ERR, "Preset port `%s' is missing\n", port_symbol);
+    jalv_log(JALV_LOG_ERR, "Preset control `%s': doesn't exist!\n", port_symbol);
     return;
   }
   struct Port* port = &jalv->ports[control->index];
@@ -146,8 +146,7 @@ set_port_value(const char* port_symbol,
   } else if (type == jalv->forge.Long) {
     fvalue = *(const int64_t*)value;
   } else {
-    jalv_log(JALV_LOG_ERR,
-             "Preset `%s' value has bad type <%s>\n",
+    jalv_log(JALV_LOG_ERR, "Preset control `%s': bad type <%s>!\n",
              port_symbol,
              jalv->unmap.unmap(jalv->unmap.handle, type));
     return;

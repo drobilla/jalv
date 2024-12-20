@@ -47,8 +47,14 @@ jalv_print_control(Jalv* const jalv,
                    const ControlID* control,
                    const float value)
 {
+  static int last_control_index = -1;
+  static float last_control_value = 0.0;
+  // Avoid printing repeated lines (i.e. SurgeXT's bypass control)
+  if (control->control_index == last_control_index && value == last_control_value) return;
   fprintf(stdout, "%s %d#%s=%f\n", CTR_PREFIX, control->control_index, lilv_node_as_string(control->symbol), value);
   fflush(stdout);
+  last_control_index = control->control_index;
+  last_control_value = value;
 }
 
 void

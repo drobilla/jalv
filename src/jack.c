@@ -313,14 +313,11 @@ jack_process_cb(jack_nframes_t nframes, void* data)
         }
 		else if (type == jalv->urids.atom_Object) {
 		  const LV2_Atom_Object_Body* obj = (const LV2_Atom_Object_Body*)body;
- 		  //printf("ATOM OBJECT! => id=%d , otype=%d\n", obj->id, obj->otype);
-		  //print_hex_string(body, size);
   		  // Get the atom object containing the atom object body =>
 		  const LV2_Atom* atom = (const LV2_Atom*)body;
 		  atom--;
-  		  //if (lv2_atom_forge_is_object_type(&jalv->forge, atom->type)) {
 	      if (obj->otype == jalv->urids.patch_Set) {
-	        //printf("IS PATCH SET! => id=%d , type=%d\n", obj->id, obj->otype);
+	        //printf("PATCH SET => id=%d , type=%d\n", obj->id, obj->otype);
       		const LV2_Atom_URID* property = NULL;
       		const LV2_Atom*      value    = NULL;
       		if (!patch_set_get(jalv, (const LV2_Atom_Object*)atom, &property, &value)) {
@@ -335,6 +332,13 @@ jack_process_cb(jack_nframes_t nframes, void* data)
                 //printf("%s = %f\n", lilv_node_as_string(control->symbol), fvalue);
 			  }
       		}
+      	  /*} else if (obj->otype == jalv->urids.patch_Put) {
+      	    printf("PATCH PUT => size=%d, id=%d , type=%d\n", size, obj->id, obj->otype);
+      	    //print_hex_string(body, size);
+      	  } else {
+      	    printf("ATOM OBJECT => size=%d, id=%d , otype=%d\n", size, obj->id, obj->otype);
+		    //print_hex_string(body, size);
+      	  */
       	  }
     	}
         if (jalv->has_ui) {
