@@ -48,10 +48,10 @@ static Jalv* s_jalv = NULL;
 static GtkCheckMenuItem* active_preset_item = NULL;
 static bool              updating           = false;
 
-/// Widget for a control
+/// Widget(s) for a control port or parameter
 typedef struct {
-  GtkSpinButton* spin;
-  GtkWidget*     control;
+  GtkSpinButton* spin;    ///< Spinner for numbers, or null
+  GtkWidget*     control; ///< Primary value control
 } Controller;
 
 static float
@@ -789,17 +789,13 @@ jalv_frontend_port_event(Jalv*       jalv,
     return;
   }
 
-  if (protocol == 0 && (Controller*)jalv->ports[port_index].widget) {
-    control_changed(jalv,
-                    (Controller*)jalv->ports[port_index].widget,
-                    buffer_size,
-                    jalv->forge.Float,
-                    buffer);
-    return;
-  }
-
   if (protocol == 0) {
-    return; // No widget (probably notOnGUI)
+    Controller* const controller = (Controller*)jalv->ports[port_index].widget;
+    if (controller) {
+      control_changed(jalv, controller, buffer_size, jalv->forge.Float, buffer);
+    }
+
+    return;
   }
 
   if (protocol != jalv->urids.atom_eventTransfer) {
@@ -1211,7 +1207,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
 
     record->widget = controller;
     if (record->type == PORT) {
-      jalv->ports[record->index].widget = controller;
+      jalv->ports[record->id.index].widget = controller;
     }
     if (controller) {
       // Add row to table for this controller

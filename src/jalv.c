@@ -327,7 +327,7 @@ jalv_set_control(Jalv*            jalv,
 {
   if (control->type == PORT && type == jalv->forge.Float) {
     const float value = *(const float*)body;
-    jalv_write_control(jalv->process.ui_to_plugin, control->index, value);
+    jalv_write_control(jalv->process.ui_to_plugin, control->id.index, value);
   } else if (control->type == PROPERTY &&
              jalv->process.control_in != UINT32_MAX) {
     LV2_Atom_Forge_Frame frame;
@@ -335,7 +335,7 @@ jalv_set_control(Jalv*            jalv,
 
     lv2_atom_forge_object(&jalv->forge, &frame, 0, jalv->urids.patch_Set);
     lv2_atom_forge_key(&jalv->forge, jalv->urids.patch_property);
-    lv2_atom_forge_urid(&jalv->forge, control->property);
+    lv2_atom_forge_urid(&jalv->forge, control->id.property);
     lv2_atom_forge_key(&jalv->forge, jalv->urids.patch_value);
     lv2_atom_forge_atom(&jalv->forge, size, type);
     lv2_atom_forge_write(&jalv->forge, body, size);

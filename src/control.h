@@ -32,13 +32,15 @@ typedef struct {
 
 /// Plugin control
 typedef struct {
-  ControlType     type;           ///< Type of control
+  ControlType type; ///< Type of control
+  union {
+    LV2_URID property; ///< Iff type == PROPERTY
+    uint32_t index;    ///< Iff type == PORT
+  } id;
   LilvNode*       node;           ///< Port or property
   LilvNode*       symbol;         ///< Symbol
   LilvNode*       label;          ///< Human readable label
   LV2_Atom_Forge* forge;          ///< Forge (for URIDs)
-  LV2_URID        property;       ///< Iff type == PROPERTY
-  uint32_t        index;          ///< Iff type == PORT
   LilvNode*       group;          ///< Port/control group, or NULL
   void*           widget;         ///< Control Widget
   size_t          n_points;       ///< Number of scale points

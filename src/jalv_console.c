@@ -201,7 +201,7 @@ print_controls(const Jalv* const jalv, const bool writable, const bool readable)
       jalv_log(JALV_LOG_INFO,
                "%s = %f\n",
                lilv_node_as_string(control->symbol),
-               jalv->process.controls_buf[control->index]);
+               jalv->process.controls_buf[control->id.index]);
     }
   }
 
@@ -343,9 +343,9 @@ jalv_frontend_open(Jalv* jalv)
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
     ControlID* control = jalv->controls.controls[i];
     if (control->type == PORT && control->is_writable) {
-      const JalvPort* const port = &jalv->ports[control->index];
+      const JalvPort* const port = &jalv->ports[control->id.index];
       print_control_port(
-        jalv, port, jalv->process.controls_buf[control->index]);
+        jalv, port, jalv->process.controls_buf[control->id.index]);
     }
   }
 

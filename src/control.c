@@ -43,11 +43,11 @@ new_port_control(LilvWorld* const        world,
   ControlID* id = (ControlID*)calloc(1, sizeof(ControlID));
 
   id->type        = PORT;
+  id->id.index    = port_index;
   id->node        = lilv_node_duplicate(lilv_port_get_node(plugin, port));
   id->symbol      = lilv_node_duplicate(lilv_port_get_symbol(plugin, port));
   id->label       = lilv_port_get_name(plugin, port);
   id->forge       = forge;
-  id->index       = port_index;
   id->group       = lilv_port_get(plugin, port, nodes->pg_group);
   id->value_type  = forge->Float;
   id->is_writable = lilv_port_is_a(plugin, port, nodes->lv2_InputPort);
@@ -128,12 +128,12 @@ new_property_control(LilvWorld* const       world,
                      LV2_URID_Map* const    map,
                      LV2_Atom_Forge* const  forge)
 {
-  ControlID* id = (ControlID*)calloc(1, sizeof(ControlID));
-  id->type      = PROPERTY;
-  id->node      = lilv_node_duplicate(property);
-  id->symbol    = lilv_world_get_symbol(world, property);
-  id->forge     = forge;
-  id->property  = map->map(map->handle, lilv_node_as_uri(property));
+  ControlID* id   = (ControlID*)calloc(1, sizeof(ControlID));
+  id->type        = PROPERTY;
+  id->id.property = map->map(map->handle, lilv_node_as_uri(property));
+  id->node        = lilv_node_duplicate(property);
+  id->symbol      = lilv_world_get_symbol(world, property);
+  id->forge       = forge;
 
   id->label = lilv_world_get(world, property, nodes->rdfs_label, NULL);
   id->min   = lilv_world_get(world, property, nodes->lv2_minimum, NULL);
@@ -198,7 +198,8 @@ ControlID*
 get_property_control(const Controls* controls, LV2_URID property)
 {
   for (size_t i = 0; i < controls->n_controls; ++i) {
-    if (controls->controls[i]->property == property) {
+    if (controls->controls[i]->type == PROPERTY &&
+        controls->controls[i]->id.property == property) {
       return controls->controls[i];
     }
   }
