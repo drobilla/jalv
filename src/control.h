@@ -64,21 +64,21 @@ typedef struct {
 
 /// Create a new ID for a control port
 ControlID*
-new_port_control(LilvWorld*        world,
-                 const LilvPlugin* plugin,
-                 const LilvPort*   port,
-                 uint32_t          port_index,
-                 float             sample_rate,
-                 const JalvNodes*  nodes,
-                 LV2_Atom_Forge*   forge);
+new_port_control(LilvWorld*            world,
+                 const LilvPlugin*     plugin,
+                 const LilvPort*       port,
+                 uint32_t              port_index,
+                 float                 sample_rate,
+                 const JalvNodes*      nodes,
+                 const LV2_Atom_Forge* forge);
 
 /// Create a new ID for a property-based parameter
 ControlID*
-new_property_control(LilvWorld*       world,
-                     const LilvNode*  property,
-                     const JalvNodes* nodes,
-                     LV2_URID_Map*    map,
-                     LV2_Atom_Forge*  forge);
+new_property_control(LilvWorld*            world,
+                     const LilvNode*       property,
+                     const JalvNodes*      nodes,
+                     LV2_URID_Map*         map,
+                     const LV2_Atom_Forge* forge);
 
 /// Free a control allocated with new_port_control() or new_property_control()
 void

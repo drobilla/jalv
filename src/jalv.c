@@ -364,7 +364,7 @@ void
 jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 {
 #if USE_SUIL
-  LilvInstance* const instance = jalv->process.instance;
+  const LilvInstance* const instance = jalv->process.instance;
 
   jalv->ui_host =
     suil_host_new(jalv_send_to_plugin, jalv_ui_port_index, NULL, NULL);
@@ -638,8 +638,8 @@ jalv_init_features(Jalv* const jalv)
 static void
 jalv_init_ui_settings(Jalv* const jalv)
 {
-  JalvOptions* const  opts     = &jalv->opts;
-  JalvSettings* const settings = &jalv->settings;
+  const JalvOptions* const opts     = &jalv->opts;
+  JalvSettings* const      settings = &jalv->settings;
 
   if (!settings->ring_size) {
     /* The UI ring is fed by plugin output ports (usually one), and the UI

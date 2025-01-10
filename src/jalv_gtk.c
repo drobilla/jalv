@@ -586,7 +586,7 @@ differ_enough(float a, float b)
 static void
 set_float_control(const ControlID* control, float value)
 {
-  LV2_Atom_Forge* const forge = &s_jalv->forge;
+  const LV2_Atom_Forge* const forge = &s_jalv->forge;
   if (control->value_type == forge->Int) {
     const int32_t ival = lrintf(value);
     set_control(control, sizeof(ival), forge->Int, &ival);

@@ -102,8 +102,8 @@ static int
 process_silent(JalvProcess* const proc, const jack_nframes_t nframes)
 {
   for (uint32_t p = 0U; p < proc->num_ports; ++p) {
-    JalvProcessPort* const port  = &proc->ports[p];
-    jack_port_t* const     jport = (jack_port_t*)proc->ports[p].sys_port;
+    const JalvProcessPort* const port  = &proc->ports[p];
+    jack_port_t* const           jport = (jack_port_t*)proc->ports[p].sys_port;
     if (jport && port->flow == FLOW_OUTPUT) {
       void* const buf = jack_port_get_buffer(jport, nframes);
       if (port->type == TYPE_EVENT) {
@@ -264,7 +264,7 @@ latency_cb(const jack_latency_callback_mode_t mode, void* const data)
 {
   // Calculate latency assuming all ports depend on each other
 
-  JalvBackend* const       backend = (JalvBackend*)data;
+  const JalvBackend* const backend = (JalvBackend*)data;
   const JalvProcess* const proc    = backend->process;
   const PortFlow           flow =
     ((mode == JackCaptureLatency) ? FLOW_INPUT : FLOW_OUTPUT);

@@ -180,6 +180,7 @@ jalv_process_port_init(JalvProcessPort* const  port,
   LilvNode* const name = lilv_port_get_name(lilv_plugin, lilv_port);
   port->symbol = symbol ? jalv_strdup(lilv_node_as_string(symbol)) : NULL;
   port->label  = name ? jalv_strdup(lilv_node_as_string(name)) : NULL;
+  lilv_node_free(name);
 
   // Set buffer size
   LilvNode* const min_size =

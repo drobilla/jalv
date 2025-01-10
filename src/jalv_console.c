@@ -257,7 +257,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
     }
   } else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2 ||
              sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
-    JalvPort* const port = jalv_port_by_symbol(jalv, sym);
+    const JalvPort* const port = jalv_port_by_symbol(jalv, sym);
     if (port) {
       jalv->process.controls_buf[port->index] = value;
       print_control_port(jalv, port, value);

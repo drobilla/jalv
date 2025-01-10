@@ -42,8 +42,8 @@ get_port_value(const char* port_symbol,
                uint32_t*   size,
                uint32_t*   type)
 {
-  Jalv* const     jalv = (Jalv*)user_data;
-  JalvPort* const port = jalv_port_by_symbol(jalv, port_symbol);
+  Jalv* const           jalv = (Jalv*)user_data;
+  const JalvPort* const port = jalv_port_by_symbol(jalv, port_symbol);
   if (port && port->flow == FLOW_INPUT && port->type == TYPE_CONTROL) {
     *size = sizeof(float);
     *type = jalv->forge.Float;
@@ -130,9 +130,9 @@ set_port_value(const char* port_symbol,
                uint32_t    ZIX_UNUSED(size),
                uint32_t    type)
 {
-  Jalv* const        jalv = (Jalv*)user_data;
-  JalvProcess* const proc = &jalv->process;
-  JalvPort* const    port = jalv_port_by_symbol(jalv, port_symbol);
+  Jalv* const           jalv = (Jalv*)user_data;
+  JalvProcess* const    proc = &jalv->process;
+  const JalvPort* const port = jalv_port_by_symbol(jalv, port_symbol);
   if (!port) {
     jalv_log(JALV_LOG_ERR, "Preset port `%s' is missing\n", port_symbol);
     return;

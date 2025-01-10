@@ -32,13 +32,13 @@ scale_point_cmp(const ScalePoint* a, const ScalePoint* b)
 }
 
 ControlID*
-new_port_control(LilvWorld* const        world,
-                 const LilvPlugin* const plugin,
-                 const LilvPort* const   port,
-                 uint32_t                port_index,
-                 const float             sample_rate,
-                 const JalvNodes* const  nodes,
-                 LV2_Atom_Forge* const   forge)
+new_port_control(LilvWorld* const            world,
+                 const LilvPlugin* const     plugin,
+                 const LilvPort* const       port,
+                 uint32_t                    port_index,
+                 const float                 sample_rate,
+                 const JalvNodes* const      nodes,
+                 const LV2_Atom_Forge* const forge)
 {
   ControlID* id = (ControlID*)calloc(1, sizeof(ControlID));
 
@@ -121,11 +121,11 @@ has_range(LilvWorld* const       world,
 }
 
 ControlID*
-new_property_control(LilvWorld* const       world,
-                     const LilvNode*        property,
-                     const JalvNodes* const nodes,
-                     LV2_URID_Map* const    map,
-                     LV2_Atom_Forge* const  forge)
+new_property_control(LilvWorld* const            world,
+                     const LilvNode*             property,
+                     const JalvNodes* const      nodes,
+                     LV2_URID_Map* const         map,
+                     const LV2_Atom_Forge* const forge)
 {
   ControlID* id   = (ControlID*)calloc(1, sizeof(ControlID));
   id->type        = PROPERTY;
