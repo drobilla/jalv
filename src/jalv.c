@@ -1637,9 +1637,10 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 	uint32_t index = 0;
 	int n = 0;
 	float value = 0.0f;
+	int matches;
 
 	if (strncmp(cmd, "set ", 4) == 0) {
-  		int matches = sscanf(cmd + 4,"%u %n%f", &index, &n, &value);
+  		matches = sscanf(cmd + 4,"%u %n%f", &index, &n, &value);
   		if (matches > 0) {
   			ControlID* control = jalv->controls.controls[index];
 			if (matches == 2) {
@@ -1682,24 +1683,34 @@ jalv_process_command(Jalv* jalv, const char* cmd)
     				} else {
     					fprintf(stderr, "error: wrong value type for control `%s'\n", sym);
     				}
-		  			return;
 			  	}
 			} else {
 				fprintf(stderr, "error: unknown control `%s'\n", sym);
 			}
 			return;
 		}
-	} else if (sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
+	} else if ((matches = sscanf(cmd, "%1023[a-zA-Z0-9_] = %n%f", sym, &n, &value)) > 0) {
 		ControlID* control = jalv_get_control_from_symbol(jalv, sym);
 		if (control) {
-			jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &value);
-			if (jalv->has_ui) {
-				jalv_write_control(jalv, jalv->plugin_to_ui, control->index, value);
+			if (matches == 2) {
+				jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &value);
+				if (jalv->has_ui) {
+					jalv_write_control(jalv, jalv->plugin_to_ui, control->index, value);
+				}
+				//jalv_print_control(jalv, control, value);
+			} else if (matches == 1) {
+				if (control->value_type == jalv->forge.Path) {
+					char *strarg = (char *)cmd + 4 + n;
+					strarg[strlen(strarg)-1] = 0;
+					jalv_set_control(jalv, control, strlen(strarg) + 1, jalv->forge.Path, strarg);
+				} else {
+					fprintf(stderr, "error: wrong value type for control `%s'\n", sym);
+				}
 			}
-			//jalv_print_control(jalv, control, value);
 		} else {
 			fprintf(stderr, "error: unknown control `%s'\n", sym);
 		}
+		return;
 	} else if (strcmp(cmd, "controls\n") == 0) {
 		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "monitors\n") == 0) {
