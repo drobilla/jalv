@@ -322,14 +322,19 @@ jack_process_cb(jack_nframes_t nframes, void* data)
       		const LV2_Atom*      value    = NULL;
       		if (!patch_set_get(jalv, (const LV2_Atom_Object*)atom, &property, &value)) {
       		  LV2_URID key = property->body;
-      		  const double fvalue = get_atom_double(jalv, value->size, value->type, value + 1);
-			  //printf("GOT PATCH SET! key=%d => %f\n", key, fvalue);
               ControlID* control = get_property_control(&jalv->controls, key);
               if (control) {
-                control->fval =  (float)fvalue;
-                // Print property parameter value
-                jalv_print_control(jalv, control, fvalue);
-                //printf("%s = %f\n", lilv_node_as_string(control->symbol), fvalue);
+              	if (value->type == jalv->forge.Path) {
+              	  const LV2_Atom* apath = value + 1;
+                  jalv_print_control_path(jalv, control, (const char *)(apath));
+              	} else {
+      		      const double fvalue = get_atom_double(jalv, value->size, value->type, value + 1);
+			      //printf("GOT PATCH SET! key=%d => %f\n", key, fvalue);
+                  control->fval =  (float)fvalue;
+                  // Print property parameter float value
+                  jalv_print_control(jalv, control, fvalue);
+                  //printf("%s = %f\n", lilv_node_as_string(control->symbol), fvalue);
+                }
 			  }
       		}
       	  /*} else if (obj->otype == jalv->urids.patch_Put) {

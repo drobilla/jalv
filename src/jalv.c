@@ -1618,28 +1618,92 @@ jalv_get_working_dir()
 // Console
 //-----------------------------------------------------------------------------
 
+ControlID* jalv_get_control_from_symbol(Jalv* jalv, char *symbol)
+{
+	ControlID* control = NULL;
+	for (uint32_t i = 0; i < jalv->controls.n_controls; ++i) {
+		if (!strcmp(lilv_node_as_string(jalv->controls.controls[i]->symbol), symbol)) {
+			control = jalv->controls.controls[i];
+			break;
+	  	}
+	}
+	return control;
+}
+
 static void
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
-	char     sym[1024];
+	char sym[1024];
 	uint32_t index = 0;
-	float    value = 0.0f;
-	if (strcmp(cmd, "help\n") == 0) {
-		fprintf(stdout,
-		        "Commands:\n"
-		        "  help              Display this help message\n"
-		        "  controls          Print settable control values\n"
-		        "  monitors          Print output control values\n"
-		        "  presets           Print available presets\n"
-		        "  preset URI        Set preset\n"
-		        "  save preset [BANK_URI,] LABEL\n"
-		        "                    Save preset (BANK_URI is optional)\n"
-		        "  set INDEX VALUE   Set control value by port index\n"
-		        "  set SYMBOL VALUE  Set control value by symbol\n"
-		        "  SYMBOL = VALUE    Set control value by symbol\n");
-	} else if (strcmp(cmd, "presets\n") == 0) {
-		jalv_unload_presets(jalv);
-		jalv_load_presets(jalv, jalv_print_preset, NULL);
+	int n = 0;
+	float value = 0.0f;
+
+	if (strncmp(cmd, "set ", 4) == 0) {
+  		int matches = sscanf(cmd + 4,"%u %n%f", &index, &n, &value);
+  		if (matches > 0) {
+  			ControlID* control = jalv->controls.controls[index];
+			if (matches == 2) {
+				if (index < jalv->controls.n_controls) {
+					//jalv->ports[index].control = value;
+					jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &value);
+					if (jalv->has_ui) {
+						jalv_write_control(jalv, jalv->plugin_to_ui, control->index, value);
+					}
+					//jalv_print_control(jalv, control, value);
+				} else {
+					fprintf(stderr, "error: control index out of range\n");
+				}
+			} else if (matches == 1) {
+				if (control->value_type == jalv->forge.Path) {
+					char *strarg = (char *)cmd + 4 + n;
+					strarg[strlen(strarg)-1] = 0;
+					jalv_set_control(jalv, control, strlen(strarg) + 1, jalv->forge.Path, strarg);
+				} else {
+					fprintf(stderr, "error: wrong value type for control `%s'\n", sym);
+				}
+			}
+			return;
+		}
+		matches = sscanf(cmd + 4, "%1023[a-zA-Z0-9_] %n%f", sym, &n, &value);
+		if (matches > 0) {
+			ControlID* control = jalv_get_control_from_symbol(jalv, sym);
+			if (control) {
+				if (matches == 2) {
+			  		jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &value);
+			  		if (jalv->has_ui) {
+						jalv_write_control(jalv, jalv->plugin_to_ui, control->index, value);
+			  		}
+			  		//jalv_print_control(jalv, control, value);
+			  	} else if (matches == 1) {
+					if (control->value_type == jalv->forge.Path) {
+						char *strarg = (char *)cmd + 4 + n;
+						strarg[strlen(strarg)-1] = 0;
+						jalv_set_control(jalv, control, strlen(strarg) + 1, jalv->forge.Path, strarg);
+    				} else {
+    					fprintf(stderr, "error: wrong value type for control `%s'\n", sym);
+    				}
+		  			return;
+			  	}
+			} else {
+				fprintf(stderr, "error: unknown control `%s'\n", sym);
+			}
+			return;
+		}
+	} else if (sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
+		ControlID* control = jalv_get_control_from_symbol(jalv, sym);
+		if (control) {
+			jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &value);
+			if (jalv->has_ui) {
+				jalv_write_control(jalv, jalv->plugin_to_ui, control->index, value);
+			}
+			//jalv_print_control(jalv, control, value);
+		} else {
+			fprintf(stderr, "error: unknown control `%s'\n", sym);
+		}
+	} else if (strcmp(cmd, "controls\n") == 0) {
+		jalv_print_controls(jalv, true, false);
+	} else if (strcmp(cmd, "monitors\n") == 0) {
+		jalv_print_controls(jalv, false, true);
 	} else if (sscanf(cmd, "preset %1023[-a-zA-Z0-9_:/.%%#]", sym) == 1) {
 		LilvNode* preset = lilv_new_uri(jalv->world, sym);
 		lilv_world_load_resource(jalv->world, preset);
@@ -1652,41 +1716,22 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		// Rebuild preset menu and update window title
 		update_ui_presets(jalv);
 		update_ui_title(jalv);
-	} else if (strcmp(cmd, "controls\n") == 0) {
-		jalv_print_controls(jalv, true, false);
-	} else if (strcmp(cmd, "monitors\n") == 0) {
-		jalv_print_controls(jalv, false, true);
-	} else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
-		if (index < jalv->controls.n_controls) {
-		  //jalv->ports[index].control = value;
-		  ControlID* control = jalv->controls.controls[index];
-		  jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &value);
-		  if (jalv->has_ui) {
-		  	jalv_write_control(jalv, jalv->plugin_to_ui, control->index, value);
-		  }
-		  //jalv_print_control(jalv, control, value);
-		} else {
-		  fprintf(stderr, "error: port index out of range\n");
-		}
-	} else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2 ||
-			   sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
-		ControlID* control = NULL;
-		for (uint32_t i = 0; i < jalv->controls.n_controls; ++i) {
-		  const LilvNode* s = jalv->controls.controls[i]->symbol;
-		  if (!strcmp(lilv_node_as_string(s), sym)) {
-			control = jalv->controls.controls[i];
-			break;
-		  }
-		}
-		if (control) {
-		  jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &value);
-		  if (jalv->has_ui) {
-		  	jalv_write_control(jalv, jalv->plugin_to_ui, control->index, value);
-		  }
-		  //jalv_print_control(jalv, control, value);
-		} else {
-		  fprintf(stderr, "error: no control named `%s'\n", sym);
-		}
+	} else if (strcmp(cmd, "presets\n") == 0) {
+		jalv_unload_presets(jalv);
+		jalv_load_presets(jalv, jalv_print_preset, NULL);
+	} else if (strcmp(cmd, "help\n") == 0) {
+		fprintf(stdout,
+		        "Commands:\n"
+		        "  help              Display this help message\n"
+		        "  controls          Print settable control values\n"
+		        "  monitors          Print output control values\n"
+		        "  presets           Print available presets\n"
+		        "  preset URI        Set preset\n"
+		        "  save preset [BANK_URI,] LABEL\n"
+		        "                    Save preset (BANK_URI is optional)\n"
+		        "  set INDEX VALUE   Set control value by port index\n"
+		        "  set SYMBOL VALUE  Set control value by symbol\n"
+		        "  SYMBOL = VALUE    Set control value by symbol\n");
 	} else if (strcmp(cmd, "\n") == 0) {
 		// Prompt again if just pressed enter
 	} else {

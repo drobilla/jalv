@@ -58,6 +58,15 @@ jalv_print_control(Jalv* const jalv,
 }
 
 void
+jalv_print_control_path(Jalv* const jalv,
+                   const ControlID* control,
+                   const char* value)
+{
+  fprintf(stdout, "%s %d#%s=%s\n", CTR_PREFIX, control->control_index, lilv_node_as_string(control->symbol), value);
+  fflush(stdout);
+}
+
+void
 jalv_print_controls(Jalv* const jalv, bool writable, bool readable)
 {
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {

@@ -51,6 +51,9 @@ void
 jalv_print_control(Jalv* const jalv, const ControlID* control, const float value);
 
 void
+jalv_print_control_path(Jalv* const jalv, const ControlID* control, const char* value);
+
+void
 jalv_print_controls(Jalv* const jalv, bool writable, bool readable);
 
 void
