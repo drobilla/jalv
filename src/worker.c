@@ -153,7 +153,7 @@ jalv_worker_launch(JalvWorker* const worker)
 
     worker->state = STATE_LAUNCHED;
   }
-  return ZIX_STATUS_SUCCESS;
+  return st;
 }
 
 void
