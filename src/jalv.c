@@ -1689,7 +1689,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 			}
 			return;
 		}
-	} else if ((matches = sscanf(cmd, "%1023[a-zA-Z0-9_] = %n%f", sym, &n, &value)) > 0) {
+	} else if ((matches = sscanf(cmd, "%1023[a-zA-Z0-9_] = %n%f", sym, &n, &value)) > 0 && n > 3) {
 		ControlID* control = jalv_get_control_from_symbol(jalv, sym);
 		if (control) {
 			if (matches == 2) {
