@@ -1689,7 +1689,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 			}
 			return;
 		}
-	} else if ((matches = sscanf(cmd, "%1023[a-zA-Z0-9_] = %n%f", sym, &n, &value)) > 0 && n > 3) {
+	} else if ((matches = sscanf(cmd, "%1023[a-zA-Z0-9_]=%n%f", sym, &n, &value)) > 0 && n > 1) {
 		ControlID* control = jalv_get_control_from_symbol(jalv, sym);
 		if (control) {
 			if (matches == 2) {
@@ -1700,7 +1700,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 				//jalv_print_control(jalv, control, value);
 			} else if (matches == 1) {
 				if (control->value_type == jalv->forge.Path) {
-					char *strarg = (char *)cmd + 4 + n;
+					char *strarg = (char *)cmd + n;
 					strarg[strlen(strarg)-1] = 0;
 					jalv_set_control(jalv, control, strlen(strarg) + 1, jalv->forge.Path, strarg);
 				} else {
