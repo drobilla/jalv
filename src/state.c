@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char*
+ZIX_MALLOC_FUNC char*
 jalv_make_path(LV2_State_Make_Path_Handle handle, const char* path)
 {
   Jalv* jalv = (Jalv*)handle;
