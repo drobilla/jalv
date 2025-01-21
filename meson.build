@@ -223,6 +223,7 @@ zix_dep = dependency(
     'tests_cpp=disabled',
   ],
   fallback: ['zix', 'zix_dep'],
+  include_type: 'system',
   version: '>= 0.4.0',
 )
 
@@ -234,6 +235,7 @@ serd_dep = dependency(
     'tools=disabled',
   ],
   fallback: ['serd', 'serd_dep'],
+  include_type: 'system',
   version: '>= 0.32.2',
 )
 
@@ -245,6 +247,7 @@ sord_dep = dependency(
     'tools=disabled',
   ],
   fallback: ['sord', 'sord_dep'],
+  include_type: 'system',
   version: '>= 0.16.16',
 )
 
@@ -257,6 +260,7 @@ lv2_dep = dependency(
     'tests=disabled',
   ],
   fallback: ['lv2', 'lv2_dep'],
+  include_type: 'system',
   version: '>= 1.18.0',
 )
 
@@ -267,6 +271,7 @@ sratom_dep = dependency(
     'tests=disabled',
   ],
   fallback: ['sratom', 'sratom_dep'],
+  include_type: 'system',
   version: '>= 0.6.4',
 )
 
@@ -279,6 +284,7 @@ lilv_dep = dependency(
     'tools=disabled',
   ],
   fallback: ['lilv', 'lilv_dep'],
+  include_type: 'system',
   version: '>= 0.24.24',
 )
 
@@ -289,6 +295,7 @@ suil_dep = dependency(
     'tests=disabled',
   ],
   fallback: ['suil', 'suil_dep'],
+  include_type: 'system',
   required: get_option('suil'),
   version: '>= 0.10.0',
 )
