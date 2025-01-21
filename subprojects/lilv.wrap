@@ -1,8 +1,14 @@
-# Copyright 2022 David Robillard <d@drobilla.net>
+# Copyright 2022-2025 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
-[wrap-git]
-url = https://gitlab.com/lv2/lilv.git
-push-url = ssh://git@gitlab.com:lv2/lilv.git
-revision = master
-depth = 1
+[wrap-file]
+directory = lilv-0.24.26
+source_url = https://download.drobilla.net/lilv-0.24.26.tar.xz
+source_filename = lilv-0.24.26.tar.xz
+source_hash = 22feed30bc0f952384a25c2f6f4b04e6d43836408798ed65a8a934c055d5d8ac
+
+# [wrap-git]
+# url = https://gitlab.com/lv2/lilv.git
+# push-url = ssh://git@gitlab.com:lv2/lilv.git
+# revision = v0.24.26
+# depth = 1

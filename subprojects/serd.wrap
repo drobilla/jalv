@@ -1,8 +1,14 @@
-# Copyright 2022 David Robillard <d@drobilla.net>
+# Copyright 2022-2025 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
+
+# [wrap-file]
+# directory = serd-0.32.4
+# source_url = https://download.drobilla.net/serd-0.32.4.tar.xz
+# source_filename = serd-0.32.4.tar.xz
+# source_hash = cbefb569e8db686be8c69cb3866a9538c7cb055e8f24217dd6a4471effa7d349
 
 [wrap-git]
 url = https://gitlab.com/drobilla/serd.git
 push-url = ssh://git@gitlab.com:drobilla/serd.git
-revision = master
+revision = main
 depth = 1

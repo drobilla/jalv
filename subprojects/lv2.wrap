@@ -4,5 +4,5 @@
 [wrap-git]
 url = https://gitlab.com/lv2/lv2.git
 push-url = ssh://git@gitlab.com:lv2/lv2.git
-revision = master
+revision = main
 depth = 1
