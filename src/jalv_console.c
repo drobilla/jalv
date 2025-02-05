@@ -235,8 +235,11 @@ jalv_frontend_select_plugin(Jalv* jalv)
 int
 jalv_frontend_open(Jalv* jalv)
 {
-  if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
+  if (!jalv->opts.non_interactive) {
     init_cli_thread(jalv);
+  }
+
+  if (!jalv_run_custom_ui(jalv)) {
     while (zix_sem_try_wait(&jalv->done)) {
       jalv_update(jalv);
       usleep(30000);
