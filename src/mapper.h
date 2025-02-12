@@ -27,7 +27,7 @@ jalv_mapper_free(JalvMapper* mapper);
 LV2_URID_Map*
 jalv_mapper_urid_map(JalvMapper* mapper);
 
-/// Return a poitner to the mapper's LV2 URID unmap
+/// Return a pointer to the mapper's LV2 URID unmap
 LV2_URID_Unmap*
 jalv_mapper_urid_unmap(JalvMapper* mapper);
 

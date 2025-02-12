@@ -32,7 +32,7 @@ typedef struct {
   LV2_Evbuf* evbuf;           ///< Sequence port event buffer
   uint32_t   buf_size;        ///< Custom buffer size, or 0
   bool       reports_latency; ///< Whether control port reports latency
-  bool       is_primary;      ///< True for main control/reponse channel
+  bool       is_primary;      ///< True for main control/response channel
   bool       supports_midi;   ///< Whether event port supports MIDI
 } JalvProcessPort;
 
