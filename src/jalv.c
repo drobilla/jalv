@@ -1715,6 +1715,9 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		jalv_print_controls(jalv, true, false);
 	} else if (strcmp(cmd, "monitors\n") == 0) {
 		jalv_print_controls(jalv, false, true);
+	} else if (strcmp(cmd, "presets\n") == 0) {
+		jalv_unload_presets(jalv);
+		jalv_load_presets(jalv, jalv_print_preset, NULL);
 	} else if (sscanf(cmd, "preset %1023[-a-zA-Z0-9_:/.%%#]", sym) == 1) {
 		LilvNode* preset = lilv_new_uri(jalv->world, sym);
 		lilv_world_load_resource(jalv->world, preset);
@@ -1727,9 +1730,6 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		// Rebuild preset menu and update window title
 		update_ui_presets(jalv);
 		update_ui_title(jalv);
-	} else if (strcmp(cmd, "presets\n") == 0) {
-		jalv_unload_presets(jalv);
-		jalv_load_presets(jalv, jalv_print_preset, NULL);
 	} else if (strcmp(cmd, "help\n") == 0) {
 		fprintf(stdout,
 		        "Commands:\n"
