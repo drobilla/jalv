@@ -72,15 +72,17 @@ jalv_print_controls(Jalv* const jalv, bool writable, bool readable)
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
     ControlID* const control = jalv->controls.controls[i];
     char *prefix;
-	if (control->is_writable && writable) {
-	  prefix = CTR_PREFIX;
-	} else if (control->is_readable && readable) {
-	  prefix = MON_PREFIX;
-	} else continue;
+  	if (control->is_writable && writable) {
+	    prefix = CTR_PREFIX;
+    } else if (control->is_readable && readable) {
+      prefix = MON_PREFIX;
+    } else continue;
     fprintf(stdout, "%s %d#%s=%f\n", prefix, control->control_index,
-            lilv_node_as_string(control->symbol),
-		    jalv_get_control(jalv, control));
+        lilv_node_as_string(control->symbol),
+        jalv_get_control(jalv, control));
   }
+  if (writable)
+    fprintf(stdout, "bypass=%d\n", jalv->bypass);
   fflush(stdout);
 }
 

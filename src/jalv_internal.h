@@ -116,6 +116,7 @@ struct JalvImpl {
   bool                has_ui;          ///< True iff a control UI is present
   bool                request_update;  ///< True iff a plugin update is needed
   bool                safe_restore;    ///< Plugin restore() is thread-safe
+  bool                bypass;          ///< True to bypass audio
   JalvFeatures        features;
   const LV2_Feature** feature_list;
 };

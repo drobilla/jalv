@@ -219,9 +219,17 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
     struct Port* port = &jalv->ports[p];
     if (port->type == TYPE_AUDIO && port->sys_port) {
-      // Connect plugin port directly to Jack port buffer
-      lilv_instance_connect_port(
-        jalv->instance, p, jack_port_get_buffer(port->sys_port, nframes));
+      void* buf = jack_port_get_buffer(port->sys_port, nframes);
+      if (jalv->bypass) {
+        if (port->bypass_port) {
+          void* src_buf = jack_port_get_buffer(port->bypass_port, nframes);
+          memcpy(buf, src_buf, nframes * sizeof(jack_nframes_t));
+        }
+      } else {
+        // Connect plugin port directly to Jack port buffer
+        lilv_instance_connect_port(
+            jalv->instance, p, buf);
+      }
 #if USE_JACK_METADATA
     } else if (port->type == TYPE_CV && port->sys_port) {
       // Connect plugin port directly to Jack port buffer
@@ -271,7 +279,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   jalv->request_update = false;
 
   // Run plugin for this cycle
-  const bool send_ui_updates = jalv_run(jalv, nframes);
+  bool send_ui_updates = false;
+  if (!jalv->bypass)
+    send_ui_updates = jalv_run(jalv, nframes);
 
   // Deliver MIDI output and UI events
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {

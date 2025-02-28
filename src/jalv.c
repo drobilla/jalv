@@ -218,6 +218,7 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
 
   port->lilv_port = lilv_plugin_get_port_by_index(jalv->plugin, port_index);
   port->sys_port  = NULL;
+  port->bypass_port = NULL;
   port->evbuf     = NULL;
   port->buf_size  = 0;
   port->index     = port_index;
@@ -1476,6 +1477,34 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv_backend_activate_port(jalv, i);
   }
 
+  // Pair input and output ports for bypass
+  uint32_t input_i = 0;
+  struct Port* input_port = NULL;
+  for (uint32_t output_i = 0; output_i < jalv->num_ports; ++output_i) {
+    // Iterate through audio output ports
+    struct Port* output_port = &jalv->ports[output_i];
+    if (output_port->type == TYPE_AUDIO && output_port->flow == FLOW_OUTPUT && output_port->sys_port
+          && strstr(lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, output_port->lilv_port)), "out")) {
+      for (; input_i < jalv->num_ports; ++input_i) {
+        // Iterate through audio input ports
+        struct Port* port = &jalv->ports[input_i];
+        if (port->type == TYPE_AUDIO && port->flow == FLOW_INPUT && port->sys_port
+          && strstr(lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, port->lilv_port)), "in")
+          && !strstr(lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, port->lilv_port)), "chain")) {
+            input_port = port;
+            input_i++;
+            break;
+        }
+      }
+      output_port->bypass_port = input_port->sys_port;
+      /*
+      printf("Adding bypass port %s to %s\n",
+          lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, input_port->lilv_port)),
+          lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, output_port->lilv_port)));
+      */
+    }
+  }
+
   // Check if plugin has a designated BPM port
   jalv->bpm_port_index = -1;
   const LilvPort *bpm_port = lilv_plugin_get_port_by_designation(jalv->plugin, jalv->nodes.lv2_InputPort, jalv->nodes.time_beatsPerMinute);
@@ -1675,15 +1704,19 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 						jalv_write_control(jalv, jalv->plugin_to_ui, control->index, value);
 			  		}
 			  		//jalv_print_control(jalv, control, value);
-			  	} else if (matches == 1) {
-					if (control->value_type == jalv->forge.Path) {
-						char *strarg = (char *)cmd + 4 + n;
-						strarg[strlen(strarg)-1] = 0;
-						jalv_set_control(jalv, control, strlen(strarg) + 1, jalv->forge.Path, strarg);
-    				} else {
-    					fprintf(stderr, "error: wrong value type for control `%s'\n", sym);
-    				}
-			  	}
+        } else if (matches == 1) {
+          if (control->value_type == jalv->forge.Path) {
+            char *strarg = (char *)cmd + 4 + n;
+            strarg[strlen(strarg)-1] = 0;
+            jalv_set_control(jalv, control, strlen(strarg) + 1, jalv->forge.Path, strarg);
+          } else {
+            fprintf(stderr, "error: wrong value type for control `%s'\n", sym);
+          }
+        }
+      } else if (strcmp(sym, "bypass") == 0) {
+        if (matches == 2) {
+          jalv->bypass = value;
+        }
 			} else {
 				fprintf(stderr, "error: unknown control `%s'\n", sym);
 			}
@@ -1707,7 +1740,11 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 					fprintf(stderr, "error: wrong value type for control `%s'\n", sym);
 				}
 			}
-		} else {
+    } else if (strcmp(sym, "bypass") == 0) {
+      if (matches == 2) {
+        jalv->bypass = value;
+      }
+    } else {
 			fprintf(stderr, "error: unknown control `%s'\n", sym);
 		}
 		return;
@@ -1730,6 +1767,9 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		// Rebuild preset menu and update window title
 		update_ui_presets(jalv);
 		update_ui_title(jalv);
+  } else if (strncmp(cmd, "bypass ", 7) == 0) {
+  		matches = sscanf(cmd + 7,"%n%f", &index, &value);
+      jalv->bypass = value > 0;
 	} else if (strcmp(cmd, "help\n") == 0) {
 		fprintf(stdout,
 		        "Commands:\n"
