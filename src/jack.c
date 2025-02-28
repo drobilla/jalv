@@ -219,17 +219,9 @@ jack_process_cb(jack_nframes_t nframes, void* data)
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {
     struct Port* port = &jalv->ports[p];
     if (port->type == TYPE_AUDIO && port->sys_port) {
-      void* buf = jack_port_get_buffer(port->sys_port, nframes);
-      if (jalv->bypass) {
-        if (port->bypass_port) {
-          void* src_buf = jack_port_get_buffer(port->bypass_port, nframes);
-          memcpy(buf, src_buf, nframes * sizeof(jack_nframes_t));
-        }
-      } else {
-        // Connect plugin port directly to Jack port buffer
-        lilv_instance_connect_port(
-            jalv->instance, p, buf);
-      }
+      // Connect plugin port directly to Jack port buffer
+      lilv_instance_connect_port(
+            jalv->instance, p, jack_port_get_buffer(port->sys_port, nframes));
 #if USE_JACK_METADATA
     } else if (port->type == TYPE_CV && port->sys_port) {
       // Connect plugin port directly to Jack port buffer
@@ -280,8 +272,45 @@ jack_process_cb(jack_nframes_t nframes, void* data)
 
   // Run plugin for this cycle
   bool send_ui_updates = false;
-  if (!jalv->bypass)
+  if (jalv->bypass != 1)
     send_ui_updates = jalv_run(jalv, nframes);
+
+  // Do soft switch bypass
+  if (jalv->bypass) {
+    for (uint32_t p = 0; p < jalv->num_ports; ++p) {
+      struct Port* port = &jalv->ports[p];
+      if (port->bypass_port) {
+        jack_default_audio_sample_t* output_buf = jack_port_get_buffer(port->sys_port, nframes);
+        jack_default_audio_sample_t* input_buf = jack_port_get_buffer(port->bypass_port, nframes);
+        switch (jalv->bypass) {
+          case 1:
+            // Bypass mode - copy input to output
+            memcpy(output_buf, input_buf, nframes * sizeof(jack_default_audio_sample_t));
+            break;
+          case 2:
+            // Switching to bypass mode - crossfade from processed to input signal
+            for (uint32_t pos = 0; pos < nframes; ++pos) {
+              float scale = (float)pos / nframes;
+              output_buf[pos] *= (1.0 - scale);
+              output_buf[pos]  += scale * input_buf[pos];
+            }
+            break;
+          case 3:
+            // Switching to inline mode - crossfade from input to processed signal
+            for (uint32_t pos = 0; pos < nframes; ++ pos) {
+              float scale = (float)pos / nframes;
+              output_buf[pos] *= scale;
+              output_buf[pos]  += (1 - scale) * input_buf[pos];
+            }
+            break;
+        }
+      }
+    }
+    if (jalv->bypass == 2)
+      jalv->bypass = 1;
+    else if (jalv->bypass == 3)
+      jalv->bypass = 0;
+  }
 
   // Deliver MIDI output and UI events
   for (uint32_t p = 0; p < jalv->num_ports; ++p) {

@@ -1484,13 +1484,13 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     // Iterate through audio output ports
     struct Port* output_port = &jalv->ports[output_i];
     if (output_port->type == TYPE_AUDIO && output_port->flow == FLOW_OUTPUT && output_port->sys_port
-          && strstr(lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, output_port->lilv_port)), "out")) {
+          && strcasestr(lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, output_port->lilv_port)), "out")) {
       for (; input_i < jalv->num_ports; ++input_i) {
         // Iterate through audio input ports
         struct Port* port = &jalv->ports[input_i];
         if (port->type == TYPE_AUDIO && port->flow == FLOW_INPUT && port->sys_port
-          && strstr(lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, port->lilv_port)), "in")
-          && !strstr(lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, port->lilv_port)), "chain")) {
+          && strcasestr(lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, port->lilv_port)), "in")
+          && !strcasestr(lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, port->lilv_port)), "chain")) {
             input_port = port;
             input_i++;
             break;
@@ -1714,9 +1714,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
           }
         }
       } else if (strcmp(sym, "bypass") == 0) {
-        if (matches == 2) {
-          jalv->bypass = value;
-        }
+        if (matches == 2)
+          jalv->bypass = value ? 2 : 3;
 			} else {
 				fprintf(stderr, "error: unknown control `%s'\n", sym);
 			}
@@ -1741,9 +1740,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 				}
 			}
     } else if (strcmp(sym, "bypass") == 0) {
-      if (matches == 2) {
-        jalv->bypass = value;
-      }
+      if (matches == 2)
+        jalv->bypass = value ? 2 : 3;
     } else {
 			fprintf(stderr, "error: unknown control `%s'\n", sym);
 		}
@@ -1769,8 +1767,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		update_ui_title(jalv);
   } else if (strncmp(cmd, "bypass ", 7) == 0) {
   		matches = sscanf(cmd + 7,"%n%f", &index, &value);
-      jalv->bypass = value > 0;
-	} else if (strcmp(cmd, "help\n") == 0) {
+      jalv->bypass = value ? 2 : 3;
+    } else if (strcmp(cmd, "help\n") == 0) {
 		fprintf(stdout,
 		        "Commands:\n"
 		        "  help              Display this help message\n"

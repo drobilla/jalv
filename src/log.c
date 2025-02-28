@@ -82,7 +82,7 @@ jalv_print_controls(Jalv* const jalv, bool writable, bool readable)
         jalv_get_control(jalv, control));
   }
   if (writable)
-    fprintf(stdout, "bypass=%d\n", jalv->bypass);
+    fprintf(stdout, "bypass=%d\n", jalv->bypass ? 1:0);
   fflush(stdout);
 }
 
