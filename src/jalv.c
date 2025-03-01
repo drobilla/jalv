@@ -1483,6 +1483,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   for (uint32_t output_i = 0; output_i < jalv->num_ports; ++output_i) {
     // Iterate through audio output ports
     struct Port* output_port = &jalv->ports[output_i];
+    if (!output_port)
+      continue;
     if (output_port->type == TYPE_AUDIO && output_port->flow == FLOW_OUTPUT && output_port->sys_port
           && strcasestr(lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, output_port->lilv_port)), "out")) {
       for (; input_i < jalv->num_ports; ++input_i) {
@@ -1496,12 +1498,14 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
             break;
         }
       }
-      output_port->bypass_port = input_port->sys_port;
-      /*
-      printf("Adding bypass port %s to %s\n",
-          lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, input_port->lilv_port)),
-          lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, output_port->lilv_port)));
-      */
+      if (input_port) {
+        output_port->bypass_port = input_port->sys_port;
+        /*
+        printf("Adding bypass port %s to %s\n",
+            lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, input_port->lilv_port)),
+            lilv_node_as_string(lilv_port_get_symbol(jalv->plugin, output_port->lilv_port)));
+        */
+      }
     }
   }
 
