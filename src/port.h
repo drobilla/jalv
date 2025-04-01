@@ -5,12 +5,10 @@
 #define JALV_PORT_H
 
 #include "attributes.h"
-#include "lv2_evbuf.h"
 #include "types.h"
 
 #include <lilv/lilv.h>
 
-#include <stddef.h>
 #include <stdint.h>
 
 // Application port state

@@ -5,10 +5,12 @@
 #define JALV_JACK_IMPL_H
 
 #include "attributes.h"
+#include "process.h"
 #include "settings.h"
 #include "urids.h"
 
-#include <jack/jack.h>
+#include <jack/types.h>
+#include <zix/sem.h>
 
 #include <stdbool.h>
 

@@ -11,6 +11,7 @@
 #include <lilv/lilv.h>
 
 #include <stdbool.h>
+#include <stdint.h>
 
 // Interface that must be implemented by UIs
 JALV_BEGIN_DECLS

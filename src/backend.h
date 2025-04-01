@@ -10,6 +10,9 @@
 #include "types.h"
 #include "urids.h"
 
+#include <zix/attributes.h>
+#include <zix/sem.h>
+
 #include <stdbool.h>
 #include <stdint.h>
 
