@@ -158,6 +158,7 @@ if is_variable('cpp')
         '-Wno-c++98-compat-pedantic',
         '-Wno-cast-align', # MacOS
         '-Wno-cast-qual', # MacOS
+        '-Wno-ctad-maybe-unsupported', # Qt
         '-Wno-documentation-unknown-command', # MacOS
         '-Wno-double-promotion',
         '-Wno-float-conversion',
