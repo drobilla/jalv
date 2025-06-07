@@ -28,6 +28,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define MIN_MSG_SIZE 1024U
+
 int
 jalv_process_init(JalvProcess* const     proc,
                   const JalvURIDs* const urids,
@@ -45,7 +47,7 @@ jalv_process_init(JalvProcess* const     proc,
   proc->worker           = NULL;
   proc->state_worker     = NULL;
   proc->ports            = NULL;
-  proc->process_msg_size = 1024U;
+  proc->process_msg_size = 0U;
   proc->process_msg      = NULL;
   proc->run_state        = JALV_PAUSED;
   proc->control_in       = UINT32_MAX;
@@ -86,6 +88,7 @@ jalv_process_activate(JalvProcess* const        proc,
 {
   proc->instance = instance;
 
+  size_t max_msg_size = MIN_MSG_SIZE;
   for (uint32_t i = 0U; i < proc->num_ports; ++i) {
     JalvProcessPort* const port = &proc->ports[i];
     if (port->type == TYPE_EVENT) {
@@ -101,18 +104,25 @@ jalv_process_activate(JalvProcess* const        proc,
         proc->instance, i, lv2_evbuf_get_buffer(port->evbuf));
 
       if (port->flow == FLOW_INPUT) {
-        proc->process_msg_size = MAX(proc->process_msg_size, port->buf_size);
+        max_msg_size = MAX(max_msg_size, port->buf_size);
       }
     }
   }
 
-  // Allocate UI<=>process communication rings and process receive buffer
-  proc->ui_to_plugin = zix_ring_new(NULL, settings->ring_size);
-  proc->plugin_to_ui = zix_ring_new(NULL, settings->ring_size);
-  proc->process_msg  = zix_aligned_alloc(NULL, 8U, proc->process_msg_size);
-  zix_ring_mlock(proc->ui_to_plugin);
-  zix_ring_mlock(proc->plugin_to_ui);
-  zix_ring_mlock(proc->process_msg);
+  if (max_msg_size != proc->process_msg_size) {
+    // Allocate UI<=>process communication rings and receive buffer
+    zix_free(NULL, proc->process_msg);
+    zix_ring_free(proc->plugin_to_ui);
+    zix_ring_free(proc->ui_to_plugin);
+
+    proc->ui_to_plugin = zix_ring_new(NULL, settings->ring_size);
+    proc->plugin_to_ui = zix_ring_new(NULL, settings->ring_size);
+    proc->process_msg  = zix_aligned_alloc(NULL, 8U, proc->process_msg_size);
+    zix_ring_mlock(proc->ui_to_plugin);
+    zix_ring_mlock(proc->plugin_to_ui);
+  }
+
+  proc->process_msg_size = max_msg_size;
 }
 
 void
