@@ -45,12 +45,12 @@ struct PortContainer {
   JalvPort* port;
 };
 
-class Control final : public QGroupBox
+class Controller final : public QGroupBox
 {
   Q_OBJECT // NOLINT
 
 public:
-  explicit Control(PortContainer portContainer, QWidget* parent);
+  explicit Controller(PortContainer portContainer, QWidget* parent);
 
   Q_SLOT void dialChanged(int value);
 

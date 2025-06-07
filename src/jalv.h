@@ -95,11 +95,11 @@ jalv_port_by_symbol(Jalv* jalv, const char* sym);
 
 /// Set a control to the given value
 void
-jalv_set_control(Jalv*            jalv,
-                 const ControlID* control,
-                 uint32_t         size,
-                 LV2_URID         type,
-                 const void*      body);
+jalv_set_control(Jalv*          jalv,
+                 const Control* control,
+                 uint32_t       size,
+                 LV2_URID       type,
+                 const void*    body);
 
 /// Request and/or set initial control values to initialize the UI
 void

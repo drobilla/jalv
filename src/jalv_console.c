@@ -195,7 +195,7 @@ static void
 print_controls(const Jalv* const jalv, const bool writable, const bool readable)
 {
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
-    ControlID* const control = jalv->controls.controls[i];
+    Control* const control = jalv->controls.controls[i];
     if (control->type == PORT && ((control->is_writable && writable) ||
                                   (control->is_readable && readable))) {
       jalv_log(JALV_LOG_INFO,
@@ -341,7 +341,7 @@ jalv_frontend_open(Jalv* jalv)
 {
   // Print initial control values
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
-    ControlID* control = jalv->controls.controls[i];
+    Control* control = jalv->controls.controls[i];
     if (control->type == PORT && control->is_writable) {
       const JalvPort* const port = &jalv->ports[control->id.index];
       print_control_port(

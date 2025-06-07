@@ -305,7 +305,7 @@ add_preset_to_menu(Jalv*           jalv,
 
 } // namespace
 
-Control::Control(PortContainer portContainer, QWidget* parent)
+Controller::Controller(PortContainer portContainer, QWidget* parent)
   : QGroupBox(parent)
   , _dial(new QDial())
   , _jalv(portContainer.jalv)
@@ -411,7 +411,7 @@ Control::Control(PortContainer portContainer, QWidget* parent)
 }
 
 void
-Control::setValue(float value)
+Controller::setValue(float value)
 {
   float step = 0.0f;
 
@@ -431,7 +431,7 @@ Control::setValue(float value)
 }
 
 QString
-Control::getValueLabel(float value)
+Controller::getValueLabel(float value)
 {
   if (_scaleMap[value]) {
     if (stringWidth(_scaleMap[value]) > CONTROL_WIDTH) {
@@ -446,7 +446,7 @@ Control::getValueLabel(float value)
 }
 
 void
-Control::setRange(float minRange, float maxRange)
+Controller::setRange(float minRange, float maxRange)
 {
   _min = minRange;
   _max = maxRange;
@@ -466,7 +466,7 @@ Control::setRange(float minRange, float maxRange)
 }
 
 float
-Control::getValue()
+Controller::getValue()
 {
   if (_isEnum) {
     return _scalePoints[_dial->value()];
@@ -485,7 +485,7 @@ Control::getValue()
 }
 
 int
-Control::stringWidth(const QString& str)
+Controller::stringWidth(const QString& str)
 {
 #if QT_VERSION >= 0x050B00
   return fontMetrics().horizontalAdvance(str);
@@ -495,7 +495,7 @@ Control::stringWidth(const QString& str)
 }
 
 void
-Control::dialChanged(int)
+Controller::dialChanged(int)
 {
   const float value = getValue();
 
@@ -557,7 +557,7 @@ build_control_widget(Jalv* jalv)
     const PortContainer   portContainer = portContainers[i];
     const JalvPort* const port          = portContainer.port;
 
-    auto* const control = new Control(portContainer, nullptr);
+    auto* const control = new Controller(portContainer, nullptr);
     LilvNode*   group =
       lilv_port_get(plugin, port->lilv_port, jalv->nodes.pg_group);
     if (group) {
@@ -629,7 +629,8 @@ jalv_frontend_port_event(Jalv*       jalv,
     suil_instance_port_event(
       jalv->ui_instance, port_index, buffer_size, protocol, buffer);
   } else {
-    auto* const control = static_cast<Control*>(jalv->ports[port_index].widget);
+    auto* const control =
+      static_cast<Controller*>(jalv->ports[port_index].widget);
     if (control) {
       control->setValue(*static_cast<const float*>(buffer));
     }

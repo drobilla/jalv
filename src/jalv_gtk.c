@@ -36,7 +36,7 @@
 #include <string.h>
 
 /* TODO: Gtk only provides one pointer for value changed callbacks, which we
-   use for the ControlID.  So, there is no easy way to pass both a ControlID
+   use for the Control.  So, there is no easy way to pass both a Control
    and Jalv which is needed to actually do anything with a control.  Work
    around this by statically storing the Jalv instance.  Since this UI isn't a
    module, this isn't the end of the world, but a global "god pointer" is a
@@ -559,10 +559,10 @@ on_delete_preset_activate(GtkWidget* widget, void* ptr)
 }
 
 static void
-set_control(const ControlID* control,
-            uint32_t         size,
-            LV2_URID         type,
-            const void*      body)
+set_control(const Control* control,
+            uint32_t       size,
+            LV2_URID       type,
+            const void*    body)
 {
   if (!updating) {
     jalv_set_control(s_jalv, control, size, type, body);
@@ -576,7 +576,7 @@ differ_enough(float a, float b)
 }
 
 static void
-set_float_control(const ControlID* control, float value)
+set_float_control(const Control* control, float value)
 {
   const LV2_Atom_Forge* const forge = &s_jalv->forge;
   if (control->value_type == forge->Int) {
@@ -726,8 +726,8 @@ on_request_value(LV2UI_Feature_Handle      handle,
                  const LV2_URID            ZIX_UNUSED(type),
                  const LV2_Feature* const* ZIX_UNUSED(features))
 {
-  Jalv* const      jalv    = (Jalv*)handle;
-  const ControlID* control = get_property_control(&jalv->controls, key);
+  Jalv* const    jalv    = (Jalv*)handle;
+  const Control* control = get_property_control(&jalv->controls, key);
 
   if (!control) {
     return LV2UI_REQUEST_VALUE_ERR_UNKNOWN;
@@ -762,7 +762,7 @@ on_request_value(LV2UI_Feature_Handle      handle,
 static void
 property_changed(Jalv* jalv, LV2_URID key, const LV2_Atom* value)
 {
-  ControlID* control = get_property_control(&jalv->controls, key);
+  Control* control = get_property_control(&jalv->controls, key);
   if (control) {
     control_changed(
       jalv, (Controller*)control->widget, value->size, value->type, value + 1);
@@ -823,17 +823,17 @@ jalv_frontend_port_event(Jalv*       jalv,
 static gboolean
 scale_changed(GtkRange* range, gpointer data)
 {
-  set_float_control((const ControlID*)data, gtk_range_get_value(range));
+  set_float_control((const Control*)data, gtk_range_get_value(range));
   return FALSE;
 }
 
 static gboolean
 spin_changed(GtkSpinButton* spin, gpointer data)
 {
-  const ControlID* control    = (const ControlID*)data;
-  Controller*      controller = (Controller*)control->widget;
-  GtkRange*        range      = GTK_RANGE(controller->control);
-  const double     value      = gtk_spin_button_get_value(spin);
+  const Control* control    = (const Control*)data;
+  Controller*    controller = (Controller*)control->widget;
+  GtkRange*      range      = GTK_RANGE(controller->control);
+  const double   value      = gtk_spin_button_get_value(spin);
   if (differ_enough(gtk_range_get_value(range), value)) {
     gtk_range_set_value(range, value);
   }
@@ -843,17 +843,17 @@ spin_changed(GtkSpinButton* spin, gpointer data)
 static gboolean
 log_scale_changed(GtkRange* range, gpointer data)
 {
-  set_float_control((const ControlID*)data, expf(gtk_range_get_value(range)));
+  set_float_control((const Control*)data, expf(gtk_range_get_value(range)));
   return FALSE;
 }
 
 static gboolean
 log_spin_changed(GtkSpinButton* spin, gpointer data)
 {
-  const ControlID* control    = (const ControlID*)data;
-  Controller*      controller = (Controller*)control->widget;
-  GtkRange*        range      = GTK_RANGE(controller->control);
-  const double     value      = gtk_spin_button_get_value(spin);
+  const Control* control    = (const Control*)data;
+  Controller*    controller = (Controller*)control->widget;
+  GtkRange*      range      = GTK_RANGE(controller->control);
+  const double   value      = gtk_spin_button_get_value(spin);
   if (differ_enough(gtk_range_get_value(range), logf(value))) {
     gtk_range_set_value(range, logf(value));
   }
@@ -863,7 +863,7 @@ log_spin_changed(GtkSpinButton* spin, gpointer data)
 static void
 combo_changed(GtkComboBox* box, gpointer data)
 {
-  const ControlID* control = (const ControlID*)data;
+  const Control* control = (const Control*)data;
 
   GtkTreeIter iter;
   if (gtk_combo_box_get_active_iter(box, &iter)) {
@@ -884,15 +884,15 @@ switch_changed(GtkSwitch* toggle_switch, gboolean state, gpointer data)
   (void)toggle_switch;
   (void)data;
 
-  set_float_control((const ControlID*)data, state ? 1.0f : 0.0f);
+  set_float_control((const Control*)data, state ? 1.0f : 0.0f);
   return FALSE;
 }
 
 static void
 string_changed(GtkEntry* widget, gpointer data)
 {
-  const ControlID* control = (const ControlID*)data;
-  const char*      string  = gtk_entry_get_text(widget);
+  const Control* control = (const Control*)data;
+  const char*    string  = gtk_entry_get_text(widget);
 
   set_control(control, strlen(string) + 1, s_jalv->forge.String, string);
 }
@@ -900,8 +900,8 @@ string_changed(GtkEntry* widget, gpointer data)
 static void
 file_changed(GtkFileChooserButton* widget, gpointer data)
 {
-  const ControlID* control = (const ControlID*)data;
-  const char*      filename =
+  const Control* control = (const Control*)data;
+  const char*    filename =
     gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
 
   set_control(control, strlen(filename) + 1, s_jalv->forge.Path, filename);
@@ -917,7 +917,7 @@ new_controller(GtkSpinButton* spin, GtkWidget* control)
 }
 
 static Controller*
-make_combo(ControlID* record, float value)
+make_combo(Control* record, float value)
 {
   GtkListStore* list_store = gtk_list_store_new(2, G_TYPE_FLOAT, G_TYPE_STRING);
   int           active     = -1;
@@ -952,7 +952,7 @@ make_combo(ControlID* record, float value)
 }
 
 static Controller*
-make_log_slider(ControlID* record, float value)
+make_log_slider(Control* record, float value)
 {
   const float min  = record->min;
   const float max  = record->max;
@@ -983,7 +983,7 @@ make_log_slider(ControlID* record, float value)
 }
 
 static Controller*
-make_slider(ControlID* record, float value)
+make_slider(Control* record, float value)
 {
   const float  min  = record->min;
   const float  max  = record->max;
@@ -1029,7 +1029,7 @@ make_slider(ControlID* record, float value)
 }
 
 static Controller*
-make_toggle_switch(ControlID* record, float value)
+make_toggle_switch(Control* record, float value)
 {
   GtkWidget* toggle_switch = gtk_switch_new();
   gtk_widget_set_halign(toggle_switch, GTK_ALIGN_START);
@@ -1050,7 +1050,7 @@ make_toggle_switch(ControlID* record, float value)
 }
 
 static Controller*
-make_entry(ControlID* control)
+make_entry(Control* control)
 {
   GtkWidget* entry = gtk_entry_new();
 
@@ -1064,7 +1064,7 @@ make_entry(ControlID* control)
 }
 
 static Controller*
-make_file_chooser(ControlID* record)
+make_file_chooser(Control* record)
 {
   GtkWidget* button =
     gtk_file_chooser_button_new("Open File", GTK_FILE_CHOOSER_ACTION_OPEN);
@@ -1080,7 +1080,7 @@ make_file_chooser(ControlID* record)
 }
 
 static Controller*
-make_controller(ControlID* control, float value)
+make_controller(Control* control, float value)
 {
   Controller* controller = NULL;
 
@@ -1135,8 +1135,8 @@ add_control_row(GtkWidget*  grid,
 static int
 control_group_cmp(const void* p1, const void* p2, void* ZIX_UNUSED(data))
 {
-  const ControlID* control1 = *(const ControlID* const*)p1;
-  const ControlID* control2 = *(const ControlID* const*)p2;
+  const Control* control1 = *(const Control* const*)p1;
+  const Control* control2 = *(const Control* const*)p2;
 
   const int cmp = (control1->group && control2->group)
                     ? strcmp(lilv_node_as_string(control1->group),
@@ -1153,7 +1153,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
   gtk_grid_set_row_spacing(GTK_GRID(port_grid), 4);
 
   // Make an array of controls sorted by group
-  GArray* controls = g_array_new(FALSE, TRUE, sizeof(ControlID*));
+  GArray* controls = g_array_new(FALSE, TRUE, sizeof(Control*));
   for (unsigned i = 0; i < jalv->controls.n_controls; ++i) {
     g_array_append_vals(controls, &jalv->controls.controls[i], 1);
   }
@@ -1163,7 +1163,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
   const LilvNode* last_group = NULL;
   int             n_rows     = 0;
   for (size_t i = 0; i < controls->len; ++i) {
-    ControlID*  record     = g_array_index(controls, ControlID*, i);
+    Control*    record     = g_array_index(controls, Control*, i);
     Controller* controller = NULL;
     LilvNode*   group      = record->group;
 

@@ -54,16 +54,16 @@ typedef struct {
   bool        is_logarithmic; ///< Logarithmic scale
   bool        is_writable;    ///< Writable (input)
   bool        is_readable;    ///< Readable (output)
-} ControlID;
+} Control;
 
 /// Set of plugin controls
 typedef struct {
-  size_t      n_controls;
-  ControlID** controls;
+  size_t    n_controls;
+  Control** controls;
 } Controls;
 
 /// Create a new ID for a control port
-ControlID*
+Control*
 new_port_control(const LilvPlugin*     plugin,
                  const LilvPort*       port,
                  uint32_t              port_index,
@@ -72,7 +72,7 @@ new_port_control(const LilvPlugin*     plugin,
                  const LV2_Atom_Forge* forge);
 
 /// Create a new ID for a property-based parameter
-ControlID*
+Control*
 new_property_control(LilvWorld*            world,
                      const LilvNode*       property,
                      const JalvNodes*      nodes,
@@ -81,14 +81,14 @@ new_property_control(LilvWorld*            world,
 
 /// Free a control allocated with new_port_control() or new_property_control()
 void
-free_control(ControlID* control);
+free_control(Control* control);
 
 /// Add a control to the given controls set, reallocating as necessary
 void
-add_control(Controls* controls, ControlID* control);
+add_control(Controls* controls, Control* control);
 
 /// Return a pointer to the control for the given property, or null
-ControlID*
+Control*
 get_property_control(const Controls* controls, LV2_URID property);
 
 JALV_END_DECLS

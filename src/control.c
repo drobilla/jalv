@@ -31,7 +31,7 @@ scale_point_cmp(const ScalePoint* a, const ScalePoint* b)
   return 1;
 }
 
-ControlID*
+Control*
 new_port_control(const LilvPlugin* const     plugin,
                  const LilvPort* const       port,
                  uint32_t                    port_index,
@@ -39,7 +39,7 @@ new_port_control(const LilvPlugin* const     plugin,
                  const JalvNodes* const      nodes,
                  const LV2_Atom_Forge* const forge)
 {
-  ControlID* id = (ControlID*)calloc(1, sizeof(ControlID));
+  Control* const id = (Control*)calloc(1, sizeof(Control));
 
   id->type        = PORT;
   id->id.index    = port_index;
@@ -136,14 +136,15 @@ get_float(LilvWorld* const      world,
   return value;
 }
 
-ControlID*
+Control*
 new_property_control(LilvWorld* const            world,
                      const LilvNode*             property,
                      const JalvNodes* const      nodes,
                      LV2_URID_Map* const         map,
                      const LV2_Atom_Forge* const forge)
 {
-  ControlID* id   = (ControlID*)calloc(1, sizeof(ControlID));
+  Control* const id = (Control*)calloc(1, sizeof(Control));
+
   id->type        = PROPERTY;
   id->id.property = map->map(map->handle, lilv_node_as_uri(property));
   id->node        = lilv_node_duplicate(property);
@@ -183,7 +184,7 @@ new_property_control(LilvWorld* const            world,
 }
 
 void
-free_control(ControlID* const control)
+free_control(Control* const control)
 {
   lilv_node_free(control->node);
   lilv_node_free(control->symbol);
@@ -193,10 +194,10 @@ free_control(ControlID* const control)
 }
 
 void
-add_control(Controls* controls, ControlID* control)
+add_control(Controls* controls, Control* control)
 {
-  ControlID** const new_controls = (ControlID**)realloc(
-    controls->controls, (controls->n_controls + 1) * sizeof(ControlID*));
+  Control** const new_controls = (Control**)realloc(
+    controls->controls, (controls->n_controls + 1) * sizeof(Control*));
 
   if (new_controls) {
     controls->controls                         = new_controls;
@@ -204,7 +205,7 @@ add_control(Controls* controls, ControlID* control)
   }
 }
 
-ControlID*
+Control*
 get_property_control(const Controls* controls, LV2_URID property)
 {
   for (size_t i = 0; i < controls->n_controls; ++i) {

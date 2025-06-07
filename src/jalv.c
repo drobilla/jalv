@@ -198,7 +198,7 @@ jalv_port_by_symbol(Jalv* jalv, const char* sym)
   return NULL;
 }
 
-static ControlID*
+static Control*
 jalv_control_by_symbol(Jalv* jalv, const char* sym)
 {
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
@@ -224,7 +224,7 @@ jalv_create_controls(Jalv* jalv, bool writable)
                           NULL);
   LILV_FOREACH (nodes, p, properties) {
     const LilvNode* property = lilv_nodes_get(properties, p);
-    ControlID*      record   = NULL;
+    Control*        record   = NULL;
 
     if (!writable &&
         lilv_world_ask(
@@ -318,11 +318,11 @@ jalv_send_to_plugin(void* const       jalv_handle,
 }
 
 void
-jalv_set_control(Jalv*            jalv,
-                 const ControlID* control,
-                 uint32_t         size,
-                 LV2_URID         type,
-                 const void*      body)
+jalv_set_control(Jalv*          jalv,
+                 const Control* control,
+                 uint32_t       size,
+                 LV2_URID       type,
+                 const void*    body)
 {
   if (control->type == PORT && type == jalv->forge.Float) {
     const float value = *(const float*)body;
@@ -505,7 +505,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
     return false;
   }
 
-  const ControlID* control = jalv_control_by_symbol(jalv, sym);
+  const Control* control = jalv_control_by_symbol(jalv, sym);
   if (!control) {
     jalv_log(
       JALV_LOG_WARNING, "Ignoring value for unknown control `%s'\n", sym);
