@@ -190,6 +190,13 @@ jalv_process_port_init(JalvProcessPort* const  port,
   }
   lilv_node_free(min_size);
 
+  // Set primary flag for designated control port
+  if (port->type == TYPE_EVENT &&
+      jalv_port_has_designation(
+        nodes, lilv_plugin, lilv_port, nodes->lv2_control)) {
+    port->is_primary = true;
+  }
+
   // Set reports_latency flag
   if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
       (lilv_port_has_property(
