@@ -45,9 +45,9 @@ typedef struct {
   size_t      n_points;       ///< Number of scale points
   ScalePoint* points;         ///< Scale points
   LV2_URID    value_type;     ///< Type of control value
-  LilvNode*   min;            ///< Minimum value
-  LilvNode*   max;            ///< Maximum value
-  LilvNode*   def;            ///< Default value
+  float       min;            ///< Minimum value
+  float       max;            ///< Maximum value
+  float       def;            ///< Default value
   bool        is_toggle;      ///< Boolean (0 and 1 only)
   bool        is_integer;     ///< Integer values only
   bool        is_enumeration; ///< Point values only
@@ -64,8 +64,7 @@ typedef struct {
 
 /// Create a new ID for a control port
 ControlID*
-new_port_control(LilvWorld*            world,
-                 const LilvPlugin*     plugin,
+new_port_control(const LilvPlugin*     plugin,
                  const LilvPort*       port,
                  uint32_t              port_index,
                  float                 sample_rate,

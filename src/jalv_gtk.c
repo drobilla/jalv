@@ -54,14 +54,6 @@ typedef struct {
   GtkWidget*     control; ///< Primary value control
 } Controller;
 
-static float
-get_float(const LilvNode* node, float fallback)
-{
-  return (lilv_node_is_float(node) || lilv_node_is_int(node))
-           ? lilv_node_as_float(node)
-           : fallback;
-}
-
 static void
 on_window_destroy(GtkWidget* widget, gpointer data)
 {
@@ -962,8 +954,8 @@ make_combo(ControlID* record, float value)
 static Controller*
 make_log_slider(ControlID* record, float value)
 {
-  const float min  = get_float(record->min, 0.0f);
-  const float max  = get_float(record->max, 1.0f);
+  const float min  = record->min;
+  const float max  = record->max;
   const float lmin = logf(min);
   const float lmax = logf(max);
   const float ldft = logf(value);
@@ -993,8 +985,8 @@ make_log_slider(ControlID* record, float value)
 static Controller*
 make_slider(ControlID* record, float value)
 {
-  const float  min  = get_float(record->min, 0.0f);
-  const float  max  = get_float(record->max, 1.0f);
+  const float  min  = record->min;
+  const float  max  = record->max;
   const double step = record->is_integer ? 1.0 : ((max - min) / 100.0);
 
   GtkWidget* const scale =
@@ -1202,8 +1194,7 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
     } else if (record->value_type == jalv->forge.Path) {
       controller = make_file_chooser(record);
     } else {
-      const float val = get_float(record->def, 0.0f);
-      controller      = make_controller(record, val);
+      controller = make_controller(record, record->def);
     }
 
     record->widget = controller;

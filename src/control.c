@@ -32,8 +32,7 @@ scale_point_cmp(const ScalePoint* a, const ScalePoint* b)
 }
 
 ControlID*
-new_port_control(LilvWorld* const            world,
-                 const LilvPlugin* const     plugin,
+new_port_control(const LilvPlugin* const     plugin,
                  const LilvPort* const       port,
                  uint32_t                    port_index,
                  const float                 sample_rate,
@@ -60,20 +59,23 @@ new_port_control(LilvWorld* const            world,
   id->is_logarithmic =
     lilv_port_has_property(plugin, port, nodes->pprops_logarithmic);
 
-  lilv_port_get_range(plugin, port, &id->def, &id->min, &id->max);
+  LilvNode* def = NULL;
+  LilvNode* min = NULL;
+  LilvNode* max = NULL;
+  lilv_port_get_range(plugin, port, &def, &min, &max);
+  id->def = lilv_node_as_float(def);
   if (lilv_port_has_property(plugin, port, nodes->lv2_sampleRate)) {
     // Adjust range for lv2:sampleRate controls
-    if (lilv_node_is_float(id->min) || lilv_node_is_int(id->min)) {
-      const float min = lilv_node_as_float(id->min) * sample_rate;
-      lilv_node_free(id->min);
-      id->min = lilv_new_float(world, min);
+    if (lilv_node_is_float(min) || lilv_node_is_int(min)) {
+      id->min = lilv_node_as_float(min) * sample_rate;
     }
-    if (lilv_node_is_float(id->max) || lilv_node_is_int(id->max)) {
-      const float max = lilv_node_as_float(id->max) * sample_rate;
-      lilv_node_free(id->max);
-      id->max = lilv_new_float(world, max);
+    if (lilv_node_is_float(max) || lilv_node_is_int(max)) {
+      id->max = lilv_node_as_float(max) * sample_rate;
     }
   }
+  lilv_node_free(max);
+  lilv_node_free(min);
+  lilv_node_free(def);
 
   // Get scale points
   LilvScalePoints* sp = lilv_port_get_scale_points(plugin, port);
@@ -120,6 +122,20 @@ has_range(LilvWorld* const       world,
   return result;
 }
 
+static float
+get_float(LilvWorld* const      world,
+          const LilvNode* const subject,
+          const LilvNode* const predicate,
+          const float           fallback)
+{
+  LilvNode* const node = lilv_world_get(world, subject, predicate, NULL);
+
+  const float value = node ? lilv_node_as_float(node) : fallback;
+
+  lilv_node_free(node);
+  return value;
+}
+
 ControlID*
 new_property_control(LilvWorld* const            world,
                      const LilvNode*             property,
@@ -132,11 +148,10 @@ new_property_control(LilvWorld* const            world,
   id->id.property = map->map(map->handle, lilv_node_as_uri(property));
   id->node        = lilv_node_duplicate(property);
   id->symbol      = lilv_world_get_symbol(world, property);
-
-  id->label = lilv_world_get(world, property, nodes->rdfs_label, NULL);
-  id->min   = lilv_world_get(world, property, nodes->lv2_minimum, NULL);
-  id->max   = lilv_world_get(world, property, nodes->lv2_maximum, NULL);
-  id->def   = lilv_world_get(world, property, nodes->lv2_default, NULL);
+  id->label       = lilv_world_get(world, property, nodes->rdfs_label, NULL);
+  id->min         = get_float(world, property, nodes->lv2_minimum, 0.0f);
+  id->max         = get_float(world, property, nodes->lv2_maximum, 1.0f);
+  id->def         = get_float(world, property, nodes->lv2_default, 0.0f);
 
   const char* const types[] = {LV2_ATOM__Int,
                                LV2_ATOM__Long,
@@ -174,9 +189,6 @@ free_control(ControlID* const control)
   lilv_node_free(control->symbol);
   lilv_node_free(control->label);
   lilv_node_free(control->group);
-  lilv_node_free(control->min);
-  lilv_node_free(control->max);
-  lilv_node_free(control->def);
   free(control);
 }
 

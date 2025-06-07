@@ -125,8 +125,7 @@ create_port(Jalv* jalv, uint32_t port_index)
 
     if (!hidden) {
       add_control(&jalv->controls,
-                  new_port_control(jalv->world,
-                                   jalv->plugin,
+                  new_port_control(jalv->plugin,
                                    port->lilv_port,
                                    port->index,
                                    jalv->settings.sample_rate,
