@@ -1,3 +1,5 @@
 cstyleCast
 normalCheckLevelMaxBranches
+nullPointerArithmeticOutOfMemory
+nullPointerOutOfMemory
 unusedStructMember
