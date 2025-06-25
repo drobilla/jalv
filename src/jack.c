@@ -96,6 +96,7 @@ forge_position(LV2_Atom_Forge* const        forge,
     lv2_atom_forge_key(forge, urids->time_beatsPerMinute);
     lv2_atom_forge_float(forge, pos.beats_per_minute);
   }
+  lv2_atom_forge_pop(forge, &frame);
 }
 
 static int
