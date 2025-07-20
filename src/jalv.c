@@ -136,9 +136,10 @@ create_port(Jalv* jalv, uint32_t port_index)
   }
 
   // Store index if this is the designated control input port
-  if (jalv->process.control_in == UINT32_MAX && pport->is_primary &&
+  if (jalv->process.control_in == UINT32_MAX &&
       port->flow == FLOW_INPUT && port->type == TYPE_EVENT) {
     jalv->process.control_in = port_index;
+    pport->is_primary = true;
   }
 
   // Update maximum buffer sizes
