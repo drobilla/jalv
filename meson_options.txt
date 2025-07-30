@@ -1,50 +1,50 @@
-# Copyright 2020-2024 David Robillard <d@drobilla.net>
+# Copyright 2020-2025 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
-option('checks', type: 'feature', value: 'enabled', yield: true,
+option('checks', type: 'feature', value: 'enabled',
        description: 'Check for platform-specific features')
 
-option('cxx', type: 'feature', yield: true,
+option('cxx', type: 'feature',
        description: 'Build C++ programs')
 
-option('gtk3', type: 'feature', yield: true,
+option('gtk3', type: 'feature',
        description: 'Build Gtk3 GUI')
 
-option('portaudio', type: 'feature', yield: true,
+option('portaudio', type: 'feature',
        description: 'Build PortAudio driver')
 
-option('jack', type: 'feature', yield: true,
+option('jack', type: 'feature',
        description: 'Build JACK driver')
 
-option('lint', type: 'boolean', value: false, yield: true,
+option('lint', type: 'boolean', value: false,
        description: 'Run code quality checks')
 
-option('man', type: 'feature', value: 'enabled', yield: true,
+option('man', type: 'feature', value: 'enabled',
        description: 'Install man pages')
 
-option('man_html', type: 'feature', yield: true,
+option('man_html', type: 'feature',
        description: 'Build HTML man pages')
 
-option('posix', type: 'feature', yield: true,
+option('posix', type: 'feature',
        description: 'Use POSIX system facilities')
 
-option('qt5', type: 'feature', yield: true,
+option('qt5', type: 'feature',
        description: 'Build Qt5 GUI')
 
-option('qt5_moc', type: 'string', yield: true,
+option('qt5_moc', type: 'string',
        description: 'Path to Qt5 moc executable')
 
-option('qt6', type: 'feature', yield: true,
+option('qt6', type: 'feature',
        description: 'Build Qt6 GUI')
 
-option('qt6_moc', type: 'string', yield: true,
+option('qt6_moc', type: 'string',
        description: 'Path to Qt6 moc executable')
 
-option('suil', type: 'feature', yield: true,
+option('suil', type: 'feature',
        description: 'Use suil to load plugin UIs')
 
 option('title', type: 'string', value: 'Jalv',
        description: 'Project title')
 
-option('tests', type: 'feature', yield: true,
+option('tests', type: 'feature',
        description: 'Build tests')

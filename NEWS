@@ -4,6 +4,7 @@ jalv (1.6.9) unstable; urgency=medium
   * Add missing short versions of command line options
   * Add option to install tool man pages
   * Add support for control outputs with lv2:latency designation
+  * Avoid over-use of yielding meson options
   * Build Qt UI with -fPIC
   * Clean up and strengthen code
   * Clean up command line help output
@@ -24,7 +25,7 @@ jalv (1.6.9) unstable; urgency=medium
   * Use fewer platform-specific APIs
   * Use portable zix filesystem API
 
- -- David Robillard <d@drobilla.net>  Fri, 20 Dec 2024 00:45:28 +0000
+ -- David Robillard <d@drobilla.net>  Wed, 30 Jul 2025 22:24:45 +0000
 
 jalv (1.6.8) stable; urgency=medium
 
