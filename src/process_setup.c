@@ -146,12 +146,11 @@ jalv_process_port_init(JalvProcessPort* const  port,
 {
   const LilvNode* const symbol = lilv_port_get_symbol(lilv_plugin, lilv_port);
 
-  port->type            = TYPE_UNKNOWN;
-  port->flow            = FLOW_UNKNOWN;
-  port->sys_port        = NULL;
-  port->evbuf           = NULL;
-  port->buf_size        = 0U;
-  port->reports_latency = false;
+  port->type     = TYPE_UNKNOWN;
+  port->flow     = FLOW_UNKNOWN;
+  port->sys_port = NULL;
+  port->evbuf    = NULL;
+  port->buf_size = 0U;
 
   const bool optional = lilv_port_has_property(
     lilv_plugin, lilv_port, nodes->lv2_connectionOptional);
@@ -200,23 +199,19 @@ jalv_process_port_init(JalvProcessPort* const  port,
   }
   lilv_node_free(min_size);
 
-  // Set primary flag for designated control port
-  if (port->type == TYPE_EVENT &&
+  // Set flags
+
+  port->is_primary = (port->type == TYPE_EVENT &&
+                      jalv_port_has_designation(
+                        nodes, lilv_plugin, lilv_port, nodes->lv2_control));
+
+  port->reports_latency =
+    (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
+     (lilv_port_has_property(
+        lilv_plugin, lilv_port, nodes->lv2_reportsLatency) ||
       jalv_port_has_designation(
-        nodes, lilv_plugin, lilv_port, nodes->lv2_control)) {
-    port->is_primary = true;
-  }
+        nodes, lilv_plugin, lilv_port, nodes->lv2_latency)));
 
-  // Set reports_latency flag
-  if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
-      (lilv_port_has_property(
-         lilv_plugin, lilv_port, nodes->lv2_reportsLatency) ||
-       jalv_port_has_designation(
-         nodes, lilv_plugin, lilv_port, nodes->lv2_latency))) {
-    port->reports_latency = true;
-  }
-
-  // Set supports_midi flag
   port->supports_midi =
     lilv_port_supports_event(lilv_plugin, lilv_port, nodes->midi_MidiEvent);
 
