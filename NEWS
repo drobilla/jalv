@@ -15,6 +15,7 @@ jalv (1.6.9) unstable; urgency=medium
   * Fix minor memory leaks
   * Make help and version commands exit successfully
   * Only send control messages to designated lv2:control ports
+  * Only send position to ports that explicitly support it
   * Reduce Jack process callback overhead
   * Remove Gtk2 interface
   * Remove limits on the size of messages sent from plugin to UI
@@ -26,7 +27,7 @@ jalv (1.6.9) unstable; urgency=medium
   * Use fewer platform-specific APIs
   * Use portable zix filesystem API
 
- -- David Robillard <d@drobilla.net>  Thu, 31 Jul 2025 14:36:03 +0000
+ -- David Robillard <d@drobilla.net>  Thu, 31 Jul 2025 15:45:09 +0000
 
 jalv (1.6.8) stable; urgency=medium
 

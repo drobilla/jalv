@@ -34,6 +34,7 @@ typedef struct {
   bool       reports_latency; ///< Whether control port reports latency
   bool       is_primary;      ///< True for main control/response channel
   bool       supports_midi;   ///< Whether event port supports MIDI
+  bool       supports_pos;    ///< Whether event port supports Position
 } JalvProcessPort;
 
 /**

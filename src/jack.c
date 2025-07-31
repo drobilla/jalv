@@ -178,7 +178,7 @@ process_cb(jack_nframes_t nframes, void* data)
       lv2_evbuf_reset(port->evbuf, true);
       LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
 
-      if (port->is_primary && xport_changed) {
+      if (port->supports_pos && xport_changed) {
         // Write new transport position
         lv2_evbuf_write(
           &iter, 0, 0, lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));

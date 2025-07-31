@@ -12,6 +12,7 @@
 #include <lv2/presets/presets.h>
 #include <lv2/resize-port/resize-port.h>
 #include <lv2/state/state.h>
+#include <lv2/time/time.h>
 #include <lv2/ui/ui.h>
 #include <lv2/worker/worker.h>
 
@@ -59,6 +60,7 @@ jalv_init_nodes(LilvWorld* const world, JalvNodes* const nodes)
   nodes->rdfs_range              = MAP_NODE(LILV_NS_RDFS "range");
   nodes->rsz_minimumSize         = MAP_NODE(LV2_RESIZE_PORT__minimumSize);
   nodes->state_threadSafeRestore = MAP_NODE(LV2_STATE__threadSafeRestore);
+  nodes->time_Position           = MAP_NODE(LV2_TIME__Position);
   nodes->ui_showInterface        = MAP_NODE(LV2_UI__showInterface);
   nodes->work_interface          = MAP_NODE(LV2_WORKER__interface);
   nodes->work_schedule           = MAP_NODE(LV2_WORKER__schedule);
