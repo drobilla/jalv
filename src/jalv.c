@@ -837,15 +837,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     (uint32_t)(settings->sample_rate / settings->ui_update_hz);
   jalv_process_init(&jalv->process, &jalv->urids, jalv->mapper, update_frames);
 
-  // Create port structures
-  if (jalv_create_ports(jalv)) {
-    return -10;
-  }
-
-  // Create input and output control structures
-  jalv_create_controls(jalv, true);
-  jalv_create_controls(jalv, false);
-
+  // Open backend (to set the sample rate, among other thigns)
   if (jalv_backend_open(jalv->backend,
                         &jalv->urids,
                         &jalv->settings,
@@ -861,6 +853,15 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     JALV_LOG_INFO, "Sample rate:  %u Hz\n", (uint32_t)settings->sample_rate);
   jalv_log(JALV_LOG_INFO, "Block length: %u frames\n", settings->block_length);
   jalv_log(JALV_LOG_INFO, "MIDI buffers: %zu bytes\n", settings->midi_buf_size);
+
+  // Create port structures
+  if (jalv_create_ports(jalv)) {
+    return -10;
+  }
+
+  // Create input and output control structures
+  jalv_create_controls(jalv, true);
+  jalv_create_controls(jalv, false);
 
   jalv_init_ui_settings(jalv);
   jalv_init_lv2_options(&jalv->features, &jalv->urids, settings);
