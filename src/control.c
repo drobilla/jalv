@@ -59,19 +59,18 @@ new_port_control(const LilvPlugin* const     plugin,
   id->is_logarithmic =
     lilv_port_has_property(plugin, port, nodes->pprops_logarithmic);
 
+  // Set range and default
   LilvNode* def = NULL;
   LilvNode* min = NULL;
   LilvNode* max = NULL;
   lilv_port_get_range(plugin, port, &def, &min, &max);
   id->def = lilv_node_as_float(def);
+  id->min = lilv_node_as_float(min);
+  id->max = lilv_node_as_float(max);
   if (lilv_port_has_property(plugin, port, nodes->lv2_sampleRate)) {
     // Adjust range for lv2:sampleRate controls
-    if (lilv_node_is_float(min) || lilv_node_is_int(min)) {
-      id->min = lilv_node_as_float(min) * sample_rate;
-    }
-    if (lilv_node_is_float(max) || lilv_node_is_int(max)) {
-      id->max = lilv_node_as_float(max) * sample_rate;
-    }
+    id->min *= sample_rate;
+    id->max *= sample_rate;
   }
   lilv_node_free(max);
   lilv_node_free(min);
