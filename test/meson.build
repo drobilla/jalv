@@ -45,6 +45,17 @@ if get_option('lint')
       )
     endif
 
+    # Validate MetaInfo file
+    metainfo_file = files('../net.drobilla.jalv.metainfo.xml')
+    appstreamcli = find_program('appstreamcli', required: false)
+    if appstreamcli.found()
+      test(
+        'metainfo',
+        appstreamcli,
+        args: ['validate', '--no-net', '--pedantic', metainfo_file],
+      )
+    endif
+
     # Check code with cppcheck
     cppcheck = find_program('cppcheck', required: false)
     if cppcheck.found()

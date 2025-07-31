@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright 2025 David Robillard <d@drobilla.net>
+SPDX-License-Identifier: 0BSD
+-->
+<component type="desktop-application">
+  <id>net.drobilla.jalv</id>
+  <name>Jalv</name>
+  <summary>A simple host for LV2 plugins</summary>
+  <developer id="net.drobilla">
+    <name>David Robillard</name>
+  </developer>
+  <url type="bugtracker">https://gitlab.com/drobilla/jalv/-/issues</url>
+  <url type="contact">https://drobilla.net/pages/contact.html</url>
+  <url type="donation">https://drobilla.net/pages/support.html</url>
+  <url type="homepage">https://drobilla.net/software/jalv</url>
+  <url type="vcs-browser">https://gitlab.com/drobilla/jalv/</url>
+  <metadata_license>0BSD</metadata_license>
+  <project_license>ISC</project_license>
+  <description>
+    <p>
+      Jalv (JAck LV2) is a simple host for LV2 plugins.  It runs a plugin, and exposes the plugin ports to the system, essentially making the plugin an application.
+    </p>
+    <p>
+      Jalv is useful as a simple way to run a single plugin, or as a test host for plugin development.  It runs plugins from the command line with no user interaction, is light enough to run with tools like sanitizers or valgrind, and is capable of dumping all communication between the plugin and its UI in a human readable format.  Plugin UIs can be tested in different host toolkits by using different executables: jalv, jalv.gtk3, jalv.qt5, and jalv.qt6.
+    </p>
+  </description>
+  <launchable type="desktop-id">jalv.desktop</launchable>
+</component>

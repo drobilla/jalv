@@ -522,6 +522,11 @@ if not get_option('gtk3').disabled()
       output: 'jalv.desktop',
     )
 
+    install_data(
+      files('net.drobilla.jalv.metainfo.xml'),
+      install_dir: get_option('datadir') / 'metainfo',
+    )
+
     executable(
       'jalv.gtk3',
       program_sources + files('src/jalv_gtk.c'),
