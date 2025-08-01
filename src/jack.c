@@ -197,6 +197,11 @@ process_cb(jack_nframes_t nframes, void* data)
     } else if (port->type == TYPE_EVENT) {
       // Clear event output for plugin to write to
       lv2_evbuf_reset(port->evbuf, false);
+    } else if (port->type == TYPE_CONTROL && port->flow == FLOW_INPUT) {
+      if (xport_changed && port->is_bpm && (pos.valid & JackPositionBBT)) {
+        proc->controls_buf[p] = proc->bpm;
+        jalv_write_control(proc->plugin_to_ui, p, proc->bpm);
+      }
     }
   }
 

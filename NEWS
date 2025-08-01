@@ -4,6 +4,7 @@ jalv (1.6.9) unstable; urgency=medium
   * Add Qt6 version
   * Add missing short versions of command line options
   * Add option to install tool man pages
+  * Add support for control inputs with time:beatsPerMinute designation
   * Add support for control outputs with lv2:latency designation
   * Avoid over-use of yielding meson options
   * Build Qt UI with -fPIC
@@ -27,7 +28,7 @@ jalv (1.6.9) unstable; urgency=medium
   * Use fewer platform-specific APIs
   * Use portable zix filesystem API
 
- -- David Robillard <d@drobilla.net>  Thu, 31 Jul 2025 15:45:09 +0000
+ -- David Robillard <d@drobilla.net>  Fri, 01 Aug 2025 20:11:38 +0000
 
 jalv (1.6.8) stable; urgency=medium
 

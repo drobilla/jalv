@@ -220,6 +220,9 @@ jalv_process_port_init(JalvProcessPort* const  port,
   port->supports_pos =
     lilv_port_supports_event(lilv_plugin, lilv_port, nodes->time_Position);
 
+  port->is_bpm = jalv_port_has_designation(
+    nodes, lilv_plugin, lilv_port, nodes->time_beatsPerMinute);
+
   return 0;
 }
 

@@ -50,6 +50,7 @@ typedef struct {
   LilvNode* rsz_minimumSize;
   LilvNode* state_threadSafeRestore;
   LilvNode* time_Position;
+  LilvNode* time_beatsPerMinute;
   LilvNode* ui_showInterface;
   LilvNode* work_interface;
   LilvNode* work_schedule;

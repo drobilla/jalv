@@ -44,6 +44,7 @@ typedef struct {
   uint32_t   buf_size;        ///< Custom buffer size, or 0
   bool       reports_latency; ///< Whether control port reports latency
   bool       is_primary;      ///< True for main control/response channel
+  bool       is_bpm;          ///< True if port is a BPM control port
   bool       supports_midi;   ///< Whether event port supports MIDI
   bool       supports_pos;    ///< Whether event port supports Position
 } JalvProcessPort;

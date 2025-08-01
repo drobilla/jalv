@@ -61,6 +61,7 @@ jalv_init_nodes(LilvWorld* const world, JalvNodes* const nodes)
   nodes->rsz_minimumSize         = MAP_NODE(LV2_RESIZE_PORT__minimumSize);
   nodes->state_threadSafeRestore = MAP_NODE(LV2_STATE__threadSafeRestore);
   nodes->time_Position           = MAP_NODE(LV2_TIME__Position);
+  nodes->time_beatsPerMinute     = MAP_NODE(LV2_TIME__beatsPerMinute);
   nodes->ui_showInterface        = MAP_NODE(LV2_UI__showInterface);
   nodes->work_interface          = MAP_NODE(LV2_WORKER__interface);
   nodes->work_schedule           = MAP_NODE(LV2_WORKER__schedule);
