@@ -53,6 +53,7 @@ if cc.get_id() == 'clang'
       '-Wno-float-conversion',
       '-Wno-float-equal',
       '-Wno-implicit-float-conversion',
+      '-Wno-incompatible-function-pointer-types-strict', # nonblocking
       '-Wno-missing-noreturn',
       '-Wno-padded',
       '-Wno-shorten-64-to-32',
@@ -225,7 +226,7 @@ zix_dep = dependency(
   ],
   fallback: ['zix', 'zix_dep'],
   include_type: 'system',
-  version: '>= 0.4.0',
+  version: '>= 0.7.0',
 )
 
 serd_dep = dependency(

@@ -12,6 +12,7 @@
 #include <lilv/lilv.h>
 #include <lv2/atom/atom.h>
 #include <lv2/atom/forge.h>
+#include <zix/attributes.h>
 #include <zix/ring.h>
 #include <zix/sem.h>
 
@@ -81,7 +82,7 @@ typedef struct {
 } JalvProcess;
 
 // Return a string describing a process thread error
-char*
+ZIX_REALTIME char*
 jalv_process_strerror(JalvProcessStatus pst);
 
 /**
@@ -94,7 +95,7 @@ jalv_process_strerror(JalvProcessStatus pst);
    @param nframes Number of frames to process.
    @return Whether output value updates should be sent to the UI now.
 */
-JalvProcessStatus
+ZIX_REALTIME JalvProcessStatus
 jalv_run(JalvProcess* proc, uint32_t nframes);
 
 /**
@@ -107,7 +108,7 @@ jalv_run(JalvProcess* proc, uint32_t nframes);
    @param nframes Number of frames to bypass.
    @return Zero.
 */
-int
+ZIX_REALTIME int
 jalv_bypass(JalvProcess* proc, uint32_t nframes);
 
 JALV_END_DECLS

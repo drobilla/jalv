@@ -1,4 +1,4 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_WORKER_H
@@ -8,6 +8,7 @@
 
 #include <lv2/core/lv2.h>
 #include <lv2/worker/worker.h>
+#include <zix/attributes.h>
 #include <zix/sem.h>
 #include <zix/status.h>
 
@@ -85,7 +86,7 @@ jalv_worker_attach(JalvWorker*                 worker,
    worker thread asynchronously.  For non-threaded workers, the work is
    performed immediately before returning.
 */
-LV2_Worker_Status
+ZIX_REALTIME LV2_Worker_Status
 jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
                      uint32_t                   size,
                      const void*                data);
@@ -96,7 +97,7 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
    This dispatches responses from work that has been completed since the last
    call, so the plugin knows it is finished and can apply the changes.
 */
-void
+ZIX_REALTIME void
 jalv_worker_emit_responses(JalvWorker* worker, LV2_Handle lv2_handle);
 
 /**
@@ -105,7 +106,7 @@ jalv_worker_emit_responses(JalvWorker* worker, LV2_Handle lv2_handle);
    This must be called near the end of every cycle, after any potential calls
    to jalv_worker_emit_responses().
 */
-void
+ZIX_REALTIME void
 jalv_worker_end_run(JalvWorker* worker);
 
 JALV_END_DECLS

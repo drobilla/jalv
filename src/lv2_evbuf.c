@@ -55,7 +55,7 @@ lv2_evbuf_free(LV2_Evbuf* evbuf)
   }
 }
 
-void
+ZIX_REALTIME void
 lv2_evbuf_reset(LV2_Evbuf* evbuf, bool input)
 {
   if (input) {
@@ -67,7 +67,7 @@ lv2_evbuf_reset(LV2_Evbuf* evbuf, bool input)
   }
 }
 
-uint32_t
+ZIX_REALTIME uint32_t
 lv2_evbuf_get_size(LV2_Evbuf* evbuf)
 {
   assert(evbuf->buf.atom.type != evbuf->atom_Sequence ||
@@ -77,20 +77,20 @@ lv2_evbuf_get_size(LV2_Evbuf* evbuf)
            : 0;
 }
 
-void*
+ZIX_REALTIME void*
 lv2_evbuf_get_buffer(LV2_Evbuf* evbuf)
 {
   return &evbuf->buf;
 }
 
-LV2_Evbuf_Iterator
+ZIX_REALTIME LV2_Evbuf_Iterator
 lv2_evbuf_begin(LV2_Evbuf* evbuf)
 {
   LV2_Evbuf_Iterator iter = {evbuf, 0};
   return iter;
 }
 
-LV2_Evbuf_Iterator
+ZIX_REALTIME LV2_Evbuf_Iterator
 lv2_evbuf_end(LV2_Evbuf* evbuf)
 {
   const uint32_t           size = lv2_evbuf_get_size(evbuf);
@@ -98,13 +98,13 @@ lv2_evbuf_end(LV2_Evbuf* evbuf)
   return iter;
 }
 
-bool
+ZIX_REALTIME bool
 lv2_evbuf_is_valid(LV2_Evbuf_Iterator iter)
 {
   return iter.offset < lv2_evbuf_get_size(iter.evbuf);
 }
 
-LV2_Evbuf_Iterator
+ZIX_REALTIME LV2_Evbuf_Iterator
 lv2_evbuf_next(const LV2_Evbuf_Iterator iter)
 {
   if (!lv2_evbuf_is_valid(iter)) {
@@ -122,7 +122,7 @@ lv2_evbuf_next(const LV2_Evbuf_Iterator iter)
   return next;
 }
 
-bool
+ZIX_REALTIME bool
 lv2_evbuf_get(LV2_Evbuf_Iterator iter,
               uint32_t*          frames,
               uint32_t*          subframes,
@@ -151,7 +151,7 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
   return true;
 }
 
-bool
+ZIX_REALTIME bool
 lv2_evbuf_write(LV2_Evbuf_Iterator* iter,
                 uint32_t            frames,
                 uint32_t            subframes,

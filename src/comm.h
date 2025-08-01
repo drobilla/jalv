@@ -1,4 +1,4 @@
-// Copyright 2007-2024 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_COMM_H
@@ -9,6 +9,7 @@
 
 #include <lv2/atom/atom.h>
 #include <lv2/urid/urid.h>
+#include <zix/attributes.h>
 #include <zix/ring.h>
 #include <zix/status.h>
 
@@ -91,7 +92,7 @@ typedef struct {
    @param body_size Size of body in bytes.
    @return 0 on success, non-zero on failure (overflow).
 */
-ZixStatus
+ZIX_REALTIME ZixStatus
 jalv_write_split_message(ZixRing*    target,
                          const void* header,
                          uint32_t    header_size,
@@ -110,7 +111,7 @@ jalv_write_split_message(ZixRing*    target,
    @param body Atom body.
    @return 0 on success, non-zero on failure (overflow).
 */
-ZixStatus
+ZIX_REALTIME ZixStatus
 jalv_write_event(ZixRing*    target,
                  uint32_t    port_index,
                  uint32_t    size,
@@ -128,7 +129,7 @@ jalv_write_event(ZixRing*    target,
    @param value New control port value.
    @return 0 on success, non-zero on failure (overflow).
 */
-ZixStatus
+ZIX_REALTIME ZixStatus
 jalv_write_control(ZixRing* target, uint32_t port_index, float value);
 
 JALV_END_DECLS

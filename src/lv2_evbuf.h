@@ -4,6 +4,8 @@
 #ifndef LV2_EVBUF_H
 #define LV2_EVBUF_H
 
+#include <zix/attributes.h>
+
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -41,11 +43,11 @@ lv2_evbuf_free(LV2_Evbuf* evbuf);
    buffer will be prepared for writing by the plugin.  This MUST be called
    before every run cycle.
 */
-void
+ZIX_REALTIME void
 lv2_evbuf_reset(LV2_Evbuf* evbuf, bool input);
 
 /// Return the total padded size of the events stored in the buffer
-uint32_t
+ZIX_REALTIME uint32_t
 lv2_evbuf_get_size(LV2_Evbuf* evbuf);
 
 /**
@@ -53,15 +55,15 @@ lv2_evbuf_get_size(LV2_Evbuf* evbuf);
 
    The format of the buffer returned depends on the buffer type.
 */
-void*
+ZIX_REALTIME void*
 lv2_evbuf_get_buffer(LV2_Evbuf* evbuf);
 
 /// Return an iterator to the start of `evbuf`
-LV2_Evbuf_Iterator
+ZIX_REALTIME LV2_Evbuf_Iterator
 lv2_evbuf_begin(LV2_Evbuf* evbuf);
 
 /// Return an iterator to the end of `evbuf`
-LV2_Evbuf_Iterator
+ZIX_REALTIME LV2_Evbuf_Iterator
 lv2_evbuf_end(LV2_Evbuf* evbuf);
 
 /**
@@ -69,7 +71,7 @@ lv2_evbuf_end(LV2_Evbuf* evbuf);
 
    @return True if `iter` is valid, otherwise false (past end of buffer)
 */
-bool
+ZIX_REALTIME bool
 lv2_evbuf_is_valid(LV2_Evbuf_Iterator iter);
 
 /**
@@ -79,7 +81,7 @@ lv2_evbuf_is_valid(LV2_Evbuf_Iterator iter);
 
    @return True if `iter` is valid, otherwise false (reached end of buffer)
 */
-LV2_Evbuf_Iterator
+ZIX_REALTIME LV2_Evbuf_Iterator
 lv2_evbuf_next(LV2_Evbuf_Iterator iter);
 
 /**
@@ -91,7 +93,7 @@ lv2_evbuf_next(LV2_Evbuf_Iterator iter);
    `data` Set to the contents of the event.
    @return True on success.
 */
-bool
+ZIX_REALTIME bool
 lv2_evbuf_get(LV2_Evbuf_Iterator iter,
               uint32_t*          frames,
               uint32_t*          subframes,
@@ -108,7 +110,7 @@ lv2_evbuf_get(LV2_Evbuf_Iterator iter,
 
    @return True if event was written, otherwise false (buffer is full).
 */
-bool
+ZIX_REALTIME bool
 lv2_evbuf_write(LV2_Evbuf_Iterator* iter,
                 uint32_t            frames,
                 uint32_t            subframes,

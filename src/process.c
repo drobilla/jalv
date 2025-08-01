@@ -13,11 +13,12 @@
 #include <lv2/core/lv2.h>
 #include <zix/ring.h>
 #include <zix/sem.h>
+#include <zix/warnings.h>
 
 #include <assert.h>
 #include <stddef.h>
 
-char*
+ZIX_REALTIME char*
 jalv_process_strerror(const JalvProcessStatus pst)
 {
   switch (pst) {
@@ -40,7 +41,7 @@ jalv_process_strerror(const JalvProcessStatus pst)
   return "Unknown error";
 }
 
-static JalvProcessStatus
+ZIX_REALTIME static JalvProcessStatus
 apply_ui_events(JalvProcess* const proc, const uint32_t nframes)
 {
   ZixRing* const    ring   = proc->ui_to_plugin;
@@ -111,14 +112,16 @@ apply_ui_events(JalvProcess* const proc, const uint32_t nframes)
   return 0;
 }
 
-JalvProcessStatus
+ZIX_REALTIME JalvProcessStatus
 jalv_run(JalvProcess* const proc, const uint32_t nframes)
 {
   // Read and apply control change events from UI
   JalvProcessStatus pst = apply_ui_events(proc, nframes);
 
   // Run plugin for this cycle
+  ZIX_DISABLE_EFFECT_WARNINGS // Assume realtime-safe plugin
   lilv_instance_run(proc->instance, nframes);
+  ZIX_RESTORE_WARNINGS
 
   // Process any worker replies and end the cycle
   LV2_Handle handle = lilv_instance_get_handle(proc->instance);
@@ -136,7 +139,7 @@ jalv_run(JalvProcess* const proc, const uint32_t nframes)
   return pst;
 }
 
-int
+ZIX_REALTIME int
 jalv_bypass(JalvProcess* const proc, const uint32_t nframes)
 {
   // Read and apply control change events from UI

@@ -4,10 +4,11 @@
 #include "comm.h"
 
 #include <lv2/urid/urid.h>
+#include <zix/attributes.h>
 #include <zix/ring.h>
 #include <zix/status.h>
 
-ZixStatus
+ZIX_REALTIME ZixStatus
 jalv_write_split_message(ZixRing* const    target,
                          const void* const header,
                          const uint32_t    header_size,
@@ -25,7 +26,7 @@ jalv_write_split_message(ZixRing* const    target,
   return st;
 }
 
-ZixStatus
+ZIX_REALTIME ZixStatus
 jalv_write_event(ZixRing* const    target,
                  const uint32_t    port_index,
                  const uint32_t    size,
@@ -45,7 +46,7 @@ jalv_write_event(ZixRing* const    target,
   return jalv_write_split_message(target, &header, sizeof(header), body, size);
 }
 
-ZixStatus
+ZIX_REALTIME ZixStatus
 jalv_write_control(ZixRing* const target,
                    const uint32_t port_index,
                    const float    value)

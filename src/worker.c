@@ -9,6 +9,7 @@
 #include <zix/sem.h>
 #include <zix/status.h>
 #include <zix/thread.h>
+#include <zix/warnings.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -177,7 +178,7 @@ jalv_worker_attach(JalvWorker* const                 worker,
   }
 }
 
-LV2_Worker_Status
+ZIX_REALTIME LV2_Worker_Status
 jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
                      const uint32_t             size,
                      const void* const          data)
@@ -195,35 +196,43 @@ jalv_worker_schedule(LV2_Worker_Schedule_Handle handle,
     }
 
   } else if (worker->state == STATE_SINGLE_THREADED) {
+    ZIX_DISABLE_EFFECT_WARNINGS // Single-threaded special case
+
     // Execute work immediately in this thread
     zix_sem_wait(worker->lock);
     st = worker->iface->work(
       worker->handle, jalv_worker_respond, worker, size, data);
     zix_sem_post(worker->lock);
+
+    ZIX_RESTORE_WARNINGS
   }
 
   return st;
 }
 
-void
+ZIX_REALTIME void
 jalv_worker_emit_responses(JalvWorker* const worker, LV2_Handle lv2_handle)
 {
-  static const uint32_t size_size = (uint32_t)sizeof(uint32_t);
+  const uint32_t size_size = (uint32_t)sizeof(uint32_t);
 
   if (worker && worker->responses) {
     uint32_t size = 0U;
     while (zix_ring_read(worker->responses, &size, size_size) == size_size) {
       if (zix_ring_read(worker->responses, worker->response, size) == size) {
+        ZIX_DISABLE_EFFECT_WARNINGS // Assume realtime-safe plugin
         worker->iface->work_response(lv2_handle, size, worker->response);
+        ZIX_RESTORE_WARNINGS
       }
     }
   }
 }
 
-void
+ZIX_REALTIME void
 jalv_worker_end_run(JalvWorker* const worker)
 {
   if (worker && worker->iface && worker->iface->end_run) {
+    ZIX_DISABLE_EFFECT_WARNINGS // Assume realtime-safe plugin
     worker->iface->end_run(worker->handle);
+    ZIX_RESTORE_WARNINGS
   }
 }

@@ -5,6 +5,7 @@ AlignEscapedNewlines: Left
 AttributeMacros:
   - ZIX_MALLOC_FUNC
   - ZIX_PURE_FUNC
+  - ZIX_REALTIME
 BasedOnStyle: Mozilla
 BraceWrapping:
   AfterNamespace: false
@@ -32,4 +33,6 @@ KeepEmptyLinesAtTheStartOfBlocks: false
 SpacesInContainerLiterals: false
 StatementMacros:
   - Q_OBJECT
+  - ZIX_DISABLE_EFFECT_WARNINGS
+  - ZIX_RESTORE_WARNINGS
 ...
