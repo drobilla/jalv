@@ -1,4 +1,4 @@
-// Copyright 2007-2024 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "jalv.h"
@@ -835,7 +835,11 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   // Initialize process thread
   const uint32_t update_frames =
     (uint32_t)(settings->sample_rate / settings->ui_update_hz);
-  jalv_process_init(&jalv->process, &jalv->urids, jalv->mapper, update_frames);
+  jalv_process_init(&jalv->process,
+                    &jalv->urids,
+                    jalv->mapper,
+                    update_frames,
+                    jalv->opts.trace);
 
   // Open backend (to set the sample rate, among other thigns)
   if (jalv_backend_open(jalv->backend,

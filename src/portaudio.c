@@ -1,4 +1,4 @@
-// Copyright 2007-2024 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "backend.h"
@@ -74,7 +74,10 @@ process_cb(const void*                     inputs,
   }
 
   // Run plugin for this cycle
-  const bool send_ui_updates = jalv_run(proc, nframes);
+  const JalvProcessStatus pst = jalv_run(proc, nframes);
+  if (proc->trace && pst > JALV_PROCESS_SEND_UPDATES) {
+    jalv_log(JALV_LOG_ERROR, "%s\n", jalv_process_strerror(pst));
+  }
 
   // Deliver UI events
   for (uint32_t p = 0; p < proc->num_ports; ++p) {
@@ -96,7 +99,7 @@ process_cb(const void*                     inputs,
           jalv_write_event(proc->plugin_to_ui, p, size, type, body);
         }
       }
-    } else if (send_ui_updates && port->flow == FLOW_OUTPUT &&
+    } else if (pst == JALV_PROCESS_SEND_UPDATES && port->flow == FLOW_OUTPUT &&
                port->type == TYPE_CONTROL) {
       jalv_write_control(proc->plugin_to_ui, p, proc->controls_buf[p]);
     }

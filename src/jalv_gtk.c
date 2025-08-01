@@ -1,4 +1,4 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "control.h"
@@ -162,7 +162,7 @@ jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
      0,
      G_OPTION_ARG_NONE,
      &opts->trace,
-     "Print trace messages from plugin",
+     "Print debug trace messages",
      NULL},
     {"exact-jack-name",
      'x',

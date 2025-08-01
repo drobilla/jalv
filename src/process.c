@@ -1,10 +1,9 @@
-// Copyright 2016-2024 David Robillard <d@drobilla.net>
+// Copyright 2016-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "process.h"
 
 #include "comm.h"
-#include "log.h"
 #include "lv2_evbuf.h"
 #include "types.h"
 #include "worker.h"
@@ -18,14 +17,30 @@
 #include <assert.h>
 #include <stddef.h>
 
-static int
-ring_error(const char* const message)
+char*
+jalv_process_strerror(const JalvProcessStatus pst)
 {
-  jalv_log(JALV_LOG_ERR, "%s", message);
-  return 1;
+  switch (pst) {
+  case JALV_PROCESS_SUCCESS:
+    return "Success";
+  case JALV_PROCESS_SEND_UPDATES:
+    return "Send updates";
+  case JALV_PROCESS_BAD_HEADER:
+    return "Failed to read header from UI ring";
+  case JALV_PROCESS_BAD_CONTROL_VALUE:
+    return "Failed to read control value from UI ring";
+  case JALV_PROCESS_BAD_EVENT:
+    return "Failed to read event from UI ring";
+  case JALV_PROCESS_BAD_STATE_CHANGE:
+    return "Failed to read run state change from UI ring";
+  case JALV_PROCESS_BAD_MESSAGE_TYPE:
+    return "Unknown message type received from UI ring";
+  }
+
+  return "Unknown error";
 }
 
-static int
+static JalvProcessStatus
 apply_ui_events(JalvProcess* const proc, const uint32_t nframes)
 {
   ZixRing* const    ring   = proc->ui_to_plugin;
@@ -34,14 +49,14 @@ apply_ui_events(JalvProcess* const proc, const uint32_t nframes)
   for (size_t i = 0; i < space; i += sizeof(header) + header.size) {
     // Read message header (which includes the body size)
     if (zix_ring_read(ring, &header, sizeof(header)) != sizeof(header)) {
-      return ring_error("Failed to read header from UI ring\n");
+      return JALV_PROCESS_BAD_HEADER;
     }
 
     if (header.type == CONTROL_PORT_CHANGE) {
       assert(header.size == sizeof(JalvControlChange));
       JalvControlChange msg = {0U, 0.0f};
       if (zix_ring_read(ring, &msg, sizeof(msg)) != sizeof(msg)) {
-        return ring_error("Failed to read control value from UI ring\n");
+        return JALV_PROCESS_BAD_CONTROL_VALUE;
       }
 
       assert(msg.port_index < proc->num_ports);
@@ -51,7 +66,7 @@ apply_ui_events(JalvProcess* const proc, const uint32_t nframes)
       assert(header.size <= proc->process_msg_size);
       void* const body = proc->process_msg;
       if (zix_ring_read(ring, body, header.size) != header.size) {
-        return ring_error("Failed to read event from UI ring\n");
+        return JALV_PROCESS_BAD_EVENT;
       }
 
       const JalvEventTransfer* const msg = (const JalvEventTransfer*)body;
@@ -80,7 +95,7 @@ apply_ui_events(JalvProcess* const proc, const uint32_t nframes)
       assert(header.size == sizeof(JalvRunStateChange));
       JalvRunStateChange msg = {JALV_RUNNING};
       if (zix_ring_read(ring, &msg, sizeof(msg)) != sizeof(msg)) {
-        return ring_error("Failed to read run state change from UI ring\n");
+        return JALV_PROCESS_BAD_STATE_CHANGE;
       }
 
       proc->run_state = msg.state;
@@ -89,18 +104,18 @@ apply_ui_events(JalvProcess* const proc, const uint32_t nframes)
       }
 
     } else {
-      return ring_error("Unknown message type received from UI ring\n");
+      return JALV_PROCESS_BAD_MESSAGE_TYPE;
     }
   }
 
   return 0;
 }
 
-bool
+JalvProcessStatus
 jalv_run(JalvProcess* const proc, const uint32_t nframes)
 {
   // Read and apply control change events from UI
-  apply_ui_events(proc, nframes);
+  JalvProcessStatus pst = apply_ui_events(proc, nframes);
 
   // Run plugin for this cycle
   lilv_instance_run(proc->instance, nframes);
@@ -115,10 +130,10 @@ jalv_run(JalvProcess* const proc, const uint32_t nframes)
   proc->pending_frames += nframes;
   if (proc->update_frames && proc->pending_frames > proc->update_frames) {
     proc->pending_frames = 0U;
-    return true;
+    pst                  = pst ? pst : JALV_PROCESS_SEND_UPDATES;
   }
 
-  return false;
+  return pst;
 }
 
 int

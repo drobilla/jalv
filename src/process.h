@@ -1,4 +1,4 @@
-// Copyright 2016-2024 David Robillard <d@drobilla.net>
+// Copyright 2016-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_PROCESS_H
@@ -21,6 +21,16 @@
 
 // Code and data used in the realtime process thread
 JALV_BEGIN_DECLS
+
+typedef enum {
+  JALV_PROCESS_SUCCESS,
+  JALV_PROCESS_SEND_UPDATES,
+  JALV_PROCESS_BAD_HEADER,
+  JALV_PROCESS_BAD_CONTROL_VALUE,
+  JALV_PROCESS_BAD_EVENT,
+  JALV_PROCESS_BAD_STATE_CHANGE,
+  JALV_PROCESS_BAD_MESSAGE_TYPE,
+} JalvProcessStatus;
 
 /// Port state used in the process thread
 typedef struct {
@@ -67,7 +77,12 @@ typedef struct {
   float            bpm;              ///< Transport tempo in beats per minute
   bool             rolling;          ///< Transport speed (0=stop, 1=play)
   bool             has_ui;           ///< True iff a control UI is present
+  bool             trace;            ///< Print debug trace messages
 } JalvProcess;
+
+// Return a string describing a process thread error
+char*
+jalv_process_strerror(JalvProcessStatus pst);
 
 /**
    Run the plugin for a block of frames.
@@ -79,7 +94,7 @@ typedef struct {
    @param nframes Number of frames to process.
    @return Whether output value updates should be sent to the UI now.
 */
-bool
+JalvProcessStatus
 jalv_run(JalvProcess* proc, uint32_t nframes);
 
 /**

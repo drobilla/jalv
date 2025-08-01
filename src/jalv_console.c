@@ -1,4 +1,4 @@
-// Copyright 2007-2024 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "comm.h"
@@ -51,7 +51,7 @@ print_usage(const char* name, bool error)
           "  -n NAME     JACK client name\n"
           "  -p          Print control output changes to stdout\n"
           "  -s          Show plugin UI if possible\n"
-          "  -t          Print trace messages from plugin\n"
+          "  -t          Print debug trace messages\n"
           "  -U URI      Load the UI with the given URI\n"
           "  -V          Display version information and exit\n"
           "  -x          Exit if the requested JACK client name is taken\n");

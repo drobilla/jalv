@@ -1,4 +1,4 @@
-// Copyright 2016-2024 David Robillard <d@drobilla.net>
+// Copyright 2016-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "process_setup.h"
@@ -34,7 +34,8 @@ int
 jalv_process_init(JalvProcess* const     proc,
                   const JalvURIDs* const urids,
                   JalvMapper* const      mapper,
-                  const uint32_t         update_frames)
+                  const uint32_t         update_frames,
+                  const bool             trace)
 {
   proc->get_msg.atom.size  = sizeof(LV2_Atom_Object_Body);
   proc->get_msg.atom.type  = urids->atom_Object;
@@ -58,6 +59,7 @@ jalv_process_init(JalvProcess* const     proc,
   proc->bpm              = 120.0f;
   proc->rolling          = false;
   proc->has_ui           = false;
+  proc->trace            = trace;
 
   zix_sem_init(&proc->paused, 0);
   lv2_atom_forge_init(&proc->forge, jalv_mapper_urid_map(mapper));

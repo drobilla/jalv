@@ -1,6 +1,6 @@
-.\" # Copyright 2024 David Robillard <d@drobilla.net>
+.\" # Copyright 2024-2025 David Robillard <d@drobilla.net>
 .\" # SPDX-License-Identifier: ISC
-.Dd December 20, 2024
+.Dd August 1, 2025
 .Dt JALV.GTK3 1
 .Os
 .Sh NAME
@@ -61,7 +61,12 @@ Override the UI scale factor.
 .It Fl s
 Show controls that are normally hidden.
 .It Fl t
-Print trace messages from plugin.
+Print debug trace messages.
+This enables the
+.Dq trace
+LV2 log, which is used by some plugins to print debugging output.
+Some extra internal error messages are also enabled.
+Note that this may print in the audio thread, which can cause dropouts.
 .It Fl U
 URI Load the UI with the given URI.
 .It Fl x

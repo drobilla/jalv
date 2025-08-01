@@ -1,4 +1,4 @@
-// Copyright 2016-2024 David Robillard <d@drobilla.net>
+// Copyright 2016-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_PROCESS_SETUP_H
@@ -13,6 +13,7 @@
 
 #include <lilv/lilv.h>
 
+#include <stdbool.h>
 #include <stdint.h>
 
 // Code for setting up the realtime process thread (but that isn't used in it)
@@ -28,7 +29,8 @@ int
 jalv_process_init(JalvProcess*     proc,
                   const JalvURIDs* urids,
                   JalvMapper*      mapper,
-                  uint32_t         update_frames);
+                  uint32_t         update_frames,
+                  bool             trace);
 
 /**
    Clean up process thread.
