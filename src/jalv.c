@@ -476,7 +476,8 @@ jalv_update(Jalv* jalv)
 
     if (header.type == CONTROL_PORT_CHANGE) {
       const JalvControlChange* const msg = (const JalvControlChange*)body;
-      jalv_frontend_port_event(jalv, msg->port_index, sizeof(float), 0, body);
+      jalv_frontend_port_event(
+        jalv, msg->port_index, sizeof(float), 0, &msg->value);
     } else if (header.type == EVENT_TRANSFER) {
       const JalvEventTransfer* const msg = (const JalvEventTransfer*)body;
       jalv_dump_atom(jalv->dumper, stdout, "Plugin => UI", &msg->atom, 35);
