@@ -11,7 +11,6 @@
 #include <zix/thread.h>
 #include <zix/warnings.h>
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #define MAX_PACKET_SIZE 4096U

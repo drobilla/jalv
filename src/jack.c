@@ -28,12 +28,12 @@
 
 #if USE_JACK_METADATA
 #  include <jack/metadata.h>
+#  include <stdio.h>
 #endif
 
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 

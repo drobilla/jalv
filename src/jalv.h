@@ -30,8 +30,8 @@
 #include <zix/sem.h>
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 
 // "Shared" internal application declarations
 JALV_BEGIN_DECLS
