@@ -146,31 +146,18 @@ jalv_process_deactivate(JalvProcess* const proc)
   }
 }
 
-int
-jalv_process_port_init(JalvProcessPort* const  port,
-                       const JalvNodes* const  nodes,
-                       const LilvPlugin* const plugin,
-                       const LilvPort* const   lilv_port)
+static void
+set_port_types(JalvProcessPort* const  port,
+               const JalvNodes* const  nodes,
+               const LilvPlugin* const plugin,
+               const LilvPort* const   lilv_port)
 {
-  const LilvNode* const symbol = lilv_port_get_symbol(plugin, lilv_port);
-
-  port->type     = TYPE_UNKNOWN;
-  port->flow     = FLOW_UNKNOWN;
-  port->sys_port = NULL;
-  port->evbuf    = NULL;
-  port->buf_size = 0U;
-
-  const bool optional =
-    lilv_port_has_property(plugin, lilv_port, nodes->lv2_connectionOptional);
-
-  // Set port flow (input or output)
   if (lilv_port_is_a(plugin, lilv_port, nodes->lv2_InputPort)) {
     port->flow = FLOW_INPUT;
   } else if (lilv_port_is_a(plugin, lilv_port, nodes->lv2_OutputPort)) {
     port->flow = FLOW_OUTPUT;
   }
 
-  // Set port type
   if (lilv_port_is_a(plugin, lilv_port, nodes->lv2_ControlPort)) {
     port->type = TYPE_CONTROL;
   } else if (lilv_port_is_a(plugin, lilv_port, nodes->lv2_AudioPort)) {
@@ -182,8 +169,25 @@ jalv_process_port_init(JalvProcessPort* const  port,
   } else if (lilv_port_is_a(plugin, lilv_port, nodes->atom_AtomPort)) {
     port->type = TYPE_EVENT;
   }
+}
 
-  if (!optional && (!port->flow || !port->type)) {
+int
+jalv_process_port_init(JalvProcessPort* const  port,
+                       const JalvNodes* const  nodes,
+                       const LilvPlugin* const plugin,
+                       const LilvPort* const   lilv_port)
+{
+  const LilvNode* const symbol = lilv_port_get_symbol(plugin, lilv_port);
+
+  port->sys_port = NULL;
+  port->evbuf    = NULL;
+  port->buf_size = 0U;
+
+  // Set flow and type
+  set_port_types(port, nodes, plugin, lilv_port);
+  if ((!port->flow || !port->type) &&
+      !lilv_port_has_property(
+        plugin, lilv_port, nodes->lv2_connectionOptional)) {
     jalv_log(JALV_LOG_ERR,
              "Mandatory port \"%s\" has unknown type\n",
              lilv_node_as_string(symbol));
