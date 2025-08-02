@@ -42,6 +42,13 @@
 #  define REALTIME
 #endif
 
+typedef struct {
+  jack_position_t        pos;
+  jack_transport_state_t state;
+  uint64_t               pos_buf[64];
+  bool                   changed;
+} TransportData;
+
 /// Maximum supported latency in frames (at most 2^24 so all integers work)
 static const float max_latency = 16777216.0f;
 
@@ -118,16 +125,25 @@ process_silent(JalvProcess* const proc, const jack_nframes_t nframes)
   return jalv_bypass(proc, nframes);
 }
 
-static bool
-process_transport(JalvPosition* const          transport,
-                  const jack_transport_state_t state,
-                  const jack_position_t        pos,
-                  const jack_nframes_t         nframes)
+static void
+process_transport(JalvPosition* const    transport,
+                  TransportData* const   data,
+                  LV2_Atom_Forge* const  forge,
+                  const JalvURIDs* const urids,
+                  jack_client_t* const   client,
+                  const jack_nframes_t   nframes)
 {
+  data->state   = jack_transport_query(client, &data->pos);
+  data->changed = false;
+
+  // Get transport state and position
+  jack_position_t              pos     = {0U};
+  const jack_transport_state_t state   = jack_transport_query(client, &pos);
+  const bool                   rolling = state == JackTransportRolling;
+  const bool                   has_bbt = (pos.valid & JackPositionBBT);
+
   // If transport state is not as expected, then something has changed
-  const bool rolling = state == JackTransportRolling;
-  const bool has_bbt = (pos.valid & JackPositionBBT);
-  const bool xport_changed =
+  data->changed =
     (rolling != transport->rolling || pos.frame != transport->position ||
      (has_bbt && pos.beats_per_minute != transport->bpm));
 
@@ -136,37 +152,31 @@ process_transport(JalvPosition* const          transport,
   transport->bpm      = has_bbt ? pos.beats_per_minute : transport->bpm;
   transport->rolling  = rolling;
 
-  return xport_changed;
+  if (data->changed) {
+    // Build an LV2 position object to report change to plugin
+    lv2_atom_forge_set_buffer(
+      forge, (uint8_t*)data->pos_buf, sizeof(data->pos_buf));
+    forge_position(forge, urids, state, pos);
+  }
 }
 
 /// Jack process callback
 static REALTIME int
 process_cb(jack_nframes_t nframes, void* data)
 {
-  JalvBackend* const     backend     = (JalvBackend*)data;
-  const JalvURIDs* const urids       = backend->urids;
-  JalvProcess* const     proc        = backend->process;
-  jack_client_t* const   client      = backend->client;
-  uint64_t               pos_buf[64] = {0U};
-  LV2_Atom* const        lv2_pos     = (LV2_Atom*)pos_buf;
+  JalvBackend* const     backend = (JalvBackend*)data;
+  const JalvURIDs* const urids   = backend->urids;
+  JalvProcess* const     proc    = backend->process;
+  TransportData          xport   = {{0U}, 0, {0U}, false};
 
   // If execution is paused, emit silence and return
   if (proc->run_state == JALV_PAUSED) {
     return process_silent(proc, nframes);
   }
 
-  // Get transport state and position
-  jack_position_t              pos   = {0U};
-  const jack_transport_state_t state = jack_transport_query(client, &pos);
-
-  // Check if transport is discontinuous from last time and update state
-  const bool xport_changed =
-    process_transport(&proc->transport, state, pos, nframes);
-  if (xport_changed) {
-    // Build an LV2 position object to report change to plugin
-    lv2_atom_forge_set_buffer(&proc->forge, (uint8_t*)pos_buf, sizeof(pos_buf));
-    forge_position(&proc->forge, urids, state, pos);
-  }
+  // Process and update transport data
+  process_transport(
+    &proc->transport, &xport, &proc->forge, urids, backend->client, nframes);
 
   // Prepare port buffers
   for (uint32_t p = 0; p < proc->num_ports; ++p) {
@@ -179,10 +189,10 @@ process_cb(jack_nframes_t nframes, void* data)
       lv2_evbuf_reset(port->evbuf, true);
       LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
 
-      if (port->supports_pos && xport_changed) {
+      if (port->supports_pos && xport.changed) {
         // Write new transport position
-        lv2_evbuf_write(
-          &iter, 0, 0, lv2_pos->type, lv2_pos->size, LV2_ATOM_BODY(lv2_pos));
+        LV2_Atom* const pos = (LV2_Atom*)xport.pos_buf;
+        lv2_evbuf_write(&iter, 0, 0, pos->type, pos->size, LV2_ATOM_BODY(pos));
       }
 
       if (port->sys_port) {
@@ -199,7 +209,8 @@ process_cb(jack_nframes_t nframes, void* data)
       // Clear event output for plugin to write to
       lv2_evbuf_reset(port->evbuf, false);
     } else if (port->type == TYPE_CONTROL && port->flow == FLOW_INPUT) {
-      if (xport_changed && port->is_bpm && (pos.valid & JackPositionBBT)) {
+      if (xport.changed && port->is_bpm &&
+          (xport.pos.valid & JackPositionBBT)) {
         proc->controls_buf[p] = proc->transport.bpm;
         jalv_write_control(proc->plugin_to_ui, p, proc->transport.bpm);
       }
