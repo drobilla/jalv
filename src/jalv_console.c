@@ -35,6 +35,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct {
+  int status;     ///< Status code (non-zero on error)
+  int n_controls; ///< Number of control values given
+  int a;          ///< Argument index
+} OptionsState;
+
 static int
 print_usage(const char* name, bool error)
 {
@@ -69,13 +75,6 @@ print_version(void)
   return JALV_EARLY_EXIT_STATUS;
 }
 
-static int
-print_arg_error(const char* const command, const char* const msg)
-{
-  fprintf(stderr, "%s: %s\n", command, msg);
-  return 1;
-}
-
 static void
 print_control_port(const Jalv* const     jalv,
                    const JalvPort* const port,
@@ -107,82 +106,99 @@ jalv_frontend_port_event(Jalv*       jalv,
   }
 }
 
+static char*
+parse_argument(OptionsState* const state,
+               const int           argc,
+               char** const        argv,
+               const char          opt)
+{
+  if (state->a + 1 == argc) {
+    fprintf(stderr, "%s: option requires an argument -- '%c'\n", argv[0], opt);
+    state->status = 1;
+    return argv[state->a]; // whatever, won't be used
+  }
+
+  return argv[++state->a];
+}
+
+static int
+parse_option(OptionsState* const state,
+             JalvOptions* const  opts,
+             const int           argc,
+             char** const        argv)
+{
+  const char* const cmd = argv[0];
+  const char* const opt = argv[state->a];
+
+  if (opt[1] == 'h' || !strcmp(opt, "--help")) {
+    return print_usage(cmd, false);
+  }
+
+  if (opt[1] == 'V' || !strcmp(opt, "--version")) {
+    return print_version();
+  }
+
+  if (opt[1] == 's') {
+    opts->show_ui = true;
+  } else if (opt[1] == 'p') {
+    opts->print_controls = true;
+  } else if (opt[1] == 'U') {
+    opts->ui_uri = jalv_strdup(parse_argument(state, argc, argv, 'U'));
+  } else if (opt[1] == 'l') {
+    opts->load = jalv_strdup(parse_argument(state, argc, argv, 'l'));
+  } else if (opt[1] == 'b') {
+    opts->ring_size = atoi(parse_argument(state, argc, argv, 'b'));
+  } else if (opt[1] == 'c') {
+    char* const arg = parse_argument(state, argc, argv, 'c');
+
+    char** new_controls =
+      (char**)realloc(opts->controls, (state->n_controls + 2) * sizeof(char*));
+    if (!new_controls) {
+      fprintf(stderr, "Out of memory\n");
+      state->status = 12;
+      return state->status;
+    }
+
+    opts->controls                      = new_controls;
+    opts->controls[state->n_controls++] = arg;
+    opts->controls[state->n_controls]   = NULL;
+  } else if (opt[1] == 'i') {
+    opts->non_interactive = true;
+  } else if (opt[1] == 'd') {
+    opts->dump = true;
+  } else if (opt[1] == 't') {
+    opts->trace = true;
+  } else if (opt[1] == 'n') {
+    free(opts->name);
+    opts->name = jalv_strdup(parse_argument(state, argc, argv, 'n'));
+  } else if (opt[1] == 'x') {
+    opts->name_exact = 1;
+  } else {
+    fprintf(stderr, "%s: unknown option -- '%c'\n", cmd, opt[1]);
+    return print_usage(argv[0], true);
+  }
+
+  return state->status;
+}
+
 int
 jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
 {
   const int argc = *args->argc;
   char**    argv = *args->argv;
 
-  const char* const cmd = argv[0];
+  OptionsState state = {0, 0, 1};
 
-  int n_controls = 0;
-  int a          = 1;
-  for (; a < argc && argv[a][0] == '-'; ++a) {
-    if (argv[a][1] == 'h' || !strcmp(argv[a], "--help")) {
-      return print_usage(cmd, false);
-    }
-
-    if (argv[a][1] == 'V' || !strcmp(argv[a], "--version")) {
-      return print_version();
-    }
-
-    if (argv[a][1] == 's') {
-      opts->show_ui = true;
-    } else if (argv[a][1] == 'p') {
-      opts->print_controls = true;
-    } else if (argv[a][1] == 'U') {
-      if (++a == argc) {
-        return print_arg_error(cmd, "option requires an argument -- 'U'");
-      }
-      opts->ui_uri = jalv_strdup(argv[a]);
-    } else if (argv[a][1] == 'l') {
-      if (++a == argc) {
-        return print_arg_error(cmd, "option requires an argument -- 'l'");
-      }
-      opts->load = jalv_strdup(argv[a]);
-    } else if (argv[a][1] == 'b') {
-      if (++a == argc) {
-        return print_arg_error(cmd, "option requires an argument -- 'b'");
-      }
-      opts->ring_size = atoi(argv[a]);
-    } else if (argv[a][1] == 'c') {
-      if (++a == argc) {
-        return print_arg_error(cmd, "option requires an argument -- 'c'");
-      }
-
-      char** new_controls =
-        (char**)realloc(opts->controls, (n_controls + 2) * sizeof(char*));
-      if (!new_controls) {
-        fprintf(stderr, "Out of memory\n");
-        return 12;
-      }
-
-      opts->controls               = new_controls;
-      opts->controls[n_controls++] = argv[a];
-      opts->controls[n_controls]   = NULL;
-    } else if (argv[a][1] == 'i') {
-      opts->non_interactive = true;
-    } else if (argv[a][1] == 'd') {
-      opts->dump = true;
-    } else if (argv[a][1] == 't') {
-      opts->trace = true;
-    } else if (argv[a][1] == 'n') {
-      if (++a == argc) {
-        return print_arg_error(cmd, "option requires an argument -- 'n'");
-      }
-      free(opts->name);
-      opts->name = jalv_strdup(argv[a]);
-    } else if (argv[a][1] == 'x') {
-      opts->name_exact = 1;
-    } else {
-      fprintf(stderr, "%s: unknown option -- '%c'\n", cmd, argv[a][1]);
-      return print_usage(argv[0], true);
+  for (; state.a < argc && argv[state.a][0] == '-'; ++state.a) {
+    const int r = parse_option(&state, opts, argc, argv);
+    if (r) {
+      return r;
     }
   }
 
-  *args->argc = *args->argc - a;
-  *args->argv = *args->argv + a;
-  return 0;
+  *args->argc = *args->argc - state.a;
+  *args->argv = *args->argv + state.a;
+  return state.status;
 }
 
 const char*
