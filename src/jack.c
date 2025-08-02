@@ -54,7 +54,7 @@ static const float max_latency = 16777216.0f;
 
 /// Jack buffer size callback
 static int
-buffer_size_cb(jack_nframes_t nframes, void* data)
+buffer_size_cb(const jack_nframes_t nframes, void* const data)
 {
   JalvBackend* const  backend  = (JalvBackend*)data;
   JalvSettings* const settings = backend->settings;
@@ -73,7 +73,7 @@ buffer_size_cb(jack_nframes_t nframes, void* data)
 
 /// Jack shutdown callback
 static void
-shutdown_cb(void* data)
+shutdown_cb(void* const data)
 {
   JalvBackend* const backend = (JalvBackend*)data;
   zix_sem_post(backend->done);
@@ -162,7 +162,7 @@ process_transport(JalvPosition* const    transport,
 
 /// Jack process callback
 static REALTIME int
-process_cb(jack_nframes_t nframes, void* data)
+process_cb(const jack_nframes_t nframes, void* const data)
 {
   JalvBackend* const     backend = (JalvBackend*)data;
   const JalvURIDs* const urids   = backend->urids;
