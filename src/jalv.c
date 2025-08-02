@@ -750,7 +750,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   if (state) {
     plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
   } else if (*args.argc == 0) {
-    if (!(plugin_uri = jalv_frontend_select_plugin(jalv))) {
+    if (!(plugin_uri = jalv_frontend_select_plugin(world))) {
       jalv_log(JALV_LOG_ERR, "Missing plugin URI, try lv2ls to list plugins\n");
       return -3;
     }

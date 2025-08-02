@@ -47,7 +47,7 @@ jalv_frontend_scale_factor(const Jalv* jalv);
 
 /// Attempt to get a plugin URI selection from the user
 LilvNode*
-jalv_frontend_select_plugin(Jalv* jalv);
+jalv_frontend_select_plugin(LilvWorld* world);
 
 /// Open and run the frontend interface, signalling jalv.done when finished
 int

@@ -1341,7 +1341,7 @@ on_row_activated(GtkTreeView* const       tree_view,
 }
 
 LilvNode*
-jalv_frontend_select_plugin(Jalv* jalv)
+jalv_frontend_select_plugin(LilvWorld* const world)
 {
   // Create the dialog
   GtkWidget* const dialog = gtk_dialog_new_with_buttons(
@@ -1388,7 +1388,7 @@ jalv_frontend_select_plugin(Jalv* jalv)
   // Build the model
   GtkListStore* const store = gtk_list_store_new(
     4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-  const LilvPlugins* plugins = lilv_world_get_all_plugins(jalv->world);
+  const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
   LILV_FOREACH (plugins, i, plugins) {
     const LilvPlugin* const      p      = lilv_plugins_get(plugins, i);
     LilvNode* const              name   = lilv_plugin_get_name(p);
@@ -1434,7 +1434,7 @@ jalv_frontend_select_plugin(Jalv* jalv)
       GValue val = G_VALUE_INIT;
       gtk_tree_model_get_value(model, &selected, 3, &val);
 
-      selected_uri = lilv_new_uri(jalv->world, g_value_get_string(&val));
+      selected_uri = lilv_new_uri(world, g_value_get_string(&val));
 
       g_value_unset(&val);
     }

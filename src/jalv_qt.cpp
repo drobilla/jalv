@@ -657,7 +657,7 @@ jalv_frontend_scale_factor(const Jalv*)
 }
 
 LilvNode*
-jalv_frontend_select_plugin(Jalv*)
+jalv_frontend_select_plugin(LilvWorld*)
 {
   return nullptr;
 }

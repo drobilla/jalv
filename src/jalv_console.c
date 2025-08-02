@@ -347,9 +347,9 @@ jalv_frontend_scale_factor(const Jalv* ZIX_UNUSED(jalv))
 }
 
 LilvNode*
-jalv_frontend_select_plugin(Jalv* jalv)
+jalv_frontend_select_plugin(LilvWorld* const world)
 {
-  (void)jalv;
+  (void)world;
   return NULL;
 }
 
