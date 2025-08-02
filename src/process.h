@@ -49,6 +49,13 @@ typedef struct {
   bool       supports_pos;    ///< Whether event port supports Position
 } JalvProcessPort;
 
+/// Transport state used in the process thread
+typedef struct {
+  uint32_t position; ///< Transport position in frames
+  float    bpm;      ///< Transport tempo in beats per minute
+  bool     rolling;  ///< Transport speed (0=stop, 1=play)
+} JalvPosition;
+
 /**
    State accessed in the process thread.
 
@@ -75,9 +82,7 @@ typedef struct {
   uint32_t         pending_frames;   ///< Frames since last UI update sent
   uint32_t         update_frames;    ///< UI update period in frames, or zero
   uint32_t         plugin_latency;   ///< Latency reported by plugin (if any)
-  uint32_t         position;         ///< Transport position in frames
-  float            bpm;              ///< Transport tempo in beats per minute
-  bool             rolling;          ///< Transport speed (0=stop, 1=play)
+  JalvPosition     transport;        ///< Transport state
   bool             has_ui;           ///< True iff a control UI is present
   bool             trace;            ///< Print debug trace messages
 } JalvProcess;

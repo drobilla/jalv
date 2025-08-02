@@ -119,7 +119,7 @@ process_silent(JalvProcess* const proc, const jack_nframes_t nframes)
 }
 
 static bool
-process_transport(JalvProcess* const           proc,
+process_transport(JalvPosition* const          transport,
                   const jack_transport_state_t state,
                   const jack_position_t        pos,
                   const jack_nframes_t         nframes)
@@ -128,13 +128,13 @@ process_transport(JalvProcess* const           proc,
   const bool rolling = state == JackTransportRolling;
   const bool has_bbt = (pos.valid & JackPositionBBT);
   const bool xport_changed =
-    (rolling != proc->rolling || pos.frame != proc->position ||
-     (has_bbt && pos.beats_per_minute != proc->bpm));
+    (rolling != transport->rolling || pos.frame != transport->position ||
+     (has_bbt && pos.beats_per_minute != transport->bpm));
 
   // Update transport state to expected values for next cycle
-  proc->position = rolling ? pos.frame + nframes : pos.frame;
-  proc->bpm      = has_bbt ? pos.beats_per_minute : proc->bpm;
-  proc->rolling  = rolling;
+  transport->position = rolling ? pos.frame + nframes : pos.frame;
+  transport->bpm      = has_bbt ? pos.beats_per_minute : transport->bpm;
+  transport->rolling  = rolling;
 
   return xport_changed;
 }
@@ -160,7 +160,8 @@ process_cb(jack_nframes_t nframes, void* data)
   const jack_transport_state_t state = jack_transport_query(client, &pos);
 
   // Check if transport is discontinuous from last time and update state
-  const bool xport_changed = process_transport(proc, state, pos, nframes);
+  const bool xport_changed =
+    process_transport(&proc->transport, state, pos, nframes);
   if (xport_changed) {
     // Build an LV2 position object to report change to plugin
     lv2_atom_forge_set_buffer(&proc->forge, (uint8_t*)pos_buf, sizeof(pos_buf));
@@ -199,8 +200,8 @@ process_cb(jack_nframes_t nframes, void* data)
       lv2_evbuf_reset(port->evbuf, false);
     } else if (port->type == TYPE_CONTROL && port->flow == FLOW_INPUT) {
       if (xport_changed && port->is_bpm && (pos.valid & JackPositionBBT)) {
-        proc->controls_buf[p] = proc->bpm;
-        jalv_write_control(proc->plugin_to_ui, p, proc->bpm);
+        proc->controls_buf[p] = proc->transport.bpm;
+        jalv_write_control(proc->plugin_to_ui, p, proc->transport.bpm);
       }
     }
   }
