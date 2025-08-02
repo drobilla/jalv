@@ -40,6 +40,8 @@ jalv_dumper_new(LV2_URID_Map* const map, LV2_URID_Unmap* const unmap)
   serd_env_set_prefix_from_strings(
     env, (const uint8_t*)"xsd", (const uint8_t*)LILV_NS_XSD);
 
+  sratom_set_env(sratom, env);
+
   dumper->env    = env;
   dumper->sratom = sratom;
   dumper->unmap  = unmap;
