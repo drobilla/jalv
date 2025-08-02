@@ -148,14 +148,10 @@ parse_option(OptionsState* const state,
   const char* const opt = argv[state->a];
 
   if (opt[1] == 'h' || !strcmp(opt, "--help")) {
-    return print_usage(cmd, false);
-  }
-
-  if (opt[1] == 'V' || !strcmp(opt, "--version")) {
-    return print_version();
-  }
-
-  if (opt[1] == 's') {
+    state->status = print_usage(cmd, false);
+  } else if (opt[1] == 'V' || !strcmp(opt, "--version")) {
+    state->status = print_version();
+  } else if (opt[1] == 's') {
     opts->show_ui = true;
   } else if (opt[1] == 'p') {
     opts->print_controls = true;
@@ -166,8 +162,7 @@ parse_option(OptionsState* const state,
   } else if (opt[1] == 'b') {
     opts->ring_size = atoi(parse_argument(state, argc, argv, 'b'));
   } else if (opt[1] == 'c') {
-    char* const arg = parse_argument(state, argc, argv, 'c');
-    add_control_argument(state, opts, arg);
+    add_control_argument(state, opts, parse_argument(state, argc, argv, 'c'));
   } else if (opt[1] == 'i') {
     opts->non_interactive = true;
   } else if (opt[1] == 'd') {
@@ -181,7 +176,7 @@ parse_option(OptionsState* const state,
     opts->name_exact = 1;
   } else {
     fprintf(stderr, "%s: unknown option -- '%c'\n", cmd, opt[1]);
-    return print_usage(argv[0], true);
+    state->status = print_usage(argv[0], true);
   }
 
   return state->status;
