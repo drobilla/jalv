@@ -160,6 +160,110 @@ process_transport(JalvPosition* const    transport,
   }
 }
 
+// Prepare a port before running the plugin for a block
+static void
+pre_process_port(JalvProcess* const         proc,
+                 const JalvURIDs* const     urids,
+                 const TransportData* const xport,
+                 JalvProcessPort* const     port,
+                 const uint32_t             index,
+                 const jack_nframes_t       nframes)
+{
+  if (port->sys_port && (port->type == TYPE_AUDIO || port->type == TYPE_CV)) {
+    // Connect plugin port directly to Jack port buffer
+    lilv_instance_connect_port(
+      proc->instance, index, jack_port_get_buffer(port->sys_port, nframes));
+  } else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
+    lv2_evbuf_reset(port->evbuf, true);
+    LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
+
+    if (port->supports_pos && xport->changed) {
+      // Write new transport position
+      LV2_Atom* const pos = (LV2_Atom*)xport->pos_buf;
+      lv2_evbuf_write(&iter, 0, 0, pos->type, pos->size, LV2_ATOM_BODY(pos));
+    }
+
+    if (port->sys_port) {
+      // Write Jack MIDI input
+      void* buf = jack_port_get_buffer(port->sys_port, nframes);
+      for (uint32_t i = 0; i < jack_midi_get_event_count(buf); ++i) {
+        jack_midi_event_t ev;
+        jack_midi_event_get(&ev, buf, i);
+        lv2_evbuf_write(
+          &iter, ev.time, 0, urids->midi_MidiEvent, ev.size, ev.buffer);
+      }
+    }
+  } else if (port->type == TYPE_EVENT) {
+    // Clear event output for plugin to write to
+    lv2_evbuf_reset(port->evbuf, false);
+  } else if (port->type == TYPE_CONTROL && port->flow == FLOW_INPUT) {
+    if (xport->changed && port->is_bpm &&
+        (xport->pos.valid & JackPositionBBT)) {
+      proc->controls_buf[index] = proc->transport.bpm;
+      jalv_write_control(proc->plugin_to_ui, index, proc->transport.bpm);
+    }
+  }
+}
+
+// Process port output after running the plugin for a block
+static void
+post_process_port(JalvProcess* const     proc,
+                  const JalvURIDs* const urids,
+                  JalvProcessPort* const port,
+                  const uint32_t         index,
+                  const jack_nframes_t   nframes,
+                  const bool             send_updates)
+{
+  if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
+      port->reports_latency) {
+    // Get the latency in frames from the control output truncated to integer
+    const float    value = proc->controls_buf[index];
+    const uint32_t frames =
+      (value >= 0.0f && value <= max_latency) ? (uint32_t)value : 0U;
+
+    if (proc->plugin_latency != frames) {
+      // Update the cached value and notify the UI if the latency changed
+      proc->plugin_latency = frames;
+
+      const JalvLatencyChange body   = {frames};
+      const JalvMessageHeader header = {LATENCY_CHANGE, sizeof(body)};
+      jalv_write_split_message(
+        proc->plugin_to_ui, &header, sizeof(header), &body, sizeof(body));
+    }
+  } else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
+    void* buf = NULL;
+    if (port->sys_port) {
+      buf = jack_port_get_buffer(port->sys_port, nframes);
+      jack_midi_clear_buffer(buf);
+    }
+
+    for (LV2_Evbuf_Iterator i = lv2_evbuf_begin(port->evbuf);
+         lv2_evbuf_is_valid(i);
+         i = lv2_evbuf_next(i)) {
+      // Get event from LV2 buffer
+      uint32_t frames    = 0;
+      uint32_t subframes = 0;
+      LV2_URID type      = 0;
+      uint32_t size      = 0;
+      void*    body      = NULL;
+      lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
+
+      if (buf && type == urids->midi_MidiEvent) {
+        // Write MIDI event to Jack output
+        jack_midi_event_write(buf, frames, body, size);
+      }
+
+      if (proc->has_ui) {
+        // Forward event to UI
+        jalv_write_event(proc->plugin_to_ui, index, size, type, body);
+      }
+    }
+  } else if (send_updates && port->flow == FLOW_OUTPUT &&
+             port->type == TYPE_CONTROL) {
+    jalv_write_control(proc->plugin_to_ui, index, proc->controls_buf[index]);
+  }
+}
+
 /// Jack process callback
 static REALTIME int
 process_cb(const jack_nframes_t nframes, void* const data)
@@ -180,41 +284,7 @@ process_cb(const jack_nframes_t nframes, void* const data)
 
   // Prepare port buffers
   for (uint32_t p = 0; p < proc->num_ports; ++p) {
-    JalvProcessPort* const port = &proc->ports[p];
-    if (port->sys_port && (port->type == TYPE_AUDIO || port->type == TYPE_CV)) {
-      // Connect plugin port directly to Jack port buffer
-      lilv_instance_connect_port(
-        proc->instance, p, jack_port_get_buffer(port->sys_port, nframes));
-    } else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
-      lv2_evbuf_reset(port->evbuf, true);
-      LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
-
-      if (port->supports_pos && xport.changed) {
-        // Write new transport position
-        LV2_Atom* const pos = (LV2_Atom*)xport.pos_buf;
-        lv2_evbuf_write(&iter, 0, 0, pos->type, pos->size, LV2_ATOM_BODY(pos));
-      }
-
-      if (port->sys_port) {
-        // Write Jack MIDI input
-        void* buf = jack_port_get_buffer(port->sys_port, nframes);
-        for (uint32_t i = 0; i < jack_midi_get_event_count(buf); ++i) {
-          jack_midi_event_t ev;
-          jack_midi_event_get(&ev, buf, i);
-          lv2_evbuf_write(
-            &iter, ev.time, 0, urids->midi_MidiEvent, ev.size, ev.buffer);
-        }
-      }
-    } else if (port->type == TYPE_EVENT) {
-      // Clear event output for plugin to write to
-      lv2_evbuf_reset(port->evbuf, false);
-    } else if (port->type == TYPE_CONTROL && port->flow == FLOW_INPUT) {
-      if (xport.changed && port->is_bpm &&
-          (xport.pos.valid & JackPositionBBT)) {
-        proc->controls_buf[p] = proc->transport.bpm;
-        jalv_write_control(proc->plugin_to_ui, p, proc->transport.bpm);
-      }
-    }
+    pre_process_port(proc, urids, &xport, &proc->ports[p], p, nframes);
   }
 
   // Run plugin for this cycle
@@ -225,55 +295,12 @@ process_cb(const jack_nframes_t nframes, void* const data)
 
   // Deliver MIDI output and UI events
   for (uint32_t p = 0; p < proc->num_ports; ++p) {
-    JalvProcessPort* const port = &proc->ports[p];
-    if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
-        port->reports_latency) {
-      // Get the latency in frames from the control output truncated to integer
-      const float    value = proc->controls_buf[p];
-      const uint32_t frames =
-        (value >= 0.0f && value <= max_latency) ? (uint32_t)value : 0U;
-
-      if (proc->plugin_latency != frames) {
-        // Update the cached value and notify the UI if the latency changed
-        proc->plugin_latency = frames;
-
-        const JalvLatencyChange body   = {frames};
-        const JalvMessageHeader header = {LATENCY_CHANGE, sizeof(body)};
-        jalv_write_split_message(
-          proc->plugin_to_ui, &header, sizeof(header), &body, sizeof(body));
-      }
-    } else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
-      void* buf = NULL;
-      if (port->sys_port) {
-        buf = jack_port_get_buffer(port->sys_port, nframes);
-        jack_midi_clear_buffer(buf);
-      }
-
-      for (LV2_Evbuf_Iterator i = lv2_evbuf_begin(port->evbuf);
-           lv2_evbuf_is_valid(i);
-           i = lv2_evbuf_next(i)) {
-        // Get event from LV2 buffer
-        uint32_t frames    = 0;
-        uint32_t subframes = 0;
-        LV2_URID type      = 0;
-        uint32_t size      = 0;
-        void*    body      = NULL;
-        lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
-
-        if (buf && type == urids->midi_MidiEvent) {
-          // Write MIDI event to Jack output
-          jack_midi_event_write(buf, frames, body, size);
-        }
-
-        if (proc->has_ui) {
-          // Forward event to UI
-          jalv_write_event(proc->plugin_to_ui, p, size, type, body);
-        }
-      }
-    } else if (pst == JALV_PROCESS_SEND_UPDATES && port->flow == FLOW_OUTPUT &&
-               port->type == TYPE_CONTROL) {
-      jalv_write_control(proc->plugin_to_ui, p, proc->controls_buf[p]);
-    }
+    post_process_port(proc,
+                      urids,
+                      &proc->ports[p],
+                      p,
+                      nframes,
+                      pst == JALV_PROCESS_SEND_UPDATES);
   }
 
   return 0;
