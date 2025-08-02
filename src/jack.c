@@ -30,6 +30,7 @@
 #  include <jack/metadata.h>
 #endif
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -207,15 +208,16 @@ pre_process_port(JalvProcess* const         proc,
 
 // Process port output after running the plugin for a block
 static void
-post_process_port(JalvProcess* const     proc,
-                  const JalvURIDs* const urids,
-                  JalvProcessPort* const port,
-                  const uint32_t         index,
-                  const jack_nframes_t   nframes,
-                  const bool             send_updates)
+post_process_output_port(JalvProcess* const     proc,
+                         const JalvURIDs* const urids,
+                         JalvProcessPort* const port,
+                         const uint32_t         index,
+                         const jack_nframes_t   nframes,
+                         const bool             send_updates)
 {
-  if (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
-      port->reports_latency) {
+  assert(port->flow == FLOW_OUTPUT);
+
+  if (port->type == TYPE_CONTROL && port->reports_latency) {
     // Get the latency in frames from the control output truncated to integer
     const float    value = proc->controls_buf[index];
     const uint32_t frames =
@@ -230,7 +232,7 @@ post_process_port(JalvProcess* const     proc,
       jalv_write_split_message(
         proc->plugin_to_ui, &header, sizeof(header), &body, sizeof(body));
     }
-  } else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
+  } else if (port->type == TYPE_EVENT) {
     void* buf = NULL;
     if (port->sys_port) {
       buf = jack_port_get_buffer(port->sys_port, nframes);
@@ -258,8 +260,7 @@ post_process_port(JalvProcess* const     proc,
         jalv_write_event(proc->plugin_to_ui, index, size, type, body);
       }
     }
-  } else if (send_updates && port->flow == FLOW_OUTPUT &&
-             port->type == TYPE_CONTROL) {
+  } else if (send_updates && port->type == TYPE_CONTROL) {
     jalv_write_control(proc->plugin_to_ui, index, proc->controls_buf[index]);
   }
 }
@@ -292,12 +293,14 @@ process_cb(const jack_nframes_t nframes, void* const data)
 
   // Deliver MIDI output and UI events
   for (uint32_t p = 0; p < proc->num_ports; ++p) {
-    post_process_port(proc,
-                      urids,
-                      &proc->ports[p],
-                      p,
-                      nframes,
-                      pst == JALV_PROCESS_SEND_UPDATES);
+    if (proc->ports[p].flow == FLOW_OUTPUT) {
+      post_process_output_port(proc,
+                               urids,
+                               &proc->ports[p],
+                               p,
+                               nframes,
+                               pst == JALV_PROCESS_SEND_UPDATES);
+    }
   }
 
   return 0;
