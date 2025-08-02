@@ -108,22 +108,26 @@ jalv_process_activate(JalvProcess* const        proc,
         proc->instance, i, lv2_evbuf_get_buffer(port->evbuf));
 
       if (port->flow == FLOW_INPUT) {
-        max_msg_size = MAX(max_msg_size, port->buf_size);
+        max_msg_size = MAX(max_msg_size, size);
       }
     }
   }
 
-  if (max_msg_size != proc->process_msg_size) {
-    // Allocate UI<=>process communication rings and receive buffer
-    zix_free(NULL, proc->process_msg);
-    zix_ring_free(proc->plugin_to_ui);
-    zix_ring_free(proc->ui_to_plugin);
-
+  // Allocate UI<=>process communication rings and receive buffer
+  if (!proc->ui_to_plugin) {
     proc->ui_to_plugin = zix_ring_new(NULL, settings->ring_size);
-    proc->plugin_to_ui = zix_ring_new(NULL, settings->ring_size);
-    proc->process_msg  = zix_aligned_alloc(NULL, 8U, proc->process_msg_size);
     zix_ring_mlock(proc->ui_to_plugin);
+  }
+  if (!proc->plugin_to_ui) {
+    proc->plugin_to_ui = zix_ring_new(NULL, settings->ring_size);
     zix_ring_mlock(proc->plugin_to_ui);
+  }
+
+  // Allocate UI=>process message receive buffer
+  if (!proc->process_msg || proc->process_msg_size != max_msg_size) {
+    zix_free(NULL, proc->process_msg);
+    proc->process_msg_size = max_msg_size;
+    proc->process_msg = zix_aligned_alloc(NULL, 8U, proc->process_msg_size);
   }
 
   proc->process_msg_size = max_msg_size;

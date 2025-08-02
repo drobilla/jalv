@@ -143,7 +143,10 @@ create_port(Jalv* jalv, uint32_t port_index)
   // Update maximum buffer sizes
   const uint32_t buf_size = pport->buf_size;
   jalv->opts.ring_size = MAX(jalv->opts.ring_size, buf_size * N_BUFFER_CYCLES);
-  if (port->flow == FLOW_OUTPUT) {
+  if (port->flow == FLOW_INPUT) {
+    jalv->process.process_msg_size =
+      MAX(jalv->process.process_msg_size, buf_size);
+  } else if (port->flow == FLOW_OUTPUT) {
     jalv->ui_msg_size = MAX(jalv->ui_msg_size, buf_size);
   }
 
@@ -872,7 +875,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv_init_lv2_options(&jalv->features, &jalv->urids, settings);
 
   // Create Plugin => UI communication buffers
-  jalv->ui_msg = zix_aligned_alloc(NULL, 8U, jalv->ui_msg_size);
+  jalv->ui_msg_size = MAX(jalv->ui_msg_size, settings->midi_buf_size);
+  jalv->ui_msg      = zix_aligned_alloc(NULL, 8U, jalv->ui_msg_size);
 
   // Build feature list for passing to plugins
   const LV2_Feature* const features[] = {&jalv->features.map_feature,
@@ -914,7 +918,6 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   // Point things to the instance that require it
 
-  // jalv->process.instance = instance;
   jalv->features.ext_data.data_access =
     lilv_instance_get_descriptor(instance)->extension_data;
 
