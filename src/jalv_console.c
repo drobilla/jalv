@@ -121,6 +121,23 @@ parse_argument(OptionsState* const state,
   return argv[++state->a];
 }
 
+static void
+add_control_argument(OptionsState* const state,
+                     JalvOptions* const  opts,
+                     char* const         arg)
+{
+  char** new_controls =
+    (char**)realloc(opts->controls, (state->n_controls + 2) * sizeof(char*));
+  if (!new_controls) {
+    fprintf(stderr, "Out of memory\n");
+    state->status = 12;
+  } else {
+    opts->controls                      = new_controls;
+    opts->controls[state->n_controls++] = arg;
+    opts->controls[state->n_controls]   = NULL;
+  }
+}
+
 static int
 parse_option(OptionsState* const state,
              JalvOptions* const  opts,
@@ -150,18 +167,7 @@ parse_option(OptionsState* const state,
     opts->ring_size = atoi(parse_argument(state, argc, argv, 'b'));
   } else if (opt[1] == 'c') {
     char* const arg = parse_argument(state, argc, argv, 'c');
-
-    char** new_controls =
-      (char**)realloc(opts->controls, (state->n_controls + 2) * sizeof(char*));
-    if (!new_controls) {
-      fprintf(stderr, "Out of memory\n");
-      state->status = 12;
-      return state->status;
-    }
-
-    opts->controls                      = new_controls;
-    opts->controls[state->n_controls++] = arg;
-    opts->controls[state->n_controls]   = NULL;
+    add_control_argument(state, opts, arg);
   } else if (opt[1] == 'i') {
     opts->non_interactive = true;
   } else if (opt[1] == 'd') {
