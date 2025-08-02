@@ -1,4 +1,4 @@
-// Copyright 2008-2022 David Robillard <d@drobilla.net>
+// Copyright 2008-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef LV2_EVBUF_H
@@ -48,7 +48,11 @@ lv2_evbuf_reset(LV2_Evbuf* evbuf, bool input);
 
 /// Return the total padded size of the events stored in the buffer
 ZIX_REALTIME uint32_t
-lv2_evbuf_get_size(LV2_Evbuf* evbuf);
+lv2_evbuf_get_size(const LV2_Evbuf* evbuf);
+
+/// Return the total capacity of the buffer in bytes
+ZIX_REALTIME uint32_t
+lv2_evbuf_get_capacity(const LV2_Evbuf* evbuf);
 
 /**
    Return the actual buffer implementation.

@@ -1,4 +1,4 @@
-// Copyright 2008-2022 David Robillard <d@drobilla.net>
+// Copyright 2008-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "lv2_evbuf.h"
@@ -68,13 +68,19 @@ lv2_evbuf_reset(LV2_Evbuf* evbuf, bool input)
 }
 
 ZIX_REALTIME uint32_t
-lv2_evbuf_get_size(LV2_Evbuf* evbuf)
+lv2_evbuf_get_size(const LV2_Evbuf* evbuf)
 {
   assert(evbuf->buf.atom.type != evbuf->atom_Sequence ||
          evbuf->buf.atom.size >= sizeof(LV2_Atom_Sequence_Body));
   return evbuf->buf.atom.type == evbuf->atom_Sequence
            ? evbuf->buf.atom.size - sizeof(LV2_Atom_Sequence_Body)
            : 0;
+}
+
+ZIX_REALTIME uint32_t
+lv2_evbuf_get_capacity(const LV2_Evbuf* evbuf)
+{
+  return evbuf->capacity;
 }
 
 ZIX_REALTIME void*

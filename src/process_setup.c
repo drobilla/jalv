@@ -97,9 +97,11 @@ jalv_process_activate(JalvProcess* const        proc,
       const size_t size =
         port->buf_size ? port->buf_size : settings->midi_buf_size;
 
-      lv2_evbuf_free(port->evbuf);
-      port->evbuf =
-        lv2_evbuf_new(size, urids->atom_Chunk, urids->atom_Sequence);
+      if (!port->evbuf || lv2_evbuf_get_capacity(port->evbuf) != size) {
+        lv2_evbuf_free(port->evbuf);
+        port->evbuf =
+          lv2_evbuf_new(size, urids->atom_Chunk, urids->atom_Sequence);
+      }
 
       lv2_evbuf_reset(port->evbuf, port->flow == FLOW_INPUT);
       lilv_instance_connect_port(
