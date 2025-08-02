@@ -4,6 +4,7 @@
 #include "process.h"
 
 #include "comm.h"
+#include "log.h"
 #include "lv2_evbuf.h"
 #include "types.h"
 #include "worker.h"
@@ -18,7 +19,7 @@
 #include <assert.h>
 #include <stddef.h>
 
-ZIX_REALTIME char*
+static char*
 jalv_process_strerror(const JalvProcessStatus pst)
 {
   switch (pst) {
@@ -117,6 +118,11 @@ jalv_run(JalvProcess* const proc, const uint32_t nframes)
 {
   // Read and apply control change events from UI
   JalvProcessStatus pst = apply_ui_events(proc, nframes);
+  if (pst && proc->trace) {
+    ZIX_DISABLE_EFFECT_WARNINGS // Debug tracing explicitly enabled
+    jalv_log(JALV_LOG_ERR, "%s\n", jalv_process_strerror(pst));
+    ZIX_RESTORE_WARNINGS
+  }
 
   // Run plugin for this cycle
   ZIX_DISABLE_EFFECT_WARNINGS // Assume realtime-safe plugin

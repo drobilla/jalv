@@ -289,9 +289,6 @@ process_cb(const jack_nframes_t nframes, void* const data)
 
   // Run plugin for this cycle
   const JalvProcessStatus pst = jalv_run(proc, nframes);
-  if (proc->trace && pst > JALV_PROCESS_SEND_UPDATES) {
-    jalv_log(JALV_LOG_ERR, "%s\n", jalv_process_strerror(pst));
-  }
 
   // Deliver MIDI output and UI events
   for (uint32_t p = 0; p < proc->num_ports; ++p) {

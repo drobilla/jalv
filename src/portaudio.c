@@ -75,9 +75,6 @@ process_cb(const void*                     inputs,
 
   // Run plugin for this cycle
   const JalvProcessStatus pst = jalv_run(proc, nframes);
-  if (proc->trace && pst > JALV_PROCESS_SEND_UPDATES) {
-    jalv_log(JALV_LOG_ERROR, "%s\n", jalv_process_strerror(pst));
-  }
 
   // Deliver UI events
   for (uint32_t p = 0; p < proc->num_ports; ++p) {

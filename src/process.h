@@ -87,10 +87,6 @@ typedef struct {
   bool             trace;            ///< Print debug trace messages
 } JalvProcess;
 
-// Return a string describing a process thread error
-ZIX_REALTIME char*
-jalv_process_strerror(JalvProcessStatus pst);
-
 /**
    Run the plugin for a block of frames.
 
