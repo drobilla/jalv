@@ -197,12 +197,11 @@ pre_process_port(JalvProcess* const         proc,
   } else if (port->type == TYPE_EVENT) {
     // Clear event output for plugin to write to
     lv2_evbuf_reset(port->evbuf, false);
-  } else if (port->type == TYPE_CONTROL && port->flow == FLOW_INPUT) {
-    if (xport->changed && port->is_bpm &&
-        (xport->pos.valid & JackPositionBBT)) {
-      proc->controls_buf[index] = proc->transport.bpm;
-      jalv_write_control(proc->plugin_to_ui, index, proc->transport.bpm);
-    }
+  } else if (port->is_bpm && xport->changed &&
+             (xport->pos.valid & JackPositionBBT)) {
+    // Set BPM control port to new tempo and notify the UI
+    proc->controls_buf[index] = proc->transport.bpm;
+    jalv_write_control(proc->plugin_to_ui, index, proc->transport.bpm);
   }
 }
 
