@@ -71,7 +71,7 @@ jalv_process_deactivate(JalvProcess* proc);
 int
 jalv_process_port_init(JalvProcessPort*  port,
                        const JalvNodes*  nodes,
-                       const LilvPlugin* lilv_plugin,
+                       const LilvPlugin* plugin,
                        const LilvPort*   lilv_port);
 
 /**

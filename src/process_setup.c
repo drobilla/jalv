@@ -149,10 +149,10 @@ jalv_process_deactivate(JalvProcess* const proc)
 int
 jalv_process_port_init(JalvProcessPort* const  port,
                        const JalvNodes* const  nodes,
-                       const LilvPlugin* const lilv_plugin,
+                       const LilvPlugin* const plugin,
                        const LilvPort* const   lilv_port)
 {
-  const LilvNode* const symbol = lilv_port_get_symbol(lilv_plugin, lilv_port);
+  const LilvNode* const symbol = lilv_port_get_symbol(plugin, lilv_port);
 
   port->type     = TYPE_UNKNOWN;
   port->flow     = FLOW_UNKNOWN;
@@ -160,48 +160,45 @@ jalv_process_port_init(JalvProcessPort* const  port,
   port->evbuf    = NULL;
   port->buf_size = 0U;
 
-  const bool optional = lilv_port_has_property(
-    lilv_plugin, lilv_port, nodes->lv2_connectionOptional);
+  const bool optional =
+    lilv_port_has_property(plugin, lilv_port, nodes->lv2_connectionOptional);
 
   // Set port flow (input or output)
-  if (lilv_port_is_a(lilv_plugin, lilv_port, nodes->lv2_InputPort)) {
+  if (lilv_port_is_a(plugin, lilv_port, nodes->lv2_InputPort)) {
     port->flow = FLOW_INPUT;
-  } else if (lilv_port_is_a(lilv_plugin, lilv_port, nodes->lv2_OutputPort)) {
+  } else if (lilv_port_is_a(plugin, lilv_port, nodes->lv2_OutputPort)) {
     port->flow = FLOW_OUTPUT;
-  } else if (!optional) {
-    jalv_log(JALV_LOG_ERR,
-             "Mandatory port \"%s\" is neither input nor output\n",
-             lilv_node_as_string(symbol));
-    return 1;
   }
 
   // Set port type
-  if (lilv_port_is_a(lilv_plugin, lilv_port, nodes->lv2_ControlPort)) {
+  if (lilv_port_is_a(plugin, lilv_port, nodes->lv2_ControlPort)) {
     port->type = TYPE_CONTROL;
-  } else if (lilv_port_is_a(lilv_plugin, lilv_port, nodes->lv2_AudioPort)) {
+  } else if (lilv_port_is_a(plugin, lilv_port, nodes->lv2_AudioPort)) {
     port->type = TYPE_AUDIO;
 #if USE_JACK_METADATA
-  } else if (lilv_port_is_a(lilv_plugin, lilv_port, nodes->lv2_CVPort)) {
+  } else if (lilv_port_is_a(plugin, lilv_port, nodes->lv2_CVPort)) {
     port->type = TYPE_CV;
 #endif
-  } else if (lilv_port_is_a(lilv_plugin, lilv_port, nodes->atom_AtomPort)) {
+  } else if (lilv_port_is_a(plugin, lilv_port, nodes->atom_AtomPort)) {
     port->type = TYPE_EVENT;
-  } else if (!optional) {
+  }
+
+  if (!optional && (!port->flow || !port->type)) {
     jalv_log(JALV_LOG_ERR,
-             "Mandatory port \"%s\" has unknown data type\n",
+             "Mandatory port \"%s\" has unknown type\n",
              lilv_node_as_string(symbol));
     return 1;
   }
 
   // Set symbol and label
-  LilvNode* const name = lilv_port_get_name(lilv_plugin, lilv_port);
+  LilvNode* const name = lilv_port_get_name(plugin, lilv_port);
   port->symbol = symbol ? jalv_strdup(lilv_node_as_string(symbol)) : NULL;
   port->label  = name ? jalv_strdup(lilv_node_as_string(name)) : NULL;
   lilv_node_free(name);
 
   // Set buffer size
   LilvNode* const min_size =
-    lilv_port_get(lilv_plugin, lilv_port, nodes->rsz_minimumSize);
+    lilv_port_get(plugin, lilv_port, nodes->rsz_minimumSize);
   if (min_size && lilv_node_is_int(min_size)) {
     port->buf_size = (uint32_t)MAX(lilv_node_as_int(min_size), 0);
   }
@@ -209,25 +206,23 @@ jalv_process_port_init(JalvProcessPort* const  port,
 
   // Set flags
 
-  port->is_primary = (port->type == TYPE_EVENT &&
-                      jalv_port_has_designation(
-                        nodes, lilv_plugin, lilv_port, nodes->lv2_control));
+  port->is_primary =
+    (port->type == TYPE_EVENT &&
+     jalv_port_has_designation(nodes, plugin, lilv_port, nodes->lv2_control));
 
   port->reports_latency =
     (port->flow == FLOW_OUTPUT && port->type == TYPE_CONTROL &&
-     (lilv_port_has_property(
-        lilv_plugin, lilv_port, nodes->lv2_reportsLatency) ||
-      jalv_port_has_designation(
-        nodes, lilv_plugin, lilv_port, nodes->lv2_latency)));
+     (lilv_port_has_property(plugin, lilv_port, nodes->lv2_reportsLatency) ||
+      jalv_port_has_designation(nodes, plugin, lilv_port, nodes->lv2_latency)));
 
   port->supports_midi =
-    lilv_port_supports_event(lilv_plugin, lilv_port, nodes->midi_MidiEvent);
+    lilv_port_supports_event(plugin, lilv_port, nodes->midi_MidiEvent);
 
   port->supports_pos =
-    lilv_port_supports_event(lilv_plugin, lilv_port, nodes->time_Position);
+    lilv_port_supports_event(plugin, lilv_port, nodes->time_Position);
 
   port->is_bpm = jalv_port_has_designation(
-    nodes, lilv_plugin, lilv_port, nodes->time_beatsPerMinute);
+    nodes, plugin, lilv_port, nodes->time_beatsPerMinute);
 
   return 0;
 }
