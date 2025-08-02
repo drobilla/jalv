@@ -68,7 +68,7 @@ static int
 print_version(void)
 {
   printf("jalv " JALV_VERSION " <http://drobilla.net/software/jalv>\n");
-  printf("Copyright 2011-2024 David Robillard <d@drobilla.net>\n"
+  printf("Copyright 2011-2025 David Robillard <d@drobilla.net>\n"
          "License ISC: <https://spdx.org/licenses/ISC>.\n"
          "This is free software; you are free to change and redistribute it."
          "\nThere is NO WARRANTY, to the extent permitted by law.\n");
