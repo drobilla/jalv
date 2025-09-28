@@ -45,15 +45,15 @@ static int
 print_usage(const char* name, bool error)
 {
   FILE* const os = error ? stderr : stdout;
-  fprintf(os, "Usage: %s [OPTION...] PLUGIN_URI\n", name);
+  fprintf(os, "Usage: %s [OPTION...] PLUGIN_STATE\n", name);
   fprintf(os,
           "Run an LV2 plugin as a Jack application.\n"
+          "PLUGIN_STATE can be a plugin/preset URI, or a path.\n\n"
           "  -b SIZE     Buffer size for plugin <=> UI communication\n"
           "  -c SYM=VAL  Set control value (like \"vol=1.4\")\n"
           "  -d          Dump plugin <=> UI communication\n"
           "  -h          Display this help and exit\n"
           "  -i          Ignore keyboard input, run non-interactively\n"
-          "  -l DIR      Load state from save directory\n"
           "  -n NAME     JACK client name\n"
           "  -p          Print control output changes to stdout\n"
           "  -s          Show plugin UI if possible\n"
@@ -158,8 +158,6 @@ parse_option(OptionsState* const state,
     opts->print_controls = true;
   } else if (opt[1] == 'U') {
     opts->ui_uri = jalv_strdup(parse_argument(state, argc, argv, 'U'));
-  } else if (opt[1] == 'l') {
-    opts->load = jalv_strdup(parse_argument(state, argc, argv, 'l'));
   } else if (opt[1] == 'b') {
     opts->ring_size = atoi(parse_argument(state, argc, argv, 'b'));
   } else if (opt[1] == 'c') {

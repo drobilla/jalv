@@ -23,12 +23,13 @@ jalv (1.6.9) unstable; urgency=medium
   * Remove transport position dumping from Jack process callback
   * Replace use of deprecated Gtk interfaces
   * Rewrite man pages in mdoc
+  * Simplify and unify plugin and preset command-line arguments
   * Switch to external zix dependency
   * Use Gtk switches instead of checkboxes for toggle controls
   * Use fewer platform-specific APIs
   * Use portable zix filesystem API
 
- -- David Robillard <d@drobilla.net>  Fri, 01 Aug 2025 20:11:38 +0000
+ -- David Robillard <d@drobilla.net>  Sun, 28 Sep 2025 13:54:35 +0000
 
 jalv (1.6.8) stable; urgency=medium
 

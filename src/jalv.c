@@ -39,9 +39,9 @@
 #include <lv2/ui/ui.h>
 #include <lv2/urid/urid.h>
 #include <lv2/worker/worker.h>
+#include <serd/serd.h>
 #include <zix/allocator.h>
 #include <zix/filesystem.h>
-#include <zix/path.h>
 #include <zix/ring.h>
 #include <zix/sem.h>
 #include <zix/status.h>
@@ -669,21 +669,43 @@ jalv_init_ui_settings(Jalv* const jalv)
   jalv_log(JALV_LOG_INFO, "Scale factor: %.01f\n", settings->ui_scale_factor);
 }
 
+/// Find the initial state and set jalv->plugin
 static LilvState*
-initial_state(LilvWorld* const    world,
-              LV2_URID_Map* const urid_map,
-              const char* const   state_path)
+open_plugin_state(Jalv* const                   jalv,
+                  LV2_URID_Map* const           urid_map,
+                  const JalvFrontendArgs* const args)
 {
-  LilvState* state = NULL;
-  if (state_path) {
-    if (zix_file_type(state_path) == ZIX_FILE_TYPE_DIRECTORY) {
-      char* const path = zix_path_join(NULL, state_path, "state.ttl");
-      state            = lilv_state_new_from_file(world, urid_map, NULL, path);
-      free(path);
+  LilvWorld* const         world   = jalv->world;
+  const LilvPlugins* const plugins = lilv_world_get_all_plugins(world);
+  LilvState*               state   = NULL;
+
+  if (*args->argc > 1) {
+    jalv_log(JALV_LOG_ERR, "Unexpected trailing arguments\n");
+    return NULL;
+  }
+
+  if (!*args->argc) {
+    // No URI or path given, open plugin selector
+    LilvNode* const plugin_uri = jalv_frontend_select_plugin(world);
+    jalv->plugin               = lilv_plugins_get_by_uri(plugins, plugin_uri);
+    lilv_node_free(plugin_uri);
+  } else {
+    // URI or path given as command-line argument
+    const char* const arg = (*args->argv)[0];
+    if (serd_uri_string_has_scheme((const uint8_t*)arg)) {
+      LilvNode* state_uri = lilv_new_uri(jalv->world, arg);
+      state = lilv_state_new_from_world(jalv->world, urid_map, state_uri);
+      lilv_node_free(state_uri);
     } else {
-      state = lilv_state_new_from_file(world, urid_map, NULL, state_path);
+      state = lilv_state_new_from_file(jalv->world, urid_map, NULL, arg);
+    }
+
+    if (state) {
+      jalv->plugin =
+        lilv_plugins_get_by_uri(plugins, lilv_state_get_plugin_uri(state));
     }
   }
+
   return state;
 }
 
@@ -738,40 +760,18 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     jalv_log(JALV_LOG_WARNING, "Failed to create temporary state directory\n");
   }
 
-  // Load initial state given in options if any
-  LilvState* state = initial_state(world, urid_map, jalv->opts.load);
-  if (jalv->opts.load && !state) {
-    jalv_log(JALV_LOG_ERR, "Failed to load state from %s\n", jalv->opts.load);
+  // Find the initial state (and thereby the plugin URI)
+  LilvState* state = open_plugin_state(jalv, urid_map, &args);
+  if (!state || !jalv->plugin) {
+    jalv_log(JALV_LOG_ERR, "Failed to find initial plugin state\n");
     return -2;
   }
 
-  // Get plugin URI from loaded state or command line
-  LilvNode* plugin_uri = NULL;
-  if (state) {
-    plugin_uri = lilv_node_duplicate(lilv_state_get_plugin_uri(state));
-  } else if (*args.argc == 0) {
-    if (!(plugin_uri = jalv_frontend_select_plugin(world))) {
-      jalv_log(JALV_LOG_ERR, "Missing plugin URI, try lv2ls to list plugins\n");
-      return -3;
-    }
-  } else if (*args.argc == 1) {
-    plugin_uri = lilv_new_uri(world, (*args.argv)[0]);
-  } else {
-    jalv_log(JALV_LOG_ERR, "Unexpected trailing arguments\n");
-    return -1;
-  }
+  jalv_log(JALV_LOG_INFO,
+           "Plugin:       %s\n",
+           lilv_node_as_string(lilv_plugin_get_uri(jalv->plugin)));
 
-  // Find plugin
-  const char* const        plugin_uri_str = lilv_node_as_string(plugin_uri);
-  const LilvPlugins* const plugins        = lilv_world_get_all_plugins(world);
-  jalv_log(JALV_LOG_INFO, "Plugin:       %s\n", plugin_uri_str);
-  jalv->plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
-  lilv_node_free(plugin_uri);
-  if (!jalv->plugin) {
-    jalv_log(JALV_LOG_ERR, "Failed to find plugin\n");
-    return -4;
-  }
-
+  // Set client name from plugin name if the user didn't specify one
   if (!jalv->opts.name) {
     jalv->opts.name =
       jalv_strdup(lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
@@ -788,29 +788,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
     }
   }
 
-  // Load preset, if specified
-  if (jalv->opts.preset) {
-    LilvNode* preset = lilv_new_uri(jalv->world, jalv->opts.preset);
-
-    jalv_load_presets(jalv, NULL, NULL);
-    state        = lilv_state_new_from_world(jalv->world, urid_map, preset);
-    jalv->preset = state;
-    lilv_node_free(preset);
-    if (!state) {
-      jalv_log(JALV_LOG_ERR, "Failed to find preset <%s>\n", jalv->opts.preset);
-      return -5;
-    }
-  }
-
   // Check for thread-safe state restore() method
   jalv->safe_restore =
     lilv_plugin_has_feature(jalv->plugin, jalv->nodes.state_threadSafeRestore);
-
-  if (!state) {
-    // Not restoring state, load the plugin as a preset to get default
-    state = lilv_state_new_from_world(
-      jalv->world, urid_map, lilv_plugin_get_uri(jalv->plugin));
-  }
 
   // Get a plugin UI
   jalv->uis = lilv_plugin_get_uis(jalv->plugin);
@@ -1046,7 +1026,6 @@ jalv_close(Jalv* const jalv)
   free(jalv->feature_list);
 
   free(jalv->opts.name);
-  free(jalv->opts.load);
   free(jalv->opts.controls);
 
   return 0;

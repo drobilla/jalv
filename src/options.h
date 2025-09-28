@@ -14,8 +14,6 @@ JALV_BEGIN_DECLS
 typedef struct {
   char*    name;            ///< Client name
   int      name_exact;      ///< Exit if name is taken
-  char*    load;            ///< Path for state to load
-  char*    preset;          ///< URI of preset to load
   char**   controls;        ///< Control values
   uint32_t ring_size;       ///< Plugin <=> UI communication buffer size
   double   update_rate;     ///< UI update rate in Hz
