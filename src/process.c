@@ -19,7 +19,7 @@
 #include <assert.h>
 #include <stddef.h>
 
-static char*
+static const char*
 jalv_process_strerror(const JalvProcessStatus pst)
 {
   switch (pst) {
