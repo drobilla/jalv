@@ -1,5 +1,6 @@
 jalv (1.6.9) unstable; urgency=medium
 
+  * Add "quit" console command
   * Add AppStream metainfo file
   * Add Qt6 version
   * Add missing short versions of command line options
@@ -29,7 +30,7 @@ jalv (1.6.9) unstable; urgency=medium
   * Use fewer platform-specific APIs
   * Use portable zix filesystem API
 
- -- David Robillard <d@drobilla.net>  Sun, 28 Sep 2025 13:54:35 +0000
+ -- David Robillard <d@drobilla.net>  Sun, 28 Sep 2025 23:59:21 +0000
 
 jalv (1.6.8) stable; urgency=medium
 

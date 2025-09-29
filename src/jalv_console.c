@@ -235,12 +235,13 @@ jalv_print_preset(Jalv*           ZIX_UNUSED(jalv),
   return 0;
 }
 
-static void
+static bool
 jalv_process_command(Jalv* jalv, const char* cmd)
 {
   char     sym[1024];
   uint32_t index = 0;
   float    value = 0.0f;
+  bool     quit  = false;
   if (!strncmp(cmd, "help", 4)) {
     fprintf(stderr,
             "Commands:\n"
@@ -249,6 +250,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
             "  monitors          Print output control values\n"
             "  presets           Print available presets\n"
             "  preset URI        Set preset\n"
+            "  quit              Quit this program\n"
             "  set INDEX VALUE   Set control value by port index\n"
             "  set SYMBOL VALUE  Set control value by symbol\n"
             "  SYMBOL = VALUE    Set control value by symbol\n");
@@ -265,6 +267,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
     print_controls(jalv, true, false);
   } else if (strcmp(cmd, "monitors\n") == 0) {
     print_controls(jalv, false, true);
+  } else if (strcmp(cmd, "quit\n") == 0) {
+    quit = true;
   } else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
     if (index < jalv->num_ports) {
       jalv_write_control(jalv->process.ui_to_plugin, index, value);
@@ -284,6 +288,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
   } else {
     fprintf(stderr, "error: invalid command (try `help')\n");
   }
+
+  return quit;
 }
 
 bool
@@ -368,14 +374,13 @@ jalv_frontend_open(Jalv* jalv)
 
   if (!jalv_run_custom_ui(jalv) && !jalv->opts.non_interactive) {
     // Primitive command prompt for setting control values
-    while (zix_sem_try_wait(&jalv->done)) {
+    bool quit = false;
+    while (!quit && zix_sem_try_wait(&jalv->done)) {
       char line[1024];
       printf("> ");
-      if (fgets(line, sizeof(line), stdin)) {
-        jalv_process_command(jalv, line);
-      } else {
-        break;
-      }
+
+      quit = fgets(line, sizeof(line), stdin) ? jalv_process_command(jalv, line)
+                                              : true;
     }
   } else {
     zix_sem_wait(&jalv->done);
