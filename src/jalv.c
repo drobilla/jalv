@@ -550,14 +550,18 @@ jalv_select_custom_ui(const Jalv* const jalv)
 
     LILV_FOREACH (uis, u, jalv->uis) {
       const LilvUI*   ui   = lilv_uis_get(jalv->uis, u);
+      const char*     uri  = lilv_node_as_string(lilv_ui_get_uri(ui));
       const LilvNode* type = NULL;
       const bool      supported =
         lilv_ui_is_supported(ui, suil_ui_supported, native_type, &type);
 
       if (supported) {
+        jalv_log(JALV_LOG_INFO, "Using UI <%s>\n", uri);
         lilv_node_free(native_type);
         return ui;
       }
+
+      jalv_log(JALV_LOG_INFO, "Ignoring incompatible UI <%s>\n", uri);
     }
 
     lilv_node_free(native_type);
@@ -709,6 +713,37 @@ open_plugin_state(Jalv* const                   jalv,
   return state;
 }
 
+static int
+open_ui(Jalv* const jalv)
+{
+  if ((jalv->ui = jalv_select_custom_ui(jalv))) {
+#if USE_SUIL
+    const char* host_type_uri = jalv_frontend_ui_type();
+    if (host_type_uri) {
+      LilvNode* host_type = lilv_new_uri(jalv->world, host_type_uri);
+
+      if (!lilv_ui_is_supported(
+            jalv->ui, suil_ui_supported, host_type, &jalv->ui_type)) {
+        jalv->ui = NULL;
+      }
+
+      lilv_node_free(host_type);
+    }
+#endif
+  }
+
+  if (jalv->ui) {
+    jalv_log(JALV_LOG_INFO,
+             "UI:           %s\n",
+             lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
+  } else if (jalv->opts.ui_uri) {
+    jalv_log(JALV_LOG_ERR, "Failed to find UI <%s>\n", jalv->opts.ui_uri);
+    return -5;
+  }
+
+  return 0;
+}
+
 int
 jalv_open(Jalv* const jalv, int* argc, char*** argv)
 {
@@ -785,24 +820,8 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   // Get a plugin UI
   jalv->uis = lilv_plugin_get_uis(jalv->plugin);
   if (!jalv->opts.generic_ui) {
-    if ((jalv->ui = jalv_select_custom_ui(jalv))) {
-#if USE_SUIL
-      const char* host_type_uri = jalv_frontend_ui_type();
-      if (host_type_uri) {
-        LilvNode* host_type = lilv_new_uri(jalv->world, host_type_uri);
-
-        if (!lilv_ui_is_supported(
-              jalv->ui, suil_ui_supported, host_type, &jalv->ui_type)) {
-          jalv->ui = NULL;
-        }
-
-        lilv_node_free(host_type);
-      }
-#endif
-
-      jalv_log(JALV_LOG_INFO,
-               "UI:           %s\n",
-               lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
+    if (open_ui(jalv)) {
+      return -5;
     }
   }
 
