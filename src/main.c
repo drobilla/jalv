@@ -55,6 +55,7 @@ main(int argc, char** argv)
   const int orc = jalv_open(&jalv, &argc, &argv);
   if (orc) {
     jalv_close(&jalv);
+    jalv_backend_free(jalv.backend);
     return orc == JALV_EARLY_EXIT_STATUS ? EXIT_SUCCESS : EXIT_FAILURE;
   }
 

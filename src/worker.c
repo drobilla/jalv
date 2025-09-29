@@ -106,7 +106,7 @@ jalv_worker_new(ZixSem* const lock, const bool threaded)
   ZixRing* const    responses = zix_ring_new(NULL, MAX_PACKET_SIZE);
   void* const       response  = calloc(1, MAX_PACKET_SIZE);
 
-  if (worker && responses && response) {
+  if (worker && requests && responses && response) {
     worker->requests  = requests;
     worker->responses = responses;
     worker->response  = response;

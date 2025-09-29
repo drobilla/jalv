@@ -185,6 +185,11 @@ new_property_control(LilvWorld* const            world,
 void
 free_control(Control* const control)
 {
+  for (size_t i = 0; i < control->n_points; ++i) {
+    free(control->points[i].label);
+  }
+
+  free(control->points);
   lilv_node_free(control->node);
   lilv_node_free(control->symbol);
   lilv_node_free(control->label);

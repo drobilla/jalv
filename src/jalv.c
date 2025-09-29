@@ -773,19 +773,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   // Set client name from plugin name if the user didn't specify one
   if (!jalv->opts.name) {
-    jalv->opts.name =
-      jalv_strdup(lilv_node_as_string(lilv_plugin_get_name(jalv->plugin)));
-  }
-
-  // Create workers if necessary
-  if (lilv_plugin_has_extension_data(jalv->plugin,
-                                     jalv->nodes.work_interface)) {
-    jalv->process.worker        = jalv_worker_new(&jalv->work_lock, true);
-    jalv->features.sched.handle = jalv->process.worker;
-    if (jalv->safe_restore) {
-      jalv->process.state_worker   = jalv_worker_new(&jalv->work_lock, false);
-      jalv->features.ssched.handle = jalv->process.state_worker;
-    }
+    LilvNode* plugin_name = lilv_plugin_get_name(jalv->plugin);
+    jalv->opts.name       = jalv_strdup(lilv_node_as_string(plugin_name));
+    lilv_node_free(plugin_name);
   }
 
   // Check for thread-safe state restore() method
@@ -824,6 +814,17 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
                     jalv->mapper,
                     update_frames,
                     jalv->opts.trace);
+
+  // Create workers if necessary
+  if (lilv_plugin_has_extension_data(jalv->plugin,
+                                     jalv->nodes.work_interface)) {
+    jalv->process.worker        = jalv_worker_new(&jalv->work_lock, true);
+    jalv->features.sched.handle = jalv->process.worker;
+    if (jalv->safe_restore) {
+      jalv->process.state_worker   = jalv_worker_new(&jalv->work_lock, false);
+      jalv->features.ssched.handle = jalv->process.state_worker;
+    }
+  }
 
   // Open backend (to set the sample rate, among other thigns)
   if (jalv_backend_open(jalv->backend,
@@ -992,6 +993,7 @@ jalv_close(Jalv* const jalv)
   lilv_state_free(jalv->preset);
   free(jalv->ports);
   jalv_process_cleanup(&jalv->process);
+  free(jalv->process.ports);
   zix_aligned_free(NULL, jalv->ui_msg);
   free(jalv->process.controls_buf);
   jalv_free_nodes(&jalv->nodes);
