@@ -120,6 +120,29 @@ jalv_unload_presets(Jalv* jalv)
 }
 
 static void
+set_port_fvalue(Jalv *jalv,
+                 struct Port *port,
+                 const ControlID *control,
+                 float fvalue)
+{
+  if (jalv->play_state != JALV_RUNNING) {
+    // Set value on port struct directly
+    port->control = fvalue;
+  } else {
+    // Send value to plugin (as if from UI)
+    jalv_write_control(jalv, jalv->ui_to_plugin, port->index, fvalue);
+  }
+
+  if (jalv->has_ui) {
+    // Update UI (as if from plugin)
+    jalv_write_control(jalv, jalv->plugin_to_ui, port->index, fvalue);
+  }
+
+  // Print control value to console
+  jalv_print_control(jalv, control, fvalue);
+}
+
+static void
 set_port_value(const char* port_symbol,
                void*       user_data,
                const void* value,
@@ -152,21 +175,9 @@ set_port_value(const char* port_symbol,
     return;
   }
 
-  if (jalv->play_state != JALV_RUNNING) {
-    // Set value on port struct directly
-    port->control = fvalue;
-  } else {
-    // Send value to plugin (as if from UI)
-    jalv_write_control(jalv, jalv->ui_to_plugin, port->index, fvalue);
-  }
 
-  if (jalv->has_ui) {
-    // Update UI (as if from plugin)
-    jalv_write_control(jalv, jalv->plugin_to_ui, port->index, fvalue);
-  }
+  set_port_fvalue(jalv, port, control, fvalue);
 
-  // Print control value to console
-  jalv_print_control(jalv, control, fvalue);
 }
 
 void
