@@ -334,3 +334,12 @@ jalv_command_save_preset(Jalv* jalv, char* sym)
 	lilv_node_free(ldir);
 	free(plugin_name);
 }
+
+void
+jalv_command_load_preset(Jalv* jalv, char* sym)
+{
+	LilvNode* preset = lilv_new_uri(jalv->world, sym);
+	lilv_world_load_resource(jalv->world, preset);
+	jalv_apply_preset(jalv, preset);
+	lilv_node_free(preset);
+}
