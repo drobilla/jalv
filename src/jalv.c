@@ -247,7 +247,8 @@ create_port(Jalv* jalv, uint32_t port_index, float default_value)
   if (lilv_port_is_a(
         jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
     port->type    = TYPE_CONTROL;
-    port->control = isnan(default_value) ? 0.0f : default_value;
+    port->defval = isnan(default_value) ? 0.0f : default_value;
+    port->control = port->defval;
     if (!hidden) {
       add_control(&jalv->controls,
                   new_port_control(jalv->world,

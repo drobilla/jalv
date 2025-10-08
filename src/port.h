@@ -28,6 +28,8 @@ struct Port {
   size_t          buf_size;  ///< Custom buffer size, or 0
   uint32_t        index;     ///< Port index
   float           control;   ///< For control ports, otherwise 0.0f
+  float           defval;    ///< For control ports, otherwise 0.0f
+  bool            is_set;    ///< For control ports: is value set?
 };
 
 JALV_END_DECLS
