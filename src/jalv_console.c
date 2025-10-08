@@ -42,6 +42,7 @@ print_usage(const char* name, bool error)
           "  -b SIZE      Buffer size for plugin <=> UI communication\n"
           "  -c SYM=VAL   Set control value (e.g. \"vol=1.4\")\n"
           "  -d           Dump plugin <=> UI communication\n"
+          "  -D           Set unset parameters to defaults when loading preset\n"
           "  -h           Display this help and exit\n"
           "  -i           Ignore keyboard input, run non-interactively\n"
           "  -l DIR       Load state from save directory\n"
@@ -139,6 +140,8 @@ jalv_frontend_init(int* argc, char*** argv, JalvOptions* opts)
       opts->non_interactive = true;
     } else if ((*argv)[a][1] == 'd') {
       opts->dump = true;
+    } else if ((*argv)[a][1] == 'D') {
+      opts->unset_default = true;
     } else if ((*argv)[a][1] == 't') {
       opts->trace = true;
     } else if ((*argv)[a][1] == 'n') {

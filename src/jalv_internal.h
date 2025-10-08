@@ -118,6 +118,7 @@ struct JalvImpl {
   bool                safe_restore;    ///< Plugin restore() is thread-safe
   JalvFeatures        features;
   const LV2_Feature** feature_list;
+  bool                unset_default;   ///< Set unused to default when loading preset
 };
 
 char*

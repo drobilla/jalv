@@ -230,7 +230,8 @@ jalv_apply_state(Jalv* jalv, LilvState* state)
     lilv_state_restore(
       state, jalv->instance, set_port_value, jalv, 0, state_features);
 
-    jalv_set_unset_controls_to_defaults(jalv);
+    if (jalv->unset_default)
+      jalv_set_unset_controls_to_defaults(jalv);
 
     if (must_pause) {
       jalv->request_update = true;

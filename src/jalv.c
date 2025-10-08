@@ -1227,6 +1227,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
   jalv->control_in    = (uint32_t)-1;
   jalv->log.urids     = &jalv->urids;
   jalv->log.tracing   = jalv->opts.trace;
+  jalv->unset_default = jalv->opts.unset_default;
 
   zix_sem_init(&jalv->symap_lock, 1);
   zix_sem_init(&jalv->work_lock, 1);
@@ -1723,6 +1724,18 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		jalv_command_load_preset(jalv, sym);
 		update_ui_title(jalv);
 		//jalv_print_ports(jalv, true, false);
+	} else if (sscanf(cmd, "presetd %1023[-a-zA-Z0-9_:/.%%#]", sym) == 1) {
+		jalv->unset_default = true;
+		jalv_command_load_preset(jalv, sym);
+		update_ui_title(jalv);
+		//jalv_print_ports(jalv, true, false);
+		jalv->unset_default = jalv->opts.unset_default;
+	} else if (sscanf(cmd, "presetn %1023[-a-zA-Z0-9_:/.%%#]", sym) == 1) {
+		jalv->unset_default = false;
+		jalv_command_load_preset(jalv, sym);
+		update_ui_title(jalv);
+		//jalv_print_ports(jalv, true, false);
+		jalv->unset_default = jalv->opts.unset_default;
 	} else if (sscanf(cmd, "save preset %1023[-a-zA-Z0-9_:/.%%#, ]", sym) == 1) {
 		jalv_command_save_preset(jalv,sym);
 		// Rebuild preset menu and update window title
@@ -1736,6 +1749,8 @@ jalv_process_command(Jalv* jalv, const char* cmd)
 		        "  monitors          Print output control values\n"
 		        "  presets           Print available presets\n"
 		        "  preset URI        Set preset\n"
+		        "  presetd URI       Set preset, defaulting unset controls\n"
+		        "  presetn URI       Set preset, never defaulting unset controls\n"
 		        "  save preset [BANK_URI,] LABEL\n"
 		        "                    Save preset (BANK_URI is optional)\n"
 		        "  set INDEX VALUE   Set control value by port index\n"
