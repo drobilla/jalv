@@ -120,6 +120,31 @@ jalv_unload_presets(Jalv* jalv)
 }
 
 static void
+set_port_fvalue(Jalv *jalv,
+                 struct Port *port,
+                 const ControlID *control,
+                 float fvalue)
+{
+  if (jalv->play_state != JALV_RUNNING) {
+    // Set value on port struct directly
+    port->control = fvalue;
+  } else {
+    // Send value to plugin (as if from UI)
+    jalv_write_control(jalv, jalv->ui_to_plugin, port->index, fvalue);
+  }
+
+  if (jalv->has_ui) {
+    // Update UI (as if from plugin)
+    jalv_write_control(jalv, jalv->plugin_to_ui, port->index, fvalue);
+  }
+
+  port->is_set = true;
+
+  // Print control value to console
+  jalv_print_control(jalv, control, fvalue);
+}
+
+static void
 set_port_value(const char* port_symbol,
                void*       user_data,
                const void* value,
@@ -152,21 +177,32 @@ set_port_value(const char* port_symbol,
     return;
   }
 
-  if (jalv->play_state != JALV_RUNNING) {
-    // Set value on port struct directly
-    port->control = fvalue;
-  } else {
-    // Send value to plugin (as if from UI)
-    jalv_write_control(jalv, jalv->ui_to_plugin, port->index, fvalue);
-  }
+  set_port_fvalue(jalv, port, control, fvalue);
+}
 
-  if (jalv->has_ui) {
-    // Update UI (as if from plugin)
-    jalv_write_control(jalv, jalv->plugin_to_ui, port->index, fvalue);
+static void
+jalv_unset_controls(Jalv *jalv)
+{
+  for (int i = 0; i < jalv->controls.n_controls; i++) {
+    ControlID *control = jalv->controls.controls[i];
+    if (control->type == PORT && control->is_writable) {
+      struct Port *port = &jalv->ports[control->index];
+      port->is_set = false;
+    }
   }
+}
 
-  // Print control value to console
-  jalv_print_control(jalv, control, fvalue);
+static void
+jalv_set_unset_controls_to_defaults(Jalv *jalv)
+{
+  for (int i = 0; i < jalv->controls.n_controls; i++) {
+    ControlID *control = jalv->controls.controls[i];
+    if (control->type == PORT && control->is_writable) {
+      struct Port *port = &jalv->ports[control->index];
+      if (!port->is_set)
+        set_port_fvalue(jalv, port, control, port->defval);
+    }
+  }
 }
 
 void
@@ -174,6 +210,8 @@ jalv_apply_state(Jalv* jalv, LilvState* state)
 {
   bool must_pause = !jalv->safe_restore && jalv->play_state == JALV_RUNNING;
   if (state) {
+    jalv_unset_controls(jalv);
+
     if (must_pause) {
       jalv->play_state = JALV_PAUSE_REQUESTED;
       zix_sem_wait(&jalv->paused);
@@ -191,6 +229,9 @@ jalv_apply_state(Jalv* jalv, LilvState* state)
 
     lilv_state_restore(
       state, jalv->instance, set_port_value, jalv, 0, state_features);
+
+    if (jalv->unset_default)
+      jalv_set_unset_controls_to_defaults(jalv);
 
     if (must_pause) {
       jalv->request_update = true;
@@ -322,4 +363,13 @@ jalv_command_save_preset(Jalv* jalv, char* sym)
 	lilv_world_load_bundle(jalv->world, ldir);
 	lilv_node_free(ldir);
 	free(plugin_name);
+}
+
+void
+jalv_command_load_preset(Jalv* jalv, char* sym)
+{
+	LilvNode* preset = lilv_new_uri(jalv->world, sym);
+	lilv_world_load_resource(jalv->world, preset);
+	jalv_apply_preset(jalv, preset);
+	lilv_node_free(preset);
 }

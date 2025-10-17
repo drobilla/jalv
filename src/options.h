@@ -29,6 +29,7 @@ typedef struct {
   int      print_controls;  ///< Print control changes to stdout
   int      non_interactive; ///< Do not listen for commands on stdin
   char*    ui_uri;          ///< URI of UI to load
+  int      unset_default;   ///< Unset controls are defaulted when loading preset
 } JalvOptions;
 
 JALV_END_DECLS
