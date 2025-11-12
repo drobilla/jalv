@@ -287,7 +287,7 @@ lilv_dep = dependency(
   ],
   fallback: ['lilv', 'lilv_dep'],
   include_type: 'system',
-  version: '>= 0.24.27',
+  version: '>= 0.25.1',
 )
 
 suil_dep = dependency(

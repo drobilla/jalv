@@ -768,6 +768,7 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
 
   // Load the LV2 world
   LilvWorld* const world = lilv_world_new();
+  lilv_world_set_option(world, LILV_OPTION_OBJECT_INDEX, NULL);
   lilv_world_load_all(world);
 
   jalv->world       = world;
