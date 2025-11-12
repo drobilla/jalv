@@ -69,6 +69,8 @@ if get_option('lint')
           '--error-exitcode=1',
           '--project=' + compdb_path,
           '--suppressions-list=' + suppress_path,
+          '-DZIX_DISABLE_EFFECT_WARNINGS=',
+          '-DZIX_RESTORE_WARNINGS=',
           '-q',
           ['-i', jalv_build_root],
         ],
