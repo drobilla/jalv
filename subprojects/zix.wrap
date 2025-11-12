@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: 0BSD OR ISC
 
 [wrap-file]
-directory = zix-0.6.2
-source_url = https://download.drobilla.net/zix-0.6.2.tar.xz
-source_filename = zix-0.6.2.tar.xz
-source_hash = 4bc771abf4fcf399ea969a1da6b375f0117784f8fd0e2db356a859f635f616a7
+directory = zix-0.8.0
+source_url = https://download.drobilla.net/zix-0.8.0.tar.xz
+source_filename = zix-0.8.0.tar.xz
+source_hash = e9b6fe3ede984fa53f2edcebdabb35fb99ace807722772156aea49c079cad191
 
 # [wrap-git]
 # url = https://gitlab.com/drobilla/zix.git
 # push-url = ssh://git@gitlab.com:drobilla/zix.git
-# revision = v0.6.2
+# revision = v0.8.0
 # depth = 1

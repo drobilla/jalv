@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: 0BSD OR ISC
 
 [wrap-file]
-directory = lilv-0.24.26
-source_url = https://download.drobilla.net/lilv-0.24.26.tar.xz
-source_filename = lilv-0.24.26.tar.xz
-source_hash = 22feed30bc0f952384a25c2f6f4b04e6d43836408798ed65a8a934c055d5d8ac
+directory = lilv-0.26.0
+source_url = https://download.drobilla.net/lilv-0.26.0.tar.xz
+source_filename = lilv-0.26.0.tar.xz
+source_hash = 912f9d025a6b5d96244d8dc51e75dbfc6793e39876b53c196dba1662308db7f0
 
 # [wrap-git]
 # url = https://gitlab.com/lv2/lilv.git
 # push-url = ssh://git@gitlab.com:lv2/lilv.git
-# revision = v0.24.26
+# revision = v0.26.0
 # depth = 1

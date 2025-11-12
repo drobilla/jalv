@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: 0BSD OR ISC
 
 [wrap-file]
-directory = sord-0.16.18
-source_url = https://download.drobilla.net/sord-0.16.18.tar.xz
-source_filename = sord-0.16.18.tar.xz
-source_hash = 4f398b635894491a4774b1498959805a08e11734c324f13d572dea695b13d3b3
+directory = sord-0.16.20
+source_url = https://download.drobilla.net/sord-0.16.20.tar.xz
+source_filename = sord-0.16.20.tar.xz
+source_hash = 508b41d6b4f9d5902c9f5b9cf25170d9d0636f68f11bd257c1150497f754a2a4
 
 # [wrap-git]
 # url = https://gitlab.com/drobilla/sord.git
 # push-url = ssh://git@gitlab.com:drobilla/sord.git
-# revision = v0.16.18
+# revision = v0.16.20
 # depth = 1

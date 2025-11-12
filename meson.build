@@ -226,7 +226,7 @@ zix_dep = dependency(
   ],
   fallback: ['zix', 'zix_dep'],
   include_type: 'system',
-  version: '>= 0.7.0',
+  version: '>= 0.8.0',
 )
 
 serd_dep = dependency(
@@ -287,7 +287,7 @@ lilv_dep = dependency(
   ],
   fallback: ['lilv', 'lilv_dep'],
   include_type: 'system',
-  version: '>= 0.25.1',
+  version: '>= 0.26.0',
 )
 
 suil_dep = dependency(
