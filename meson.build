@@ -52,6 +52,7 @@ if cc.get_id() == 'clang'
       '-Wno-double-promotion',
       '-Wno-float-conversion',
       '-Wno-float-equal',
+      '-Wno-function-effects', # LV2
       '-Wno-implicit-float-conversion',
       '-Wno-incompatible-function-pointer-types-strict', # nonblocking
       '-Wno-missing-noreturn',
