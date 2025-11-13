@@ -495,6 +495,7 @@ executable(
 )
 
 # Gtk 3.0 GUI version
+build_gtk3 = false
 if not get_option('gtk3').disabled()
   gdk3_dep = dependency(
     'gdk-3.0',
@@ -510,7 +511,8 @@ if not get_option('gtk3').disabled()
     version: '>= 3.12.0',
   )
 
-  if gdk3_dep.found() and gtk3_dep.found()
+  build_gtk3 = gdk3_dep.found() and gtk3_dep.found()
+  if build_gtk3
     config = configuration_data()
     config.set('APP_INSTALL_NAME', 'jalv.gtk3')
     config.set('APP_HUMAN_NAME', 'Jalv')
@@ -539,6 +541,8 @@ if not get_option('gtk3').disabled()
   endif
 endif
 
+build_qt5 = false
+build_qt6 = false
 if is_variable('cpp')
   common_cpp_args = cpp_suppressions + platform_defines + suil_defines
 
@@ -574,7 +578,8 @@ if is_variable('cpp')
         endif
       endif
 
-      if moc_qt5.found()
+      build_qt5 = moc_qt5.found()
+      if build_qt5
         jalv_qt5_meta_cpp = custom_target(
           'jalv_qt5_meta.cpp',
           capture: true,
@@ -618,7 +623,8 @@ if is_variable('cpp')
       endif
 
       moc_qt6 = find_program(moc_qt6_name, required: qt6_opt)
-      if moc_qt6.found()
+      build_qt6 = moc_qt6.found()
+      if build_qt6
         jalv_qt6_meta_cpp = custom_target(
           'jalv_qt6_meta.cpp',
           capture: true,
@@ -657,9 +663,24 @@ if not get_option('tests').disabled()
 endif
 
 if not meson.is_subproject()
-  summary('Install prefix', get_option('prefix'))
-  summary('Executables', get_option('prefix') / get_option('bindir'))
-  summary('Man pages', get_option('prefix') / get_option('mandir'))
+  summary(
+    {
+      'Gtk3 program': build_gtk3,
+      'Qt5 program': build_qt5,
+      'Qt6 program': build_qt6,
+    },
+    bool_yn: true,
+    section: 'Components',
+  )
 
-  summary('Backend', backend_dep.name())
+  summary(
+    {
+      'Install prefix': get_option('prefix'),
+      'Executables': get_option('prefix') / get_option('bindir'),
+      'Man pages': get_option('prefix') / get_option('mandir'),
+    },
+    section: 'Directories',
+  )
+
+  summary('Backend', backend_dep.name(), section: 'Configuration')
 endif
