@@ -1,13 +1,14 @@
 # Copyright 2019-2025 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
+/.meson-subproject-wrap-hash.txt
 /build/
-/subprojects/lilv-0.24.26/
+/subprojects/lilv-0.26.0/
 /subprojects/lv2/
 /subprojects/packagecache/
-/subprojects/serd/
-/subprojects/sord-0.16.18/
-/subprojects/sphinxygen-1.0.10/
-/subprojects/sratom-0.6.18/
-/subprojects/suil-0.10.22/
-/subprojects/zix-0.6.2/
+/subprojects/serd-0.32.6/
+/subprojects/sord-0.16.20/
+/subprojects/sphinxygen-1.0.12/
+/subprojects/sratom-0.6.20/
+/subprojects/suil-0.10.24/
+/subprojects/zix-0.8.0/
