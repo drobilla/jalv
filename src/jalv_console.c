@@ -159,7 +159,16 @@ parse_option(OptionsState* const state,
   } else if (opt[1] == 'U') {
     opts->ui_uri = jalv_strdup(parse_argument(state, argc, argv, 'U'));
   } else if (opt[1] == 'b') {
-    opts->ring_size = atoi(parse_argument(state, argc, argv, 'b'));
+    const char* const string = parse_argument(state, argc, argv, 'b');
+    if (!state->status) {
+      const long value = strtol(string, NULL, 10);
+      if (value >= 2 && value <= 2147483648) {
+        opts->ring_size = (uint32_t)value;
+      } else {
+        state->status = 1;
+        fprintf(stderr, "%s: option value out of range -- 'b'\n", cmd);
+      }
+    }
   } else if (opt[1] == 'c') {
     add_control_argument(
       state, opts, cmd, parse_argument(state, argc, argv, 'c'));
