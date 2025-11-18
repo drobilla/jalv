@@ -27,6 +27,7 @@
 #include <gobject/gclosure.h>
 #include <gtk/gtk.h>
 
+#include <assert.h>
 #include <float.h>
 #include <math.h>
 #include <stdbool.h>
@@ -783,10 +784,7 @@ jalv_frontend_port_event(Jalv*       jalv,
     return;
   }
 
-  if (protocol != jalv->urids.atom_eventTransfer) {
-    jalv_log(JALV_LOG_WARNING, "Unknown port event protocol\n");
-    return;
-  }
+  assert(protocol == jalv->urids.atom_eventTransfer);
 
   const LV2_Atom* atom = (const LV2_Atom*)buffer;
   if (lv2_atom_forge_is_object_type(&jalv->forge, atom->type)) {
