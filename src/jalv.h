@@ -70,6 +70,7 @@ struct JalvImpl {
   size_t              ui_msg_size;  ///< Maximum size of a single message
   uint32_t            num_ports;    ///< Total number of ports on the plugin
   bool                safe_restore; ///< Plugin restore() is thread-safe
+  bool                updating;     ///< True if the UI is being updated
   JalvFeatures        features;
   const LV2_Feature** feature_list;
 };

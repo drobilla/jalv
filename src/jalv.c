@@ -446,9 +446,10 @@ jalv_init_ui(Jalv* jalv)
 }
 
 static int
-ring_error(const char* const message)
+update_error(Jalv* const jalv, const char* const message)
 {
   jalv_log(JALV_LOG_ERR, "%s", message);
+  jalv->updating = false;
   return 1;
 }
 
@@ -461,6 +462,8 @@ jalv_update(Jalv* jalv)
     return 0;
   }
 
+  jalv->updating = true;
+
   // Emit UI events
   ZixRing* const    ring   = jalv->process.plugin_to_ui;
   JalvMessageHeader header = {NO_MESSAGE, 0U};
@@ -468,13 +471,13 @@ jalv_update(Jalv* jalv)
   for (size_t i = 0; i < space; i += sizeof(header) + header.size) {
     // Read message header (which includes the body size)
     if (zix_ring_read(ring, &header, sizeof(header)) != sizeof(header)) {
-      return ring_error("Failed to read header from process ring\n");
+      return update_error(jalv, "Failed to read header from process ring\n");
     }
 
     // Read message body
     void* const body = jalv->ui_msg;
     if (zix_ring_read(ring, body, header.size) != header.size) {
-      return ring_error("Failed to read message from process ring\n");
+      return update_error(jalv, "Failed to read message from process ring\n");
     }
 
     if (header.type == CONTROL_PORT_CHANGE) {
@@ -492,10 +495,11 @@ jalv_update(Jalv* jalv)
     } else if (header.type == LATENCY_CHANGE) {
       jalv_backend_recompute_latencies(jalv->backend);
     } else {
-      return ring_error("Unknown message type received from process ring\n");
+      return update_error(jalv, "Unknown message type in process ring\n");
     }
   }
 
+  jalv->updating = false;
   return 1;
 }
 

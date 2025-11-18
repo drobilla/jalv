@@ -37,7 +37,6 @@
 #include <string.h>
 
 static GtkCheckMenuItem* active_preset_item = NULL;
-static bool              updating           = false;
 
 /// Widget(s) for a control port or parameter
 typedef struct {
@@ -539,7 +538,7 @@ set_control(Jalv* const    jalv,
             LV2_URID       type,
             const void*    body)
 {
-  if (!updating) {
+  if (!jalv->updating) {
     jalv_set_control(jalv, control, size, type, body);
   }
 }
@@ -776,7 +775,6 @@ jalv_frontend_port_event(Jalv*       jalv,
 
   const LV2_Atom* atom = (const LV2_Atom*)buffer;
   if (lv2_atom_forge_is_object_type(&jalv->forge, atom->type)) {
-    updating                   = true;
     const LV2_Atom_Object* obj = (const LV2_Atom_Object*)buffer;
     if (obj->body.otype == jalv->urids.patch_Set) {
       const LV2_Atom_URID* property = NULL;
@@ -794,7 +792,6 @@ jalv_frontend_port_event(Jalv*       jalv,
     } else {
       jalv_log(JALV_LOG_ERR, "Unknown object type\n");
     }
-    updating = false;
   }
 }
 
