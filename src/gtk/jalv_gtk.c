@@ -36,16 +36,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* TODO: Gtk only provides one pointer for value changed callbacks, which we
-   use for the Control.  So, there is no easy way to pass both a Control
-   and Jalv which is needed to actually do anything with a control.  Work
-   around this by statically storing the Jalv instance.  Since this UI isn't a
-   module, this isn't the end of the world, but a global "god pointer" is a
-   pretty bad smell.  Refactoring things to be more modular or changing how Gtk
-   signals are connected would be a good idea.
-*/
-static Jalv* s_jalv = NULL;
-
 static GtkCheckMenuItem* active_preset_item = NULL;
 static bool              updating           = false;
 
@@ -543,13 +533,14 @@ on_delete_preset_activate(GtkWidget* widget, void* ptr)
 }
 
 static void
-set_control(const Control* control,
+set_control(Jalv* const    jalv,
+            const Control* control,
             uint32_t       size,
             LV2_URID       type,
             const void*    body)
 {
   if (!updating) {
-    jalv_set_control(s_jalv, control, size, type, body);
+    jalv_set_control(jalv, control, size, type, body);
   }
 }
 
@@ -560,23 +551,23 @@ differ_enough(float a, float b)
 }
 
 static void
-set_float_control(const Control* control, float value)
+set_float_control(Jalv* const jalv, const Control* control, float value)
 {
-  const LV2_Atom_Forge* const forge = &s_jalv->forge;
+  const LV2_Atom_Forge* const forge = &jalv->forge;
   if (control->value_type == forge->Int) {
     const int32_t ival = lrintf(value);
-    set_control(control, sizeof(ival), forge->Int, &ival);
+    set_control(jalv, control, sizeof(ival), forge->Int, &ival);
   } else if (control->value_type == forge->Long) {
     const int64_t lval = lrintf(value);
-    set_control(control, sizeof(lval), forge->Long, &lval);
+    set_control(jalv, control, sizeof(lval), forge->Long, &lval);
   } else if (control->value_type == forge->Float) {
-    set_control(control, sizeof(value), forge->Float, &value);
+    set_control(jalv, control, sizeof(value), forge->Float, &value);
   } else if (control->value_type == forge->Double) {
     const double dval = value;
-    set_control(control, sizeof(dval), forge->Double, &dval);
+    set_control(jalv, control, sizeof(dval), forge->Double, &dval);
   } else if (control->value_type == forge->Bool) {
     const int32_t ival = value;
-    set_control(control, sizeof(ival), forge->Bool, &ival);
+    set_control(jalv, control, sizeof(ival), forge->Bool, &ival);
   }
 
   Controller* controller = (Controller*)control->widget;
@@ -739,7 +730,7 @@ on_request_value(LV2UI_Feature_Handle      handle,
   if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
     char* path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
-    set_control(control, strlen(path) + 1, jalv->forge.Path, path);
+    set_control(jalv, control, strlen(path) + 1, jalv->forge.Path, path);
 
     g_free(path);
   }
@@ -810,7 +801,9 @@ jalv_frontend_port_event(Jalv*       jalv,
 static gboolean
 scale_changed(GtkRange* range, gpointer data)
 {
-  set_float_control((const Control*)data, gtk_range_get_value(range));
+  Jalv* const jalv = g_object_get_data(G_OBJECT(range), "jalv");
+
+  set_float_control(jalv, (const Control*)data, gtk_range_get_value(range));
   return FALSE;
 }
 
@@ -830,7 +823,10 @@ spin_changed(GtkSpinButton* spin, gpointer data)
 static gboolean
 log_scale_changed(GtkRange* range, gpointer data)
 {
-  set_float_control((const Control*)data, expf(gtk_range_get_value(range)));
+  Jalv* const jalv = g_object_get_data(G_OBJECT(range), "jalv");
+
+  set_float_control(
+    jalv, (const Control*)data, expf(gtk_range_get_value(range)));
   return FALSE;
 }
 
@@ -850,6 +846,7 @@ log_spin_changed(GtkSpinButton* spin, gpointer data)
 static void
 combo_changed(GtkComboBox* box, gpointer data)
 {
+  Jalv* const    jalv    = g_object_get_data(G_OBJECT(box), "jalv");
   const Control* control = (const Control*)data;
 
   GtkTreeIter iter;
@@ -861,37 +858,38 @@ combo_changed(GtkComboBox* box, gpointer data)
     const double v = g_value_get_float(&value);
     g_value_unset(&value);
 
-    set_float_control(control, v);
+    set_float_control(jalv, control, v);
   }
 }
 
 static gboolean
 switch_changed(GtkSwitch* toggle_switch, gboolean state, gpointer data)
 {
-  (void)toggle_switch;
-  (void)data;
+  Jalv* const jalv = g_object_get_data(G_OBJECT(toggle_switch), "jalv");
 
-  set_float_control((const Control*)data, state ? 1.0f : 0.0f);
+  set_float_control(jalv, (const Control*)data, state ? 1.0f : 0.0f);
   return FALSE;
 }
 
 static void
 string_changed(GtkEntry* widget, gpointer data)
 {
+  Jalv* const    jalv    = g_object_get_data(G_OBJECT(widget), "jalv");
   const Control* control = (const Control*)data;
   const char*    string  = gtk_entry_get_text(widget);
 
-  set_control(control, strlen(string) + 1, s_jalv->forge.String, string);
+  set_control(jalv, control, strlen(string) + 1, jalv->forge.String, string);
 }
 
 static void
 file_changed(GtkFileChooserButton* widget, gpointer data)
 {
+  Jalv* const    jalv    = g_object_get_data(G_OBJECT(widget), "jalv");
   const Control* control = (const Control*)data;
   const char*    filename =
     gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
 
-  set_control(control, strlen(filename) + 1, s_jalv->forge.Path, filename);
+  set_control(jalv, control, strlen(filename) + 1, jalv->forge.Path, filename);
 }
 
 static Controller*
@@ -1184,6 +1182,9 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
       controller = make_controller(record, record->def);
     }
 
+    // Set jalv pointer as data for use in callbacks
+    g_object_set_data(G_OBJECT(controller->control), "jalv", jalv);
+
     record->widget = controller;
     if (record->type == PORT) {
       jalv->ports[record->id.index].widget = controller;
@@ -1431,8 +1432,6 @@ jalv_frontend_open(Jalv* jalv)
   GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   jalv->window      = window;
 
-  s_jalv = jalv;
-
   g_signal_connect(window, "destroy", G_CALLBACK(on_window_destroy), jalv);
 
   set_window_title(jalv);
@@ -1518,6 +1517,5 @@ jalv_frontend_close(Jalv* jalv)
 {
   (void)jalv;
   gtk_main_quit();
-  s_jalv = NULL;
   return 0;
 }
