@@ -80,6 +80,7 @@ apply_ui_events(JalvProcess* const proc, const uint32_t nframes)
         &e, nframes, 0U, atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
 
     } else if (header.type == STATE_REQUEST) {
+      assert(proc->control_in != UINT32_MAX);
       JalvProcessPort* const port = &proc->ports[proc->control_in];
       assert(port->type == TYPE_EVENT);
       assert(port->flow == FLOW_INPUT);

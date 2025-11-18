@@ -208,10 +208,12 @@ jalv_apply_state(Jalv* jalv, const LilvState* state)
   lilv_state_restore(
     state, proc->instance, set_port_value, jalv, 0, state_features);
 
-  if (must_pause) {
+  if (jalv->process.control_in != UINT32_MAX) {
     const JalvMessageHeader state_msg = {STATE_REQUEST, 0U};
     zix_ring_write(proc->ui_to_plugin, &state_msg, sizeof(state_msg));
+  }
 
+  if (must_pause) {
     const PauseMessage run_msg = {
       {RUN_STATE_CHANGE, sizeof(JalvRunStateChange)}, {JALV_RUNNING}};
     zix_ring_write(proc->ui_to_plugin, &run_msg, sizeof(run_msg));
