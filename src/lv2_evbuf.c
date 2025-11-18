@@ -6,6 +6,7 @@
 
 #include <lv2/atom/atom.h>
 #include <lv2/atom/util.h>
+#include <zix/attributes.h>
 
 #include <assert.h>
 #include <stdlib.h>
