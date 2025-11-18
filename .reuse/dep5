@@ -4,9 +4,9 @@ Upstream-Contact: David Robillard <d@drobilla.net>
 Source: https://gitlab.com/drobilla/jalv
 
 Files: .clang* .clant.json .gitignore .includes.imp .suppress.cppcheck AUTHORS NEWS jalv.desktop.in jalv.ttl
-Copyright: 2010-2022 David Robillard <d@drobilla.net>
+Copyright: 2010-2025 David Robillard <d@drobilla.net>
 License: 0BSD OR ISC
 
 Files: INSTALL.md README.md doc/*.1
-Copyright: 2011-2020 David Robillard <d@drobilla.net>
+Copyright: 2011-2025 David Robillard <d@drobilla.net>
 License: ISC
