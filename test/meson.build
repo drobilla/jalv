@@ -1,4 +1,4 @@
-# Copyright 2019-2024 David Robillard <d@drobilla.net>
+# Copyright 2019-2025 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
 ########
@@ -9,9 +9,14 @@ all_sources = (
   common_sources + files(
     '../src/attributes.h',
     '../src/backend.h',
+    '../src/comm.h',
     '../src/control.h',
+    '../src/dumper.h',
+    '../src/features.h',
     '../src/frontend.h',
     '../src/jack.c',
+    '../src/jack_impl.h',
+    '../src/jack_internal.c',
     '../src/jalv.h',
     '../src/jalv_config.h',
     '../src/jalv_console.c',
@@ -20,11 +25,18 @@ all_sources = (
     '../src/jalv_qt.hpp',
     '../src/log.h',
     '../src/lv2_evbuf.h',
+    '../src/macros.h',
+    '../src/mapper.h',
     '../src/nodes.h',
     '../src/options.h',
     '../src/port.h',
     '../src/portaudio.c',
+    '../src/process.h',
+    '../src/process_setup.h',
+    '../src/query.h',
+    '../src/settings.h',
     '../src/state.h',
+    '../src/string_utils.h',
     '../src/symap.h',
     '../src/types.h',
     '../src/urids.h',
