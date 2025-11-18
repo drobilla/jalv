@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: ISC
 
 #include "jalv_qt.hpp"
-#include "comm.h"
-#include "frontend.h"
-#include "jalv.h"
-#include "nodes.h"
-#include "options.h"
-#include "port.h"
-#include "query.h"
-#include "state.h"
-#include "types.h"
+
+#include "../comm.h"
+#include "../frontend.h"
+#include "../jalv.h"
+#include "../nodes.h"
+#include "../options.h"
+#include "../port.h"
+#include "../query.h"
+#include "../state.h"
+#include "../types.h"
 
 #include <lilv/lilv.h>
 #include <suil/suil.h>

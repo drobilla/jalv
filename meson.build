@@ -476,7 +476,7 @@ common_c_args = c_suppressions + platform_defines + suil_defines
 if jack_dep.found() and host_machine.system() != 'windows'
   shared_library(
     'jalv',
-    sources + files('src/jack_internal.c', 'src/jalv_console.c'),
+    sources + files('src/jack_internal.c', 'src/console/jalv_console.c'),
     c_args: c_suppressions + platform_defines + ['-DHAVE_SUIL=0'],
     dependencies: common_dependencies,
     install: true,
@@ -488,7 +488,7 @@ endif
 # Console version
 executable(
   'jalv',
-  program_sources + files('src/jalv_console.c'),
+  program_sources + files('src/console/jalv_console.c'),
   c_args: common_c_args,
   dependencies: common_dependencies + [suil_dep],
   install: true,
@@ -533,7 +533,7 @@ if not get_option('gtk3').disabled()
 
     executable(
       'jalv.gtk3',
-      program_sources + files('src/jalv_gtk.c'),
+      program_sources + files('src/gtk/jalv_gtk.c'),
       c_args: common_c_args,
       dependencies: common_dependencies + [gdk3_dep, gtk3_dep, suil_dep],
       install: true,
@@ -551,8 +551,8 @@ if is_variable('cpp')
     qt_args = ['-fPIC']
   endif
 
-  jalv_qt_cpp = files('src' / 'jalv_qt.cpp')
-  jalv_qt_hpp = files(jalv_src_root / 'src' / 'jalv_qt.hpp')
+  jalv_qt_cpp = files('src/qt/jalv_qt.cpp')
+  jalv_qt_hpp = files(jalv_src_root / 'src/qt/jalv_qt.hpp')
 
   # Qt 5 GUI version
   qt5_opt = get_option('qt5')

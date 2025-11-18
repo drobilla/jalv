@@ -1,17 +1,17 @@
 // Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
-#include "comm.h"
-#include "control.h"
-#include "frontend.h"
-#include "jalv.h"
-#include "jalv_config.h"
-#include "log.h"
-#include "options.h"
-#include "port.h"
-#include "state.h"
-#include "string_utils.h"
-#include "types.h"
+#include "../comm.h"
+#include "../control.h"
+#include "../frontend.h"
+#include "../jalv.h"
+#include "../jalv_config.h"
+#include "../log.h"
+#include "../options.h"
+#include "../port.h"
+#include "../state.h"
+#include "../string_utils.h"
+#include "../types.h"
 
 #include <lilv/lilv.h>
 #include <lv2/ui/ui.h>

@@ -1,0 +1,20 @@
+# Copyright 2025 David Robillard <d@drobilla.net>
+# SPDX-License-Identifier: 0BSD OR ISC
+
+Checks: >
+  -*-named-parameter,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -fuchsia-default-arguments-calls,
+  -modernize-use-nodiscard,
+  -modernize-use-trailing-return-type,
+  -modernize-use-using,
+  -performance-enum-size,
+  -readability-implicit-bool-conversion,
+  -readability-static-accessed-through-instance,
+CheckOptions:
+  - key:   readability-function-cognitive-complexity.Threshold
+    value: '18'
+InheritParentConfig: true

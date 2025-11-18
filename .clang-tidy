@@ -3,50 +3,28 @@
 
 Checks: >
   *,
-  -*-c-arrays,
   -*-macro-to-enum,
   -*-magic-numbers,
-  -*-named-parameter,
   -*-narrowing-conversions,
   -altera-*,
   -boost-*,
   -bugprone-assignment-in-if-condition,
-  -bugprone-casting-through-void,
   -bugprone-easily-swappable-parameters,
   -bugprone-multi-level-implicit-pointer-conversion,
   -cert-err33-c,
   -cert-err34-c,
-  -clang-analyzer-optin.core.EnumCastOutOfRange,
-  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
-  -clang-analyzer-valist.Uninitialized,
-  -concurrency-mt-unsafe,
   -cppcoreguidelines-avoid-non-const-global-variables,
-  -cppcoreguidelines-macro-usage,
-  -cppcoreguidelines-owning-memory,
-  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
-  -cppcoreguidelines-pro-type-reinterpret-cast,
-  -fuchsia-default-arguments-calls,
   -google-readability-todo,
   -hicpp-signed-bitwise,
   -llvm-header-guard,
   -llvmlibc-*,
   -misc-include-cleaner,
-  -misc-no-recursion,
-  -modernize-use-nodiscard,
-  -modernize-use-trailing-return-type,
-  -modernize-use-using,
-  -performance-enum-size,
   -readability-identifier-length,
-  -readability-implicit-bool-conversion,
-  -readability-redundant-casting,
-  -readability-static-accessed-through-instance,
 CheckOptions:
   - key:   hicpp-uppercase-literal-suffix.NewSuffixes
     value: 'L;U;UL;ULL'
   - key:   readability-function-cognitive-complexity.IgnoreMacros
     value: 'true'
-  - key:   readability-function-cognitive-complexity.Threshold
-    value: '23'
   - key:   readability-uppercase-literal-suffix.NewSuffixes
     value: 'L;U;UL;ULL'
 WarningsAsErrors: '*'

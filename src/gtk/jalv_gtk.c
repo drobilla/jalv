@@ -1,14 +1,14 @@
 // Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
-#include "control.h"
-#include "frontend.h"
-#include "jalv.h"
-#include "log.h"
-#include "options.h"
-#include "query.h"
-#include "state.h"
-#include "types.h"
+#include "../control.h"
+#include "../frontend.h"
+#include "../jalv.h"
+#include "../log.h"
+#include "../options.h"
+#include "../query.h"
+#include "../state.h"
+#include "../types.h"
 
 #include <lilv/lilv.h>
 #include <lv2/atom/atom.h>
