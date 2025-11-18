@@ -694,10 +694,7 @@ jalv_frontend_open(Jalv* jalv)
     widget = scrollArea;
   }
 
-  LilvNode* name = lilv_plugin_get_name(jalv->plugin);
-  win->setWindowTitle(lilv_node_as_string(name));
-  lilv_node_free(name);
-
+  win->setWindowTitle(lilv_node_as_string(jalv->plugin_name));
   win->setCentralWidget(widget);
   app->connect(app, SIGNAL(lastWindowClosed()), app, SLOT(quit()));
 

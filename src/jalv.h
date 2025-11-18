@@ -38,27 +38,28 @@ JALV_BEGIN_DECLS
 
 /// Internal application state
 struct JalvImpl {
-  JalvOptions       opts;      ///< Command-line options
-  LilvWorld*        world;     ///< Lilv World
-  JalvMapper*       mapper;    ///< URI mapper/unmapper
-  JalvURIDs         urids;     ///< URIDs
-  JalvNodes         nodes;     ///< Nodes
-  JalvLog           log;       ///< Log for error/warning/debug messages
-  LV2_Atom_Forge    forge;     ///< Atom forge
-  JalvDumper*       dumper;    ///< Atom dumper (console debug output)
-  JalvBackend*      backend;   ///< Audio system backend
-  JalvSettings      settings;  ///< Processing settings
-  void*             ui_msg;    ///< Buffer for messages in the UI thread
-  ZixSem            work_lock; ///< Lock for plugin work() method
-  ZixSem            done;      ///< Exit semaphore
-  char*             temp_dir;  ///< Temporary plugin state directory
-  char*             save_dir;  ///< Plugin save directory
-  const LilvPlugin* plugin;    ///< Plugin class (RDF data)
-  LilvState*        preset;    ///< Current preset
-  LilvUIs*          uis;       ///< All plugin UIs (RDF data)
-  const LilvUI*     ui;        ///< Plugin UI (RDF data)
-  const LilvNode*   ui_type;   ///< Plugin UI type (unwrapped)
-  JalvProcess       process;   ///< Process thread state
+  JalvOptions       opts;        ///< Command-line options
+  LilvWorld*        world;       ///< Lilv World
+  JalvMapper*       mapper;      ///< URI mapper/unmapper
+  JalvURIDs         urids;       ///< URIDs
+  JalvNodes         nodes;       ///< Nodes
+  JalvLog           log;         ///< Log for error/warning/debug messages
+  LV2_Atom_Forge    forge;       ///< Atom forge
+  JalvDumper*       dumper;      ///< Atom dumper (console debug output)
+  JalvBackend*      backend;     ///< Audio system backend
+  JalvSettings      settings;    ///< Processing settings
+  void*             ui_msg;      ///< Buffer for messages in the UI thread
+  ZixSem            work_lock;   ///< Lock for plugin work() method
+  ZixSem            done;        ///< Exit semaphore
+  char*             temp_dir;    ///< Temporary plugin state directory
+  char*             save_dir;    ///< Plugin save directory
+  const LilvPlugin* plugin;      ///< Plugin class (RDF data)
+  LilvNode*         plugin_name; ///< Display name of plugin
+  LilvState*        preset;      ///< Current preset
+  LilvUIs*          uis;         ///< All plugin UIs (RDF data)
+  const LilvUI*     ui;          ///< Plugin UI (RDF data)
+  const LilvNode*   ui_type;     ///< Plugin UI type (unwrapped)
+  JalvProcess       process;     ///< Process thread state
 #if USE_SUIL
   SuilHost*     ui_host;     ///< Plugin UI host support
   SuilInstance* ui_instance; ///< Plugin UI instance (shared library)

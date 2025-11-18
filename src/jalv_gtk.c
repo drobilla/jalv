@@ -243,8 +243,8 @@ symbolify(const char* in)
 static void
 set_window_title(Jalv* jalv)
 {
-  LilvNode*   name   = lilv_plugin_get_name(jalv->plugin);
-  const char* plugin = lilv_node_as_string(name);
+  const char* plugin = lilv_node_as_string(jalv->plugin_name);
+
   if (jalv->preset) {
     const char* preset_label = lilv_state_get_label(jalv->preset);
     char*       title        = g_strdup_printf("%s - %s", plugin, preset_label);
@@ -253,7 +253,6 @@ set_window_title(Jalv* jalv)
   } else {
     gtk_window_set_title(GTK_WINDOW(jalv->window), plugin);
   }
-  lilv_node_free(name);
 }
 
 static void
@@ -462,13 +461,12 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
   gtk_entry_set_activates_default(GTK_ENTRY(uri_entry), TRUE);
   gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
   if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-    LilvNode*   plug_name = lilv_plugin_get_name(jalv->plugin);
     const char* path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
     const char* uri  = gtk_entry_get_text(GTK_ENTRY(uri_entry));
     const char* prefix = "";
     const char* sep    = "";
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(add_prefix))) {
-      prefix = lilv_node_as_string(plug_name);
+      prefix = lilv_node_as_string(jalv->plugin_name);
       sep    = "_";
     }
 
@@ -499,7 +497,6 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
     free(sym);
     g_free(basename);
     g_free(dirname);
-    lilv_node_free(plug_name);
   }
 
   gtk_widget_destroy(GTK_WIDGET(dialog));

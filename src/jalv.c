@@ -808,10 +808,9 @@ jalv_open(Jalv* const jalv, int* argc, char*** argv)
            lilv_node_as_string(lilv_plugin_get_uri(jalv->plugin)));
 
   // Set client name from plugin name if the user didn't specify one
+  jalv->plugin_name = lilv_plugin_get_name(jalv->plugin);
   if (!jalv->opts.name) {
-    LilvNode* plugin_name = lilv_plugin_get_name(jalv->plugin);
-    jalv->opts.name       = jalv_strdup(lilv_node_as_string(plugin_name));
-    lilv_node_free(plugin_name);
+    jalv->opts.name = jalv_strdup(lilv_node_as_string(jalv->plugin_name));
   }
 
   // Check for thread-safe state restore() method
@@ -1011,6 +1010,7 @@ jalv_close(Jalv* const jalv)
 
   // Clean up
   lilv_state_free(jalv->preset);
+  lilv_node_free(jalv->plugin_name);
   free(jalv->ports);
   jalv_process_cleanup(&jalv->process);
   free(jalv->process.ports);
