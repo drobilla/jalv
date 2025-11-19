@@ -57,10 +57,10 @@
 #include <map>
 #include <vector>
 
+namespace {
+
 constexpr int CONTROL_WIDTH = 150;
 constexpr int DIAL_STEPS    = 10000;
-
-namespace {
 
 QApplication* app = nullptr;
 
