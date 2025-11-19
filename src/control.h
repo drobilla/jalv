@@ -87,6 +87,10 @@ free_control(Control* control);
 void
 add_control(Controls* controls, Control* control);
 
+/// Return a pointer to the control for the given control port, or null
+Control*
+get_port_control(const Controls* controls, uint32_t port_index);
+
 /// Return a pointer to the control for the given property, or null
 Control*
 get_property_control(const Controls* controls, LV2_URID property);

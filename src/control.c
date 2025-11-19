@@ -210,6 +210,13 @@ add_control(Controls* controls, Control* control)
 }
 
 Control*
+get_port_control(const Controls* controls, uint32_t port_index)
+{
+  return port_index < controls->n_controls ? controls->controls[port_index]
+                                           : NULL;
+}
+
+Control*
 get_property_control(const Controls* controls, LV2_URID property)
 {
   for (size_t i = 0; i < controls->n_controls; ++i) {

@@ -4,6 +4,7 @@
 #include "jalv_qt.hpp"
 
 #include "../comm.h"
+#include "../control.h"
 #include "../frontend.h"
 #include "../jalv.h"
 #include "../nodes.h"
@@ -49,6 +50,7 @@
 #include <QtGlobal>
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -620,20 +622,19 @@ jalv_frontend_ui_type(void)
 }
 
 void
-jalv_frontend_port_event(Jalv*       jalv,
-                         uint32_t    port_index,
-                         uint32_t    buffer_size,
-                         uint32_t    protocol,
-                         const void* buffer)
+jalv_frontend_set_control(const Jalv* const    jalv,
+                          const Control* const control,
+                          const uint32_t       value_size,
+                          const uint32_t       value_type,
+                          const void* const    value_body)
 {
-  if (jalv->ui_instance) {
-    suil_instance_port_event(
-      jalv->ui_instance, port_index, buffer_size, protocol, buffer);
-  } else {
-    auto* const control =
-      static_cast<Controller*>(jalv->ports[port_index].widget);
-    if (control) {
-      control->setValue(*static_cast<const float*>(buffer));
+  (void)value_size;
+
+  if (value_type == jalv->forge.Float) {
+    auto* const controller = static_cast<Controller*>(control->widget);
+    if (controller) {
+      assert(value_size == sizeof(float));
+      controller->setValue(*static_cast<const float*>(value_body));
     }
   }
 }

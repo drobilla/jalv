@@ -76,33 +76,22 @@ print_version(void)
 }
 
 static void
-print_control_port(const Jalv* const     jalv,
-                   const JalvPort* const port,
-                   const float           value)
+print_control_value(const Control* const control, const float value)
 {
-  const LilvNode* sym = lilv_port_get_symbol(jalv->plugin, port->lilv_port);
-  jalv_log(JALV_LOG_INFO, "%s = %f\n", lilv_node_as_string(sym), value);
+  jalv_log(
+    JALV_LOG_INFO, "%s = %f\n", lilv_node_as_string(control->symbol), value);
 }
 
 void
-jalv_frontend_port_event(Jalv*       jalv,
-                         uint32_t    port_index,
-                         uint32_t    buffer_size,
-                         uint32_t    protocol,
-                         const void* buffer)
+jalv_frontend_set_control(const Jalv* const    jalv,
+                          const Control* const control,
+                          const uint32_t       value_size,
+                          const uint32_t       value_type,
+                          const void* const    value_body)
 {
-#if USE_SUIL
-  if (jalv->ui_instance) {
-    suil_instance_port_event(
-      jalv->ui_instance, port_index, buffer_size, protocol, buffer);
-  }
-#else
-  (void)buffer_size;
-#endif
-
-  if (!protocol && jalv->opts.print_controls) {
-    assert(buffer_size == sizeof(float));
-    print_control_port(jalv, &jalv->ports[port_index], *(float*)buffer);
+  if (value_type == jalv->forge.Float && jalv->opts.print_controls) {
+    assert(value_size == sizeof(float));
+    print_control_value(control, *(float*)value_body);
   }
 }
 
@@ -280,8 +269,9 @@ jalv_process_command(Jalv* jalv, const char* cmd)
     quit = true;
   } else if (sscanf(cmd, "set %u %f", &index, &value) == 2) {
     if (index < jalv->num_ports) {
+      const Control* const control = get_port_control(&jalv->controls, index);
       jalv_write_control(jalv->process.ui_to_plugin, index, value);
-      print_control_port(jalv, &jalv->ports[index], value);
+      print_control_value(control, value);
     } else {
       fprintf(stderr, "error: port index out of range\n");
     }
@@ -289,8 +279,10 @@ jalv_process_command(Jalv* jalv, const char* cmd)
              sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
     const JalvPort* const port = jalv_port_by_symbol(jalv, sym);
     if (port) {
+      const Control* const control =
+        get_port_control(&jalv->controls, port->index);
       jalv->process.controls_buf[port->index] = value;
-      print_control_port(jalv, port, value);
+      print_control_value(control, value);
     } else {
       fprintf(stderr, "error: no control named `%s'\n", sym);
     }
@@ -373,11 +365,10 @@ jalv_frontend_open(Jalv* jalv)
 {
   // Print initial control values
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
-    Control* control = jalv->controls.controls[i];
+    const Control* control = jalv->controls.controls[i];
     if (control->type == PORT && control->is_writable) {
-      const JalvPort* const port = &jalv->ports[control->id.index];
-      print_control_port(
-        jalv, port, jalv->process.controls_buf[control->id.index]);
+      print_control_value(control,
+                          jalv->process.controls_buf[control->id.index]);
     }
   }
 

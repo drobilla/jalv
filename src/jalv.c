@@ -15,6 +15,7 @@
 #include "mapper.h"
 #include "nodes.h"
 #include "options.h"
+#include "patch.h"
 #include "port.h"
 #include "process.h"
 #include "process_setup.h"
@@ -50,6 +51,7 @@
 #  include <suil/suil.h>
 #endif
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -421,10 +423,14 @@ void
 jalv_init_ui(Jalv* jalv)
 {
   // Set initial control port values
-  for (uint32_t i = 0; i < jalv->num_ports; ++i) {
+  for (uint32_t i = 0; i < MIN(jalv->num_ports, jalv->controls.n_controls);
+       ++i) {
     if (jalv->ports[i].type == TYPE_CONTROL) {
-      jalv_frontend_port_event(
-        jalv, i, sizeof(float), 0, &jalv->process.controls_buf[i]);
+      jalv_frontend_set_control(jalv,
+                                jalv->controls.controls[i],
+                                sizeof(float),
+                                jalv->forge.Float,
+                                &jalv->process.controls_buf[i]);
     }
   }
 
@@ -442,6 +448,66 @@ jalv_init_ui(Jalv* jalv)
                         jalv->urids.atom_eventTransfer,
                         atom);
     lv2_atom_forge_pop(&jalv->forge, &frame);
+  }
+}
+
+static void
+property_changed(Jalv* const           jalv,
+                 const LV2_URID        key,
+                 const LV2_Atom* const value)
+{
+  const Control* const control = get_property_control(&jalv->controls, key);
+  if (control) {
+    jalv_frontend_set_control(
+      jalv, control, value->size, value->type, value + 1);
+  }
+}
+
+static void
+ui_port_event(Jalv* const       jalv,
+              const uint32_t    port_index,
+              const uint32_t    buffer_size,
+              const uint32_t    protocol,
+              const void* const buffer)
+{
+#if USE_SUIL
+  if (jalv->ui_instance) {
+    suil_instance_port_event(
+      jalv->ui_instance, port_index, buffer_size, protocol, buffer);
+  }
+#endif
+
+  if (protocol == 0) {
+    const Control* const control =
+      get_port_control(&jalv->controls, port_index);
+    if (control) {
+      jalv_frontend_set_control(
+        jalv, control, buffer_size, jalv->forge.Float, buffer);
+    }
+    return;
+  }
+
+  assert(protocol == jalv->urids.atom_eventTransfer);
+
+  const LV2_Atom* atom = (const LV2_Atom*)buffer;
+  if (lv2_atom_forge_is_object_type(&jalv->forge, atom->type)) {
+    const LV2_Atom_Object* obj = (const LV2_Atom_Object*)buffer;
+    if (obj->body.otype == jalv->urids.patch_Set) {
+      const LV2_Atom_URID* property = NULL;
+      const LV2_Atom*      value    = NULL;
+      if (!patch_set_get(jalv, obj, &property, &value)) {
+        property_changed(jalv, property->body, value);
+      }
+    } else if (obj->body.otype == jalv->urids.patch_Put) {
+      const LV2_Atom_Object* body = NULL;
+      if (!patch_put_get(jalv, obj, &body)) {
+        LV2_ATOM_OBJECT_FOREACH (body, prop) {
+          property_changed(jalv, prop->key, &prop->value);
+        }
+      }
+    } else {
+      jalv_log(JALV_LOG_ERR, "Unknown object type\n");
+    }
   }
 }
 
@@ -482,16 +548,15 @@ jalv_update(Jalv* jalv)
 
     if (header.type == CONTROL_PORT_CHANGE) {
       const JalvControlChange* const msg = (const JalvControlChange*)body;
-      jalv_frontend_port_event(
-        jalv, msg->port_index, sizeof(float), 0, &msg->value);
+      ui_port_event(jalv, msg->port_index, sizeof(float), 0, &msg->value);
     } else if (header.type == EVENT_TRANSFER) {
       const JalvEventTransfer* const msg = (const JalvEventTransfer*)body;
       jalv_dump_atom(jalv->dumper, stdout, "Plugin => UI", &msg->atom, 35);
-      jalv_frontend_port_event(jalv,
-                               msg->port_index,
-                               sizeof(LV2_Atom) + msg->atom.size,
-                               jalv->urids.atom_eventTransfer,
-                               &msg->atom);
+      ui_port_event(jalv,
+                    msg->port_index,
+                    sizeof(LV2_Atom) + msg->atom.size,
+                    jalv->urids.atom_eventTransfer,
+                    &msg->atom);
     } else if (header.type == LATENCY_CHANGE) {
       jalv_backend_recompute_latencies(jalv->backend);
     } else {

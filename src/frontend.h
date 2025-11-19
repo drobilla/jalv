@@ -5,6 +5,7 @@
 #define JALV_UI_H
 
 #include "attributes.h"
+#include "control.h"
 #include "options.h"
 #include "types.h"
 
@@ -57,13 +58,13 @@ jalv_frontend_open(Jalv* jalv);
 int
 jalv_frontend_close(Jalv* jalv);
 
-/// Called when a port event (control change or other message) is sent to the UI
+/// Called when a control value change is sent to the UI
 void
-jalv_frontend_port_event(Jalv*       jalv,
-                         uint32_t    port_index,
-                         uint32_t    buffer_size,
-                         uint32_t    protocol,
-                         const void* buffer);
+jalv_frontend_set_control(const Jalv*    jalv,
+                          const Control* control,
+                          uint32_t       value_size,
+                          uint32_t       value_type,
+                          const void*    value_body);
 
 JALV_END_DECLS
 

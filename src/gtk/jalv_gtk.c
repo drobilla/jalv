@@ -6,15 +6,12 @@
 #include "../jalv.h"
 #include "../log.h"
 #include "../options.h"
-#include "../patch.h"
 #include "../query.h"
 #include "../state.h"
 #include "../types.h"
 
 #include <lilv/lilv.h>
-#include <lv2/atom/atom.h>
 #include <lv2/atom/forge.h>
-#include <lv2/atom/util.h>
 #include <lv2/core/lv2.h>
 #include <lv2/ui/ui.h>
 #include <lv2/urid/urid.h>
@@ -28,7 +25,6 @@
 #include <gobject/gclosure.h>
 #include <gtk/gtk.h>
 
-#include <assert.h>
 #include <float.h>
 #include <math.h>
 #include <stdbool.h>
@@ -621,26 +617,32 @@ set_combo_box_value(GtkComboBox* const combo_box, const double fvalue)
   }
 }
 
-static void
-control_changed(const Jalv* jalv,
-                Controller* controller,
-                uint32_t    size,
-                LV2_URID    type,
-                const void* body)
+void
+jalv_frontend_set_control(const Jalv* const    jalv,
+                          const Control* const control,
+                          const uint32_t       value_size,
+                          const uint32_t       value_type,
+                          const void* const    value_body)
 {
+  Controller* const controller = (Controller*)control->widget;
+  if (!controller) {
+    return;
+  }
+
   GtkWidget* const widget = controller->control;
-
-  if (GTK_IS_ENTRY(widget) && type == jalv->urids.atom_String) {
-    gtk_entry_set_text(GTK_ENTRY(widget), (const char*)body);
+  if (value_type == jalv->urids.atom_String && GTK_IS_ENTRY(widget)) {
+    gtk_entry_set_text(GTK_ENTRY(widget), (const char*)value_body);
     return;
   }
 
-  if (GTK_IS_FILE_CHOOSER(widget) && type == jalv->urids.atom_Path) {
-    gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(widget), (const char*)body);
+  if (value_type == jalv->urids.atom_Path && GTK_IS_FILE_CHOOSER(widget)) {
+    gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(widget),
+                                  (const char*)value_body);
     return;
   }
 
-  const double fvalue = get_atom_double(jalv, size, type, body);
+  const double fvalue =
+    get_atom_double(jalv, value_size, value_type, value_body);
   if (isnan(fvalue)) {
     jalv_log(JALV_LOG_WARNING, "Expected numeric control value\n");
   } else if (GTK_IS_COMBO_BOX(widget)) {
@@ -694,62 +696,6 @@ on_request_value(LV2UI_Feature_Handle      handle,
   gtk_widget_destroy(dialog);
 
   return 0;
-}
-
-static void
-property_changed(Jalv* jalv, LV2_URID key, const LV2_Atom* value)
-{
-  Control* control = get_property_control(&jalv->controls, key);
-  if (control) {
-    control_changed(
-      jalv, (Controller*)control->widget, value->size, value->type, value + 1);
-  }
-}
-
-void
-jalv_frontend_port_event(Jalv*       jalv,
-                         uint32_t    port_index,
-                         uint32_t    buffer_size,
-                         uint32_t    protocol,
-                         const void* buffer)
-{
-  if (jalv->ui_instance) {
-    suil_instance_port_event(
-      jalv->ui_instance, port_index, buffer_size, protocol, buffer);
-    return;
-  }
-
-  if (protocol == 0) {
-    Controller* const controller = (Controller*)jalv->ports[port_index].widget;
-    if (controller) {
-      control_changed(jalv, controller, buffer_size, jalv->forge.Float, buffer);
-    }
-
-    return;
-  }
-
-  assert(protocol == jalv->urids.atom_eventTransfer);
-
-  const LV2_Atom* atom = (const LV2_Atom*)buffer;
-  if (lv2_atom_forge_is_object_type(&jalv->forge, atom->type)) {
-    const LV2_Atom_Object* obj = (const LV2_Atom_Object*)buffer;
-    if (obj->body.otype == jalv->urids.patch_Set) {
-      const LV2_Atom_URID* property = NULL;
-      const LV2_Atom*      value    = NULL;
-      if (!patch_set_get(jalv, obj, &property, &value)) {
-        property_changed(jalv, property->body, value);
-      }
-    } else if (obj->body.otype == jalv->urids.patch_Put) {
-      const LV2_Atom_Object* body = NULL;
-      if (!patch_put_get(jalv, obj, &body)) {
-        LV2_ATOM_OBJECT_FOREACH (body, prop) {
-          property_changed(jalv, prop->key, &prop->value);
-        }
-      }
-    } else {
-      jalv_log(JALV_LOG_ERR, "Unknown object type\n");
-    }
-  }
 }
 
 static gboolean
