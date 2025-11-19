@@ -33,6 +33,12 @@ typedef enum {
   TYPE_CV
 } PortType;
 
+/// Command-line arguments passed to a frontend/program
+typedef struct {
+  int    argc; ///< Argument count as in `main`
+  char** argv; ///< argument vector as in `main`
+} ProgramArgs;
+
 JALV_END_DECLS
 
 #endif // JALV_TYPES_H

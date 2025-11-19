@@ -602,12 +602,12 @@ build_control_widget(Jalv* jalv)
 extern "C" {
 
 int
-jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions*)
+jalv_frontend_init(ProgramArgs* const args, JalvOptions*)
 {
-  app = new QApplication(*args->argc, *args->argv, true);
+  app = new QApplication(args->argc, args->argv, true);
   app->setStyleSheet("QGroupBox::title { subcontrol-position: top center }");
-  --*args->argc;
-  ++*args->argv;
+  --args->argc;
+  ++args->argv;
   return 0;
 }
 
@@ -665,7 +665,7 @@ jalv_frontend_select_plugin(LilvWorld*)
 }
 
 int
-jalv_frontend_open(Jalv* jalv)
+jalv_frontend_open(Jalv* jalv, ProgramArgs)
 {
   auto* const win          = new QMainWindow();
   QMenu*      file_menu    = win->menuBar()->addMenu("&File");

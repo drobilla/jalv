@@ -52,7 +52,8 @@ main(int argc, char** argv)
   jalv.backend = jalv_backend_allocate();
 
   // Initialize application
-  const int orc = jalv_open(&jalv, &argc, &argv);
+  ProgramArgs args = {argc, argv};
+  const int   orc  = jalv_open(&jalv, &args);
   if (orc) {
     jalv_close(&jalv);
     jalv_backend_free(jalv.backend);
@@ -64,7 +65,7 @@ main(int argc, char** argv)
   jalv_activate(&jalv);
 
   // Run UI (or prompt at console)
-  jalv_frontend_open(&jalv);
+  jalv_frontend_open(&jalv, args);
 
   // Wait for finish signal from UI or signal handler
   zix_sem_wait(&jalv.done);

@@ -20,15 +20,9 @@ JALV_BEGIN_DECLS
 /// Arbitrary return code for successful early exit (for --help and so on)
 #define JALV_EARLY_EXIT_STATUS (-431)
 
-/// Command-line arguments passed to an executable
-typedef struct {
-  int*    argc; ///< Pointer to `argc` like in `main`
-  char*** argv; ///< Pointer to `argv` like in `main`
-} JalvFrontendArgs;
-
-/// Consume command-line arguments and set `opts` accordingly
+/// Consume options in `args` and set `opts` accordingly
 int
-jalv_frontend_init(JalvFrontendArgs* args, JalvOptions* opts);
+jalv_frontend_init(ProgramArgs* args, JalvOptions* opts);
 
 /// Return the URI of the "native" LV2 UI type
 const char*
@@ -52,7 +46,7 @@ jalv_frontend_select_plugin(LilvWorld* world);
 
 /// Open and run the frontend interface, signalling jalv.done when finished
 int
-jalv_frontend_open(Jalv* jalv);
+jalv_frontend_open(Jalv* jalv, ProgramArgs args);
 
 /// Quit and close the frontend interface
 int

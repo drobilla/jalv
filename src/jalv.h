@@ -77,7 +77,7 @@ struct JalvImpl {
 
 /// Load the plugin and set up the application
 int
-jalv_open(Jalv* jalv, int* argc, char*** argv);
+jalv_open(Jalv* jalv, ProgramArgs* args);
 
 /// Shut down the application (counterpart to jalv_open)
 int

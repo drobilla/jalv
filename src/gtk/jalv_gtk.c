@@ -50,7 +50,7 @@ on_window_destroy(GtkWidget* widget, gpointer data)
 }
 
 int
-jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
+jalv_frontend_init(ProgramArgs* const args, JalvOptions* const opts)
 {
   const GOptionEntry entries[] = {
     {"buffer-size",
@@ -148,8 +148,8 @@ jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
 
   GError*   error = NULL;
   const int err =
-    gtk_init_with_args(args->argc,
-                       args->argv,
+    gtk_init_with_args(&args->argc,
+                       &args->argv,
                        "PLUGIN_STATE - Run an LV2 plugin as a Jack application",
                        entries,
                        NULL,
@@ -159,8 +159,8 @@ jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
     fprintf(stderr, "%s\n", error->message);
   }
 
-  --*args->argc;
-  ++*args->argv;
+  --args->argc;
+  ++args->argv;
   return !err;
 }
 
@@ -1327,7 +1327,7 @@ jalv_frontend_select_plugin(LilvWorld* const world)
 }
 
 int
-jalv_frontend_open(Jalv* jalv)
+jalv_frontend_open(Jalv* jalv, const ProgramArgs ZIX_UNUSED(args))
 {
   GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   jalv->window      = window;

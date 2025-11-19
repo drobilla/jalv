@@ -77,7 +77,8 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
     }
   }
 
-  if (err || (err = jalv_open(jalv, &argc, &argv))) {
+  ProgramArgs args = {argc, argv};
+  if (err || (err = jalv_open(jalv, &args))) {
     jalv_close(jalv);
     free(jalv);
   } else {

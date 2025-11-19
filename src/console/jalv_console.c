@@ -181,10 +181,10 @@ parse_option(OptionsState* const state,
 }
 
 int
-jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
+jalv_frontend_init(ProgramArgs* const args, JalvOptions* const opts)
 {
-  const int argc = *args->argc;
-  char**    argv = *args->argv;
+  const int    argc = args->argc;
+  char** const argv = args->argv;
 
   OptionsState state = {0, 0, 1};
 
@@ -195,8 +195,8 @@ jalv_frontend_init(JalvFrontendArgs* const args, JalvOptions* const opts)
     }
   }
 
-  *args->argc = *args->argc - state.a;
-  *args->argv = *args->argv + state.a;
+  args->argc -= state.a;
+  args->argv += state.a;
   return state.status;
 }
 
@@ -361,7 +361,7 @@ jalv_frontend_select_plugin(LilvWorld* const world)
 }
 
 int
-jalv_frontend_open(Jalv* jalv)
+jalv_frontend_open(Jalv* jalv, ProgramArgs ZIX_UNUSED(args))
 {
   // Print initial control values
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
