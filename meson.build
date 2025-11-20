@@ -537,6 +537,7 @@ if not get_option('gtk3').disabled()
     executable(
       'jalv.gtk3',
       program_sources + files(
+        'src/gtk/actions.c',
         'src/gtk/controls.c',
         'src/gtk/jalv_gtk.c',
         'src/gtk/plugin_selector.c',

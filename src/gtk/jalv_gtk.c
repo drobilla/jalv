@@ -3,6 +3,7 @@
 
 #include "jalv_gtk.h"
 
+#include "actions.h"
 #include "controls.h"
 
 #include "../control.h"
@@ -169,61 +170,7 @@ jalv_frontend_ui_type(void)
 #endif
 }
 
-static void
-on_save_activate(GtkWidget* ZIX_UNUSED(widget), void* ptr)
-{
-  Jalv* const jalv = (Jalv*)ptr;
-  App* const  app  = (App*)jalv->app;
-
-  GtkWidget* dialog =
-    gtk_file_chooser_dialog_new("Save State",
-                                app->window,
-                                GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
-                                "_Cancel",
-                                GTK_RESPONSE_CANCEL,
-                                "_Save",
-                                GTK_RESPONSE_ACCEPT,
-                                NULL);
-
-  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-    char* path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-    char* base = g_build_filename(path, "/", NULL);
-    jalv_save(jalv, base);
-    g_free(path);
-    g_free(base);
-  }
-
-  gtk_widget_destroy(dialog);
-}
-
-static void
-on_quit_activate(GtkWidget* ZIX_UNUSED(widget), gpointer data)
-{
-  GtkWidget* window = (GtkWidget*)data;
-  gtk_widget_destroy(window);
-}
-
-typedef struct {
-  Jalv*     jalv;
-  LilvNode* preset;
-} PresetRecord;
-
-static char*
-symbolify(const char* in)
-{
-  const size_t len = strlen(in);
-  char*        out = (char*)calloc(len + 1, 1);
-  for (size_t i = 0; i < len; ++i) {
-    if (g_ascii_isalnum(in[i])) {
-      out[i] = in[i];
-    } else {
-      out[i] = '_';
-    }
-  }
-  return out;
-}
-
-static void
+void
 update_window_title(Jalv* jalv)
 {
   App* const  app    = (App*)jalv->app;
@@ -237,31 +184,6 @@ update_window_title(Jalv* jalv)
   } else {
     gtk_window_set_title(app->window, plugin);
   }
-}
-
-static void
-on_preset_activate(GtkWidget* widget, gpointer data)
-{
-  PresetRecord* const record = (PresetRecord*)data;
-  App* const          app    = (App*)record->jalv->app;
-  if (GTK_CHECK_MENU_ITEM(widget) != app->active_preset_item) {
-    jalv_apply_preset(record->jalv, record->preset);
-    if (app->active_preset_item) {
-      gtk_check_menu_item_set_active(app->active_preset_item, FALSE);
-    }
-
-    app->active_preset_item = GTK_CHECK_MENU_ITEM(widget);
-    gtk_check_menu_item_set_active(app->active_preset_item, TRUE);
-    update_window_title(record->jalv);
-  }
-}
-
-static void
-on_preset_destroy(gpointer data, GClosure* ZIX_UNUSED(closure))
-{
-  PresetRecord* record = (PresetRecord*)data;
-  lilv_node_free(record->preset);
-  free(record);
 }
 
 typedef struct {
@@ -343,16 +265,9 @@ add_preset_to_menu(Jalv*           jalv,
                    const LilvNode* title,
                    void*           data)
 {
-  App* const  app   = (App*)jalv->app;
   PresetMenu* menu  = (PresetMenu*)data;
   const char* label = lilv_node_as_string(title);
-  GtkWidget*  item  = gtk_check_menu_item_new_with_label(label);
-  gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(item), TRUE);
-  if (jalv->preset &&
-      lilv_node_equals(lilv_state_get_uri(jalv->preset), node)) {
-    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), TRUE);
-    app->active_preset_item = GTK_CHECK_MENU_ITEM(item);
-  }
+  GtkWidget*  item  = gtk_menu_item_new_with_label(label);
 
   const LilvNode* bank =
     lilv_world_get(jalv->world, node, jalv->nodes.pset_bank, NULL);
@@ -364,16 +279,11 @@ add_preset_to_menu(Jalv*           jalv,
     gtk_menu_shell_append(GTK_MENU_SHELL(menu->menu), item);
   }
 
-  PresetRecord* record = (PresetRecord*)malloc(sizeof(PresetRecord));
-  record->jalv         = jalv;
-  record->preset       = lilv_node_duplicate(node);
+  g_object_set_data_full(
+    G_OBJECT(item), "uri", g_strdup(lilv_node_as_string(node)), g_free);
 
-  g_signal_connect_data(G_OBJECT(item),
-                        "activate",
-                        G_CALLBACK(on_preset_activate),
-                        record,
-                        on_preset_destroy,
-                        (GConnectFlags)0);
+  g_signal_connect(
+    G_OBJECT(item), "activate", G_CALLBACK(on_preset_activate), jalv);
 
   return 0;
 }
@@ -391,13 +301,13 @@ finish_menu(PresetMenu* menu)
   g_sequence_free(menu->banks);
 }
 
-static void
-rebuild_preset_menu(Jalv* jalv, GtkContainer* pset_menu)
+void
+rebuild_preset_menu(Jalv* jalv)
 {
-  App* const app = (App*)jalv->app;
+  App* const    app       = (App*)jalv->app;
+  GtkContainer* pset_menu = GTK_CONTAINER(app->preset_menu);
 
   // Clear current menu
-  app->active_preset_item = NULL;
   for (GList* items = g_list_nth(gtk_container_get_children(pset_menu), 3);
        items;
        items = items->next) {
@@ -412,124 +322,6 @@ rebuild_preset_menu(Jalv* jalv, GtkContainer* pset_menu)
   jalv_load_presets(jalv, add_preset_to_menu, &menu);
   finish_menu(&menu);
   gtk_widget_show_all(GTK_WIDGET(pset_menu));
-}
-
-static void
-on_save_preset_activate(GtkWidget* widget, void* ptr)
-{
-  Jalv* const jalv = (Jalv*)ptr;
-  App* const  app  = (App*)jalv->app;
-
-  GtkWidget* dialog = gtk_file_chooser_dialog_new("Save Preset",
-                                                  app->window,
-                                                  GTK_FILE_CHOOSER_ACTION_SAVE,
-                                                  "_Cancel",
-                                                  GTK_RESPONSE_REJECT,
-                                                  "_Save",
-                                                  GTK_RESPONSE_ACCEPT,
-                                                  NULL);
-
-  char* dot_lv2 = g_build_filename(g_get_home_dir(), ".lv2", NULL);
-  gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), dot_lv2);
-  free(dot_lv2);
-
-  GtkWidget* content   = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-  GtkBox*    box       = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8));
-  GtkWidget* uri_label = gtk_label_new("URI (Optional):");
-  GtkWidget* uri_entry = gtk_entry_new();
-  GtkWidget* add_prefix =
-    gtk_check_button_new_with_mnemonic("_Prefix plugin name");
-
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(add_prefix), TRUE);
-  gtk_box_pack_start(box, uri_label, FALSE, TRUE, 2);
-  gtk_box_pack_start(box, uri_entry, TRUE, TRUE, 2);
-  gtk_box_pack_start(GTK_BOX(content), GTK_WIDGET(box), FALSE, FALSE, 6);
-  gtk_box_pack_start(GTK_BOX(content), add_prefix, FALSE, FALSE, 6);
-
-  gtk_widget_show_all(GTK_WIDGET(dialog));
-  gtk_entry_set_activates_default(GTK_ENTRY(uri_entry), TRUE);
-  gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
-  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-    const char* path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-    const char* uri  = gtk_entry_get_text(GTK_ENTRY(uri_entry));
-    const char* prefix = "";
-    const char* sep    = "";
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(add_prefix))) {
-      prefix = lilv_node_as_string(jalv->plugin_name);
-      sep    = "_";
-    }
-
-    char* dirname  = g_path_get_dirname(path);
-    char* basename = g_path_get_basename(path);
-    char* sym      = symbolify(basename);
-    char* sprefix  = symbolify(prefix);
-    char* bundle   = g_strjoin(NULL, sprefix, sep, sym, ".preset.lv2/", NULL);
-    char* file     = g_strjoin(NULL, sym, ".ttl", NULL);
-    char* dir      = g_build_filename(dirname, bundle, NULL);
-
-    jalv_save_preset(jalv, dir, (strlen(uri) ? uri : NULL), basename, file);
-
-    // Reload bundle into the world
-    LilvNode* ldir = lilv_new_file_uri(jalv->world, NULL, dir);
-    lilv_world_unload_bundle(jalv->world, ldir);
-    lilv_world_load_bundle(jalv->world, ldir);
-    lilv_node_free(ldir);
-
-    // Rebuild preset menu and update window title
-    rebuild_preset_menu(jalv, GTK_CONTAINER(gtk_widget_get_parent(widget)));
-    update_window_title(jalv);
-
-    g_free(dir);
-    g_free(file);
-    g_free(bundle);
-    free(sprefix);
-    free(sym);
-    g_free(basename);
-    g_free(dirname);
-  }
-
-  gtk_widget_destroy(GTK_WIDGET(dialog));
-}
-
-static void
-on_delete_preset_activate(GtkWidget* widget, void* ptr)
-{
-  Jalv* const jalv = (Jalv*)ptr;
-  App* const  app  = (App*)jalv->app;
-  if (!jalv->preset) {
-    return;
-  }
-
-  GtkWidget* dialog = gtk_dialog_new_with_buttons(
-    "Delete Preset?",
-    app->window,
-    (GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-    "_Cancel",
-    GTK_RESPONSE_CANCEL,
-    "_OK",
-    GTK_RESPONSE_ACCEPT,
-    NULL);
-
-  char* msg = g_strdup_printf("Delete preset \"%s\" from the file system?",
-                              lilv_state_get_label(jalv->preset));
-
-  GtkWidget* content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-  GtkWidget* text    = gtk_label_new(msg);
-  gtk_box_pack_start(GTK_BOX(content), text, TRUE, TRUE, 4);
-
-  gtk_widget_show_all(dialog);
-  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-    jalv_delete_current_preset(jalv);
-    rebuild_preset_menu(jalv, GTK_CONTAINER(gtk_widget_get_parent(widget)));
-  }
-
-  lilv_state_free(jalv->preset);
-  jalv->preset = NULL;
-  update_window_title(jalv);
-
-  g_free(msg);
-  gtk_widget_destroy(text);
-  gtk_widget_destroy(dialog);
 }
 
 static double
@@ -663,6 +455,8 @@ on_request_value(LV2UI_Feature_Handle      handle,
 static void
 build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
 {
+  App* const app = (App*)jalv->app;
+
   GtkWidget* menu_bar  = gtk_menu_bar_new();
   GtkWidget* file      = gtk_menu_item_new_with_mnemonic("_File");
   GtkWidget* file_menu = gtk_menu_new();
@@ -696,9 +490,10 @@ build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
                      g_sequence_new((GDestroyNotify)pset_menu_free)};
   jalv_load_presets(jalv, add_preset_to_menu, &menu);
   finish_menu(&menu);
+  app->preset_menu = GTK_MENU(pset_menu);
 
   g_signal_connect(
-    G_OBJECT(quit), "activate", G_CALLBACK(on_quit_activate), window);
+    G_OBJECT(quit), "activate", G_CALLBACK(on_quit_activate), jalv);
 
   g_signal_connect(
     G_OBJECT(save), "activate", G_CALLBACK(on_save_activate), jalv);
