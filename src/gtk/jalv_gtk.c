@@ -569,7 +569,7 @@ jalv_frontend_open(Jalv* jalv, const ProgramArgs ZIX_UNUSED(args))
 
   // Attempt to instantiate custom UI if necessary
   if (jalv->ui && !jalv->opts.generic_ui) {
-    jalv_ui_instantiate(jalv, jalv_frontend_ui_type(), ui_box);
+    jalv_instantiate_ui(jalv, jalv_frontend_ui_type(), ui_box);
   }
 
   jalv->features.request_value.request = on_request_value;
@@ -605,12 +605,12 @@ jalv_frontend_open(Jalv* jalv, const ProgramArgs ZIX_UNUSED(args))
       box_size.height + controls_size.height);
   }
 
-  jalv_init_ui(jalv);
+  jalv_refresh_ui(jalv);
+  gtk_window_present(GTK_WINDOW(window));
 
   const float update_interval_ms = 1000.0f / jalv->settings.ui_update_hz;
   g_timeout_add((unsigned)update_interval_ms, (GSourceFunc)jalv_update, jalv);
 
-  gtk_window_present(GTK_WINDOW(window));
   gtk_main();
 
   suil_instance_free(jalv->ui_instance);

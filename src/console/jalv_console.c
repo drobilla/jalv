@@ -306,7 +306,7 @@ jalv_run_custom_ui(Jalv* jalv)
   const LV2UI_Idle_Interface* idle_iface = NULL;
   const LV2UI_Show_Interface* show_iface = NULL;
   if (jalv->ui && jalv->opts.show_ui) {
-    jalv_ui_instantiate(jalv, jalv_frontend_ui_type(), NULL);
+    jalv_instantiate_ui(jalv, jalv_frontend_ui_type(), NULL);
     idle_iface = (const LV2UI_Idle_Interface*)suil_instance_extension_data(
       jalv->ui_instance, LV2_UI__idleInterface);
     show_iface = (const LV2UI_Show_Interface*)suil_instance_extension_data(

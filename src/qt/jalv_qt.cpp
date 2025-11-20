@@ -680,7 +680,7 @@ jalv_frontend_open(Jalv* jalv, ProgramArgs)
   jalv_load_presets(jalv, add_preset_to_menu, presets_menu);
 
   if (jalv->ui && !jalv->opts.generic_ui) {
-    jalv_ui_instantiate(jalv, jalv_frontend_ui_type(), win);
+    jalv_instantiate_ui(jalv, jalv_frontend_ui_type(), win);
   }
 
   QWidget* widget = nullptr;
@@ -700,9 +700,9 @@ jalv_frontend_open(Jalv* jalv, ProgramArgs)
   win->setCentralWidget(widget);
   app->connect(app, SIGNAL(lastWindowClosed()), app, SLOT(quit()));
 
-  jalv_init_ui(jalv);
-
+  jalv_refresh_ui(jalv);
   win->show();
+
   if (jalv->ui_instance && !jalv_ui_is_resizable(jalv->world, jalv->ui)) {
     widget->setMinimumSize(widget->width(), widget->height());
     widget->setMaximumSize(widget->width(), widget->height());

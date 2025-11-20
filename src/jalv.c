@@ -365,7 +365,7 @@ jalv_ui_port_index(void* const controller, const char* symbol)
 #endif
 
 void
-jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
+jalv_instantiate_ui(Jalv* jalv, const char* native_ui_type, void* parent)
 {
 #if USE_SUIL
   const LilvInstance* const instance = jalv->process.instance;
@@ -420,7 +420,7 @@ jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent)
 }
 
 void
-jalv_init_ui(Jalv* jalv)
+jalv_refresh_ui(Jalv* jalv)
 {
   // Set initial control port values
   for (uint32_t i = 0; i < MIN(jalv->num_ports, jalv->controls.n_controls);

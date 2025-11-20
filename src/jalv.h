@@ -103,13 +103,13 @@ jalv_set_control(Jalv*          jalv,
                  LV2_URID       type,
                  const void*    body);
 
-/// Request and/or set initial control values to initialize the UI
+/// Update port values in the UI and/or request state from the plugin
 void
-jalv_init_ui(Jalv* jalv);
+jalv_refresh_ui(Jalv* jalv);
 
 /// Instantiate the UI instance using suil if available
 void
-jalv_ui_instantiate(Jalv* jalv, const char* native_ui_type, void* parent);
+jalv_instantiate_ui(Jalv* jalv, const char* native_ui_type, void* parent);
 
 /// Periodically update user interface
 int
