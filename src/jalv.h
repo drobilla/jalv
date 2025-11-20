@@ -64,7 +64,7 @@ struct JalvImpl {
   SuilHost*     ui_host;     ///< Plugin UI host support
   SuilInstance* ui_instance; ///< Plugin UI instance (shared library)
 #endif
-  void*               window;       ///< Window (if applicable)
+  void*               app;          ///< Opaque application pointer
   JalvPort*           ports;        ///< Port array of size num_ports
   Controls            controls;     ///< Available plugin controls
   size_t              ui_msg_size;  ///< Maximum size of a single message

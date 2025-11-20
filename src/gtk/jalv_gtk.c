@@ -1,6 +1,8 @@
 // Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
+#include "jalv_gtk.h"
+
 #include "../control.h"
 #include "../frontend.h"
 #include "../jalv.h"
@@ -32,8 +34,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-static GtkCheckMenuItem* active_preset_item = NULL;
 
 /// Widget(s) for a control port or parameter
 typedef struct {
@@ -177,10 +177,12 @@ jalv_frontend_ui_type(void)
 static void
 on_save_activate(GtkWidget* ZIX_UNUSED(widget), void* ptr)
 {
-  Jalv*      jalv = (Jalv*)ptr;
+  Jalv* const jalv = (Jalv*)ptr;
+  App* const  app  = (App*)jalv->app;
+
   GtkWidget* dialog =
     gtk_file_chooser_dialog_new("Save State",
-                                (GtkWindow*)jalv->window,
+                                app->window,
                                 GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
                                 "_Cancel",
                                 GTK_RESPONSE_CANCEL,
@@ -227,33 +229,35 @@ symbolify(const char* in)
 }
 
 static void
-set_window_title(Jalv* jalv)
+update_window_title(Jalv* jalv)
 {
+  App* const  app    = (App*)jalv->app;
   const char* plugin = lilv_node_as_string(jalv->plugin_name);
 
   if (jalv->preset) {
     const char* preset_label = lilv_state_get_label(jalv->preset);
     char*       title        = g_strdup_printf("%s - %s", plugin, preset_label);
-    gtk_window_set_title(GTK_WINDOW(jalv->window), title);
+    gtk_window_set_title(app->window, title);
     free(title);
   } else {
-    gtk_window_set_title(GTK_WINDOW(jalv->window), plugin);
+    gtk_window_set_title(app->window, plugin);
   }
 }
 
 static void
 on_preset_activate(GtkWidget* widget, gpointer data)
 {
-  if (GTK_CHECK_MENU_ITEM(widget) != active_preset_item) {
-    PresetRecord* record = (PresetRecord*)data;
+  PresetRecord* const record = (PresetRecord*)data;
+  App* const          app    = (App*)record->jalv->app;
+  if (GTK_CHECK_MENU_ITEM(widget) != app->active_preset_item) {
     jalv_apply_preset(record->jalv, record->preset);
-    if (active_preset_item) {
-      gtk_check_menu_item_set_active(active_preset_item, FALSE);
+    if (app->active_preset_item) {
+      gtk_check_menu_item_set_active(app->active_preset_item, FALSE);
     }
 
-    active_preset_item = GTK_CHECK_MENU_ITEM(widget);
-    gtk_check_menu_item_set_active(active_preset_item, TRUE);
-    set_window_title(record->jalv);
+    app->active_preset_item = GTK_CHECK_MENU_ITEM(widget);
+    gtk_check_menu_item_set_active(app->active_preset_item, TRUE);
+    update_window_title(record->jalv);
   }
 }
 
@@ -344,6 +348,7 @@ add_preset_to_menu(Jalv*           jalv,
                    const LilvNode* title,
                    void*           data)
 {
+  App* const  app   = (App*)jalv->app;
   PresetMenu* menu  = (PresetMenu*)data;
   const char* label = lilv_node_as_string(title);
   GtkWidget*  item  = gtk_check_menu_item_new_with_label(label);
@@ -351,7 +356,7 @@ add_preset_to_menu(Jalv*           jalv,
   if (jalv->preset &&
       lilv_node_equals(lilv_state_get_uri(jalv->preset), node)) {
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), TRUE);
-    active_preset_item = GTK_CHECK_MENU_ITEM(item);
+    app->active_preset_item = GTK_CHECK_MENU_ITEM(item);
   }
 
   const LilvNode* bank =
@@ -394,8 +399,10 @@ finish_menu(PresetMenu* menu)
 static void
 rebuild_preset_menu(Jalv* jalv, GtkContainer* pset_menu)
 {
+  App* const app = (App*)jalv->app;
+
   // Clear current menu
-  active_preset_item = NULL;
+  app->active_preset_item = NULL;
   for (GList* items = g_list_nth(gtk_container_get_children(pset_menu), 3);
        items;
        items = items->next) {
@@ -415,10 +422,11 @@ rebuild_preset_menu(Jalv* jalv, GtkContainer* pset_menu)
 static void
 on_save_preset_activate(GtkWidget* widget, void* ptr)
 {
-  Jalv* jalv = (Jalv*)ptr;
+  Jalv* const jalv = (Jalv*)ptr;
+  App* const  app  = (App*)jalv->app;
 
   GtkWidget* dialog = gtk_file_chooser_dialog_new("Save Preset",
-                                                  (GtkWindow*)jalv->window,
+                                                  app->window,
                                                   GTK_FILE_CHOOSER_ACTION_SAVE,
                                                   "_Cancel",
                                                   GTK_RESPONSE_REJECT,
@@ -474,7 +482,7 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 
     // Rebuild preset menu and update window title
     rebuild_preset_menu(jalv, GTK_CONTAINER(gtk_widget_get_parent(widget)));
-    set_window_title(jalv);
+    update_window_title(jalv);
 
     g_free(dir);
     g_free(file);
@@ -491,14 +499,15 @@ on_save_preset_activate(GtkWidget* widget, void* ptr)
 static void
 on_delete_preset_activate(GtkWidget* widget, void* ptr)
 {
-  Jalv* jalv = (Jalv*)ptr;
+  Jalv* const jalv = (Jalv*)ptr;
+  App* const  app  = (App*)jalv->app;
   if (!jalv->preset) {
     return;
   }
 
   GtkWidget* dialog = gtk_dialog_new_with_buttons(
     "Delete Preset?",
-    (GtkWindow*)jalv->window,
+    app->window,
     (GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
     "_Cancel",
     GTK_RESPONSE_CANCEL,
@@ -521,7 +530,7 @@ on_delete_preset_activate(GtkWidget* widget, void* ptr)
 
   lilv_state_free(jalv->preset);
   jalv->preset = NULL;
-  set_window_title(jalv);
+  update_window_title(jalv);
 
   g_free(msg);
   gtk_widget_destroy(text);
@@ -666,6 +675,7 @@ on_request_value(LV2UI_Feature_Handle      handle,
                  const LV2_Feature* const* ZIX_UNUSED(features))
 {
   Jalv* const    jalv    = (Jalv*)handle;
+  App* const     app     = (App*)jalv->app;
   const Control* control = get_property_control(&jalv->controls, key);
 
   if (!control) {
@@ -677,7 +687,7 @@ on_request_value(LV2UI_Feature_Handle      handle,
   }
 
   GtkWidget* dialog = gtk_file_chooser_dialog_new("Choose file",
-                                                  GTK_WINDOW(jalv->window),
+                                                  app->window,
                                                   GTK_FILE_CHOOSER_ACTION_OPEN,
                                                   "_Cancel",
                                                   GTK_RESPONSE_CANCEL,
@@ -1329,15 +1339,16 @@ jalv_frontend_select_plugin(LilvWorld* const world)
 int
 jalv_frontend_open(Jalv* jalv, const ProgramArgs ZIX_UNUSED(args))
 {
+  // Create top-level app, window and vbox
+  App* const app    = (App*)calloc(1, sizeof(App));
   GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  jalv->window      = window;
+  GtkWidget* vbox   = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
+  app->window = GTK_WINDOW(window);
+  jalv->app   = app;
+
+  update_window_title(jalv);
   g_signal_connect(window, "destroy", G_CALLBACK(on_window_destroy), jalv);
-
-  set_window_title(jalv);
-
-  GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-
   gtk_window_set_role(GTK_WINDOW(window), "plugin_ui");
   gtk_container_add(GTK_CONTAINER(window), vbox);
 
@@ -1399,8 +1410,8 @@ jalv_frontend_open(Jalv* jalv, const ProgramArgs ZIX_UNUSED(args))
   g_timeout_add((unsigned)update_interval_ms, (GSourceFunc)jalv_update, jalv);
 
   gtk_window_present(GTK_WINDOW(window));
-
   gtk_main();
+
   suil_instance_free(jalv->ui_instance);
 
   for (unsigned i = 0U; i < jalv->controls.n_controls; ++i) {
@@ -1415,7 +1426,7 @@ jalv_frontend_open(Jalv* jalv, const ProgramArgs ZIX_UNUSED(args))
 int
 jalv_frontend_close(Jalv* jalv)
 {
-  (void)jalv;
   gtk_main_quit();
+  free(jalv->app);
   return 0;
 }
