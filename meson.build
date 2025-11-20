@@ -536,7 +536,11 @@ if not get_option('gtk3').disabled()
 
     executable(
       'jalv.gtk3',
-      program_sources + files('src/gtk/jalv_gtk.c'),
+      program_sources + files(
+        'src/gtk/controls.c',
+        'src/gtk/jalv_gtk.c',
+        'src/gtk/plugin_selector.c',
+      ),
       c_args: common_c_args,
       dependencies: common_dependencies + [gdk3_dep, gtk3_dep, suil_dep],
       implicit_include_directories: false,
