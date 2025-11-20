@@ -480,6 +480,7 @@ if jack_dep.found() and host_machine.system() != 'windows'
     sources + files('src/jack_internal.c', 'src/console/jalv_console.c'),
     c_args: c_suppressions + platform_defines + ['-DHAVE_SUIL=0'],
     dependencies: common_dependencies,
+    implicit_include_directories: false,
     install: true,
     install_dir: get_option('prefix') / get_option('libdir') / 'jack',
     name_prefix: '',
@@ -492,6 +493,7 @@ executable(
   program_sources + files('src/console/jalv_console.c'),
   c_args: common_c_args,
   dependencies: common_dependencies + [suil_dep],
+  implicit_include_directories: false,
   install: true,
 )
 
@@ -537,6 +539,7 @@ if not get_option('gtk3').disabled()
       program_sources + files('src/gtk/jalv_gtk.c'),
       c_args: common_c_args,
       dependencies: common_dependencies + [gdk3_dep, gtk3_dep, suil_dep],
+      implicit_include_directories: false,
       install: true,
     )
   endif
@@ -595,6 +598,7 @@ if is_variable('cpp')
           c_args: common_c_args,
           cpp_args: common_cpp_args + qt_args,
           dependencies: common_dependencies + [qt5_dep, suil_dep],
+          implicit_include_directories: false,
           install: true,
         )
       endif
@@ -640,6 +644,7 @@ if is_variable('cpp')
           c_args: common_c_args,
           cpp_args: common_cpp_args + qt_args,
           dependencies: common_dependencies + [qt6_dep, suil_dep],
+          implicit_include_directories: false,
           install: true,
         )
       endif
