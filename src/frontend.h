@@ -1,4 +1,4 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_UI_H
@@ -6,7 +6,6 @@
 
 #include "attributes.h"
 #include "control.h"
-#include "options.h"
 #include "types.h"
 
 #include <lilv/lilv.h>
@@ -20,9 +19,9 @@ JALV_BEGIN_DECLS
 /// Arbitrary return code for successful early exit (for --help and so on)
 #define JALV_EARLY_EXIT_STATUS (-431)
 
-/// Consume options in `args` and set `opts` accordingly
+/// Allocate and prepare application
 int
-jalv_frontend_init(ProgramArgs* args, JalvOptions* opts);
+jalv_frontend_init(Jalv* jalv);
 
 /// Return the URI of the "native" LV2 UI type
 const char*
@@ -46,7 +45,7 @@ jalv_frontend_select_plugin(LilvWorld* world);
 
 /// Open and run the frontend interface, signalling jalv.done when finished
 int
-jalv_frontend_open(Jalv* jalv, ProgramArgs args);
+jalv_frontend_run(Jalv* jalv);
 
 /// Quit and close the frontend interface
 int

@@ -1,7 +1,8 @@
-// Copyright 2007-2024 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "backend.h"
+#include "frontend.h"
 #include "jack_impl.h"
 #include "jalv.h"
 #include "log.h"
@@ -77,8 +78,10 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
     }
   }
 
-  ProgramArgs args = {argc, argv};
-  if (err || (err = jalv_open(jalv, &args))) {
+  jalv_init(jalv, argc, argv);
+  jalv_frontend_init(jalv);
+
+  if (err || (err = jalv_open(jalv, jalv->args.argv[0]))) {
     jalv_close(jalv);
     free(jalv);
   } else {

@@ -1,4 +1,4 @@
-// Copyright 2007-2024 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "backend.h"
@@ -45,29 +45,15 @@ int
 main(int argc, char** argv)
 {
   Jalv jalv = {.backend = jalv_backend_allocate()};
+  jalv_init(&jalv, argc, argv);
+  setup_signals(&jalv);
 
-  // Initialize application
-  ProgramArgs args = {argc, argv};
-  const int   orc  = jalv_open(&jalv, &args);
-  if (orc) {
-    jalv_close(&jalv);
-    jalv_backend_free(jalv.backend);
-    return orc == JALV_EARLY_EXIT_STATUS ? EXIT_SUCCESS : EXIT_FAILURE;
+  int rc = jalv_frontend_init(&jalv);
+  if (!rc) {
+    rc = jalv_frontend_run(&jalv);
   }
 
-  // Set up signal handlers and activate audio processing
-  setup_signals(&jalv);
-  jalv_activate(&jalv);
-
-  // Run UI (or prompt at console)
-  jalv_frontend_open(&jalv, args);
-
-  // Wait for finish signal from UI or signal handler
-  zix_sem_wait(&jalv.done);
-
-  // Deactivate audio processing and tear down application
-  jalv_deactivate(&jalv);
-  const int crc = jalv_close(&jalv);
+  jalv_frontend_close(&jalv);
   jalv_backend_free(jalv.backend);
-  return crc;
+  return rc;
 }

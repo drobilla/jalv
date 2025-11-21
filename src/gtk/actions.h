@@ -4,22 +4,22 @@
 #ifndef JALV_GTK_ACTIONS_H
 #define JALV_GTK_ACTIONS_H
 
+#include <gio/gio.h>
 #include <glib.h>
-#include <gtk/gtk.h>
 
 void
-on_delete_preset_activate(GtkWidget* widget, gpointer data);
+action_delete_preset(GSimpleAction* action, GVariant* parameter, void* data);
 
 void
-on_preset_activate(GtkWidget* widget, gpointer data);
+action_load_preset(GSimpleAction* action, GVariant* parameter, void* data);
 
 void
-on_quit_activate(GtkWidget* widget, gpointer data);
+action_quit(GSimpleAction* action, GVariant* parameter, void* data);
 
 void
-on_save_activate(GtkWidget* widget, gpointer data);
+action_save_as(GSimpleAction* action, GVariant* parameter, void* data);
 
 void
-on_save_preset_activate(GtkWidget* widget, gpointer data);
+action_save_preset(GSimpleAction* action, GVariant* parameter, void* data);
 
 #endif // JALV_GTK_ACTIONS_H

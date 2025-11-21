@@ -1,4 +1,4 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_JALV_H
@@ -38,6 +38,7 @@ JALV_BEGIN_DECLS
 
 /// Internal application state
 struct JalvImpl {
+  ProgramArgs       args;        ///< Command-line arguments
   JalvOptions       opts;        ///< Command-line options
   LilvWorld*        world;       ///< Lilv World
   JalvMapper*       mapper;      ///< URI mapper/unmapper
@@ -75,11 +76,15 @@ struct JalvImpl {
   const LV2_Feature** feature_list;
 };
 
-/// Load the plugin and set up the application
-int
-jalv_open(Jalv* jalv, ProgramArgs* args);
+/// Initialize program and library internals
+void
+jalv_init(Jalv* jalv, int argc, char** argv);
 
-/// Shut down the application (counterpart to jalv_open)
+/// Load the plugin/state and set up the application
+int
+jalv_open(Jalv* jalv, const char* load_arg);
+
+/// Shut down the application
 int
 jalv_close(Jalv* jalv);
 

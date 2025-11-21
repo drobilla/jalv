@@ -29,7 +29,7 @@ jalv_frontend_select_plugin(LilvWorld* const world)
 {
   // Create the dialog
   GtkWidget* const dialog = gtk_dialog_new_with_buttons(
-    "Plugin Selector",
+    "Select Plugin",
     NULL,
     (GtkDialogFlags)(GTK_DIALOG_USE_HEADER_BAR | GTK_DIALOG_MODAL |
                      GTK_DIALOG_DESTROY_WITH_PARENT),

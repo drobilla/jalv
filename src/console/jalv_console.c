@@ -181,22 +181,22 @@ parse_option(OptionsState* const state,
 }
 
 int
-jalv_frontend_init(ProgramArgs* const args, JalvOptions* const opts)
+jalv_frontend_init(Jalv* const jalv)
 {
-  const int    argc = args->argc;
-  char** const argv = args->argv;
+  const int    argc = jalv->args.argc;
+  char** const argv = jalv->args.argv;
 
   OptionsState state = {0, 0, 1};
 
   for (; state.a < argc && argv[state.a][0] == '-'; ++state.a) {
-    const int r = parse_option(&state, opts, argc, argv);
+    const int r = parse_option(&state, &jalv->opts, argc, argv);
     if (r) {
       return r;
     }
   }
 
-  args->argc -= state.a;
-  args->argv += state.a;
+  jalv->args.argc -= state.a;
+  jalv->args.argv += state.a;
   return state.status;
 }
 
@@ -361,8 +361,12 @@ jalv_frontend_select_plugin(LilvWorld* const world)
 }
 
 int
-jalv_frontend_open(Jalv* jalv, ProgramArgs ZIX_UNUSED(args))
+jalv_frontend_run(Jalv* jalv)
 {
+  if (jalv_open(jalv, jalv->args.argv[0])) {
+    return 1;
+  }
+
   // Print initial control values
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
     const Control* control = jalv->controls.controls[i];
@@ -386,15 +390,11 @@ jalv_frontend_open(Jalv* jalv, ProgramArgs ZIX_UNUSED(args))
     zix_sem_wait(&jalv->done);
   }
 
-  // Caller waits on the done sem, so increment it again to exit
-  zix_sem_post(&jalv->done);
-
   return 0;
 }
 
 int
-jalv_frontend_close(Jalv* jalv)
+jalv_frontend_close(Jalv* ZIX_UNUSED(jalv))
 {
-  zix_sem_post(&jalv->done);
   return 0;
 }

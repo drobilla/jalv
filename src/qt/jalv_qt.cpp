@@ -8,7 +8,6 @@
 #include "../frontend.h"
 #include "../jalv.h"
 #include "../nodes.h"
-#include "../options.h"
 #include "../port.h"
 #include "../query.h"
 #include "../state.h"
@@ -16,7 +15,6 @@
 
 #include <lilv/lilv.h>
 #include <suil/suil.h>
-#include <zix/sem.h>
 
 #include <QAction>
 #include <QApplication>
@@ -61,8 +59,6 @@ namespace {
 
 constexpr int CONTROL_WIDTH = 150;
 constexpr int DIAL_STEPS    = 10000;
-
-QApplication* app = nullptr;
 
 class FlowLayout final : public QLayout
 {
@@ -602,12 +598,13 @@ build_control_widget(Jalv* jalv)
 extern "C" {
 
 int
-jalv_frontend_init(ProgramArgs* const args, JalvOptions*)
+jalv_frontend_init(Jalv* const jalv)
 {
-  app = new QApplication(args->argc, args->argv, true);
+  auto* const app = new QApplication(jalv->args.argc, jalv->args.argv, true);
   app->setStyleSheet("QGroupBox::title { subcontrol-position: top center }");
-  --args->argc;
-  ++args->argv;
+  --jalv->args.argc;
+  ++jalv->args.argv;
+  jalv->app = app;
   return 0;
 }
 
@@ -665,8 +662,13 @@ jalv_frontend_select_plugin(LilvWorld*)
 }
 
 int
-jalv_frontend_open(Jalv* jalv, ProgramArgs)
+jalv_frontend_run(Jalv* jalv)
 {
+  if (!jalv->args.argc || jalv_open(jalv, jalv->args.argv[0])) {
+    return 1;
+  }
+
+  auto* const app          = static_cast<QApplication*>(jalv->app);
   auto* const win          = new QMainWindow();
   QMenu*      file_menu    = win->menuBar()->addMenu("&File");
   QMenu*      presets_menu = win->menuBar()->addMenu("&Presets");
@@ -715,14 +717,18 @@ jalv_frontend_open(Jalv* jalv, ProgramArgs)
   auto* const timer = new Timer(jalv);
   timer->start((int)(1000.0f / jalv->settings.ui_update_hz));
 
-  const int ret = app->exec();
-  zix_sem_post(&jalv->done);
-  return ret;
+  const int rc = app->exec();
+
+  delete timer;
+  jalv_deactivate(jalv);
+  jalv_close(jalv);
+  return rc;
 }
 
 int
-jalv_frontend_close(Jalv*)
+jalv_frontend_close(Jalv* jalv)
 {
+  auto* const app = static_cast<QApplication*>(jalv->app);
   app->quit();
   return 0;
 }

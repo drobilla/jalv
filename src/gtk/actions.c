@@ -8,7 +8,6 @@
 #include "../types.h"
 #include "jalv_gtk.h"
 
-#include <glib-object.h>
 #include <gtk/gtk.h>
 #include <lilv/lilv.h>
 #include <zix/attributes.h>
@@ -32,7 +31,9 @@ symbolify(const char* in)
 }
 
 void
-on_delete_preset_activate(GtkWidget* ZIX_UNUSED(widget), void* const data)
+action_delete_preset(GSimpleAction* const ZIX_UNUSED(action),
+                     GVariant* const      ZIX_UNUSED(parameter),
+                     void* const          data)
 {
   Jalv* const jalv = (Jalv*)data;
   App* const  app  = (App*)jalv->app;
@@ -73,11 +74,13 @@ on_delete_preset_activate(GtkWidget* ZIX_UNUSED(widget), void* const data)
 }
 
 void
-on_preset_activate(GtkWidget* widget, gpointer data)
+action_load_preset(GSimpleAction* const ZIX_UNUSED(action),
+                   GVariant* const      parameter,
+                   void* const          data)
 {
   Jalv* const jalv = (Jalv*)data;
 
-  const char* const uri = g_object_get_data(G_OBJECT(widget), "uri");
+  const char* const uri = g_variant_get_string(parameter, NULL);
   if (!jalv->preset ||
       !!strcmp(lilv_node_as_string(lilv_state_get_uri(jalv->preset)), uri)) {
     LilvNode* const node = lilv_new_uri(jalv->world, uri);
@@ -90,17 +93,22 @@ on_preset_activate(GtkWidget* widget, gpointer data)
 }
 
 void
-on_quit_activate(GtkWidget* ZIX_UNUSED(widget), gpointer data)
+action_quit(GSimpleAction* const ZIX_UNUSED(action),
+            GVariant* const      ZIX_UNUSED(parameter),
+            void* const          data)
 {
   Jalv* const jalv = (Jalv*)data;
   App* const  app  = (App*)jalv->app;
   if (app->window) {
     gtk_widget_destroy(GTK_WIDGET(app->window));
+    app->window = NULL;
   }
 }
 
 void
-on_save_activate(GtkWidget* ZIX_UNUSED(widget), gpointer data)
+action_save_as(GSimpleAction* const ZIX_UNUSED(action),
+               GVariant* const      ZIX_UNUSED(parameter),
+               void* const          data)
 {
   Jalv* const jalv = (Jalv*)data;
   App* const  app  = (App*)jalv->app;
@@ -127,7 +135,9 @@ on_save_activate(GtkWidget* ZIX_UNUSED(widget), gpointer data)
 }
 
 void
-on_save_preset_activate(GtkWidget* ZIX_UNUSED(widget), void* const data)
+action_save_preset(GSimpleAction* const ZIX_UNUSED(action),
+                   GVariant* const      ZIX_UNUSED(parameter),
+                   void* const          data)
 {
   Jalv* const jalv = (Jalv*)data;
   App* const  app  = (App*)jalv->app;

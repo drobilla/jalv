@@ -522,10 +522,14 @@ update_error(Jalv* const jalv, const char* const message)
 int
 jalv_update(Jalv* jalv)
 {
+  if (!jalv->world) {
+    return 0; // Not opened yet
+  }
+
   // Check quit flag and close if set
   if (!zix_sem_try_wait(&jalv->done)) {
     jalv_frontend_close(jalv);
-    return 0;
+    return -1;
   }
 
   jalv->updating = true;
@@ -744,27 +748,25 @@ jalv_init_ui_settings(Jalv* const jalv)
 
 /// Find the initial state and set jalv->plugin
 static LilvState*
-open_plugin_state(Jalv* const              jalv,
-                  LV2_URID_Map* const      urid_map,
-                  const ProgramArgs* const args)
+open_plugin_state(Jalv* const         jalv,
+                  LV2_URID_Map* const urid_map,
+                  const char* const   load_arg)
 {
   LilvWorld* const         world   = jalv->world;
   const LilvPlugins* const plugins = lilv_world_get_all_plugins(world);
   LilvState*               state   = NULL;
 
-  if (args->argc > 1) {
-    jalv_log(JALV_LOG_ERR, "Unexpected trailing arguments\n");
-    return NULL;
-  }
-
-  if (!args->argc) {
+  if (!load_arg) {
     // No URI or path given, open plugin selector
     LilvNode* const plugin_uri = jalv_frontend_select_plugin(world);
-    jalv->plugin               = lilv_plugins_get_by_uri(plugins, plugin_uri);
-    lilv_node_free(plugin_uri);
+    if (plugin_uri) {
+      state = lilv_state_new_from_world(jalv->world, urid_map, plugin_uri);
+      jalv->plugin = lilv_plugins_get_by_uri(plugins, plugin_uri);
+      lilv_node_free(plugin_uri);
+    }
   } else {
     // URI or path given as command-line argument
-    const char* const arg = args->argv[0];
+    const char* const arg = load_arg;
     if (serd_uri_string_has_scheme((const uint8_t*)arg)) {
       LilvNode* state_uri = lilv_new_uri(jalv->world, arg);
       state = lilv_state_new_from_world(jalv->world, urid_map, state_uri);
@@ -776,6 +778,8 @@ open_plugin_state(Jalv* const              jalv,
     if (state) {
       jalv->plugin =
         lilv_plugins_get_by_uri(plugins, lilv_state_get_plugin_uri(state));
+    } else {
+      jalv_log(JALV_LOG_ERR, "Failed to load state \"%s\"\n", load_arg);
     }
   }
 
@@ -813,19 +817,20 @@ open_ui(Jalv* const jalv)
   return 0;
 }
 
-int
-jalv_open(Jalv* const jalv, ProgramArgs* const args)
+void
+jalv_init(Jalv* const jalv, const int argc, char** const argv)
 {
+  jalv->args.argc = argc;
+  jalv->args.argv = argv;
+
 #if USE_SUIL
-  suil_init(&args->argc, &args->argv, SUIL_ARG_NONE);
+  suil_init(&jalv->args.argc, &jalv->args.argv, SUIL_ARG_NONE);
 #endif
+}
 
-  // Parse command-line arguments
-  const int ret = jalv_frontend_init(args, &jalv->opts);
-  if (ret) {
-    return ret;
-  }
-
+int
+jalv_open(Jalv* const jalv, const char* const load_arg)
+{
   JalvSettings* const settings = &jalv->settings;
 
   settings->block_length    = 4096U;
@@ -865,9 +870,8 @@ jalv_open(Jalv* const jalv, ProgramArgs* const args)
   }
 
   // Find the initial state (and thereby the plugin URI)
-  LilvState* state = open_plugin_state(jalv, urid_map, args);
+  LilvState* state = open_plugin_state(jalv, urid_map, load_arg);
   if (!state || !jalv->plugin) {
-    jalv_log(JALV_LOG_ERR, "Failed to find initial plugin state\n");
     return -2;
   }
 

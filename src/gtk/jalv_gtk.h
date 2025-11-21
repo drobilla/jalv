@@ -6,12 +6,17 @@
 
 #include "../types.h"
 
+#include <glib.h>
 #include <gtk/gtk.h>
 
 /// GUI application state
 typedef struct {
-  GtkWindow* window;
-  GtkMenu*   preset_menu;
+  GtkApplication* application;
+  const char*     load_arg;
+  GtkWindow*      window;
+  GtkMenu*        preset_menu;
+  GVariant*       remaining;
+  unsigned        timer_id;
 } App;
 
 /// Widget(s) for a control port or parameter

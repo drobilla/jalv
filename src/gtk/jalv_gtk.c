@@ -21,13 +21,14 @@
 #include <lv2/urid/urid.h>
 #include <suil/suil.h>
 #include <zix/attributes.h>
-#include <zix/sem.h>
 
 #include <gdk/gdk.h>
+#include <gio/gio.h>
 #include <glib-object.h>
 #include <glib.h>
 #include <gobject/gclosure.h>
 #include <gtk/gtk.h>
+#include <gtk/gtkactionable.h>
 
 #include <float.h>
 #include <math.h>
@@ -38,15 +39,7 @@
 #include <string.h>
 
 static void
-on_window_destroy(GtkWidget* widget, gpointer data)
-{
-  (void)widget;
-  (void)data;
-  gtk_main_quit();
-}
-
-int
-jalv_frontend_init(ProgramArgs* const args, JalvOptions* const opts)
+setup_options(GApplication* const app, JalvOptions* const opts)
 {
   const GOptionEntry entries[] = {
     {"buffer-size",
@@ -140,24 +133,30 @@ jalv_frontend_init(ProgramArgs* const args, JalvOptions* const opts)
      &opts->name_exact,
      "Exit if the requested JACK client name is taken",
      NULL},
+    {G_OPTION_REMAINING,
+     '\0',
+     0,
+     G_OPTION_ARG_STRING_ARRAY,
+     NULL,
+     "Exit if the requested JACK client name is taken",
+     NULL},
     {0, 0, 0, G_OPTION_ARG_NONE, 0, 0, 0}};
 
-  GError*   error = NULL;
-  const int err =
-    gtk_init_with_args(&args->argc,
-                       &args->argv,
-                       "PLUGIN_STATE - Run an LV2 plugin as a Jack application",
-                       entries,
-                       NULL,
-                       &error);
+  g_application_add_main_option_entries(app, entries);
+  g_application_set_option_context_parameter_string(app, "PLUGIN_STATE");
+  g_application_set_option_context_summary(app, "Run an LV2 plugin");
+}
 
-  if (!err) {
-    fprintf(stderr, "%s\n", error->message);
-  }
+int
+jalv_frontend_init(Jalv* const jalv)
+{
+  App* const app = (App*)calloc(1, sizeof(App));
 
-  --args->argc;
-  ++args->argv;
-  return !err;
+  app->application =
+    gtk_application_new("net.drobilla.jalv", G_APPLICATION_NON_UNIQUE);
+
+  jalv->app = app;
+  return 0;
 }
 
 const char*
@@ -279,11 +278,9 @@ add_preset_to_menu(Jalv*           jalv,
     gtk_menu_shell_append(GTK_MENU_SHELL(menu->menu), item);
   }
 
-  g_object_set_data_full(
-    G_OBJECT(item), "uri", g_strdup(lilv_node_as_string(node)), g_free);
-
-  g_signal_connect(
-    G_OBJECT(item), "activate", G_CALLBACK(on_preset_activate), jalv);
+  gtk_actionable_set_action_name(GTK_ACTIONABLE(item), "win.load-preset");
+  gtk_actionable_set_action_target_value(
+    GTK_ACTIONABLE(item), g_variant_new("s", lilv_node_as_string(node)));
 
   return 0;
 }
@@ -452,17 +449,14 @@ on_request_value(LV2UI_Feature_Handle      handle,
   return 0;
 }
 
-static void
-build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
+static GtkWidget*
+build_menu(Jalv* jalv)
 {
   App* const app = (App*)jalv->app;
 
   GtkWidget* menu_bar  = gtk_menu_bar_new();
   GtkWidget* file      = gtk_menu_item_new_with_mnemonic("_File");
   GtkWidget* file_menu = gtk_menu_new();
-
-  GtkAccelGroup* ag = gtk_accel_group_new();
-  gtk_window_add_accel_group(GTK_WINDOW(window), ag);
 
   GtkWidget* save = gtk_menu_item_new_with_mnemonic("_Save");
   GtkWidget* quit = gtk_menu_item_new_with_mnemonic("_Quit");
@@ -492,23 +486,14 @@ build_menu(Jalv* jalv, GtkWidget* window, GtkWidget* vbox)
   finish_menu(&menu);
   app->preset_menu = GTK_MENU(pset_menu);
 
-  g_signal_connect(
-    G_OBJECT(quit), "activate", G_CALLBACK(on_quit_activate), jalv);
+  gtk_actionable_set_action_name(GTK_ACTIONABLE(quit), "app.quit");
+  gtk_actionable_set_action_name(GTK_ACTIONABLE(save), "win.save-as");
+  gtk_actionable_set_action_name(GTK_ACTIONABLE(save_preset),
+                                 "win.save-preset");
+  gtk_actionable_set_action_name(GTK_ACTIONABLE(delete_preset),
+                                 "win.delete-preset");
 
-  g_signal_connect(
-    G_OBJECT(save), "activate", G_CALLBACK(on_save_activate), jalv);
-
-  g_signal_connect(G_OBJECT(save_preset),
-                   "activate",
-                   G_CALLBACK(on_save_preset_activate),
-                   jalv);
-
-  g_signal_connect(G_OBJECT(delete_preset),
-                   "activate",
-                   G_CALLBACK(on_delete_preset_activate),
-                   jalv);
-
-  gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
+  return menu_bar;
 }
 
 bool
@@ -537,24 +522,108 @@ jalv_frontend_scale_factor(const Jalv* ZIX_UNUSED(jalv))
   return (float)gdk_monitor_get_scale_factor(monitor);
 }
 
-int
-jalv_frontend_open(Jalv* jalv, const ProgramArgs ZIX_UNUSED(args))
+static void
+on_application_startup(GtkApplication* const application, void* const data)
 {
-  // Create top-level app, window and vbox
-  App* const app    = (App*)calloc(1, sizeof(App));
-  GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  (void)application;
+
+  Jalv* const jalv = (Jalv*)data;
+  App* const  app  = (App*)jalv->app;
+
+  if (!jalv_open(jalv, app->load_arg)) {
+    const float update_interval_ms = 1000.0f / jalv->settings.ui_update_hz;
+
+    app->timer_id = g_timeout_add(
+      (unsigned)update_interval_ms, (GSourceFunc)jalv_update, jalv);
+  }
+}
+
+static void
+on_application_shutdown(GtkApplication* const application, void* const data)
+{
+  (void)application;
+
+  Jalv* const jalv = (Jalv*)data;
+  App* const  app  = (App*)jalv->app;
+
+  if (app->timer_id) {
+    g_source_remove(app->timer_id);
+    app->timer_id = 0U;
+  }
+
+  jalv_deactivate(jalv);
+
+  for (unsigned i = 0U; i < jalv->controls.n_controls; ++i) {
+    free(jalv->controls.controls[i]->widget); // free Controller
+  }
+
+  jalv_close(jalv);
+  if (app->remaining) {
+    g_variant_unref(app->remaining);
+  }
+}
+
+static void
+on_application_activate(GtkApplication* const application, void* const data)
+{
+  Jalv* const jalv = (Jalv*)data;
+  App* const  app  = (App*)jalv->app;
+
+  if (!jalv->plugin) {
+    // If we made it this far, app should be started and a plugin selected
+    g_application_quit(G_APPLICATION(application));
+    return;
+  }
+
+  GtkWidget* window = gtk_application_window_new(application);
   GtkWidget* vbox   = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
   app->window = GTK_WINDOW(window);
-  jalv->app   = app;
-
   update_window_title(jalv);
-  g_signal_connect(window, "destroy", G_CALLBACK(on_window_destroy), jalv);
   gtk_window_set_role(GTK_WINDOW(window), "plugin_ui");
   gtk_container_add(GTK_CONTAINER(window), vbox);
 
+  // Actions
+
+  const GActionEntry app_actions[] = {
+    {"quit", action_quit, NULL, NULL, NULL, {0}},
+  };
+
+  g_action_map_add_action_entries(
+    G_ACTION_MAP(application), app_actions, G_N_ELEMENTS(app_actions), jalv);
+
+  const GActionEntry win_actions[] = {
+    {"delete-preset", action_delete_preset, NULL, NULL, NULL, {0}},
+    {"load-preset", action_load_preset, "s", NULL, NULL, {0}},
+    {"save-as", action_save_as, NULL, NULL, NULL, {0}},
+    {"save-preset", action_save_preset, NULL, NULL, NULL, {0}},
+  };
+
+  g_action_map_add_action_entries(
+    G_ACTION_MAP(window), win_actions, G_N_ELEMENTS(win_actions), jalv);
+
+  // Menu bar
+
   if (!jalv->opts.no_menu) {
-    build_menu(jalv, window, vbox);
+    GtkWidget* menu_bar = build_menu(jalv);
+    gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
+  }
+
+  // Accelerators
+
+  gtk_window_add_accel_group(GTK_WINDOW(window), gtk_accel_group_new());
+
+  static const char* action_accels[][2] = {
+    {"app.quit", "<Ctrl>Q"},
+    {"win.delete-preset", "<Ctrl>Delete"},
+    {"win.load-preset", "<Ctrl>L"},
+    {"win.save-as", "<Ctrl><Shift>S"},
+    {"win.save-preset", "<Ctrl>S"},
+    {NULL, NULL}};
+  for (unsigned i = 0U; action_accels[i][0]; ++i) {
+    const char* accels[] = {action_accels[i][1], NULL};
+    gtk_application_set_accels_for_action(
+      app->application, action_accels[i][0], accels);
   }
 
   // Create and show a box to contain the plugin UI
@@ -605,29 +674,77 @@ jalv_frontend_open(Jalv* jalv, const ProgramArgs ZIX_UNUSED(args))
       box_size.height + controls_size.height);
   }
 
+  jalv_activate(jalv);
   jalv_refresh_ui(jalv);
   gtk_window_present(GTK_WINDOW(window));
+}
 
-  const float update_interval_ms = 1000.0f / jalv->settings.ui_update_hz;
-  g_timeout_add((unsigned)update_interval_ms, (GSourceFunc)jalv_update, jalv);
+static gint
+handle_local_options(GApplication* self, GVariantDict* options, gpointer data)
+{
+  (void)self;
 
-  gtk_main();
+  Jalv* const jalv = (Jalv*)data;
+  App* const  app  = (App*)jalv->app;
 
-  suil_instance_free(jalv->ui_instance);
+  app->remaining = g_variant_dict_lookup_value(
+    options, G_OPTION_REMAINING, G_VARIANT_TYPE_STRING_ARRAY);
 
-  for (unsigned i = 0U; i < jalv->controls.n_controls; ++i) {
-    free(jalv->controls.controls[i]->widget); // free Controller
+  if (app->remaining) {
+    size_t              length  = 0U;
+    const gchar** const strings = g_variant_get_strv(app->remaining, &length);
+    if (length == 1U) {
+      app->load_arg = strings[0];
+    }
+
+    g_free(strings);
+
+    if (length > 1U) {
+      jalv_log(JALV_LOG_ERR, "Unexpected trailing arguments\n");
+      return 1;
+    }
   }
 
-  jalv->ui_instance = NULL;
-  zix_sem_post(&jalv->done);
-  return 0;
+  return -1;
+}
+
+int
+jalv_frontend_run(Jalv* jalv)
+{
+  App* const app = (App*)jalv->app;
+
+  g_signal_connect(G_OBJECT(app->application),
+                   "handle-local-options",
+                   G_CALLBACK(handle_local_options),
+                   jalv);
+
+  g_signal_connect(G_OBJECT(app->application),
+                   "startup",
+                   G_CALLBACK(on_application_startup),
+                   jalv);
+
+  g_signal_connect(G_OBJECT(app->application),
+                   "shutdown",
+                   G_CALLBACK(on_application_shutdown),
+                   jalv);
+
+  g_signal_connect(G_OBJECT(app->application),
+                   "activate",
+                   G_CALLBACK(on_application_activate),
+                   jalv);
+
+  setup_options(G_APPLICATION(app->application), &jalv->opts);
+
+  return g_application_run(
+    G_APPLICATION(app->application), jalv->args.argc, jalv->args.argv);
 }
 
 int
 jalv_frontend_close(Jalv* jalv)
 {
-  gtk_main_quit();
+  App* const app = (App*)jalv->app;
+
+  g_application_quit(G_APPLICATION(app->application));
   free(jalv->app);
   return 0;
 }
