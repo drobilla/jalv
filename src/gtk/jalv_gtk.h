@@ -28,7 +28,4 @@ typedef struct {
 void
 update_window_title(Jalv* jalv);
 
-void
-rebuild_preset_menu(Jalv* jalv);
-
 #endif // JALV_GTK_JALV_GTK_H

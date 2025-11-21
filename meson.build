@@ -540,6 +540,7 @@ if not get_option('gtk3').disabled()
         'src/gtk/actions.c',
         'src/gtk/controls.c',
         'src/gtk/jalv_gtk.c',
+        'src/gtk/menu.c',
         'src/gtk/plugin_selector.c',
       ),
       c_args: common_c_args,

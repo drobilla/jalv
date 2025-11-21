@@ -3,10 +3,12 @@
 
 #include "actions.h"
 
+#include "jalv_gtk.h"
+#include "menu.h"
+
 #include "../jalv.h"
 #include "../state.h"
 #include "../types.h"
-#include "jalv_gtk.h"
 
 #include <gtk/gtk.h>
 #include <lilv/lilv.h>
