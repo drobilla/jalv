@@ -41,6 +41,8 @@
 static void
 setup_options(GApplication* const app, JalvOptions* const opts)
 {
+  g_set_application_name("Jalv");
+
   const GOptionEntry entries[] = {
     {"buffer-size",
      'b',
@@ -529,6 +531,8 @@ on_application_startup(GtkApplication* const application, void* const data)
 
   Jalv* const jalv = (Jalv*)data;
   App* const  app  = (App*)jalv->app;
+
+  gtk_window_set_default_icon_name("jalv");
 
   if (!jalv_open(jalv, app->load_arg)) {
     const float update_interval_ms = 1000.0f / jalv->settings.ui_update_hz;

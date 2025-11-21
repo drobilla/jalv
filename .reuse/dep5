@@ -7,6 +7,6 @@ Files: .clant.json .includes.imp .suppress.cppcheck AUTHORS NEWS jalv.desktop.in
 Copyright: 2010-2025 David Robillard <d@drobilla.net>
 License: 0BSD OR ISC
 
-Files: INSTALL.md README.md doc/*.1
+Files: INSTALL.md README.md doc/*.1 icons/*.png icons/*.svg
 Copyright: 2011-2025 David Robillard <d@drobilla.net>
 License: ISC

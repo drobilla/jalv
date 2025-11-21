@@ -657,6 +657,12 @@ if is_variable('cpp')
   endif
 endif
 
+########
+# Data #
+########
+
+subdir('icons')
+
 #################
 # Documentation #
 #################
