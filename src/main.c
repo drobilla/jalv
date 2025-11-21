@@ -7,22 +7,19 @@
 #include "jalv_config.h"
 #include "types.h"
 
-#include <zix/attributes.h>
 #include <zix/sem.h>
-
-#if USE_SUIL
-#endif
 
 #include <signal.h>
 #include <stdlib.h>
-#include <string.h>
 
-static ZixSem* exit_sem = NULL; ///< Exit semaphore used by signal handler
+static ZixSem* exit_sem = NULL;
 
 static void
-signal_handler(int ZIX_UNUSED(sig))
+signal_handler(const int sig)
 {
-  zix_sem_post(exit_sem);
+  if (exit_sem && (sig == SIGINT || sig == SIGTERM)) {
+    zix_sem_post(exit_sem);
+  }
 }
 
 static void
@@ -47,9 +44,7 @@ setup_signals(Jalv* const jalv)
 int
 main(int argc, char** argv)
 {
-  Jalv jalv;
-  memset(&jalv, '\0', sizeof(Jalv));
-  jalv.backend = jalv_backend_allocate();
+  Jalv jalv = {.backend = jalv_backend_allocate()};
 
   // Initialize application
   ProgramArgs args = {argc, argv};
