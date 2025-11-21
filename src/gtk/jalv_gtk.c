@@ -5,6 +5,7 @@
 
 #include "actions.h"
 #include "controls.h"
+#include "header.h"
 #include "menu.h"
 
 #include "../control.h"
@@ -71,12 +72,12 @@ setup_options(GApplication* const app, JalvOptions* const opts)
      &opts->generic_ui,
      "Show generic UI instead of custom plugin GUI",
      NULL},
-    {"no-menu",
+    {"minimal-ui",
      'm',
      0,
      G_OPTION_ARG_NONE,
-     &opts->no_menu,
-     "Do not show Jalv menu on window",
+     &opts->minimal_ui,
+     "Don't show application menu bar or header bar",
      NULL},
     {"jack-name",
      'n',
@@ -181,6 +182,9 @@ update_window_title(Jalv* jalv)
     char*       title        = g_strdup_printf("%s - %s", plugin, preset_label);
     gtk_window_set_title(app->window, title);
     free(title);
+    if (app->header_bar) {
+      gtk_header_bar_set_subtitle(app->header_bar, preset_label);
+    }
   } else {
     gtk_window_set_title(app->window, plugin);
   }
@@ -422,11 +426,16 @@ on_application_activate(GtkApplication* const application, void* const data)
   g_action_map_add_action_entries(
     G_ACTION_MAP(window), win_actions, G_N_ELEMENTS(win_actions), jalv);
 
-  // Menu bar
+  // Menu bar and/or header bar
 
-  if (!jalv->opts.no_menu) {
+  if (!jalv->opts.minimal_ui) {
     GMenu* menu_bar = build_menu_bar(jalv);
     gtk_application_set_menubar(application, G_MENU_MODEL(menu_bar));
+    gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(window),
+                                            false);
+
+    app->header_bar = build_header_bar(jalv);
+    gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(app->header_bar));
   }
 
   // Accelerators

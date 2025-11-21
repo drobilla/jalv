@@ -15,6 +15,7 @@ typedef struct {
   GtkApplication* application;
   const char*     load_arg;
   GtkWindow*      window;
+  GtkHeaderBar*   header_bar;
   GMenu*          preset_menu;
   GVariant*       remaining;
   unsigned        timer_id;

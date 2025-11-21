@@ -539,6 +539,7 @@ if not get_option('gtk3').disabled()
       program_sources + files(
         'src/gtk/actions.c',
         'src/gtk/controls.c',
+        'src/gtk/header.c',
         'src/gtk/jalv_gtk.c',
         'src/gtk/menu.c',
         'src/gtk/plugin_selector.c',

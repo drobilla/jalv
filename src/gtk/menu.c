@@ -202,6 +202,30 @@ build_menu_bar(Jalv* jalv)
   return menu_bar;
 }
 
+GMenu*
+build_main_menu(Jalv* jalv)
+{
+  App* const   app       = (App*)jalv->app;
+  GMenu* const main_menu = g_menu_new();
+
+  // Presets
+  Submenu pset_section = subsection_new(g_menu_new());
+  Submenu load_menu = submenu_new(build_load_preset_menu(jalv), "_Load Preset");
+  append_preset_operation_items(pset_section.menu);
+  g_menu_append_item(pset_section.menu, load_menu.item);
+  app->preset_menu = load_menu.menu; // Keep a pointer for later rebuilding
+
+  // Application
+  Submenu          app_section = subsection_new(g_menu_new());
+  GMenuItem* const quit_item   = g_menu_item_new("_Quit", "app.quit");
+  g_menu_append_item(app_section.menu, quit_item);
+
+  // Main
+  g_menu_append_item(main_menu, pset_section.item);
+  g_menu_append_item(main_menu, app_section.item);
+  return main_menu;
+}
+
 void
 rebuild_preset_menu(Jalv* jalv)
 {

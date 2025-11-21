@@ -11,6 +11,9 @@
 GMenu*
 build_menu_bar(Jalv* jalv);
 
+GMenu*
+build_main_menu(Jalv* jalv);
+
 void
 rebuild_preset_menu(Jalv* jalv);
 

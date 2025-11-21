@@ -22,7 +22,7 @@ typedef struct {
   int      trace;           ///< Print trace log iff true
   int      generic_ui;      ///< Use generic UI iff true
   int      show_hidden;     ///< Show controls for notOnGUI ports
-  int      no_menu;         ///< Hide menu iff true
+  int      minimal_ui;      ///< Hide menu iff true
   int      show_ui;         ///< Show non-embedded UI
   int      print_controls;  ///< Print control changes to stdout
   int      non_interactive; ///< Do not listen for commands on stdin
