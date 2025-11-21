@@ -6,10 +6,10 @@
 
 #include "../types.h"
 
-#include <gtk/gtk.h>
+#include <gio/gio.h>
 
-GtkWidget*
-build_menu(Jalv* jalv);
+GMenu*
+build_menu_bar(Jalv* jalv);
 
 void
 rebuild_preset_menu(Jalv* jalv);

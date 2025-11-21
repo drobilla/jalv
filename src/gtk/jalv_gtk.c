@@ -425,8 +425,8 @@ on_application_activate(GtkApplication* const application, void* const data)
   // Menu bar
 
   if (!jalv->opts.no_menu) {
-    GtkWidget* menu_bar = build_menu(jalv);
-    gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
+    GMenu* menu_bar = build_menu_bar(jalv);
+    gtk_application_set_menubar(application, G_MENU_MODEL(menu_bar));
   }
 
   // Accelerators

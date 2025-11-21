@@ -3,5 +3,8 @@
   { "symbol": [ "QT_VERSION_CHECK", "private", "<QtGlobal>", "public" ] },
   { "symbol": [ "Q_OBJECT", "private", "<QObject>", "public" ] },
   { "symbol": [ "Q_SLOT", "private", "<QObject>", "public" ] },
-  { "symbol": [ "qMax", "private", "<QtGlobal>", "public" ] }
+  { "symbol": [ "qMax", "private", "<QtGlobal>", "public" ] },
+
+  { "include": [ "<gio/gmenu.h>", "public",  "<gio/gio.h>", "public" ] },
+  { "include": [ "<gio/gmenumodel.h>", "public",  "<gio/gio.h>", "public" ] }
 ]

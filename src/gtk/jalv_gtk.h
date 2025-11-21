@@ -6,6 +6,7 @@
 
 #include "../types.h"
 
+#include <gio/gio.h>
 #include <glib.h>
 #include <gtk/gtk.h>
 
@@ -14,7 +15,7 @@ typedef struct {
   GtkApplication* application;
   const char*     load_arg;
   GtkWindow*      window;
-  GtkMenu*        preset_menu;
+  GMenu*          preset_menu;
   GVariant*       remaining;
   unsigned        timer_id;
 } App;
