@@ -272,6 +272,7 @@ make_slider(Control* record, float value)
       gchar* str = g_markup_printf_escaped(
         "<span font_size=\"small\">%s</span>", point->label);
       gtk_scale_add_mark(GTK_SCALE(scale), point->value, GTK_POS_TOP, str);
+      g_free(str);
     }
   }
 
@@ -483,6 +484,8 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
       lilv_node_free(comment);
     }
   }
+
+  g_array_free(controls, true);
 
   if (n_rows > 0) {
     gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
