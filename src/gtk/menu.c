@@ -217,7 +217,9 @@ build_main_menu(Jalv* jalv)
 
   // Application
   Submenu          app_section = subsection_new(g_menu_new());
+  GMenuItem* const about_item  = g_menu_item_new("_About Jalv", "app.about");
   GMenuItem* const quit_item   = g_menu_item_new("_Quit", "app.quit");
+  g_menu_append_item(app_section.menu, about_item);
   g_menu_append_item(app_section.menu, quit_item);
 
   // Main

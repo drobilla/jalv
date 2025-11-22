@@ -7,6 +7,7 @@
 #include "menu.h"
 
 #include "../jalv.h"
+#include "../jalv_config.h"
 #include "../state.h"
 #include "../types.h"
 
@@ -213,4 +214,39 @@ action_save_preset(GSimpleAction* const ZIX_UNUSED(action),
   }
 
   gtk_widget_destroy(GTK_WIDGET(dialog));
+}
+
+void
+action_about(GSimpleAction* const ZIX_UNUSED(action),
+             GVariant* const      ZIX_UNUSED(parameter),
+             void* const          data)
+{
+  const char* const authors[] = {"David Robillard <d@drobilla.net>",
+                                 "",
+                                 "With contributions from:",
+                                 "Amadeus Folego <amadeusfolego@gmail.com>",
+                                 "Robin Gareus <robin@gareus.org>",
+                                 "Nick Lanham <nick@afternight.org>",
+                                 "Jaromír Mikes <mira.mikes@seznam.cz>",
+                                 "Alexandros Theodotou <alex@zrythm.org>",
+                                 "Timo Westkämper <timo.westkamper@gmail.com>",
+                                 NULL};
+
+  (void)data;
+  gtk_show_about_dialog(NULL,
+                        "program-name",
+                        "Jalv",
+                        "logo-icon-name",
+                        "jalv",
+                        "title",
+                        "About Jalv",
+                        "version",
+                        JALV_VERSION,
+                        "comments",
+                        "Run an LV2 plugin",
+                        "authors",
+                        authors,
+                        "website",
+                        "http://drobilla.net/software/jalv",
+                        NULL);
 }

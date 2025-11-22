@@ -410,6 +410,7 @@ on_application_activate(GtkApplication* const application, void* const data)
   // Actions
 
   const GActionEntry app_actions[] = {
+    {"about", action_about, NULL, NULL, NULL, {0}},
     {"quit", action_quit, NULL, NULL, NULL, {0}},
   };
 
