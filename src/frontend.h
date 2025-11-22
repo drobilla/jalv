@@ -1,8 +1,8 @@
 // Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
-#ifndef JALV_UI_H
-#define JALV_UI_H
+#ifndef JALV_FRONTEND_H
+#define JALV_FRONTEND_H
 
 #include "attributes.h"
 #include "control.h"
@@ -61,4 +61,4 @@ jalv_frontend_set_control(const Jalv*    jalv,
 
 JALV_END_DECLS
 
-#endif // JALV_UI_H
+#endif // JALV_FRONTEND_H

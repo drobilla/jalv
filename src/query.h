@@ -1,8 +1,8 @@
 // Copyright 2012-2024 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
-#ifndef JALV_MODEL_H
-#define JALV_MODEL_H
+#ifndef JALV_QUERY_H
+#define JALV_QUERY_H
 
 #include "attributes.h"
 #include "nodes.h"
@@ -27,4 +27,4 @@ jalv_ui_is_resizable(LilvWorld* world, const LilvUI* ui);
 
 JALV_END_DECLS
 
-#endif // JALV_MODEL_H
+#endif // JALV_QUERY_H
