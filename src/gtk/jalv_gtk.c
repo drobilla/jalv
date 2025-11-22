@@ -497,10 +497,22 @@ on_application_activate(GtkApplication* const application, void* const data)
     gtk_widget_get_preferred_size(GTK_WIDGET(controls), NULL, &controls_size);
     gtk_widget_get_preferred_size(GTK_WIDGET(vbox), NULL, &box_size);
 
+    const int controls_width =
+      MAX(MAX(box_size.width, controls_size.width) + 24, 640);
+    const int controls_height = box_size.height + controls_size.height;
+
+    GdkDisplay* const gdisplay = gdk_display_get_default();
+    GdkWindow* const  gwindow  = gtk_widget_get_window(GTK_WIDGET(window));
+    GdkMonitor* const monitor =
+      gdk_display_get_monitor_at_window(gdisplay, gwindow);
+
+    GdkRectangle     monitor_geometry = {0, 0, 0, 0};
+    static const int pad              = 24;
+    gdk_monitor_get_workarea(monitor, &monitor_geometry);
     gtk_window_set_default_size(
       GTK_WINDOW(window),
-      MAX(MAX(box_size.width, controls_size.width) + 24, 640),
-      box_size.height + controls_size.height);
+      MIN(monitor_geometry.width - pad, controls_width),
+      MIN(monitor_geometry.height - pad, controls_height));
   }
 
   jalv_activate(jalv);
