@@ -14,14 +14,14 @@
 .Op Fl U Ar ui_uri
 .Op Fl l Ar dir
 .Op Fl n Ar name
-.Ar plugin_uri
+.Ar plugin_state
 .Sh DESCRIPTION
 .Nm
 is a simple LV2 host that runs one plugin.
 It has several versions, this one has an interactive command-line interface.
 .Pp
 .Nm
-has one positional argument, the URI of an installed LV2 plugin.
+has one positional argument, which can be a plugin URI, preset URI, or the path to a bundle or data file that describes one.
 .Pp
 The options are as follows:
 .Bl -tag -width 3n

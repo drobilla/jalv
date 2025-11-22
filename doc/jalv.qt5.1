@@ -8,14 +8,17 @@
 .Nd run an LV2 plugin with a Qt5 interface
 .Sh SYNOPSIS
 .Nm jalv.qt5
-.Ar plugin_uri
+.Ar plugin_state
 .Sh DESCRIPTION
 .Nm
 is a simple LV2 host that runs a single plugin.
 This version has a Qt5 interface that shows either generic controls or a custom plugin GUI.
 .Pp
-This version has no options and requires the plugin URI to be given on the command line.
-For a fully graphical version with a plugin selector, see
+.Nm
+has one positional argument, which can be a plugin URI, preset URI, or the path to a bundle or data file that describes one.
+.Pp
+This version is mainly for testing and has no options or plugin selector.
+For a more complete graphical version, see
 .Xr jalv.gtk3 1 .
 .Sh SEE ALSO
 .Xr jalv 1 ,

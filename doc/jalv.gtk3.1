@@ -17,11 +17,15 @@
 .Op Fl r , Fl Fl update-frequency Ns = Ns Ar hz
 .Op Fl S , Fl Fl scale-factor Ns = Ns Ar scale
 .Op Fl U , Fl Fl ui-uri Ns = Ns Ar uri
-.Ar plugin_uri
+.Op Ar plugin_state
 .Sh DESCRIPTION
 .Nm
 is a simple LV2 host that runs a single plugin.
 This version has a GTK3 interface that shows either generic controls or a custom plugin GUI.
+.Pp
+.Nm
+has one positional argument, which can be a plugin URI, preset URI, or the path to a bundle or data file that describes one.
+If none is given, then a plugin selector dialog is initially displayed.
 .Pp
 The options are as follows:
 .Bl -tag -width 3n
@@ -89,4 +93,4 @@ jalv was written by
 .An David Robillard
 .Aq Mt d@drobilla.net
 with contributions by others.
-Most of the GTK interface was added by Alexandros Theodotou and Nick Lanham.
+The original GTK interface was added by Alexandros Theodotou and Nick Lanham.
