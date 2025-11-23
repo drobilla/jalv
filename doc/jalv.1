@@ -97,15 +97,14 @@ Print output control values.
 .It Ic presets
 Print available presets.
 .It Ic preset Ar uri
-Set preset.
+Ic preset Ar path
+Load and apply preset.
 .It Ic quit
 Quit program.
-.It Ic set index value
-Set control value by port index.
+.It Ic set Ar index Ar value
+Set control value by port index (a non-negative integer).
 .It Ic set Ar symbol Ar value
-Set control value by symbol.
-.It Ar symbol Cm = Ar value
-Set control value by symbol.
+Set control value by symbol (a simple string identifier).
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width LV2_PATH

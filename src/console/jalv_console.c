@@ -250,8 +250,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
             "  preset URI        Set preset\n"
             "  quit              Quit this program\n"
             "  set INDEX VALUE   Set control value by port index\n"
-            "  set SYMBOL VALUE  Set control value by symbol\n"
-            "  SYMBOL = VALUE    Set control value by symbol\n");
+            "  set SYMBOL VALUE  Set control value by symbol\n");
   } else if (strcmp(cmd, "presets\n") == 0) {
     jalv_unload_presets(jalv);
     jalv_load_presets(jalv, jalv_print_preset, NULL);
@@ -275,8 +274,7 @@ jalv_process_command(Jalv* jalv, const char* cmd)
     } else {
       fprintf(stderr, "error: port index out of range\n");
     }
-  } else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2 ||
-             sscanf(cmd, "%1023[a-zA-Z0-9_] = %f", sym, &value) == 2) {
+  } else if (sscanf(cmd, "set %1023[a-zA-Z0-9_] %f", sym, &value) == 2) {
     const JalvPort* const port = jalv_port_by_symbol(jalv, sym);
     if (port) {
       const Control* const control =
