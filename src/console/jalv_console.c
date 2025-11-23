@@ -367,6 +367,8 @@ jalv_frontend_run(Jalv* jalv)
     return 1;
   }
 
+  jalv_activate(jalv);
+
   // Print initial control values
   for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
     const Control* control = jalv->controls.controls[i];

@@ -668,6 +668,8 @@ jalv_frontend_run(Jalv* jalv)
     return 1;
   }
 
+  jalv_activate(jalv);
+
   auto* const app          = static_cast<QApplication*>(jalv->app);
   auto* const win          = new QMainWindow();
   QMenu*      file_menu    = win->menuBar()->addMenu("&File");
