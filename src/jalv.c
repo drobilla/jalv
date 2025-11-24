@@ -120,20 +120,13 @@ create_port(Jalv* jalv, uint32_t port_index)
 
   if (lilv_port_is_a(
         jalv->plugin, port->lilv_port, jalv->nodes.lv2_ControlPort)) {
-    const bool hidden = !jalv->opts.show_hidden &&
-                        lilv_port_has_property(jalv->plugin,
-                                               port->lilv_port,
-                                               jalv->nodes.pprops_notOnGUI);
-
-    if (!hidden) {
-      add_control(&jalv->controls,
-                  new_port_control(jalv->plugin,
-                                   port->lilv_port,
-                                   port->index,
-                                   jalv->settings.sample_rate,
-                                   &jalv->nodes,
-                                   &jalv->forge));
-    }
+    add_control(&jalv->controls,
+                new_port_control(jalv->plugin,
+                                 port->lilv_port,
+                                 port->index,
+                                 jalv->settings.sample_rate,
+                                 &jalv->nodes,
+                                 &jalv->forge));
   }
 
   // Store index if this is the designated control input port

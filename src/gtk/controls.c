@@ -429,6 +429,10 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
     Controller* controller = NULL;
     LilvNode*   group      = record->group;
 
+    if (record->is_hidden && !jalv->opts.show_hidden) {
+      continue;
+    }
+
     // Check group and add new heading if necessary
     if (group && !lilv_node_equals(group, last_group)) {
       LilvNode* group_name =

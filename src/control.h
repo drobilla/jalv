@@ -54,6 +54,7 @@ typedef struct {
   bool        is_logarithmic; ///< Logarithmic scale
   bool        is_writable;    ///< Writable (input)
   bool        is_readable;    ///< Readable (output)
+  bool        is_hidden;      ///< Hidden from UI
 } Control;
 
 /// Set of plugin controls

@@ -6,5 +6,5 @@ Checks: >
   -misc-no-recursion,
 CheckOptions:
   - key:   readability-function-cognitive-complexity.Threshold
-    value: '23'
+    value: '26'
 InheritParentConfig: true

@@ -52,6 +52,7 @@ new_port_control(const LilvPlugin* const     plugin,
   id->is_readable = lilv_port_is_a(plugin, port, nodes->lv2_OutputPort);
   id->is_toggle   = lilv_port_has_property(plugin, port, nodes->lv2_toggled);
   id->is_integer  = lilv_port_has_property(plugin, port, nodes->lv2_integer);
+  id->is_hidden = lilv_port_has_property(plugin, port, nodes->pprops_notOnGUI);
 
   id->is_enumeration =
     lilv_port_has_property(plugin, port, nodes->lv2_enumeration);
