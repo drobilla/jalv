@@ -498,8 +498,6 @@ ui_port_event(Jalv* const       jalv,
           property_changed(jalv, prop->key, &prop->value);
         }
       }
-    } else {
-      jalv_log(JALV_LOG_ERR, "Unknown object type\n");
     }
   }
 }
