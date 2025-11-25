@@ -434,10 +434,11 @@ jalv_refresh_ui(Jalv* jalv)
 }
 
 static void
-property_changed(Jalv* const           jalv,
-                 const LV2_URID        key,
-                 const LV2_Atom* const value)
+ui_property_changed(const LV2_URID        key,
+                    const LV2_Atom* const value,
+                    void* const           user_data)
 {
+  Jalv* const          jalv    = (Jalv*)user_data;
   const Control* const control = get_property_control(&jalv->controls, key);
   if (control) {
     jalv_frontend_set_control(
@@ -474,20 +475,7 @@ ui_port_event(Jalv* const       jalv,
   const LV2_Atom* atom = (const LV2_Atom*)buffer;
   if (lv2_atom_forge_is_object_type(&jalv->forge, atom->type)) {
     const LV2_Atom_Object* obj = (const LV2_Atom_Object*)buffer;
-    if (obj->body.otype == jalv->urids.patch_Set) {
-      const LV2_Atom_URID* property = NULL;
-      const LV2_Atom*      value    = NULL;
-      if (!patch_set_get(jalv, obj, &property, &value)) {
-        property_changed(jalv, property->body, value);
-      }
-    } else if (obj->body.otype == jalv->urids.patch_Put) {
-      const LV2_Atom_Object* body = NULL;
-      if (!patch_put_get(jalv, obj, &body)) {
-        LV2_ATOM_OBJECT_FOREACH (body, prop) {
-          property_changed(jalv, prop->key, &prop->value);
-        }
-      }
-    }
+    patch_changed_properties(jalv, obj, ui_property_changed, jalv);
   }
 }
 
