@@ -196,17 +196,6 @@ jalv_port_by_symbol(Jalv* jalv, const char* sym)
   return NULL;
 }
 
-static Control*
-jalv_control_by_symbol(Jalv* jalv, const char* sym)
-{
-  for (size_t i = 0; i < jalv->controls.n_controls; ++i) {
-    if (!strcmp(lilv_node_as_string(jalv->controls.controls[i]->symbol), sym)) {
-      return jalv->controls.controls[i];
-    }
-  }
-  return NULL;
-}
-
 static void
 jalv_create_controls(Jalv* jalv, bool writable)
 {
@@ -573,7 +562,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
     return false;
   }
 
-  const Control* control = jalv_control_by_symbol(jalv, sym);
+  const Control* const control = get_named_control(&jalv->controls, sym);
   if (!control) {
     jalv_log(
       JALV_LOG_WARNING, "Ignoring value for unknown control `%s'\n", sym);

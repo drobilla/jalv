@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 /// Order scale points by value
 static int
@@ -208,6 +209,17 @@ add_control(Controls* controls, Control* control)
     controls->controls                         = new_controls;
     controls->controls[controls->n_controls++] = control;
   }
+}
+
+Control*
+get_named_control(const Controls* controls, const char* symbol)
+{
+  for (size_t i = 0; i < controls->n_controls; ++i) {
+    if (!strcmp(lilv_node_as_string(controls->controls[i]->symbol), symbol)) {
+      return controls->controls[i];
+    }
+  }
+  return NULL;
 }
 
 Control*
