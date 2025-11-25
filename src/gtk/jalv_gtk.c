@@ -503,9 +503,7 @@ on_application_activate(GtkApplication* const application, void* const data)
     const int controls_height = box_size.height + controls_size.height;
 
     GdkDisplay* const gdisplay = gdk_display_get_default();
-    GdkWindow* const  gwindow  = gtk_widget_get_window(GTK_WIDGET(window));
-    GdkMonitor* const monitor =
-      gdk_display_get_monitor_at_window(gdisplay, gwindow);
+    GdkMonitor* const monitor  = gdk_display_get_monitor(gdisplay, 0);
 
     GdkRectangle     monitor_geometry = {0, 0, 0, 0};
     static const int pad              = 24;
