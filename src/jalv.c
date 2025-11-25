@@ -404,7 +404,7 @@ jalv_instantiate_ui(Jalv* jalv, const char* native_ui_type, void* parent)
 void
 jalv_refresh_ui(Jalv* jalv)
 {
-  // Set initial control port values
+  // Update control port values
   for (uint32_t i = 0; i < MIN(jalv->num_ports, jalv->controls.n_controls);
        ++i) {
     if (jalv->ports[i].type == TYPE_CONTROL) {

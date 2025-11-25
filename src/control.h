@@ -63,7 +63,7 @@ typedef struct {
   Control** controls;
 } Controls;
 
-/// Create a new ID for a control port
+/// Create a new control for a control port
 Control*
 new_port_control(const LilvPlugin*     plugin,
                  const LilvPort*       port,
@@ -72,7 +72,7 @@ new_port_control(const LilvPlugin*     plugin,
                  const JalvNodes*      nodes,
                  const LV2_Atom_Forge* forge);
 
-/// Create a new ID for a property-based parameter
+/// Create a new control for a property-based parameter
 Control*
 new_property_control(LilvWorld*            world,
                      const LilvNode*       property,
