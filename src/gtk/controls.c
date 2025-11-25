@@ -463,14 +463,15 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
       controller = make_controller(record, record->def);
     }
 
-    // Set jalv pointer as data for use in callbacks
-    g_object_set_data(G_OBJECT(controller->control), "jalv", jalv);
-
     record->widget = controller;
     if (record->type == PORT) {
       jalv->ports[record->id.index].widget = controller;
     }
+
     if (controller) {
+      // Set jalv pointer as data for use in callbacks
+      g_object_set_data(G_OBJECT(controller->control), "jalv", jalv);
+
       // Add row to table for this controller
       add_control_row(port_grid,
                       n_rows++,
