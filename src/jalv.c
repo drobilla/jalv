@@ -609,12 +609,17 @@ jalv_select_custom_ui(const Jalv* const jalv)
         lilv_ui_is_supported(ui, suil_ui_supported, native_type, &type);
 
       if (supported) {
-        jalv_log(JALV_LOG_INFO, "Using UI <%s>\n", uri);
         lilv_node_free(native_type);
         return ui;
       }
 
       jalv_log(JALV_LOG_INFO, "Ignoring incompatible UI <%s>\n", uri);
+      const LilvNodes* const classes = lilv_ui_get_classes(ui);
+      LILV_FOREACH (nodes, c, classes) {
+        const LilvNode* ui_class = lilv_nodes_get(classes, c);
+        jalv_log(
+          JALV_LOG_INFO, "Ignored UI type <%s>\n", lilv_node_as_uri(ui_class));
+      }
     }
 
     lilv_node_free(native_type);
