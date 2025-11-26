@@ -356,8 +356,6 @@ suil_defines = ['-DHAVE_SUIL=@0@'.format(suil_dep.found().to_int())]
 no_posix = get_option('posix').disabled() or host_machine.system() == 'windows'
 if no_posix
   platform_defines += ['-DJALV_NO_POSIX']
-elif host_machine.system() == 'darwin'
-  platform_defines += ['-D_POSIX_C_SOURCE=200809L']
 else
   platform_defines += ['-D_POSIX_C_SOURCE=200809L']
 endif
