@@ -90,10 +90,8 @@ process_cb(const void*                     inputs,
         void*    body      = NULL;
         lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
 
-        if (proc->has_ui) {
-          // Forward event to UI
-          jalv_write_event(proc->plugin_to_ui, p, size, type, body);
-        }
+        // Forward event to UI
+        jalv_write_event(proc->plugin_to_ui, p, size, type, body);
       }
     } else if (pst == JALV_PROCESS_SEND_UPDATES && port->flow == FLOW_OUTPUT &&
                port->type == TYPE_CONTROL) {

@@ -8,6 +8,7 @@
 #include "header.h"
 #include "menu.h"
 
+#include "../any_value.h"
 #include "../control.h"
 #include "../frontend.h"
 #include "../jalv.h"
@@ -33,7 +34,6 @@
 #include <float.h>
 #include <math.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -190,31 +190,6 @@ update_window_title(Jalv* jalv)
   }
 }
 
-static double
-get_atom_double(const Jalv* jalv,
-                uint32_t    ZIX_UNUSED(size),
-                LV2_URID    type,
-                const void* body)
-{
-  if (type == jalv->forge.Int || type == jalv->forge.Bool) {
-    return *(const int32_t*)body;
-  }
-
-  if (type == jalv->forge.Long) {
-    return *(const int64_t*)body;
-  }
-
-  if (type == jalv->forge.Float) {
-    return *(const float*)body;
-  }
-
-  if (type == jalv->forge.Double) {
-    return *(const double*)body;
-  }
-
-  return NAN;
-}
-
 static void
 set_combo_box_value(GtkComboBox* const combo_box, const double fvalue)
 {
@@ -235,34 +210,30 @@ set_combo_box_value(GtkComboBox* const combo_box, const double fvalue)
 }
 
 void
-jalv_frontend_set_control(const Jalv* const    jalv,
-                          const Control* const control,
-                          const uint32_t       value_size,
-                          const uint32_t       value_type,
-                          const void* const    value_body)
+jalv_frontend_control_changed(const Jalv* const    jalv,
+                              const Control* const control)
 {
   Controller* const controller = (Controller*)control->widget;
-  if (!controller) {
+  if (!controller || !controller->control) {
     return;
   }
 
   GtkWidget* const widget = controller->control;
-  if (value_type == jalv->urids.atom_String && GTK_IS_ENTRY(widget)) {
-    gtk_entry_set_text(GTK_ENTRY(widget), (const char*)value_body);
+  if (control->value.type == jalv->urids.atom_String && GTK_IS_ENTRY(widget)) {
+    gtk_entry_set_text(GTK_ENTRY(widget),
+                       (const char*)any_value_data(&control->value));
     return;
   }
 
-  if (value_type == jalv->urids.atom_Path && GTK_IS_FILE_CHOOSER(widget)) {
+  if (control->value.type == jalv->urids.atom_Path &&
+      GTK_IS_FILE_CHOOSER(widget)) {
     gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(widget),
-                                  (const char*)value_body);
+                                  (const char*)any_value_data(&control->value));
     return;
   }
 
-  const double fvalue =
-    get_atom_double(jalv, value_size, value_type, value_body);
-  if (isnan(fvalue)) {
-    jalv_log(JALV_LOG_WARNING, "Expected numeric control value\n");
-  } else if (GTK_IS_COMBO_BOX(widget)) {
+  const double fvalue = any_value_number(&control->value, &jalv->forge);
+  if (GTK_IS_COMBO_BOX(widget)) {
     set_combo_box_value(GTK_COMBO_BOX(widget), fvalue);
   } else if (GTK_IS_TOGGLE_BUTTON(widget)) {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), fvalue > 0.0f);
@@ -271,6 +242,8 @@ jalv_frontend_set_control(const Jalv* const    jalv,
   } else if (GTK_IS_RANGE(widget)) {
     gtk_range_set_value(GTK_RANGE(widget), fvalue);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(controller->spin), fvalue);
+  } else if (GTK_IS_SPIN_BUTTON(widget)) {
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), fvalue);
   } else {
     jalv_log(JALV_LOG_WARNING, "Unknown widget type for value\n");
   }
@@ -284,7 +257,7 @@ on_request_value(LV2UI_Feature_Handle      handle,
 {
   Jalv* const    jalv    = (Jalv*)handle;
   App* const     app     = (App*)jalv->app;
-  const Control* control = get_property_control(&jalv->controls, key);
+  Control* const control = get_property_control(&jalv->controls, key);
 
   if (!control) {
     return LV2UI_REQUEST_VALUE_ERR_UNKNOWN;
@@ -316,12 +289,6 @@ on_request_value(LV2UI_Feature_Handle      handle,
   gtk_widget_destroy(dialog);
 
   return 0;
-}
-
-bool
-jalv_frontend_discover(const Jalv* ZIX_UNUSED(jalv))
-{
-  return TRUE;
 }
 
 float

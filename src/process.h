@@ -83,7 +83,6 @@ typedef struct {
   uint32_t         update_frames;    ///< UI update period in frames, or zero
   uint32_t         plugin_latency;   ///< Latency reported by plugin (if any)
   JalvPosition     transport;        ///< Transport state
-  bool             has_ui;           ///< True iff a control UI is present
   bool             trace;            ///< Print debug trace messages
 } JalvProcess;
 

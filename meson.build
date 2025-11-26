@@ -371,6 +371,7 @@ elif get_option('checks').enabled()
   if no_posix
     platform_defines += ['-DHAVE_FILENO=0']
     platform_defines += ['-DHAVE_ISATTY=0']
+    platform_defines += ['-DHAVE_POLL=0']
     platform_defines += ['-DHAVE_POSIX_MEMALIGN=0']
     platform_defines += ['-DHAVE_SIGACTION=0']
   else
@@ -379,6 +380,9 @@ int main(void) { return fileno(stdin); }'''
 
     isatty_code = '''#include <unistd.h>
 int main(void) { return isatty(0); }'''
+
+    poll_code = '''#include <poll.h>
+int main(void) { return poll((struct pollfd*)0, 0, 0); }'''
 
     posix_memalign_code = '''#include <stdlib.h>
 int main(void) { void* mem; posix_memalign(&mem, 8, 8); }'''
@@ -392,6 +396,10 @@ int main(void) { return sigaction(SIGINT, 0, 0); }'''
 
     platform_defines += '-DHAVE_ISATTY=@0@'.format(
       cc.compiles(isatty_code, args: platform_defines, name: 'isatty').to_int(),
+    )
+
+    platform_defines += '-DHAVE_POLL=@0@'.format(
+      cc.compiles(poll_code, args: platform_defines, name: 'poll').to_int(),
     )
 
     platform_defines += '-DHAVE_POSIX_MEMALIGN=@0@'.format(
@@ -435,6 +443,7 @@ endif
 ############
 
 common_sources = files(
+  'src/any_value.c',
   'src/comm.c',
   'src/control.c',
   'src/dumper.c',

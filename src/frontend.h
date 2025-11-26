@@ -10,9 +10,6 @@
 
 #include <lilv/lilv.h>
 
-#include <stdbool.h>
-#include <stdint.h>
-
 // Interface that must be implemented by UIs
 JALV_BEGIN_DECLS
 
@@ -26,10 +23,6 @@ jalv_frontend_init(Jalv* jalv);
 /// Return the URI of the "native" LV2 UI type
 const char*
 jalv_frontend_ui_type(void);
-
-/// Return true if an interactive frontend is available
-bool
-jalv_frontend_discover(const Jalv* jalv);
 
 /// Return the ideal refresh rate of the frontend in Hz
 float
@@ -53,11 +46,7 @@ jalv_frontend_close(Jalv* jalv);
 
 /// Called when a control value change is sent to the UI
 void
-jalv_frontend_set_control(const Jalv*    jalv,
-                          const Control* control,
-                          uint32_t       value_size,
-                          uint32_t       value_type,
-                          const void*    value_body);
+jalv_frontend_control_changed(const Jalv* jalv, const Control* control);
 
 JALV_END_DECLS
 

@@ -3,6 +3,7 @@
 
 #include "jalv.h"
 
+#include "any_value.h"
 #include "backend.h"
 #include "comm.h"
 #include "control.h"
@@ -136,7 +137,8 @@ create_port(Jalv* jalv, uint32_t port_index)
   }
 
   // Update maximum buffer sizes
-  const uint32_t buf_size = pport->buf_size;
+  const uint32_t buf_size =
+    pport->buf_size ? pport->buf_size : jalv->settings.midi_buf_size;
   jalv->opts.ring_size = MAX(jalv->opts.ring_size, buf_size * N_BUFFER_CYCLES);
   if (port->flow == FLOW_INPUT) {
     jalv->process.process_msg_size =
@@ -258,6 +260,18 @@ jalv_create_controls(Jalv* jalv, bool writable)
 }
 
 static void
+plugin_property_changed(const LV2_URID        key,
+                        const LV2_Atom* const value,
+                        void* const           user_data)
+{
+  Jalv* const    jalv    = (Jalv*)user_data;
+  Control* const control = get_property_control(&jalv->controls, key);
+  if (control) {
+    any_value_set(&control->value, value->size, value->type, &value[1]);
+  }
+}
+
+static void
 jalv_send_to_plugin(void* const       jalv_handle,
                     const uint32_t    port_index,
                     const uint32_t    buffer_size,
@@ -281,6 +295,11 @@ jalv_send_to_plugin(void* const       jalv_handle,
 
   } else if (protocol == jalv->urids.atom_eventTransfer) {
     const LV2_Atom* const atom = (const LV2_Atom*)buffer;
+    if (lv2_atom_forge_is_object_type(&jalv->forge, atom->type)) {
+      const LV2_Atom_Object* obj = (const LV2_Atom_Object*)buffer;
+      patch_changed_properties(jalv, obj, plugin_property_changed, jalv);
+    }
+
     if (buffer_size < sizeof(LV2_Atom) ||
         (sizeof(LV2_Atom) + atom->size != buffer_size)) {
       st = ZIX_STATUS_BAD_ARG;
@@ -304,18 +323,25 @@ jalv_send_to_plugin(void* const       jalv_handle,
   }
 }
 
-void
-jalv_set_control(Jalv*          jalv,
-                 const Control* control,
-                 uint32_t       size,
-                 LV2_URID       type,
-                 const void*    body)
+int
+jalv_set_control(Jalv* const       jalv,
+                 Control* const    control,
+                 const uint32_t    size,
+                 const LV2_URID    type,
+                 const void* const body)
 {
+  const int st = any_value_set(&control->value, size, type, body);
+  if (st || jalv->updating) {
+    return st; // Cut feedback when updating or bail early on error
+  }
+
   if (control->type == PORT && type == jalv->forge.Float) {
-    const float value = *(const float*)body;
-    jalv_write_control(jalv->process.ui_to_plugin, control->id.index, value);
-  } else if (control->type == PROPERTY &&
-             jalv->process.control_in != UINT32_MAX) {
+    jalv_write_control(jalv->process.ui_to_plugin,
+                       control->id.index,
+                       any_value_number(&control->value, &jalv->forge));
+  }
+
+  if (control->type == PROPERTY && jalv->process.control_in != UINT32_MAX) {
     LV2_Atom_Forge_Frame frame;
     lv2_atom_forge_set_buffer(&jalv->forge, jalv->ui_msg, jalv->ui_msg_size);
 
@@ -333,6 +359,8 @@ jalv_set_control(Jalv*          jalv,
                         jalv->urids.atom_eventTransfer,
                         atom);
   }
+
+  return st;
 }
 
 #if USE_SUIL
@@ -408,11 +436,7 @@ jalv_refresh_ui(Jalv* jalv)
   for (uint32_t i = 0; i < MIN(jalv->num_ports, jalv->controls.n_controls);
        ++i) {
     if (jalv->ports[i].type == TYPE_CONTROL) {
-      jalv_frontend_set_control(jalv,
-                                jalv->controls.controls[i],
-                                sizeof(float),
-                                jalv->forge.Float,
-                                &jalv->process.controls_buf[i]);
+      jalv_frontend_control_changed(jalv, jalv->controls.controls[i]);
     }
   }
 
@@ -434,15 +458,25 @@ jalv_refresh_ui(Jalv* jalv)
 }
 
 static void
+any_value_changed(const Jalv* const jalv,
+                  Control* const    control,
+                  const uint32_t    size,
+                  const LV2_URID    type,
+                  const void* const body)
+{
+  any_value_set(&control->value, size, type, body);
+  jalv_frontend_control_changed(jalv, control);
+}
+
+static void
 ui_property_changed(const LV2_URID        key,
                     const LV2_Atom* const value,
                     void* const           user_data)
 {
-  Jalv* const          jalv    = (Jalv*)user_data;
-  const Control* const control = get_property_control(&jalv->controls, key);
+  Jalv* const    jalv    = (Jalv*)user_data;
+  Control* const control = get_property_control(&jalv->controls, key);
   if (control) {
-    jalv_frontend_set_control(
-      jalv, control, value->size, value->type, value + 1);
+    any_value_changed(jalv, control, value->size, value->type, value + 1);
   }
 }
 
@@ -461,11 +495,9 @@ ui_port_event(Jalv* const       jalv,
 #endif
 
   if (protocol == 0) {
-    const Control* const control =
-      get_port_control(&jalv->controls, port_index);
+    Control* const control = get_port_control(&jalv->controls, port_index);
     if (control) {
-      jalv_frontend_set_control(
-        jalv, control, buffer_size, jalv->forge.Float, buffer);
+      any_value_changed(jalv, control, buffer_size, jalv->forge.Float, buffer);
     }
     return;
   }
@@ -550,7 +582,7 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
     return false;
   }
 
-  const Control* const control = get_named_control(&jalv->controls, sym);
+  Control* const control = get_named_control(&jalv->controls, sym);
   if (!control) {
     jalv_log(
       JALV_LOG_WARNING, "Ignoring value for unknown control `%s'\n", sym);
@@ -997,16 +1029,12 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
     jalv_backend_activate_port(jalv->backend, &jalv->process, i);
   }
 
-  // Discover UI
-  jalv->process.has_ui = jalv_frontend_discover(jalv);
   return 0;
 }
 
 int
 jalv_activate(Jalv* const jalv)
 {
-  jalv->process.run_state = JALV_RUNNING;
-
   if (jalv->backend) {
     if (jalv->process.worker) {
       jalv_worker_launch(jalv->process.worker);
@@ -1015,6 +1043,7 @@ jalv_activate(Jalv* const jalv)
     jalv_backend_activate(jalv->backend);
   }
 
+  jalv->process.run_state = JALV_RUNNING;
   return 0;
 }
 

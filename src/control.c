@@ -48,7 +48,6 @@ new_port_control(const LilvPlugin* const     plugin,
   id->symbol      = lilv_node_duplicate(lilv_port_get_symbol(plugin, port));
   id->label       = lilv_port_get_name(plugin, port);
   id->group       = lilv_port_get(plugin, port, nodes->pg_group);
-  id->value_type  = forge->Float;
   id->is_writable = lilv_port_is_a(plugin, port, nodes->lv2_InputPort);
   id->is_readable = lilv_port_is_a(plugin, port, nodes->lv2_OutputPort);
   id->is_toggle   = lilv_port_has_property(plugin, port, nodes->lv2_toggled);
@@ -66,13 +65,15 @@ new_port_control(const LilvPlugin* const     plugin,
   LilvNode* min = NULL;
   LilvNode* max = NULL;
   lilv_port_get_range(plugin, port, &def, &min, &max);
-  id->def = lilv_node_as_float(def);
   id->min = lilv_node_as_float(min);
   id->max = lilv_node_as_float(max);
   if (lilv_port_has_property(plugin, port, nodes->lv2_sampleRate)) {
     // Adjust range for lv2:sampleRate controls
     id->min *= sample_rate;
     id->max *= sample_rate;
+  }
+  if (def) {
+    any_value_set_node(&id->value, def, forge);
   }
   lilv_node_free(max);
   lilv_node_free(min);
@@ -153,7 +154,13 @@ new_property_control(LilvWorld* const            world,
   id->label       = lilv_world_get(world, property, nodes->rdfs_label, NULL);
   id->min         = get_float(world, property, nodes->lv2_minimum, 0.0f);
   id->max         = get_float(world, property, nodes->lv2_maximum, 1.0f);
-  id->def         = get_float(world, property, nodes->lv2_default, 0.0f);
+
+  LilvNode* const default_value =
+    lilv_world_get(world, property, nodes->lv2_default, NULL);
+  if (default_value) {
+    any_value_set_node(&id->value, default_value, forge);
+    lilv_node_free(default_value);
+  }
 
   const char* const types[] = {LV2_ATOM__Int,
                                LV2_ATOM__Long,
@@ -192,6 +199,7 @@ free_control(Control* const control)
   }
 
   free(control->points);
+  any_value_reset(&control->value);
   lilv_node_free(control->node);
   lilv_node_free(control->symbol);
   lilv_node_free(control->label);

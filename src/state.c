@@ -3,7 +3,9 @@
 
 #include "state.h"
 
+#include "any_value.h"
 #include "comm.h"
+#include "control.h"
 #include "jalv.h"
 #include "log.h"
 #include "mapper.h"
@@ -126,7 +128,7 @@ static void
 set_port_value(const char* port_symbol,
                void*       user_data,
                const void* value,
-               uint32_t    ZIX_UNUSED(size),
+               uint32_t    size,
                uint32_t    type)
 {
   Jalv* const           jalv = (Jalv*)user_data;
@@ -137,40 +139,42 @@ set_port_value(const char* port_symbol,
     return;
   }
 
-  float fvalue = 0.0f;
-  if (type == jalv->forge.Float) {
-    fvalue = *(const float*)value;
-  } else if (type == jalv->forge.Double) {
-    fvalue = *(const double*)value;
-  } else if (type == jalv->forge.Int) {
-    fvalue = *(const int32_t*)value;
-  } else if (type == jalv->forge.Long) {
-    fvalue = *(const int64_t*)value;
-  } else {
-    jalv_log(JALV_LOG_ERR,
-             "Preset `%s' value has bad type <%s>\n",
-             port_symbol,
-             jalv_mapper_unmap_uri(jalv->mapper, type));
+  // Look up the control
+  Control* const control = get_named_control(&jalv->controls, port_symbol);
+  if (!control) {
+    jalv_log(JALV_LOG_WARNING, "Ignoring preset value for `%s'\n", port_symbol);
     return;
   }
 
+  // Set the main control value
   ZixStatus st = ZIX_STATUS_SUCCESS;
-  if (proc->run_state != JALV_RUNNING) {
-    // Set value on port struct directly
-    proc->controls_buf[port->index] = fvalue;
-  } else {
-    // Send value to plugin (as if from UI)
-    st = jalv_write_control(proc->ui_to_plugin, port->index, fvalue);
+  if (any_value_set(&control->value, size, type, value)) {
+    st = ZIX_STATUS_NO_MEM;
   }
 
-  if (proc->has_ui) {
+  if (port->type == TYPE_CONTROL) {
+    const float fvalue = any_value_number(&control->value, &jalv->forge);
+
+    if (proc->run_state != JALV_RUNNING) {
+      // Paused, set control port buffer immediately
+      proc->controls_buf[port->index] = fvalue;
+    } else {
+      // Send value to plugin (as if from UI)
+      st = jalv_write_control(proc->ui_to_plugin, port->index, fvalue);
+    }
+
     // Update UI (as if from plugin)
-    st = jalv_write_control(proc->plugin_to_ui, port->index, fvalue);
+    if (!st) {
+      st = jalv_write_control(proc->plugin_to_ui, port->index, fvalue);
+    }
+  } else {
+    st = ZIX_STATUS_NOT_SUPPORTED;
   }
 
   if (st) {
-    jalv_log(
-      JALV_LOG_ERR, "Failed to write control change (%s)\n", zix_strerror(st));
+    jalv_log(JALV_LOG_ERR,
+             "Failed to apply preset port value (%s)\n",
+             zix_strerror(st));
   }
 }
 

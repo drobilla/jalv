@@ -3,10 +3,12 @@
 
 #include "controls.h"
 
+#include "jalv_gtk.h"
+
+#include "../any_value.h"
 #include "../control.h"
 #include "../jalv.h"
 #include "../types.h"
-#include "jalv_gtk.h"
 
 #include <float.h>
 #include <glib-object.h>
@@ -14,7 +16,6 @@
 #include <gobject/gclosure.h>
 #include <lilv/lilv.h>
 #include <lv2/atom/forge.h>
-#include <lv2/urid/urid.h>
 #include <zix/attributes.h>
 
 #include <math.h>
@@ -23,18 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void
-set_control(Jalv* const    jalv,
-            const Control* control,
-            uint32_t       size,
-            LV2_URID       type,
-            const void*    body)
-{
-  if (!jalv->updating) {
-    jalv_set_control(jalv, control, size, type, body);
-  }
-}
-
 static bool
 differ_enough(float a, float b)
 {
@@ -42,23 +31,23 @@ differ_enough(float a, float b)
 }
 
 static void
-set_float_control(Jalv* const jalv, const Control* control, float value)
+set_number_control(Jalv* const jalv, Control* const control, const double value)
 {
   const LV2_Atom_Forge* const forge = &jalv->forge;
   if (control->value_type == forge->Int) {
-    const int32_t ival = lrintf(value);
-    set_control(jalv, control, sizeof(ival), forge->Int, &ival);
+    const int32_t ival = lrint(value);
+    jalv_set_control(jalv, control, sizeof(ival), forge->Int, &ival);
   } else if (control->value_type == forge->Long) {
-    const int64_t lval = lrintf(value);
-    set_control(jalv, control, sizeof(lval), forge->Long, &lval);
+    const int64_t lval = llrint(value);
+    jalv_set_control(jalv, control, sizeof(lval), forge->Long, &lval);
   } else if (control->value_type == forge->Float) {
-    set_control(jalv, control, sizeof(value), forge->Float, &value);
+    const float fval = (float)value;
+    jalv_set_control(jalv, control, sizeof(fval), forge->Float, &fval);
   } else if (control->value_type == forge->Double) {
-    const double dval = value;
-    set_control(jalv, control, sizeof(dval), forge->Double, &dval);
+    jalv_set_control(jalv, control, sizeof(value), forge->Double, &value);
   } else if (control->value_type == forge->Bool) {
     const int32_t ival = value;
-    set_control(jalv, control, sizeof(ival), forge->Bool, &ival);
+    jalv_set_control(jalv, control, sizeof(ival), forge->Bool, &ival);
   }
 
   Controller* controller = (Controller*)control->widget;
@@ -75,12 +64,12 @@ scale_changed(GtkRange* range, gpointer data)
 {
   Jalv* const jalv = g_object_get_data(G_OBJECT(range), "jalv");
 
-  set_float_control(jalv, (const Control*)data, gtk_range_get_value(range));
+  set_number_control(jalv, (Control*)data, gtk_range_get_value(range));
   return FALSE;
 }
 
 static gboolean
-spin_changed(GtkSpinButton* spin, gpointer data)
+lin_spin_changed(GtkSpinButton* spin, gpointer data)
 {
   const Control* control    = (const Control*)data;
   Controller*    controller = (Controller*)control->widget;
@@ -97,15 +86,14 @@ log_scale_changed(GtkRange* range, gpointer data)
 {
   Jalv* const jalv = g_object_get_data(G_OBJECT(range), "jalv");
 
-  set_float_control(
-    jalv, (const Control*)data, expf(gtk_range_get_value(range)));
+  set_number_control(jalv, (Control*)data, expf(gtk_range_get_value(range)));
   return FALSE;
 }
 
 static gboolean
 log_spin_changed(GtkSpinButton* spin, gpointer data)
 {
-  const Control* control    = (const Control*)data;
+  Control* const control    = (Control*)data;
   Controller*    controller = (Controller*)control->widget;
   GtkRange*      range      = GTK_RANGE(controller->control);
   const double   value      = gtk_spin_button_get_value(spin);
@@ -115,11 +103,21 @@ log_spin_changed(GtkSpinButton* spin, gpointer data)
   return FALSE;
 }
 
+static gboolean
+lone_spin_changed(GtkSpinButton* spin, gpointer data)
+{
+  Control* const control = (Control*)data;
+  Jalv* const    jalv    = g_object_get_data(G_OBJECT(spin), "jalv");
+
+  set_number_control(jalv, control, gtk_spin_button_get_value(spin));
+  return FALSE;
+}
+
 static void
 combo_changed(GtkComboBox* box, gpointer data)
 {
   Jalv* const    jalv    = g_object_get_data(G_OBJECT(box), "jalv");
-  const Control* control = (const Control*)data;
+  Control* const control = (Control*)data;
 
   GtkTreeIter iter;
   if (gtk_combo_box_get_active_iter(box, &iter)) {
@@ -130,7 +128,7 @@ combo_changed(GtkComboBox* box, gpointer data)
     const double v = g_value_get_float(&value);
     g_value_unset(&value);
 
-    set_float_control(jalv, control, v);
+    set_number_control(jalv, control, v);
   }
 }
 
@@ -139,29 +137,31 @@ switch_changed(GtkSwitch* toggle_switch, gboolean state, gpointer data)
 {
   Jalv* const jalv = g_object_get_data(G_OBJECT(toggle_switch), "jalv");
 
-  set_float_control(jalv, (const Control*)data, state ? 1.0f : 0.0f);
+  set_number_control(jalv, (Control*)data, state ? 1.0f : 0.0f);
   return FALSE;
 }
 
 static void
 string_changed(GtkEntry* widget, gpointer data)
 {
-  Jalv* const    jalv    = g_object_get_data(G_OBJECT(widget), "jalv");
-  const Control* control = (const Control*)data;
-  const char*    string  = gtk_entry_get_text(widget);
+  Jalv* const       jalv    = g_object_get_data(G_OBJECT(widget), "jalv");
+  Control* const    control = (Control*)data;
+  const char* const string  = gtk_entry_get_text(widget);
 
-  set_control(jalv, control, strlen(string) + 1, jalv->forge.String, string);
+  jalv_set_control(
+    jalv, control, strlen(string) + 1, jalv->forge.String, string);
 }
 
 static void
 file_changed(GtkFileChooserButton* widget, gpointer data)
 {
   Jalv* const    jalv    = g_object_get_data(G_OBJECT(widget), "jalv");
-  const Control* control = (const Control*)data;
+  Control* const control = (Control*)data;
   const char*    filename =
     gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
 
-  set_control(jalv, control, strlen(filename) + 1, jalv->forge.Path, filename);
+  jalv_set_control(
+    jalv, control, strlen(filename) + 1, jalv->forge.Path, filename);
 }
 
 // Controller construction
@@ -280,12 +280,32 @@ make_slider(Control* record, float value)
     g_signal_connect(
       G_OBJECT(scale), "value-changed", G_CALLBACK(scale_changed), record);
     g_signal_connect(
-      G_OBJECT(spin), "value-changed", G_CALLBACK(spin_changed), record);
+      G_OBJECT(spin), "value-changed", G_CALLBACK(lin_spin_changed), record);
   }
 
   gtk_widget_set_halign(scale, GTK_ALIGN_FILL);
   gtk_widget_set_hexpand(scale, TRUE);
   return new_controller(GTK_SPIN_BUTTON(spin), scale);
+}
+
+static Controller*
+make_spinner(Control* record, float value)
+{
+  GtkAdjustment* const adjustment =
+    gtk_adjustment_new(value, FLT_MIN, FLT_MAX, 1.0, 10.0, 0.0);
+
+  GtkWidget* const spin =
+    gtk_spin_button_new(adjustment, 1.0, record->is_integer ? 0 : 7);
+
+  gtk_widget_set_sensitive(spin, record->is_writable);
+  gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin), value);
+
+  if (record->is_writable) {
+    g_signal_connect(
+      G_OBJECT(spin), "value-changed", G_CALLBACK(lone_spin_changed), record);
+  }
+
+  return new_controller(NULL, spin);
 }
 
 static Controller*
@@ -350,8 +370,10 @@ make_controller(Control* control, float value)
     controller = make_combo(control, value);
   } else if (control->is_logarithmic) {
     controller = make_log_slider(control, value);
-  } else {
+  } else if (!isnan(control->min) && !isnan(control->max)) {
     controller = make_slider(control, value);
+  } else {
+    controller = make_spinner(control, value);
   }
 
   return controller;
@@ -460,7 +482,8 @@ build_control_widget(Jalv* jalv, GtkWidget* window)
     } else if (record->value_type == jalv->forge.Path) {
       controller = make_file_chooser(record);
     } else {
-      controller = make_controller(record, record->def);
+      controller =
+        make_controller(record, any_value_number(&record->value, &jalv->forge));
     }
 
     record->widget = controller;

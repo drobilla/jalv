@@ -254,10 +254,8 @@ post_process_output_port(JalvProcess* const     proc,
         jack_midi_event_write(buf, frames, body, size);
       }
 
-      if (proc->has_ui) {
-        // Forward event to UI
-        jalv_write_event(proc->plugin_to_ui, index, size, type, body);
-      }
+      // Forward event to UI
+      jalv_write_event(proc->plugin_to_ui, index, size, type, body);
     }
   } else if (send_updates && port->type == TYPE_CONTROL) {
     jalv_write_control(proc->plugin_to_ui, index, proc->controls_buf[index]);

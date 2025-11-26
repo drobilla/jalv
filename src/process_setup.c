@@ -58,7 +58,6 @@ jalv_process_init(JalvProcess* const     proc,
   proc->transport.position = 0U;
   proc->transport.bpm      = 120.0f;
   proc->transport.rolling  = false;
-  proc->has_ui             = false;
   proc->trace              = trace;
 
   zix_sem_init(&proc->paused, 0);

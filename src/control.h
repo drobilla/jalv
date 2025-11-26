@@ -1,9 +1,10 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_CONTROL_H
 #define JALV_CONTROL_H
 
+#include "any_value.h"
 #include "attributes.h"
 #include "nodes.h"
 
@@ -15,7 +16,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Support for plugin controls (control port or event-based)
+// High-level plugin controls (backed by control ports or events)
 JALV_BEGIN_DECLS
 
 /// Type of plugin control
@@ -44,10 +45,10 @@ typedef struct {
   void*       widget;         ///< Control Widget
   size_t      n_points;       ///< Number of scale points
   ScalePoint* points;         ///< Scale points
-  LV2_URID    value_type;     ///< Type of control value
-  float       min;            ///< Minimum value
-  float       max;            ///< Maximum value
-  float       def;            ///< Default value
+  LV2_URID    value_type;     ///< Type of a single value
+  AnyValue    value;          ///< Current value (main context)
+  float       min;            ///< Minimum value (if numeric)
+  float       max;            ///< Maximum value (if numeric)
   bool        is_toggle;      ///< Boolean (0 and 1 only)
   bool        is_integer;     ///< Integer values only
   bool        is_enumeration; ///< Point values only

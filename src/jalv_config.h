@@ -1,4 +1,4 @@
-// Copyright 2021-2022 David Robillard <d@drobilla.net>
+// Copyright 2021-2025 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 /*
@@ -57,6 +57,15 @@
 #      define HAVE_ISATTY 1
 #    else
 #      define HAVE_ISATTY 0
+#    endif
+#  endif
+
+// POSIX.1-2001: poll()
+#  ifndef HAVE_POLL
+#    if defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L
+#      define HAVE_POLL 1
+#    else
+#      define HAVE_POLL 0
 #    endif
 #  endif
 
@@ -131,6 +140,12 @@
 #  define USE_ISATTY 1
 #else
 #  define USE_ISATTY 0
+#endif
+
+#if HAVE_POLL
+#  define USE_POLL 1
+#else
+#  define USE_POLL 0
 #endif
 
 #if HAVE_POSIX_MEMALIGN

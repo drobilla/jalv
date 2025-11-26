@@ -3,6 +3,7 @@
 
 #include "jalv_qt.hpp"
 
+#include "../any_value.h"
 #include "../comm.h"
 #include "../control.h"
 #include "../frontend.h"
@@ -48,7 +49,6 @@
 #include <QtGlobal>
 
 #include <algorithm>
-#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -619,27 +619,15 @@ jalv_frontend_ui_type(void)
 }
 
 void
-jalv_frontend_set_control(const Jalv* const    jalv,
-                          const Control* const control,
-                          const uint32_t       value_size,
-                          const uint32_t       value_type,
-                          const void* const    value_body)
+jalv_frontend_control_changed(const Jalv* const    jalv,
+                              const Control* const control)
 {
-  (void)value_size;
-
-  if (value_type == jalv->forge.Float) {
+  if (control->value.type == jalv->forge.Float) {
     auto* const controller = static_cast<Controller*>(control->widget);
     if (controller) {
-      assert(value_size == sizeof(float));
-      controller->setValue(*static_cast<const float*>(value_body));
+      controller->setValue(any_value_number(&control->value, &jalv->forge));
     }
   }
-}
-
-bool
-jalv_frontend_discover(const Jalv*)
-{
-  return true;
 }
 
 float
