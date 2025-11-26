@@ -436,7 +436,8 @@ on_application_activate(GtkApplication* const application, void* const data)
                                             false);
 
     app->header_bar = build_header_bar(jalv);
-    gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(app->header_bar));
+    gtk_window_set_titlebar(app->window, GTK_WIDGET(app->header_bar));
+    gtk_widget_show_all(GTK_WIDGET(app->header_bar));
   }
 
   // Accelerators
