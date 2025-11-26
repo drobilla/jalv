@@ -1,4 +1,4 @@
-# Copyright 2020-2024 David Robillard <d@drobilla.net>
+# Copyright 2020-2025 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
 project(
@@ -12,7 +12,7 @@ project(
   ],
   license: 'ISC',
   meson_version: '>= 0.56.0',
-  version: '1.6.9',
+  version: '1.8.0',
 )
 
 jalv_src_root = meson.current_source_dir()

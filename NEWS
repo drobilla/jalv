@@ -1,4 +1,4 @@
-jalv (1.6.9) unstable; urgency=medium
+jalv (1.8.0) stable; urgency=medium
 
   * Add "quit" console command
   * Add AppStream metainfo file
@@ -32,7 +32,7 @@ jalv (1.6.9) unstable; urgency=medium
   * Use fewer platform-specific APIs
   * Use portable zix filesystem API
 
- -- David Robillard <d@drobilla.net>  Wed, 26 Nov 2025 20:08:05 +0000
+ -- David Robillard <d@drobilla.net>  Wed, 26 Nov 2025 20:13:50 +0000
 
 jalv (1.6.8) stable; urgency=medium
 
