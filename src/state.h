@@ -71,6 +71,9 @@ jalv_save_bank_preset(Jalv*  jalv,
 void
 jalv_command_save_preset(Jalv* jalv, char* sym);
 
+void
+jalv_command_load_preset(Jalv* jalv, char* sym);
+
 int
 jalv_fix_symbol(char* symbol, const char* extra_allowed_chars);
 

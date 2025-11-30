@@ -119,6 +119,7 @@ struct JalvImpl {
   uint8_t             bypass;          ///< 0=inline, 1=bypass, 2=switching to bypass, 3=switching to inline
   JalvFeatures        features;
   const LV2_Feature** feature_list;
+  bool                unset_default;   ///< Set unused to default when loading preset
 };
 
 char*
