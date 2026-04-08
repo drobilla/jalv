@@ -281,6 +281,7 @@ public:
     : _jalv(jalv)
   {}
 
+protected:
   void timerEvent(QTimerEvent*) override { jalv_update(_jalv); }
 
 private:

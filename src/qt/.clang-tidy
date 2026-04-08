@@ -1,15 +1,17 @@
-# Copyright 2025 David Robillard <d@drobilla.net>
+# Copyright 2025-2026 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
 Checks: >
   -*-named-parameter,
   -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-use-enum-class,
   -fuchsia-default-arguments-calls,
   -llvm-prefer-static-over-anonymous-namespace,
+  -llvm-use-ranges,
   -misc-const-correctness,
   -modernize-use-nodiscard,
   -modernize-use-trailing-return-type,

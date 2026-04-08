@@ -10,7 +10,9 @@ Checks: >
   -boost-*,
   -bugprone-assignment-in-if-condition,
   -bugprone-easily-swappable-parameters,
+  -bugprone-invalid-enum-default-initialization,
   -bugprone-multi-level-implicit-pointer-conversion,
+  -bugprone-unchecked-string-to-number-conversion,
   -cert-err33-c,
   -cert-err34-c,
   -clang-analyzer-security.ArrayBound,
@@ -21,6 +23,7 @@ Checks: >
   -llvmlibc-*,
   -misc-include-cleaner,
   -readability-identifier-length,
+  -readability-implicit-bool-conversion,
 CheckOptions:
   - key:   hicpp-uppercase-literal-suffix.NewSuffixes
     value: 'L;U;UL;ULL'

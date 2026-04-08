@@ -16,12 +16,17 @@
 #include <string.h>
 
 /// Internal Jack client initialization entry point
+
+// NOLINTBEGIN(misc-use-internal-linkage)
+
 int
 jack_initialize(jack_client_t* client, const char* load_init);
 
 /// Internal Jack client finalization entry point
 void
 jack_finish(void* arg);
+
+// NOLINTEND(misc-use-internal-linkage)
 
 int
 jack_initialize(jack_client_t* const client, const char* const load_init)
