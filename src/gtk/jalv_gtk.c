@@ -1,4 +1,4 @@
-// Copyright 2007-2025 David Robillard <d@drobilla.net>
+// Copyright 2007-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "jalv_gtk.h"
@@ -180,7 +180,7 @@ update_window_title(Jalv* jalv)
     const char* preset_label = lilv_state_get_label(jalv->preset);
     char*       title        = g_strdup_printf("%s - %s", plugin, preset_label);
     gtk_window_set_title(app->window, title);
-    free(title);
+    g_free(title);
     if (app->header_bar) {
       gtk_header_bar_set_subtitle(app->header_bar, preset_label);
     }
