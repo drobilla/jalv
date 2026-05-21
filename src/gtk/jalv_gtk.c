@@ -171,7 +171,7 @@ jalv_frontend_ui_type(void)
 }
 
 void
-update_window_title(Jalv* jalv)
+update_window(Jalv* jalv)
 {
   App* const  app    = (App*)jalv->app;
   const char* plugin = lilv_node_as_string(jalv->plugin_name);
@@ -369,7 +369,7 @@ on_application_activate(GtkApplication* const application, void* const data)
   GtkWidget* vbox   = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
   app->window = GTK_WINDOW(window);
-  update_window_title(jalv);
+  update_window(jalv);
   gtk_window_set_role(GTK_WINDOW(window), "plugin_ui");
   gtk_container_add(GTK_CONTAINER(window), vbox);
 

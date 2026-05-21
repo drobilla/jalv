@@ -1,4 +1,4 @@
-// Copyright 2007-2025 David Robillard <d@drobilla.net>
+// Copyright 2007-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_GTK_JALV_GTK_H
@@ -27,7 +27,8 @@ typedef struct {
   GtkWidget*     control; ///< Primary value control
 } Controller;
 
+/// Update the UI to reflect the currently loaded preset
 void
-update_window_title(Jalv* jalv);
+update_window(Jalv* jalv);
 
 #endif // JALV_GTK_JALV_GTK_H

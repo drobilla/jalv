@@ -1,4 +1,4 @@
-// Copyright 2007-2025 David Robillard <d@drobilla.net>
+// Copyright 2007-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "actions.h"
@@ -69,7 +69,7 @@ action_delete_preset(GSimpleAction* const ZIX_UNUSED(action),
 
   lilv_state_free(jalv->preset);
   jalv->preset = NULL;
-  update_window_title(jalv);
+  update_window(jalv);
 
   g_free(msg);
   gtk_widget_destroy(text);
@@ -89,7 +89,7 @@ action_load_preset(GSimpleAction* const ZIX_UNUSED(action),
     LilvNode* const node = lilv_new_uri(jalv->world, uri);
 
     jalv_apply_preset(jalv, node);
-    update_window_title(jalv);
+    update_window(jalv);
 
     lilv_node_free(node);
   }
@@ -202,7 +202,7 @@ action_save_preset(GSimpleAction* const ZIX_UNUSED(action),
 
     // Update UI
     rebuild_preset_menu(jalv);
-    update_window_title(jalv);
+    update_window(jalv);
 
     g_free(dir);
     g_free(file);
