@@ -22,7 +22,9 @@
 #include <lv2/ui/ui.h>
 #include <lv2/urid/urid.h>
 #include <suil/suil.h>
+#include <zix/allocator.h>
 #include <zix/attributes.h>
+#include <zix/path.h>
 
 #include <gdk/gdk.h>
 #include <gio/gio.h>
@@ -36,6 +38,14 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+#  include <io.h>
+#  define access(path, mode) _access(path, mode)
+#  define W_OK 2
+#else
+#  include <unistd.h>
+#endif
 
 static void
 setup_options(GApplication* const app, JalvOptions* const opts)
@@ -176,6 +186,7 @@ update_window(Jalv* jalv)
   App* const  app    = (App*)jalv->app;
   const char* plugin = lilv_node_as_string(jalv->plugin_name);
 
+  // Update window and header bar title
   if (jalv->preset) {
     const char* preset_label = lilv_state_get_label(jalv->preset);
     char*       title        = g_strdup_printf("%s - %s", plugin, preset_label);
@@ -186,6 +197,25 @@ update_window(Jalv* jalv)
     }
   } else {
     gtk_window_set_title(app->window, plugin);
+    if (app->header_bar) {
+      gtk_header_bar_set_subtitle(app->header_bar, "");
+    }
+  }
+
+  // Enable delete-preset action if applicable
+  GAction* const delete_preset_action =
+    g_action_map_lookup_action(G_ACTION_MAP(app->window), "delete-preset");
+  if (delete_preset_action) {
+    bool writable = false;
+    if (jalv->preset) {
+      const char* const bundle   = lilv_state_get_bundle_path(jalv->preset);
+      char* const       manifest = zix_path_join(NULL, bundle, "manifest.ttl");
+      writable                   = !access(manifest, W_OK);
+      zix_free(NULL, manifest);
+    }
+
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(delete_preset_action),
+                                writable);
   }
 }
 
@@ -392,6 +422,10 @@ on_application_activate(GtkApplication* const application, void* const data)
 
   g_action_map_add_action_entries(
     G_ACTION_MAP(window), win_actions, G_N_ELEMENTS(win_actions), jalv);
+
+  g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(
+                                G_ACTION_MAP(app->window), "delete-preset")),
+                              false);
 
   // Menu bar and/or header bar
 

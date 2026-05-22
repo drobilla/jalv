@@ -1,3 +1,9 @@
+jalv (1.8.1) unstable; urgency=medium
+
+  * Disable delete preset action for non-writable presets
+
+ -- David Robillard <d@drobilla.net>  Fri, 22 May 2026 20:20:48 +0000
+
 jalv (1.8.0) stable; urgency=medium
 
   * Add "quit" console command

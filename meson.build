@@ -1,4 +1,4 @@
-# Copyright 2020-2025 David Robillard <d@drobilla.net>
+# Copyright 2020-2026 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
 project(
@@ -12,7 +12,7 @@ project(
   ],
   license: 'ISC',
   meson_version: '>= 0.56.0',
-  version: '1.8.0',
+  version: '1.8.1',
 )
 
 jalv_src_root = meson.current_source_dir()
@@ -289,7 +289,7 @@ lilv_dep = dependency(
   ],
   fallback: ['lilv', 'lilv_dep'],
   include_type: 'system',
-  version: '>= 0.26.0',
+  version: '>= 0.27.0',
 )
 
 suil_dep = dependency(
@@ -370,12 +370,16 @@ elif get_option('checks').enabled()
   platform_defines += ['-DJALV_NO_DEFAULT_CONFIG']
 
   if no_posix
+    platform_defines += ['-DHAVE_ACCESS=0']
     platform_defines += ['-DHAVE_FILENO=0']
     platform_defines += ['-DHAVE_ISATTY=0']
     platform_defines += ['-DHAVE_POLL=0']
     platform_defines += ['-DHAVE_POSIX_MEMALIGN=0']
     platform_defines += ['-DHAVE_SIGACTION=0']
   else
+    access_code = '''#include <unistd.h>
+int main(void) { return access("", 0); }'''
+
     fileno_code = '''#include <stdio.h>
 int main(void) { return fileno(stdin); }'''
 
@@ -390,6 +394,10 @@ int main(void) { void* mem; posix_memalign(&mem, 8, 8); }'''
 
     sigaction_code = '''#include <signal.h>
 int main(void) { return sigaction(SIGINT, 0, 0); }'''
+
+    platform_defines += '-DHAVE_ACCESS=@0@'.format(
+      cc.compiles(access_code, args: platform_defines, name: 'access').to_int(),
+    )
 
     platform_defines += '-DHAVE_FILENO=@0@'.format(
       cc.compiles(fileno_code, args: platform_defines, name: 'fileno').to_int(),

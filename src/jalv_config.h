@@ -1,4 +1,4 @@
-// Copyright 2021-2025 David Robillard <d@drobilla.net>
+// Copyright 2021-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 /*
@@ -27,7 +27,7 @@
 #define JALV_CONFIG_H
 
 // Define version unconditionally so a warning will catch a mismatch
-#define JALV_VERSION "1.8.0"
+#define JALV_VERSION "1.8.1"
 
 #ifndef JALV_NO_DEFAULT_CONFIG
 
@@ -39,6 +39,15 @@
 #      endif
 #    elif defined(__unix__)
 #      include <unistd.h>
+#    endif
+#  endif
+
+// POSIX.1-1988: access()
+#  ifndef HAVE_ACCESS
+#    if defined(_POSIX_VERSION) && _POSIX_VERSION >= 198808L
+#      define HAVE_ACCESS 1
+#    else
+#      define HAVE_ACCESS 0
 #    endif
 #  endif
 
@@ -129,6 +138,12 @@
   and this header is always required by any code that checks for features, even
   if the build system defines them all.
 */
+
+#if HAVE_ACCESS
+#  define USE_ACCESS 1
+#else
+#  define USE_ACCESS 0
+#endif
 
 #if HAVE_FILENO
 #  define USE_FILENO 1
