@@ -17,9 +17,6 @@ void
 action_quit(GSimpleAction* action, GVariant* parameter, void* data);
 
 void
-action_save_as(GSimpleAction* action, GVariant* parameter, void* data);
-
-void
 action_save_preset(GSimpleAction* action, GVariant* parameter, void* data);
 
 void

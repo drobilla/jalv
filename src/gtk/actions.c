@@ -109,35 +109,6 @@ action_quit(GSimpleAction* const ZIX_UNUSED(action),
 }
 
 void
-action_save_as(GSimpleAction* const ZIX_UNUSED(action),
-               GVariant* const      ZIX_UNUSED(parameter),
-               void* const          data)
-{
-  Jalv* const jalv = (Jalv*)data;
-  App* const  app  = (App*)jalv->app;
-
-  GtkWidget* const dialog =
-    gtk_file_chooser_dialog_new("Save State",
-                                app->window,
-                                GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
-                                "_Cancel",
-                                GTK_RESPONSE_CANCEL,
-                                "_Save",
-                                GTK_RESPONSE_ACCEPT,
-                                NULL);
-
-  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-    char* const path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-    char* const base = g_build_filename(path, "/", NULL);
-    jalv_save(jalv, base);
-    g_free(path);
-    g_free(base);
-  }
-
-  gtk_widget_destroy(dialog);
-}
-
-void
 action_save_preset(GSimpleAction* const ZIX_UNUSED(action),
                    GVariant* const      ZIX_UNUSED(parameter),
                    void* const          data)

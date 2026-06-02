@@ -424,7 +424,6 @@ on_application_activate(GtkApplication* const application, void* const data)
   const GActionEntry win_actions[] = {
     {"delete-preset", action_delete_preset, NULL, NULL, NULL, {0}},
     {"load-preset", action_load_preset, "s", NULL, NULL, {0}},
-    {"save-as", action_save_as, NULL, NULL, NULL, {0}},
     {"save-preset", action_save_preset, NULL, NULL, NULL, {0}},
   };
 
@@ -459,7 +458,6 @@ on_application_activate(GtkApplication* const application, void* const data)
     {"app.quit", "<Ctrl>Q"},
     {"win.delete-preset", "<Ctrl>Delete"},
     {"win.load-preset", "<Ctrl>L"},
-    {"win.save-as", "<Ctrl><Shift>S"},
     {"win.save-preset", "<Ctrl>S"},
     {NULL, NULL}};
   for (unsigned i = 0U; action_accels[i][0]; ++i) {

@@ -67,33 +67,6 @@ get_port_value(const char* port_symbol,
   return NULL;
 }
 
-void
-jalv_save(Jalv* jalv, const char* dir)
-{
-  LV2_URID_Map* const   map   = jalv_mapper_urid_map(jalv->mapper);
-  LV2_URID_Unmap* const unmap = jalv_mapper_urid_unmap(jalv->mapper);
-
-  jalv->save_dir = zix_path_join(NULL, dir, NULL);
-
-  LilvState* const state =
-    lilv_state_new_from_instance(jalv->plugin,
-                                 jalv->process.instance,
-                                 map,
-                                 jalv->temp_dir,
-                                 dir,
-                                 dir,
-                                 dir,
-                                 get_port_value,
-                                 jalv,
-                                 LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE,
-                                 NULL);
-
-  lilv_state_save(jalv->world, map, unmap, state, NULL, dir, "state.ttl");
-  lilv_state_free(state);
-  free(jalv->save_dir);
-  jalv->save_dir = NULL;
-}
-
 int
 jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
 {

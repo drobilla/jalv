@@ -37,9 +37,6 @@ jalv_save_preset(Jalv*       jalv,
                  const char* label,
                  const char* filename);
 
-void
-jalv_save(Jalv* jalv, const char* dir);
-
 char*
 jalv_make_path(LV2_State_Make_Path_Handle handle, const char* path);
 

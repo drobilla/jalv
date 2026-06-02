@@ -2,8 +2,9 @@ jalv (1.8.1) unstable; urgency=medium
 
   * Disable delete preset action for non-writable presets
   * Only create a state scratch directory when necessary
+  * Remove obscure save-as action
 
- -- David Robillard <d@drobilla.net>  Tue, 02 Jun 2026 23:35:42 +0000
+ -- David Robillard <d@drobilla.net>  Tue, 02 Jun 2026 23:51:33 +0000
 
 jalv (1.8.0) stable; urgency=medium
 
