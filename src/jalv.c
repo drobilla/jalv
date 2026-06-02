@@ -868,12 +868,6 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
   jalv_init_features(jalv);
   lv2_atom_forge_init(&jalv->forge, urid_map);
 
-  // Create temporary directory for plugin state
-  jalv->temp_dir = zix_create_temporary_directory(NULL, "jalvXXXXXX");
-  if (!jalv->temp_dir) {
-    jalv_log(JALV_LOG_WARNING, "Failed to create temporary state directory\n");
-  }
-
   // Find the initial state (and thereby the plugin URI)
   LilvState* state = open_plugin_state(jalv, urid_map, load_arg);
   if (!state || !jalv->plugin) {
@@ -1112,7 +1106,7 @@ jalv_close(Jalv* const jalv)
     const ZixStatus zst = zix_remove(jalv->temp_dir);
     if (zst) {
       jalv_log(JALV_LOG_WARNING,
-               "Failed to remove temporary directory %s (%s)\n",
+               "Failed to remove scratch directory %s (%s)\n",
                jalv->temp_dir,
                zix_strerror(zst));
     }

@@ -1,4 +1,4 @@
-// Copyright 2007-2024 David Robillard <d@drobilla.net>
+// Copyright 2007-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "state.h"
@@ -18,6 +18,7 @@
 #include <lv2/state/state.h>
 #include <lv2/urid/urid.h>
 #include <zix/attributes.h>
+#include <zix/filesystem.h>
 #include <zix/path.h>
 #include <zix/ring.h>
 #include <zix/sem.h>
@@ -32,9 +33,21 @@ jalv_make_path(LV2_State_Make_Path_Handle handle, const char* path)
 {
   Jalv* jalv = (Jalv*)handle;
 
-  // Create in save directory if saving, otherwise use temp directory
-  const char* const dir = jalv->save_dir ? jalv->save_dir : jalv->temp_dir;
-  return zix_path_join(NULL, dir, path);
+  if (jalv->save_dir) { // Saving state, make path in save directory
+    return zix_path_join(NULL, jalv->save_dir, path);
+  }
+
+  // Create temporary scratch directory if necessary
+  if (!jalv->temp_dir) {
+    jalv->temp_dir = zix_create_temporary_directory(NULL, "jalvXXXXXX");
+    if (!jalv->temp_dir) {
+      jalv_log(JALV_LOG_WARNING, "Failed to create scratch directory\n");
+      return NULL;
+    }
+  }
+
+  // Make path in temporary scratch directory
+  return zix_path_join(NULL, jalv->temp_dir, path);
 }
 
 static const void*
