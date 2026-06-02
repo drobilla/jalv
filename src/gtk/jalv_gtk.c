@@ -202,6 +202,14 @@ update_window(Jalv* jalv)
     }
   }
 
+  // Enable save-preset action if applicable
+  GAction* const save_preset_action =
+    g_action_map_lookup_action(G_ACTION_MAP(app->window), "save-preset");
+  if (save_preset_action) {
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(save_preset_action),
+                                !!jalv->preset);
+  }
+
   // Enable delete-preset action if applicable
   GAction* const delete_preset_action =
     g_action_map_lookup_action(G_ACTION_MAP(app->window), "delete-preset");
@@ -423,6 +431,9 @@ on_application_activate(GtkApplication* const application, void* const data)
   g_action_map_add_action_entries(
     G_ACTION_MAP(window), win_actions, G_N_ELEMENTS(win_actions), jalv);
 
+  g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(
+                                G_ACTION_MAP(app->window), "save-preset")),
+                              false);
   g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(
                                 G_ACTION_MAP(app->window), "delete-preset")),
                               false);
