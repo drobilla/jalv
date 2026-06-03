@@ -14,7 +14,6 @@
 #include <lilv/lilv.h>
 
 #include <stdbool.h>
-#include <stdint.h>
 
 // Code for setting up the realtime process thread (but that isn't used in it)
 JALV_BEGIN_DECLS
@@ -29,7 +28,6 @@ int
 jalv_process_init(JalvProcess*     proc,
                   const JalvURIDs* urids,
                   JalvMapper*      mapper,
-                  uint32_t         update_frames,
                   bool             trace);
 
 /**

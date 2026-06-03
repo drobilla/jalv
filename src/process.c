@@ -138,10 +138,12 @@ jalv_run(JalvProcess* const proc, const uint32_t nframes)
   jalv_worker_end_run(proc->worker);
 
   // Check if it's time to send updates to the UI
-  proc->pending_frames += nframes;
-  if (proc->update_frames && proc->pending_frames > proc->update_frames) {
-    proc->pending_frames = 0U;
-    pst                  = pst ? pst : JALV_PROCESS_SEND_UPDATES;
+  if (proc->update_frames) {
+    proc->pending_frames += nframes;
+    if (proc->pending_frames > proc->update_frames) {
+      proc->pending_frames = 0U;
+      pst                  = pst ? pst : JALV_PROCESS_SEND_UPDATES;
+    }
   }
 
   return pst;

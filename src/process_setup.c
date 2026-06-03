@@ -34,7 +34,6 @@ int
 jalv_process_init(JalvProcess* const     proc,
                   const JalvURIDs* const urids,
                   JalvMapper* const      mapper,
-                  const uint32_t         update_frames,
                   const bool             trace)
 {
   proc->get_msg.atom.size  = sizeof(LV2_Atom_Object_Body);
@@ -54,7 +53,7 @@ jalv_process_init(JalvProcess* const     proc,
   proc->control_in         = UINT32_MAX;
   proc->num_ports          = 0U;
   proc->pending_frames     = 0U;
-  proc->update_frames      = update_frames;
+  proc->update_frames      = 0U;
   proc->transport.position = 0U;
   proc->transport.bpm      = 120.0f;
   proc->transport.rolling  = false;
@@ -130,6 +129,8 @@ jalv_process_activate(JalvProcess* const        proc,
   }
 
   proc->process_msg_size = max_msg_size;
+  proc->update_frames =
+    (uint32_t)(settings->sample_rate / settings->ui_update_hz);
 }
 
 void

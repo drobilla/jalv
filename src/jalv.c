@@ -897,13 +897,8 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
   }
 
   // Initialize process thread
-  const uint32_t update_frames =
-    (uint32_t)(settings->sample_rate / settings->ui_update_hz);
-  jalv_process_init(&jalv->process,
-                    &jalv->urids,
-                    jalv->mapper,
-                    update_frames,
-                    jalv->opts.trace);
+  jalv_process_init(
+    &jalv->process, &jalv->urids, jalv->mapper, jalv->opts.trace);
 
   // Create workers if necessary
   if (lilv_plugin_has_extension_data(jalv->plugin,
@@ -928,8 +923,7 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
     return -6;
   }
 
-  jalv_log(
-    JALV_LOG_INFO, "Sample rate:  %u Hz\n", (uint32_t)settings->sample_rate);
+  jalv_log(JALV_LOG_INFO, "Sample rate:  %.0f Hz\n", settings->sample_rate);
   jalv_log(JALV_LOG_INFO, "Block length: %u frames\n", settings->block_length);
   jalv_log(JALV_LOG_INFO, "MIDI buffers: %zu bytes\n", settings->midi_buf_size);
 
