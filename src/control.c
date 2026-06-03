@@ -48,6 +48,7 @@ new_port_control(const LilvPlugin* const     plugin,
   id->symbol      = lilv_node_duplicate(lilv_port_get_symbol(plugin, port));
   id->label       = lilv_port_get_name(plugin, port);
   id->group       = lilv_port_get(plugin, port, nodes->pg_group);
+  id->value_type  = forge->Float;
   id->is_writable = lilv_port_is_a(plugin, port, nodes->lv2_InputPort);
   id->is_readable = lilv_port_is_a(plugin, port, nodes->lv2_OutputPort);
   id->is_toggle   = lilv_port_has_property(plugin, port, nodes->lv2_toggled);
