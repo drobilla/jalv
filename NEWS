@@ -1,6 +1,7 @@
 jalv (1.8.1) unstable; urgency=medium
 
   * Add separate menu item for saving current preset
+  * Clean up on exit from console interface
   * Disable delete preset action for non-writable presets
   * Fix control output refresh rate
   * Fix port controls
@@ -8,7 +9,7 @@ jalv (1.8.1) unstable; urgency=medium
   * Only create a state scratch directory when necessary
   * Remove obscure save-as action
 
- -- David Robillard <d@drobilla.net>  Wed, 03 Jun 2026 17:02:55 +0000
+ -- David Robillard <d@drobilla.net>  Wed, 03 Jun 2026 19:22:02 +0000
 
 jalv (1.8.0) stable; urgency=medium
 

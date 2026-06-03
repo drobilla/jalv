@@ -563,7 +563,9 @@ jalv_frontend_run(Jalv* jalv)
 }
 
 int
-jalv_frontend_close(Jalv* ZIX_UNUSED(jalv))
+jalv_frontend_close(Jalv* jalv)
 {
+  jalv_deactivate(jalv);
+  jalv_close(jalv);
   return 0;
 }
