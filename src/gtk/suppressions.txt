@@ -1,0 +1,4 @@
+leak:g_type_create_instance
+leak:gdk_window_impl_x11_init
+leak:gtk_module_init
+leak:libfontconfig.so
