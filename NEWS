@@ -5,11 +5,12 @@ jalv (1.8.1) unstable; urgency=medium
   * Disable delete preset action for non-writable presets
   * Fix control output refresh rate
   * Fix port controls
+  * Fix state scratch directory location
   * Improve save preset dialog
   * Only create a state scratch directory when necessary
   * Remove obscure save-as action
 
- -- David Robillard <d@drobilla.net>  Wed, 03 Jun 2026 19:22:02 +0000
+ -- David Robillard <d@drobilla.net>  Wed, 03 Jun 2026 19:29:03 +0000
 
 jalv (1.8.0) stable; urgency=medium
 

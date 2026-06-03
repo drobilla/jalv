@@ -17,6 +17,7 @@
 #include <lv2/core/lv2.h>
 #include <lv2/state/state.h>
 #include <lv2/urid/urid.h>
+#include <zix/allocator.h>
 #include <zix/attributes.h>
 #include <zix/filesystem.h>
 #include <zix/path.h>
@@ -39,7 +40,13 @@ jalv_make_path(LV2_State_Make_Path_Handle handle, const char* path)
 
   // Create temporary scratch directory if necessary
   if (!jalv->temp_dir) {
-    jalv->temp_dir = zix_create_temporary_directory(NULL, "jalvXXXXXX");
+    char* const tmp              = zix_temp_directory_path(NULL);
+    char* const scratch_template = zix_path_join(NULL, tmp, "jalvXXXXXX");
+
+    jalv->temp_dir = zix_create_temporary_directory(NULL, scratch_template);
+    zix_free(NULL, scratch_template);
+    zix_free(NULL, tmp);
+
     if (!jalv->temp_dir) {
       jalv_log(JALV_LOG_WARNING, "Failed to create scratch directory\n");
       return NULL;
