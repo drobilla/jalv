@@ -127,7 +127,7 @@ action_save_preset(GSimpleAction* const ZIX_UNUSED(action),
 
   char* dot_lv2 = g_build_filename(g_get_home_dir(), ".lv2", NULL);
   gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), dot_lv2);
-  free(dot_lv2);
+  g_free(dot_lv2);
 
   GtkWidget* content   = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
   GtkBox*    box       = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8));

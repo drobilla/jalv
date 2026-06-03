@@ -68,7 +68,7 @@ pset_menu_free(PresetMenu* menu)
     g_sequence_free(menu->banks);
   }
 
-  free(menu->label);
+  g_free(menu->label);
   free(menu);
 }
 
