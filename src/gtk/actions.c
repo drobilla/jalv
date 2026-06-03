@@ -8,12 +8,16 @@
 
 #include "../jalv.h"
 #include "../jalv_config.h"
+#include "../log.h"
 #include "../state.h"
 #include "../types.h"
 
 #include <gtk/gtk.h>
 #include <lilv/lilv.h>
+#include <zix/allocator.h>
 #include <zix/attributes.h>
+#include <zix/path.h>
+#include <zix/string_view.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -112,6 +116,54 @@ void
 action_save_preset(GSimpleAction* const ZIX_UNUSED(action),
                    GVariant* const      ZIX_UNUSED(parameter),
                    void* const          data)
+{
+  Jalv* const jalv = (Jalv*)data;
+  if (!jalv->preset) {
+    return;
+  }
+
+  // Use existing preset bundle path and label
+  const char* const bundle = lilv_state_get_bundle_path(jalv->preset);
+  const char* const label  = lilv_state_get_label(jalv->preset);
+  if (!bundle) {
+    return;
+  }
+
+  // Currently assumes simple presets in the format saved by Jalv
+
+  // Ensure this is an "unpublished" preset with a file URI
+  const LilvNode* const uri        = lilv_state_get_uri(jalv->preset);
+  const char* const     uri_string = lilv_node_as_string(uri);
+  if (!!strncmp(uri_string, "file:", 5)) {
+    jalv_log(JALV_LOG_WARNING,
+             "Unable to determine filename for preset <%s>\n",
+             uri_string);
+    return;
+  }
+
+  // Derive the filename from the preset URI
+  char* const         path     = lilv_file_uri_parse(uri_string, NULL);
+  const ZixStringView filename = zix_path_filename(path);
+
+  // Unload old preset from model
+  lilv_world_unload_resource(jalv->world, uri);
+
+  // Save preset and reload into model
+  char* const dir = zix_path_join(NULL, bundle, "");
+  if (!jalv_save_preset(jalv, dir, NULL, label, filename.data)) {
+    lilv_world_load_resource(jalv->world, lilv_state_get_uri(jalv->preset));
+  } else {
+    jalv_log(JALV_LOG_WARNING, "Error saving preset <%s>\n", uri_string);
+  }
+
+  zix_free(NULL, dir);
+  lilv_free(path);
+}
+
+void
+action_save_preset_as(GSimpleAction* const ZIX_UNUSED(action),
+                      GVariant* const      ZIX_UNUSED(parameter),
+                      void* const          data)
 {
   Jalv* const jalv = (Jalv*)data;
   App* const  app  = (App*)jalv->app;

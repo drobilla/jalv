@@ -153,11 +153,14 @@ static void
 append_preset_operation_items(GMenu* const menu)
 {
   GMenuItem* const save_preset =
-    g_menu_item_new("_Save Preset...", "win.save-preset");
+    g_menu_item_new("_Save Preset", "win.save-preset");
+  GMenuItem* const save_preset_as =
+    g_menu_item_new("Save Preset _As...", "win.save-preset-as");
   GMenuItem* const delete_preset =
     g_menu_item_new("_Delete Preset...", "win.delete-preset");
 
   g_menu_append_item(menu, save_preset);
+  g_menu_append_item(menu, save_preset_as);
   g_menu_append_item(menu, delete_preset);
 }
 

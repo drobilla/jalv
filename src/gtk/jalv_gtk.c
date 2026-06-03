@@ -202,12 +202,16 @@ update_window(Jalv* jalv)
     }
   }
 
+  const bool is_file_preset =
+    jalv->preset &&
+    !strncmp(lilv_node_as_string(lilv_state_get_uri(jalv->preset)), "file:", 5);
+
   // Enable save-preset action if applicable
   GAction* const save_preset_action =
     g_action_map_lookup_action(G_ACTION_MAP(app->window), "save-preset");
   if (save_preset_action) {
     g_simple_action_set_enabled(G_SIMPLE_ACTION(save_preset_action),
-                                !!jalv->preset);
+                                is_file_preset);
   }
 
   // Enable delete-preset action if applicable
@@ -425,6 +429,7 @@ on_application_activate(GtkApplication* const application, void* const data)
     {"delete-preset", action_delete_preset, NULL, NULL, NULL, {0}},
     {"load-preset", action_load_preset, "s", NULL, NULL, {0}},
     {"save-preset", action_save_preset, NULL, NULL, NULL, {0}},
+    {"save-preset-as", action_save_preset_as, NULL, NULL, NULL, {0}},
   };
 
   g_action_map_add_action_entries(
@@ -459,6 +464,7 @@ on_application_activate(GtkApplication* const application, void* const data)
     {"win.delete-preset", "<Ctrl>Delete"},
     {"win.load-preset", "<Ctrl>L"},
     {"win.save-preset", "<Ctrl>S"},
+    {"win.save-preset-as", "<Ctrl><Shift>S"},
     {NULL, NULL}};
   for (unsigned i = 0U; action_accels[i][0]; ++i) {
     const char* accels[] = {action_accels[i][1], NULL};
