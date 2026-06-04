@@ -1,5 +1,7 @@
-// Copyright 2007-2025 David Robillard <d@drobilla.net>
+// Copyright 2007-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
+
+#include "parse_command.h"
 
 #include "../any_value.h"
 #include "../control.h"
@@ -42,12 +44,6 @@
 #include <sys/types.h>
 
 #define CONSOLE_REFRESH_RATE 15
-
-typedef enum {
-  COMMAND_SUCCESS,
-  COMMAND_ERROR,
-  COMMAND_QUIT,
-} CommandStatus;
 
 typedef struct {
   int status;     ///< Status code (non-zero on error)
@@ -264,12 +260,6 @@ print_preset(Jalv*           ZIX_UNUSED(jalv),
 }
 
 static int
-is_symbol(const int c)
-{
-  return (c == '_' || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'));
-}
-
-static int
 set_control_from_string(Jalv* const                 jalv,
                         Control* const              control,
                         const char* const           string,
@@ -341,36 +331,42 @@ set_control_from_string(Jalv* const                 jalv,
   return 0.0;
 }
 
-static const char*
-trim_command(char* const cmd)
+static CommandStatus
+syntax_error(const size_t caret, const char* const msg)
 {
-  char* start = cmd;
-  while (isspace(*start)) {
-    ++start;
+  for (size_t i = 0U; i < 2U + caret; ++i) {
+    fprintf(stderr, "~");
   }
-
-  const size_t len = strlen(start);
-  if (!len) {
-    return start;
-  }
-
-  char* last = start + strlen(start) - 1U;
-  while (last > start && isspace(*last)) {
-    *last = '\0';
-  }
-
-  return start;
+  fprintf(stderr, "^\nerror: %s\n", msg);
+  return COMMAND_ERROR;
 }
 
 static CommandStatus
-process_command(Jalv* const jalv, char* const command)
+handle_command(Jalv* const            jalv,
+               const CommandStatus    command,
+               const CommandArguments args)
 {
-  CommandStatus st        = COMMAND_SUCCESS;
-  char          sym[1024] = {0};
+  switch (command) {
+  case COMMAND_SUCCESS:
+  case COMMAND_ERROR:
+    break;
 
-  const char* const cmd = trim_command(command);
+  case COMMAND_EXPECTED_ALPHA:
+    return syntax_error(args.caret, "expected A-Z or a-z");
+  case COMMAND_EXPECTED_DIGIT:
+    return syntax_error(args.caret, "expected 0-9");
+  case COMMAND_EXPECTED_SYMBOL_FIRST:
+    return syntax_error(args.caret, "expected _, A-Z, or a-z");
+  case COMMAND_EXPECTED_SYMBOL_REST:
+    return syntax_error(args.caret, "expected _, 0-9, A-Z, or a-z");
+  case COMMAND_EXPECTED_CONTROL:
+    return syntax_error(args.caret, "expected port index or symbol");
+  case COMMAND_EXPECTED_VALUE:
+    return syntax_error(args.caret, "expected control value");
+  case COMMAND_EXPECTED_END:
+    return syntax_error(args.caret, "expected end");
 
-  if (!strncmp(cmd, "help", 4)) {
+  case COMMAND_HELP:
     fprintf(stderr,
             "Commands:\n"
             "  help              Display this help message\n"
@@ -381,64 +377,74 @@ process_command(Jalv* const jalv, char* const command)
             "  quit              Quit this program\n"
             "  set INDEX VALUE   Set control value by port index\n"
             "  set SYMBOL VALUE  Set control value by symbol\n");
-  } else if (strcmp(cmd, "presets") == 0) {
+    return COMMAND_SUCCESS;
+
+  case COMMAND_PRESETS:
     jalv_unload_presets(jalv);
     jalv_load_presets(jalv, print_preset, NULL);
-  } else if (sscanf(cmd, "preset %1023[a-zA-Z0-9_:/-.#]", sym) == 1) {
-    LilvNode* preset = lilv_new_uri(jalv->world, sym);
-    lilv_world_load_resource(jalv->world, preset);
-    jalv_apply_preset(jalv, preset);
-    lilv_node_free(preset);
-    print_controls(jalv, true, false);
-  } else if (strcmp(cmd, "controls") == 0) {
-    print_controls(jalv, true, false);
-  } else if (strcmp(cmd, "monitors") == 0) {
-    print_controls(jalv, false, true);
-  } else if (strcmp(cmd, "quit") == 0) {
-    st = COMMAND_QUIT;
-  } else if (!strncmp(cmd, "set ", 4)) {
-    size_t i = 4;
-    while (isspace(cmd[i])) {
-      ++i;
+    return COMMAND_SUCCESS;
+
+  case COMMAND_PRESET_URI: {
+    LilvNode* preset = lilv_new_uri(jalv->world, args.name);
+    if (preset) {
+      lilv_world_load_resource(jalv->world, preset);
+      if (jalv_apply_preset(jalv, preset)) {
+        fprintf(stderr, "error: unknown preset <%s>\n", args.name);
+      }
+      lilv_node_free(preset);
+      print_controls(jalv, true, false);
     }
+    return COMMAND_SUCCESS;
+  }
 
-    char*    endptr  = NULL;
-    Control* control = NULL;
-    if (isdigit(cmd[i])) { // set INDEX VALUE
-      const long index = strtol(cmd + i, &endptr, 10);
-      if (index >= 0 && index <= UINT32_MAX &&
-          !(control = get_port_control(&jalv->controls, (uint32_t)index))) {
-        fprintf(stderr, "error: no control port with index %ld\n", index);
-        return COMMAND_ERROR;
-      }
-      i += (endptr - (cmd + i));
-    } else if (is_symbol(cmd[i])) { // set SYMBOL VALUE
-      const char* tok     = cmd + i;
-      size_t      tok_len = 0U;
-      while (isgraph(tok[tok_len]) && tok_len + 1U < sizeof(sym)) {
-        ++tok_len;
-        ++i;
-      }
+  case COMMAND_CONTROLS:
+    print_controls(jalv, true, false);
+    return COMMAND_SUCCESS;
 
-      memcpy(sym, tok, tok_len);
-      if (!(control = get_named_control(&jalv->controls, sym))) {
-        fprintf(stderr, "error: no control with symbol \"%s\"\n", sym);
-        return COMMAND_ERROR;
-      }
-    } else {
-      fprintf(stderr, "error: expected port index or symbol after \"set\"\n");
+  case COMMAND_MONITORS:
+    print_controls(jalv, false, true);
+    return COMMAND_SUCCESS;
+
+  case COMMAND_QUIT:
+    return COMMAND_QUIT;
+
+  case COMMAND_SET_INDEX_VALUE: {
+    Control* const control = get_port_control(&jalv->controls, args.index);
+    if (!control) {
+      fprintf(stderr, "error: no control port with index %u\n", args.index);
       return COMMAND_ERROR;
     }
-
-    assert(control);
-
-    while (isspace(cmd[i])) {
-      ++i;
-    }
-
-    set_control_from_string(jalv, control, &cmd[i], &jalv->forge);
+    set_control_from_string(jalv, control, args.value, &jalv->forge);
+    return COMMAND_SUCCESS;
   }
-  return st;
+
+  case COMMAND_SET_SYMBOL_VALUE: {
+    char* const symbol = calloc(args.name_length + 1U, 1);
+    memcpy(symbol, args.name, args.name_length);
+    Control* const control = get_named_control(&jalv->controls, symbol);
+    if (!control) {
+      fprintf(stderr, "error: no control with symbol \"%s\"\n", symbol);
+      return COMMAND_ERROR;
+    }
+    set_control_from_string(jalv, control, args.value, &jalv->forge);
+    return COMMAND_SUCCESS;
+  }
+  }
+
+  return COMMAND_ERROR;
+}
+
+static CommandStatus
+process_command(Jalv* const jalv, const char* const command)
+{
+  CommandArguments    args = {0};
+  const CommandStatus st   = parse_command(command, &args);
+  if (st == COMMAND_ERROR) {
+    fprintf(stderr, "error: invalid command\n");
+    return st;
+  }
+
+  return handle_command(jalv, st, args);
 }
 
 static bool

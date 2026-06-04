@@ -225,8 +225,9 @@ jalv_apply_preset(Jalv* jalv, const LilvNode* preset)
     jalv->world, jalv_mapper_urid_map(jalv->mapper), preset);
   if (jalv->preset) {
     jalv_apply_state(jalv, jalv->preset);
+    return 0;
   }
-  return 0;
+  return -1;
 }
 
 int

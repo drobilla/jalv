@@ -493,7 +493,11 @@ common_c_args = c_suppressions + platform_defines + suil_defines
 if jack_dep.found() and host_machine.system() != 'windows'
   shared_library(
     'jalv',
-    sources + files('src/jack_internal.c', 'src/console/jalv_console.c'),
+    sources + files(
+      'src/console/jalv_console.c',
+      'src/console/parse_command.c',
+      'src/jack_internal.c',
+    ),
     c_args: c_suppressions + platform_defines + ['-DHAVE_SUIL=0'],
     dependencies: common_dependencies,
     implicit_include_directories: false,
@@ -506,7 +510,10 @@ endif
 # Console version
 executable(
   'jalv',
-  program_sources + files('src/console/jalv_console.c'),
+  program_sources + files(
+    'src/console/jalv_console.c',
+    'src/console/parse_command.c',
+  ),
   c_args: common_c_args,
   dependencies: common_dependencies + [suil_dep],
   implicit_include_directories: false,
