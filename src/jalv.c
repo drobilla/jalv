@@ -768,10 +768,8 @@ jalv_init_ui_settings(Jalv* const jalv)
   settings->ring_size    = MAX(4096, settings->ring_size);
   jalv_log(
     &jalv->log, JALV_LOG_INFO, "Comm buffers: %u bytes", settings->ring_size);
-  jalv_log(&jalv->log,
-           JALV_LOG_INFO,
-           "Update rate:  %.01f Hz",
-           settings->ui_update_hz);
+  jalv_log(
+    &jalv->log, JALV_LOG_INFO, "Update rate: %.01f Hz", settings->ui_update_hz);
   jalv_log(&jalv->log,
            JALV_LOG_INFO,
            "Scale factor: %.01f",
@@ -841,7 +839,7 @@ open_ui(Jalv* const jalv)
   if (jalv->ui) {
     jalv_log(&jalv->log,
              JALV_LOG_INFO,
-             "UI:           %s",
+             "UI: %s",
              lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
   } else if (jalv->opts.ui_uri) {
     jalv_log(
@@ -906,7 +904,7 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
 
   jalv_log(&jalv->log,
            JALV_LOG_INFO,
-           "Plugin:       %s",
+           "Plugin: %s",
            lilv_node_as_string(lilv_plugin_get_uri(jalv->plugin)));
 
   // Set client name from plugin name if the user didn't specify one
@@ -956,7 +954,7 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
   }
 
   jalv_log(
-    &jalv->log, JALV_LOG_INFO, "Sample rate:  %.0f Hz", settings->sample_rate);
+    &jalv->log, JALV_LOG_INFO, "Sample rate: %.0f Hz", settings->sample_rate);
   jalv_log(&jalv->log,
            JALV_LOG_INFO,
            "Block length: %u frames",
