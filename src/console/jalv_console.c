@@ -424,9 +424,11 @@ handle_command(Jalv* const            jalv,
     Control* const control = get_named_control(&jalv->controls, symbol);
     if (!control) {
       fprintf(stderr, "error: no control with symbol \"%s\"\n", symbol);
+      free(symbol);
       return COMMAND_ERROR;
     }
     set_control_from_string(jalv, control, args.value, &jalv->forge);
+    free(symbol);
     return COMMAND_SUCCESS;
   }
   }
