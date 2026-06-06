@@ -63,13 +63,13 @@ action_delete_preset(GSimpleAction* const ZIX_UNUSED(action),
     GTK_RESPONSE_ACCEPT,
     NULL);
 
-  char* msg = g_strdup_printf("Delete preset \"%s\" from the file system?",
+  char* msg = g_strdup_printf("Delete preset \"%s\" from disk?",
                               lilv_state_get_label(jalv->preset));
 
   GtkWidget* content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
   GtkWidget* text    = gtk_label_new(msg);
   gtk_box_pack_start(GTK_BOX(content), text, TRUE, TRUE, 4);
-
+  g_object_set(G_OBJECT(text), "margin", 12, NULL);
   gtk_widget_show_all(dialog);
   if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
     jalv_delete_current_preset(jalv);
