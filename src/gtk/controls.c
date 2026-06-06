@@ -329,6 +329,16 @@ make_toggle_switch(Control* record, float value)
   return new_controller(NULL, toggle_switch);
 }
 
+static gboolean
+on_control_entry_focus_out_event(GtkWidget* const     widget,
+                                 const GdkEventFocus* event,
+                                 void* const          user_data)
+{
+  (void)event;
+  string_changed(GTK_ENTRY(widget), user_data);
+  return FALSE;
+}
+
 static Controller*
 make_entry(Control* control)
 {
@@ -338,6 +348,10 @@ make_entry(Control* control)
   if (control->is_writable) {
     g_signal_connect(
       G_OBJECT(entry), "activate", G_CALLBACK(string_changed), control);
+    g_signal_connect(G_OBJECT(entry),
+                     "focus-out-event",
+                     G_CALLBACK(on_control_entry_focus_out_event),
+                     control);
   }
 
   return new_controller(NULL, entry);

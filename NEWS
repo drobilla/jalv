@@ -12,6 +12,7 @@ jalv (1.8.1) unstable; urgency=medium
   * Improve save preset dialog
   * Only create a state scratch directory when necessary
   * Remove obscure save-as action
+  * Update string controls when focus leaves entry in Gtk interface
 
  -- David Robillard <d@drobilla.net>  Sat, 06 Jun 2026 16:35:23 +0000
 
