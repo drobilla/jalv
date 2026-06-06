@@ -1,4 +1,4 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_LOG_H
@@ -36,9 +36,9 @@ typedef struct {
 } JalvLog;
 
 /// Print a log message to stderr with a GCC-like prefix and color
-JALV_LOG_FUNC(2, 3)
+JALV_LOG_FUNC(3, 4)
 int
-jalv_log(JalvLogLevel level, const char* fmt, ...);
+jalv_log(const JalvLog* log, JalvLogLevel level, const char* fmt, ...);
 
 /// LV2 log vprintf function
 JALV_LOG_FUNC(3, 0)

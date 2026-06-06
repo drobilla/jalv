@@ -1,10 +1,9 @@
-// Copyright 2016-2025 David Robillard <d@drobilla.net>
+// Copyright 2016-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "process_setup.h"
 
 #include "jalv_config.h"
-#include "log.h"
 #include "lv2_evbuf.h"
 #include "macros.h"
 #include "mapper.h"
@@ -183,22 +182,19 @@ jalv_process_port_init(JalvProcessPort* const  port,
   port->evbuf    = NULL;
   port->buf_size = 0U;
 
-  // Set flow and type
-  set_port_types(port, nodes, plugin, lilv_port);
-  if ((!port->flow || !port->type) &&
-      !lilv_port_has_property(
-        plugin, lilv_port, nodes->lv2_connectionOptional)) {
-    jalv_log(JALV_LOG_ERR,
-             "Mandatory port \"%s\" has unknown type",
-             lilv_node_as_string(symbol));
-    return 1;
-  }
-
   // Set symbol and label
   LilvNode* const name = lilv_port_get_name(plugin, lilv_port);
   port->symbol = symbol ? jalv_strdup(lilv_node_as_string(symbol)) : NULL;
   port->label  = name ? jalv_strdup(lilv_node_as_string(name)) : NULL;
   lilv_node_free(name);
+
+  // Set flow and type
+  set_port_types(port, nodes, plugin, lilv_port);
+  if ((!port->flow || !port->type) &&
+      !lilv_port_has_property(
+        plugin, lilv_port, nodes->lv2_connectionOptional)) {
+    return 1;
+  }
 
   // Set buffer size
   LilvNode* const min_size =

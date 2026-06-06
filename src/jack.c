@@ -382,6 +382,7 @@ jalv_backend_free(JalvBackend* const backend)
 
 int
 jalv_backend_open(JalvBackend* const     backend,
+                  const JalvLog* const   log,
                   const JalvURIDs* const urids,
                   JalvSettings* const    settings,
                   JalvProcess* const     process,
@@ -396,7 +397,8 @@ jalv_backend_open(JalvBackend* const     backend,
     return 1;
   }
 
-  jalv_log(JALV_LOG_INFO, "JACK name:    %s", jack_get_client_name(client));
+  jalv_log(
+    log, JALV_LOG_INFO, "JACK name:    %s", jack_get_client_name(client));
 
   // Set audio engine properties
   settings->sample_rate   = (float)jack_get_sample_rate(client);

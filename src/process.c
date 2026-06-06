@@ -1,10 +1,9 @@
-// Copyright 2016-2025 David Robillard <d@drobilla.net>
+// Copyright 2016-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "process.h"
 
 #include "comm.h"
-#include "log.h"
 #include "lv2_evbuf.h"
 #include "types.h"
 #include "worker.h"
@@ -19,6 +18,7 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
 
 static const char*
 jalv_process_strerror(const JalvProcessStatus pst)
@@ -122,7 +122,7 @@ jalv_run(JalvProcess* const proc, const uint32_t nframes)
   JalvProcessStatus pst = apply_ui_events(proc, nframes);
   if (pst && proc->trace) {
     ZIX_DISABLE_EFFECT_WARNINGS // Debug tracing explicitly enabled
-    jalv_log(JALV_LOG_ERR, "%s", jalv_process_strerror(pst));
+    fprintf(stderr, "error: %s\n", jalv_process_strerror(pst));
     ZIX_RESTORE_WARNINGS
   }
 

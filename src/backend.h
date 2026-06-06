@@ -1,10 +1,11 @@
-// Copyright 2007-2024 David Robillard <d@drobilla.net>
+// Copyright 2007-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #ifndef JALV_BACKEND_H
 #define JALV_BACKEND_H
 
 #include "attributes.h"
+#include "log.h"
 #include "process.h"
 #include "settings.h"
 #include "types.h"
@@ -30,6 +31,7 @@ jalv_backend_free(JalvBackend* backend);
 /// Open the audio/MIDI system
 int
 jalv_backend_open(JalvBackend*     backend,
+                  const JalvLog*   log,
                   const JalvURIDs* urids,
                   JalvSettings*    settings,
                   JalvProcess*     process,

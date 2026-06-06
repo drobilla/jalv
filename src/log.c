@@ -1,4 +1,4 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "log.h"
@@ -49,8 +49,13 @@ jalv_vlog(const JalvLogLevel level, const char* const fmt, va_list ap)
 }
 
 int
-jalv_log(const JalvLogLevel level, const char* const fmt, ...)
+jalv_log(const JalvLog* const log,
+         const JalvLogLevel   level,
+         const char* const    fmt,
+         ...)
 {
+  (void)log;
+
   va_list args;
   va_start(args, fmt);
 

@@ -1,9 +1,8 @@
-// Copyright 2007-2022 David Robillard <d@drobilla.net>
+// Copyright 2007-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "control.h"
 
-#include "log.h"
 #include "nodes.h"
 #include "string_utils.h"
 
@@ -182,12 +181,6 @@ new_property_control(LilvWorld* const            world,
   id->is_toggle = (id->value_type == forge->Bool);
   id->is_integer =
     (id->value_type == forge->Int || id->value_type == forge->Long);
-
-  if (!id->value_type) {
-    jalv_log(JALV_LOG_WARNING,
-             "Unknown value type for property <%s>",
-             lilv_node_as_string(property));
-  }
 
   return id;
 }

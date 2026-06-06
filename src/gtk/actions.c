@@ -139,7 +139,8 @@ action_save_preset(GSimpleAction* const ZIX_UNUSED(action),
   const LilvNode* const uri        = lilv_state_get_uri(jalv->preset);
   const char* const     uri_string = lilv_node_as_string(uri);
   if (!!strncmp(uri_string, "file:", 5)) {
-    jalv_log(JALV_LOG_WARNING,
+    jalv_log(&jalv->log,
+             JALV_LOG_WARNING,
              "Unable to determine filename for preset <%s>",
              uri_string);
     return;
@@ -157,7 +158,8 @@ action_save_preset(GSimpleAction* const ZIX_UNUSED(action),
   if (!jalv_save_preset(jalv, dir, NULL, label, filename.data)) {
     lilv_world_load_resource(jalv->world, lilv_state_get_uri(jalv->preset));
   } else {
-    jalv_log(JALV_LOG_WARNING, "Error saving preset <%s>", uri_string);
+    jalv_log(
+      &jalv->log, JALV_LOG_WARNING, "Error saving preset <%s>", uri_string);
   }
 
   zix_free(NULL, dir);

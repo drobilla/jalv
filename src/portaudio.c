@@ -1,4 +1,4 @@
-// Copyright 2007-2025 David Robillard <d@drobilla.net>
+// Copyright 2007-2026 David Robillard <d@drobilla.net>
 // SPDX-License-Identifier: ISC
 
 #include "backend.h"
@@ -21,7 +21,8 @@
 #include <string.h>
 
 struct JalvBackendImpl {
-  PaStream* stream;
+  PaStream*      stream;
+  const JalvLog* log;
 };
 
 static int
@@ -103,9 +104,9 @@ process_cb(const void*                     inputs,
 }
 
 static int
-setup_error(const char* msg, PaError err)
+setup_error(const JalvLog* const log, const char* msg, PaError err)
 {
-  jalv_log(JALV_LOG_ERR, "%s (%s)", msg, Pa_GetErrorText(err));
+  jalv_log(log, JALV_LOG_ERR, "%s (%s)", msg, Pa_GetErrorText(err));
   Pa_Terminate();
   return 1;
 }
@@ -124,6 +125,7 @@ jalv_backend_free(JalvBackend* const backend)
 
 int
 jalv_backend_open(JalvBackend* const     backend,
+                  const JalvLog* const   log,
                   const JalvURIDs* const ZIX_UNUSED(urids),
                   JalvSettings* const    settings,
                   JalvProcess* const     proc,
@@ -137,18 +139,18 @@ jalv_backend_open(JalvBackend* const     backend,
   PaError            st     = paNoError;
 
   if ((st = Pa_Initialize())) {
-    return setup_error("Failed to initialize audio system", st);
+    return setup_error(log, "Failed to initialize audio system", st);
   }
 
   // Get default input and output devices
   inputParameters.device  = Pa_GetDefaultInputDevice();
   outputParameters.device = Pa_GetDefaultOutputDevice();
   if (inputParameters.device == paNoDevice) {
-    return setup_error("No default input device", paDeviceUnavailable);
+    return setup_error(log, "No default input device", paDeviceUnavailable);
   }
 
   if (outputParameters.device == paNoDevice) {
-    return setup_error("No default output device", paDeviceUnavailable);
+    return setup_error(log, "No default output device", paDeviceUnavailable);
   }
 
   const PaDeviceInfo* in_dev  = Pa_GetDeviceInfo(inputParameters.device);
@@ -185,7 +187,7 @@ jalv_backend_open(JalvBackend* const     backend,
                        0,
                        process_cb,
                        proc))) {
-    return setup_error("Failed to open audio stream", st);
+    return setup_error(log, "Failed to open audio stream", st);
   }
 
   // Set audio parameters
@@ -194,6 +196,7 @@ jalv_backend_open(JalvBackend* const     backend,
   settings->midi_buf_size = 4096;
 
   backend->stream = stream;
+  backend->log    = log;
   return 0;
 }
 
@@ -203,12 +206,17 @@ jalv_backend_close(JalvBackend* const backend)
   if (backend) {
     PaError st = paNoError;
     if (backend->stream && (st = Pa_CloseStream(backend->stream))) {
-      jalv_log(JALV_LOG_ERR, "Error closing audio (%s)", Pa_GetErrorText(st));
+      jalv_log(backend->log,
+               JALV_LOG_ERR,
+               "Error closing audio (%s)",
+               Pa_GetErrorText(st));
     }
 
     if ((st = Pa_Terminate())) {
-      jalv_log(
-        JALV_LOG_ERR, "Error terminating audio (%s)", Pa_GetErrorText(st));
+      jalv_log(backend->log,
+               JALV_LOG_ERR,
+               "Error terminating audio (%s)",
+               Pa_GetErrorText(st));
     }
   }
 }
@@ -218,7 +226,10 @@ jalv_backend_activate(JalvBackend* const backend)
 {
   const PaError st = Pa_StartStream(backend->stream);
   if (st != paNoError) {
-    jalv_log(JALV_LOG_ERR, "Error starting audio (%s)", Pa_GetErrorText(st));
+    jalv_log(backend->log,
+             JALV_LOG_ERR,
+             "Error starting audio (%s)",
+             Pa_GetErrorText(st));
   }
 }
 
@@ -227,7 +238,10 @@ jalv_backend_deactivate(JalvBackend* const backend)
 {
   const PaError st = Pa_StopStream(backend->stream);
   if (st != paNoError) {
-    jalv_log(JALV_LOG_ERR, "Error stopping audio (%s)", Pa_GetErrorText(st));
+    jalv_log(backend->log,
+             JALV_LOG_ERR,
+             "Error stopping audio (%s)",
+             Pa_GetErrorText(st));
   }
 }
 
