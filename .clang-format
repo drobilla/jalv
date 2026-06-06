@@ -6,6 +6,7 @@ AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
 AlignEscapedNewlines: Left
 AttributeMacros:
+  - JALV_LOG_FUNC
   - ZIX_MALLOC_FUNC
   - ZIX_PURE_FUNC
   - ZIX_REALTIME

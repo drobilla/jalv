@@ -36,18 +36,15 @@ typedef struct {
 } JalvLog;
 
 /// Print a log message to stderr with a GCC-like prefix and color
-JALV_LOG_FUNC(3, 4)
-int
+JALV_LOG_FUNC(3, 4) int
 jalv_log(const JalvLog* log, JalvLogLevel level, const char* fmt, ...);
 
 /// LV2 log vprintf function
-JALV_LOG_FUNC(3, 0)
-int
+JALV_LOG_FUNC(3, 0) int
 jalv_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap);
 
 /// LV2 log printf function
-JALV_LOG_FUNC(3, 4)
-int
+JALV_LOG_FUNC(3, 4) int
 jalv_printf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, ...);
 
 /// Write an ANSI escape sequence to set the foreground color
