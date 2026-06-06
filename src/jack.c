@@ -175,7 +175,6 @@ pre_process_port(JalvProcess* const         proc,
     lilv_instance_connect_port(
       proc->instance, index, jack_port_get_buffer(port->sys_port, nframes));
   } else if (port->type == TYPE_EVENT && port->flow == FLOW_INPUT) {
-    lv2_evbuf_reset(port->evbuf, true);
     LV2_Evbuf_Iterator iter = lv2_evbuf_begin(port->evbuf);
 
     if (port->supports_pos && xport->changed) {
@@ -288,9 +287,11 @@ process_cb(const jack_nframes_t nframes, void* const data)
   // Run plugin for this cycle
   const JalvProcessStatus pst = jalv_run(proc, nframes);
 
-  // Deliver MIDI output and UI events
+  // Clear consumed inputs and deliver events from outputs
   for (uint32_t p = 0; p < proc->num_ports; ++p) {
-    if (proc->ports[p].flow == FLOW_OUTPUT) {
+    if (proc->ports[p].flow == FLOW_INPUT) {
+      lv2_evbuf_reset(proc->ports[p].evbuf, true);
+    } else {
       post_process_output_port(proc,
                                urids,
                                &proc->ports[p],
