@@ -185,7 +185,7 @@ new_property_control(LilvWorld* const            world,
 
   if (!id->value_type) {
     jalv_log(JALV_LOG_WARNING,
-             "Unknown value type for property <%s>\n",
+             "Unknown value type for property <%s>",
              lilv_node_as_string(property));
   }
 

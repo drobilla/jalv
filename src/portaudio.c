@@ -105,7 +105,7 @@ process_cb(const void*                     inputs,
 static int
 setup_error(const char* msg, PaError err)
 {
-  jalv_log(JALV_LOG_ERR, "%s (%s)\n", msg, Pa_GetErrorText(err));
+  jalv_log(JALV_LOG_ERR, "%s (%s)", msg, Pa_GetErrorText(err));
   Pa_Terminate();
   return 1;
 }
@@ -203,12 +203,12 @@ jalv_backend_close(JalvBackend* const backend)
   if (backend) {
     PaError st = paNoError;
     if (backend->stream && (st = Pa_CloseStream(backend->stream))) {
-      jalv_log(JALV_LOG_ERR, "Error closing audio (%s)\n", Pa_GetErrorText(st));
+      jalv_log(JALV_LOG_ERR, "Error closing audio (%s)", Pa_GetErrorText(st));
     }
 
     if ((st = Pa_Terminate())) {
       jalv_log(
-        JALV_LOG_ERR, "Error terminating audio (%s)\n", Pa_GetErrorText(st));
+        JALV_LOG_ERR, "Error terminating audio (%s)", Pa_GetErrorText(st));
     }
   }
 }
@@ -218,7 +218,7 @@ jalv_backend_activate(JalvBackend* const backend)
 {
   const PaError st = Pa_StartStream(backend->stream);
   if (st != paNoError) {
-    jalv_log(JALV_LOG_ERR, "Error starting audio (%s)\n", Pa_GetErrorText(st));
+    jalv_log(JALV_LOG_ERR, "Error starting audio (%s)", Pa_GetErrorText(st));
   }
 }
 
@@ -227,7 +227,7 @@ jalv_backend_deactivate(JalvBackend* const backend)
 {
   const PaError st = Pa_StopStream(backend->stream);
   if (st != paNoError) {
-    jalv_log(JALV_LOG_ERR, "Error stopping audio (%s)\n", Pa_GetErrorText(st));
+    jalv_log(JALV_LOG_ERR, "Error stopping audio (%s)", Pa_GetErrorText(st));
   }
 }
 

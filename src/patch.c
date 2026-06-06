@@ -26,12 +26,12 @@ patch_set_get(Jalv*                  jalv,
                       value,
                       0);
   if (!*property) {
-    jalv_log(JALV_LOG_WARNING, "patch:Set message with no property\n");
+    jalv_log(JALV_LOG_WARNING, "patch:Set message with no property");
     return 1;
   }
 
   if ((*property)->atom.type != jalv->forge.URID) {
-    jalv_log(JALV_LOG_WARNING, "patch:Set property is not a URID\n");
+    jalv_log(JALV_LOG_WARNING, "patch:Set property is not a URID");
     return 1;
   }
 
@@ -45,12 +45,12 @@ patch_put_get(Jalv*                   jalv,
 {
   lv2_atom_object_get(obj, jalv->urids.patch_body, (const LV2_Atom*)body, 0);
   if (!*body) {
-    jalv_log(JALV_LOG_WARNING, "patch:Put message with no body\n");
+    jalv_log(JALV_LOG_WARNING, "patch:Put message with no body");
     return 1;
   }
 
   if (!lv2_atom_forge_is_object_type(&jalv->forge, (*body)->atom.type)) {
-    jalv_log(JALV_LOG_WARNING, "patch:Put body is not an object\n");
+    jalv_log(JALV_LOG_WARNING, "patch:Put body is not an object");
     return 1;
   }
 

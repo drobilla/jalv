@@ -40,7 +40,7 @@ jack_initialize(jack_client_t* const client, const char* const load_init)
 
   const size_t args_len = strlen(load_init);
   if (args_len > JACK_LOAD_INIT_LIMIT) {
-    jalv_log(JALV_LOG_ERR, "Too many arguments given\n");
+    jalv_log(JALV_LOG_ERR, "Too many arguments given");
     return E2BIG;
   }
 
@@ -108,7 +108,7 @@ jack_finish(void* const arg)
   if (jalv) {
     jalv_deactivate(jalv);
     if (jalv_close(jalv)) {
-      jalv_log(JALV_LOG_ERR, "Failed to close Jalv\n");
+      jalv_log(JALV_LOG_ERR, "Failed to close Jalv");
     }
 
     jalv_backend_free(jalv->backend);

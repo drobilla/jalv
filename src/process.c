@@ -122,7 +122,7 @@ jalv_run(JalvProcess* const proc, const uint32_t nframes)
   JalvProcessStatus pst = apply_ui_events(proc, nframes);
   if (pst && proc->trace) {
     ZIX_DISABLE_EFFECT_WARNINGS // Debug tracing explicitly enabled
-    jalv_log(JALV_LOG_ERR, "%s\n", jalv_process_strerror(pst));
+    jalv_log(JALV_LOG_ERR, "%s", jalv_process_strerror(pst));
     ZIX_RESTORE_WARNINGS
   }
 

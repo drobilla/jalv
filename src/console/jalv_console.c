@@ -524,6 +524,7 @@ jalv_frontend_run(Jalv* jalv)
     return 1;
   }
 
+  fprintf(stderr, "\n");
   jalv_activate(jalv);
 
   if (!run_custom_ui(jalv) && !jalv->opts.non_interactive) {

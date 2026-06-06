@@ -248,7 +248,7 @@ jalv_create_controls(Jalv* jalv, bool writable)
       add_control(&jalv->controls, record);
     } else {
       jalv_log(JALV_LOG_WARNING,
-               "Parameter <%s> has unknown value type, ignored\n",
+               "Parameter <%s> has unknown value type, ignored",
                lilv_node_as_string(record->node));
       free(record);
     }
@@ -283,7 +283,7 @@ jalv_send_to_plugin(void* const       jalv_handle,
   ZixStatus          st   = ZIX_STATUS_SUCCESS;
 
   if (port_index >= jalv->num_ports) {
-    jalv_log(JALV_LOG_ERR, "UI wrote to invalid port index %u\n", port_index);
+    jalv_log(JALV_LOG_ERR, "UI wrote to invalid port index %u", port_index);
 
   } else if (protocol == 0U) {
     if (buffer_size != sizeof(float)) {
@@ -311,15 +311,14 @@ jalv_send_to_plugin(void* const       jalv_handle,
 
   } else {
     jalv_log(JALV_LOG_ERR,
-             "UI wrote with unsupported protocol %u (%s)\n",
+             "UI wrote with unsupported protocol %u (%s)",
              protocol,
              jalv_mapper_unmap_uri(jalv->mapper, protocol));
   }
 
   if (st) {
-    jalv_log(JALV_LOG_ERR,
-             "Failed to write to plugin from UI (%s)\n",
-             zix_strerror(st));
+    jalv_log(
+      JALV_LOG_ERR, "Failed to write to plugin from UI (%s)", zix_strerror(st));
   }
 }
 
@@ -578,19 +577,18 @@ jalv_apply_control_arg(Jalv* jalv, const char* s)
   char  sym[256] = {'\0'};
   float val      = 0.0f;
   if (sscanf(s, "%240[^=]=%f", sym, &val) != 2) {
-    jalv_log(JALV_LOG_WARNING, "Ignoring invalid value `%s'\n", s);
+    jalv_log(JALV_LOG_WARNING, "Ignoring invalid value `%s'", s);
     return false;
   }
 
   Control* const control = get_named_control(&jalv->controls, sym);
   if (!control) {
-    jalv_log(
-      JALV_LOG_WARNING, "Ignoring value for unknown control `%s'\n", sym);
+    jalv_log(JALV_LOG_WARNING, "Ignoring value for unknown control `%s'", sym);
     return false;
   }
 
   jalv_set_control(jalv, control, sizeof(float), jalv->urids.atom_Float, &val);
-  jalv_log(JALV_LOG_INFO, "%s = %f\n", sym, val);
+  jalv_log(JALV_LOG_INFO, "%s = %f", sym, val);
 
   return true;
 }
@@ -633,12 +631,12 @@ jalv_select_custom_ui(const Jalv* const jalv)
         return ui;
       }
 
-      jalv_log(JALV_LOG_INFO, "Ignoring incompatible UI <%s>\n", uri);
+      jalv_log(JALV_LOG_INFO, "Ignoring incompatible UI <%s>", uri);
       const LilvNodes* const classes = lilv_ui_get_classes(ui);
       LILV_FOREACH (nodes, c, classes) {
         const LilvNode* ui_class = lilv_nodes_get(classes, c);
         jalv_log(
-          JALV_LOG_INFO, "Ignored UI type <%s>\n", lilv_node_as_uri(ui_class));
+          JALV_LOG_INFO, "Ignored UI type <%s>", lilv_node_as_uri(ui_class));
       }
     }
 
@@ -746,9 +744,9 @@ jalv_init_ui_settings(Jalv* const jalv)
   // The UI can only go so fast, clamp to reasonable limits
   settings->ui_update_hz = MAX(1.0f, MIN(60.0f, settings->ui_update_hz));
   settings->ring_size    = MAX(4096, settings->ring_size);
-  jalv_log(JALV_LOG_INFO, "Comm buffers: %u bytes\n", settings->ring_size);
-  jalv_log(JALV_LOG_INFO, "Update rate:  %.01f Hz\n", settings->ui_update_hz);
-  jalv_log(JALV_LOG_INFO, "Scale factor: %.01f\n", settings->ui_scale_factor);
+  jalv_log(JALV_LOG_INFO, "Comm buffers: %u bytes", settings->ring_size);
+  jalv_log(JALV_LOG_INFO, "Update rate:  %.01f Hz", settings->ui_update_hz);
+  jalv_log(JALV_LOG_INFO, "Scale factor: %.01f", settings->ui_scale_factor);
 }
 
 /// Find the initial state and set jalv->plugin
@@ -784,7 +782,7 @@ open_plugin_state(Jalv* const         jalv,
       jalv->plugin =
         lilv_plugins_get_by_uri(plugins, lilv_state_get_plugin_uri(state));
     } else {
-      jalv_log(JALV_LOG_ERR, "Failed to load state \"%s\"\n", load_arg);
+      jalv_log(JALV_LOG_ERR, "Failed to load state \"%s\"", load_arg);
     }
   }
 
@@ -812,10 +810,10 @@ open_ui(Jalv* const jalv)
 
   if (jalv->ui) {
     jalv_log(JALV_LOG_INFO,
-             "UI:           %s\n",
+             "UI:           %s",
              lilv_node_as_uri(lilv_ui_get_uri(jalv->ui)));
   } else if (jalv->opts.ui_uri) {
-    jalv_log(JALV_LOG_ERR, "Failed to find UI <%s>\n", jalv->opts.ui_uri);
+    jalv_log(JALV_LOG_ERR, "Failed to find UI <%s>", jalv->opts.ui_uri);
     return -5;
   }
 
@@ -875,7 +873,7 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
   }
 
   jalv_log(JALV_LOG_INFO,
-           "Plugin:       %s\n",
+           "Plugin:       %s",
            lilv_node_as_string(lilv_plugin_get_uri(jalv->plugin)));
 
   // Set client name from plugin name if the user didn't specify one
@@ -919,13 +917,13 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
                         &jalv->done,
                         jalv->opts.name,
                         jalv->opts.name_exact)) {
-    jalv_log(JALV_LOG_ERR, "Failed to connect to audio system\n");
+    jalv_log(JALV_LOG_ERR, "Failed to connect to audio system");
     return -6;
   }
 
-  jalv_log(JALV_LOG_INFO, "Sample rate:  %.0f Hz\n", settings->sample_rate);
-  jalv_log(JALV_LOG_INFO, "Block length: %u frames\n", settings->block_length);
-  jalv_log(JALV_LOG_INFO, "MIDI buffers: %zu bytes\n", settings->midi_buf_size);
+  jalv_log(JALV_LOG_INFO, "Sample rate:  %.0f Hz", settings->sample_rate);
+  jalv_log(JALV_LOG_INFO, "Block length: %u frames", settings->block_length);
+  jalv_log(JALV_LOG_INFO, "MIDI buffers: %zu bytes", settings->midi_buf_size);
 
   // Create port structures
   if (jalv_create_ports(jalv)) {
@@ -957,7 +955,7 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
 
   jalv->feature_list = (const LV2_Feature**)calloc(1, sizeof(features));
   if (!jalv->feature_list) {
-    jalv_log(JALV_LOG_ERR, "Failed to allocate feature list\n");
+    jalv_log(JALV_LOG_ERR, "Failed to allocate feature list");
     return -7;
   }
   memcpy(jalv->feature_list, features, sizeof(features));
@@ -967,7 +965,7 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
   LILV_FOREACH (nodes, f, req_feats) {
     const char* uri = lilv_node_as_uri(lilv_nodes_get(req_feats, f));
     if (!feature_is_supported(jalv, uri)) {
-      jalv_log(JALV_LOG_ERR, "Feature %s is not supported\n", uri);
+      jalv_log(JALV_LOG_ERR, "Feature %s is not supported", uri);
       return -8;
     }
   }
@@ -977,7 +975,7 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
   LilvInstance* const instance = lilv_plugin_instantiate(
     jalv->plugin, settings->sample_rate, jalv->feature_list);
   if (!instance) {
-    jalv_log(JALV_LOG_ERR, "Failed to instantiate plugin\n");
+    jalv_log(JALV_LOG_ERR, "Failed to instantiate plugin");
     return -9;
   }
 
@@ -993,7 +991,6 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
   jalv_worker_attach(jalv->process.worker, worker_iface, instance->lv2_handle);
   jalv_worker_attach(
     jalv->process.state_worker, worker_iface, instance->lv2_handle);
-  jalv_log(JALV_LOG_INFO, "\n");
 
   // Allocate port buffers
   jalv_process_activate(
@@ -1100,7 +1097,7 @@ jalv_close(Jalv* const jalv)
     const ZixStatus zst = zix_remove(jalv->temp_dir);
     if (zst) {
       jalv_log(JALV_LOG_WARNING,
-               "Failed to remove scratch directory %s (%s)\n",
+               "Failed to remove scratch directory %s (%s)",
                jalv->temp_dir,
                zix_strerror(zst));
     }

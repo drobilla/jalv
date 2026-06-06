@@ -286,7 +286,7 @@ jalv_frontend_control_changed(const Jalv* const    jalv,
   } else if (GTK_IS_SPIN_BUTTON(widget)) {
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), fvalue);
   } else {
-    jalv_log(JALV_LOG_WARNING, "Unknown widget type for value\n");
+    jalv_log(JALV_LOG_WARNING, "Unknown widget type for value");
   }
 }
 
@@ -556,7 +556,7 @@ handle_local_options(GApplication* self, GVariantDict* options, gpointer data)
     g_free(strings);
 
     if (length > 1U) {
-      jalv_log(JALV_LOG_ERR, "Unexpected trailing arguments\n");
+      jalv_log(JALV_LOG_ERR, "Unexpected trailing arguments");
       return 1;
     }
   }

@@ -48,7 +48,7 @@ jalv_make_path(LV2_State_Make_Path_Handle handle, const char* path)
     zix_free(NULL, tmp);
 
     if (!jalv->temp_dir) {
-      jalv_log(JALV_LOG_WARNING, "Failed to create scratch directory\n");
+      jalv_log(JALV_LOG_WARNING, "Failed to create scratch directory");
       return NULL;
     }
   }
@@ -94,7 +94,7 @@ jalv_load_presets(Jalv* jalv, PresetSink sink, void* data)
       lilv_nodes_free(labels);
     } else {
       jalv_log(JALV_LOG_WARNING,
-               "Preset <%s> has no rdfs:label\n",
+               "Preset <%s> has no rdfs:label",
                lilv_node_as_string(lilv_nodes_get(presets, i)));
     }
   }
@@ -128,14 +128,14 @@ set_port_value(const char* port_symbol,
   JalvProcess* const    proc = &jalv->process;
   const JalvPort* const port = jalv_port_by_symbol(jalv, port_symbol);
   if (!port) {
-    jalv_log(JALV_LOG_ERR, "Preset port `%s' is missing\n", port_symbol);
+    jalv_log(JALV_LOG_ERR, "Preset port `%s' is missing", port_symbol);
     return;
   }
 
   // Look up the control
   Control* const control = get_named_control(&jalv->controls, port_symbol);
   if (!control) {
-    jalv_log(JALV_LOG_WARNING, "Ignoring preset value for `%s'\n", port_symbol);
+    jalv_log(JALV_LOG_WARNING, "Ignoring preset value for `%s'", port_symbol);
     return;
   }
 
@@ -165,9 +165,8 @@ set_port_value(const char* port_symbol,
   }
 
   if (st) {
-    jalv_log(JALV_LOG_ERR,
-             "Failed to apply preset port value (%s)\n",
-             zix_strerror(st));
+    jalv_log(
+      JALV_LOG_ERR, "Failed to apply preset port value (%s)", zix_strerror(st));
   }
 }
 

@@ -44,6 +44,7 @@ jalv_vlog(const JalvLogLevel level, const char* const fmt, va_list ap)
     jalv_ansi_reset(stderr);
   }
 
+  fprintf(stderr, "\n");
   return st;
 }
 

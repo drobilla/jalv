@@ -189,7 +189,7 @@ jalv_process_port_init(JalvProcessPort* const  port,
       !lilv_port_has_property(
         plugin, lilv_port, nodes->lv2_connectionOptional)) {
     jalv_log(JALV_LOG_ERR,
-             "Mandatory port \"%s\" has unknown type\n",
+             "Mandatory port \"%s\" has unknown type",
              lilv_node_as_string(symbol));
     return 1;
   }
