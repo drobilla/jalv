@@ -53,12 +53,11 @@ jalv_log(const JalvLog* const log,
          const char* const    fmt,
          ...)
 {
-  (void)log;
-
   va_list args;
   va_start(args, fmt);
 
-  const int ret = jalv_vlog(level, fmt, args);
+  const int ret = log->sink ? log->sink(log->sink_handle, level, fmt, args)
+                            : jalv_vlog(level, fmt, args);
 
   va_end(args);
   return ret;

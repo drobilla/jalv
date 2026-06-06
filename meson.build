@@ -564,6 +564,7 @@ if not get_option('gtk3').disabled()
         'src/gtk/controls.c',
         'src/gtk/header.c',
         'src/gtk/jalv_gtk.c',
+        'src/gtk/log_viewer.c',
         'src/gtk/menu.c',
         'src/gtk/plugin_selector.c',
       ),

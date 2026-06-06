@@ -4,6 +4,7 @@
 #include "actions.h"
 
 #include "jalv_gtk.h"
+#include "log_viewer.h"
 #include "menu.h"
 
 #include "../jalv.h"
@@ -341,6 +342,21 @@ action_save_preset_as(GSimpleAction* const ZIX_UNUSED(action),
 
   g_string_free(widgets.bundle_path, TRUE);
   gtk_widget_destroy(dialog);
+}
+
+void
+action_show_log(GSimpleAction* const ZIX_UNUSED(action),
+                GVariant* const      ZIX_UNUSED(parameter),
+                void* const          data)
+{
+  Jalv* const jalv = (Jalv*)data;
+  App* const  app  = (App*)jalv->app;
+
+  if (!app->log_viewer.window) {
+    create_log_viewer_window(&app->log_viewer, app->application, app->window);
+  }
+
+  gtk_window_present(GTK_WINDOW(app->log_viewer.window));
 }
 
 void

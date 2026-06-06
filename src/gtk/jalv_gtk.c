@@ -6,6 +6,7 @@
 #include "actions.h"
 #include "controls.h"
 #include "header.h"
+#include "log_viewer.h"
 #include "menu.h"
 
 #include "../any_value.h"
@@ -35,6 +36,7 @@
 
 #include <float.h>
 #include <math.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -158,6 +160,19 @@ setup_options(GApplication* const app, JalvOptions* const opts)
   g_application_set_option_context_summary(app, "Run an LV2 plugin");
 }
 
+JALV_LOG_FUNC(3, 0) static int
+log_sink(void* const        handle,
+         const JalvLogLevel level,
+         const char* const  fmt,
+         va_list            args)
+{
+  GtkListStore* const store   = (GtkListStore*)handle;
+  char* const         message = g_strdup_vprintf(fmt, args);
+  log_viewer_append(store, level, message);
+  g_free(message);
+  return 0;
+}
+
 int
 jalv_frontend_init(Jalv* const jalv)
 {
@@ -166,7 +181,16 @@ jalv_frontend_init(Jalv* const jalv)
   app->application =
     gtk_application_new("net.drobilla.jalv", G_APPLICATION_NON_UNIQUE);
 
-  jalv->app = app;
+  app->log_viewer.store = gtk_list_store_new(5,
+                                             G_TYPE_STRING,
+                                             G_TYPE_STRING,
+                                             G_TYPE_STRING,
+                                             G_TYPE_STRING,
+                                             G_TYPE_STRING);
+
+  jalv->log.sink        = log_sink;
+  jalv->log.sink_handle = app->log_viewer.store;
+  jalv->app             = app;
   return 0;
 }
 
@@ -418,6 +442,7 @@ on_application_activate(GtkApplication* const application, void* const data)
   // Actions
 
   const GActionEntry app_actions[] = {
+    {"show-log", action_show_log, NULL, NULL, NULL, {0}},
     {"about", action_about, NULL, NULL, NULL, {0}},
     {"quit", action_quit, NULL, NULL, NULL, {0}},
   };
@@ -461,6 +486,7 @@ on_application_activate(GtkApplication* const application, void* const data)
 
   static const char* action_accels[][2] = {
     {"app.quit", "<Ctrl>Q"},
+    {"app.show-log", "<Ctrl>L"},
     {"win.delete-preset", "<Ctrl>Delete"},
     {"win.load-preset", "<Ctrl>L"},
     {"win.save-preset", "<Ctrl>S"},

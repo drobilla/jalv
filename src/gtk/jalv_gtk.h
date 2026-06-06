@@ -4,6 +4,8 @@
 #ifndef JALV_GTK_JALV_GTK_H
 #define JALV_GTK_JALV_GTK_H
 
+#include "log_viewer.h"
+
 #include "../types.h"
 
 #include <gio/gio.h>
@@ -17,6 +19,7 @@ typedef struct {
   GtkWindow*      window;
   GtkHeaderBar*   header_bar;
   GMenu*          preset_menu;
+  JalvLogViewer   log_viewer;
   GVariant*       remaining;
   unsigned        timer_id;
 } App;

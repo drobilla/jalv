@@ -1,5 +1,6 @@
 jalv (1.8.1) unstable; urgency=medium
 
+  * Add log window to Gtk interface
   * Add separate menu item for saving current preset
   * Clean up on exit from console interface
   * Disable delete preset action for non-writable presets
@@ -11,7 +12,7 @@ jalv (1.8.1) unstable; urgency=medium
   * Only create a state scratch directory when necessary
   * Remove obscure save-as action
 
- -- David Robillard <d@drobilla.net>  Thu, 04 Jun 2026 16:07:05 +0000
+ -- David Robillard <d@drobilla.net>  Sat, 06 Jun 2026 16:35:23 +0000
 
 jalv (1.8.0) stable; urgency=medium
 

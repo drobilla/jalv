@@ -23,6 +23,9 @@ void
 action_save_preset_as(GSimpleAction* action, GVariant* parameter, void* data);
 
 void
+action_show_log(GSimpleAction* action, GVariant* parameter, void* data);
+
+void
 action_about(GSimpleAction* action, GVariant* parameter, void* data);
 
 #endif // JALV_GTK_ACTIONS_H

@@ -30,9 +30,16 @@ typedef enum {
   JALV_LOG_DEBUG   = 7,
 } JalvLogLevel;
 
+typedef int (*JalvLogSink)(void*        handle,
+                           JalvLogLevel level,
+                           const char*  fmt,
+                           va_list      args);
+
 typedef struct {
-  JalvURIDs* urids;
-  bool       tracing;
+  JalvURIDs*  urids;
+  JalvLogSink sink;
+  void*       sink_handle;
+  bool        tracing;
 } JalvLog;
 
 /// Print a log message to stderr with a GCC-like prefix and color

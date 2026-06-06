@@ -213,15 +213,17 @@ build_main_menu(Jalv* jalv)
 
   // Presets
   Submenu pset_section = subsection_new(g_menu_new());
-  Submenu load_menu = submenu_new(build_load_preset_menu(jalv), "_Load Preset");
+  Submenu load_menu = submenu_new(build_load_preset_menu(jalv), "Load _Preset");
   append_preset_operation_items(pset_section.menu);
   g_menu_append_item(pset_section.menu, load_menu.item);
   app->preset_menu = load_menu.menu; // Keep a pointer for later rebuilding
 
   // Application
   Submenu          app_section = subsection_new(g_menu_new());
-  GMenuItem* const about_item  = g_menu_item_new("_About Jalv", "app.about");
+  GMenuItem* const log_item    = g_menu_item_new("Show _Log", "app.show-log");
+  GMenuItem* const about_item  = g_menu_item_new("About _Jalv", "app.about");
   GMenuItem* const quit_item   = g_menu_item_new("_Quit", "app.quit");
+  g_menu_append_item(app_section.menu, log_item);
   g_menu_append_item(app_section.menu, about_item);
   g_menu_append_item(app_section.menu, quit_item);
 
