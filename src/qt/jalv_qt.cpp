@@ -612,7 +612,7 @@ jalv_frontend_init(Jalv* const jalv)
 const char*
 jalv_frontend_ui_type(void)
 {
-#if QT_VERSION_MAJOR < 6
+#if QT_VERSION < 0x060000
   return "http://lv2plug.in/ns/extensions/ui#Qt5UI";
 #else
   return "http://lv2plug.in/ns/extensions/ui#Qt6UI";

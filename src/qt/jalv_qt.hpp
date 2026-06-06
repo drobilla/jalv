@@ -11,7 +11,6 @@
 #include <QGroupBox>
 #include <QObject>
 #include <QString>
-#include <QtCore>
 
 #include <map>
 #include <vector>

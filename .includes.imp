@@ -1,12 +1,15 @@
 [
   { "symbol": [ "QT_VERSION", "private", "<QtGlobal>", "public" ] },
-  { "symbol": [ "QT_VERSION_CHECK", "private", "<QtGlobal>", "public" ] },
   { "symbol": [ "Q_OBJECT", "private", "<QObject>", "public" ] },
   { "symbol": [ "Q_SLOT", "private", "<QObject>", "public" ] },
+  { "symbol": [ "SIGNAL", "private", "<QObject>", "public" ] },
+  { "symbol": [ "SLOT", "private", "<QObject>", "public" ] },
   { "symbol": [ "qMax", "private", "<QtGlobal>", "public" ] },
 
-  { "include": [ "\"gio/gmenu.h\"", "public",  "<gio/gio.h>", "public" ] },
-  { "include": [ "\"gio/gmenumodel.h\"", "public",  "<gio/gio.h>", "public" ] },
-  { "include": [ "<gio/gmenu.h>", "public",  "<gio/gio.h>", "public" ] },
-  { "include": [ "<gio/gmenumodel.h>", "public",  "<gio/gio.h>", "public" ] }
+  { "include": [ "<gio/gmenu.h>", "private",  "<gio/gio.h>", "public" ] },
+  { "include": [ "<gio/gmenumodel.h>", "private",  "<gio/gio.h>", "public" ] },
+  { "include": [ "\"gio/gmenu.h\"", "private",  "<gio/gio.h>", "public" ] },
+  { "include": [ "\"gio/gmenumodel.h\"", "private",  "<gio/gio.h>", "public" ] },
+  { "include": [ "\"qobjectdefs.h\"", "private",  "<QObject>", "public" ] },
+  { "include": [ "\"qtmetamacros.h\"", "private",  "<QtCore>", "public" ] }
 ]
