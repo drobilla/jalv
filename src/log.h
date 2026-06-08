@@ -30,10 +30,10 @@ typedef enum {
   JALV_LOG_DEBUG   = 7,
 } JalvLogLevel;
 
-typedef int (*JalvLogSink)(void*        handle,
-                           JalvLogLevel level,
-                           const char*  fmt,
-                           va_list      args);
+typedef JALV_LOG_FUNC(3, 0) int (*JalvLogSink)(void*        handle,
+                                               JalvLogLevel level,
+                                               const char*  fmt,
+                                               va_list      args);
 
 typedef struct {
   JalvURIDs*  urids;
