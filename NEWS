@@ -1,4 +1,4 @@
-jalv (1.8.1) unstable; urgency=medium
+jalv (1.8.2) stable; urgency=medium
 
   * Add log window to Gtk interface
   * Add separate menu item for saving current preset
@@ -14,7 +14,7 @@ jalv (1.8.1) unstable; urgency=medium
   * Remove obscure save-as action
   * Update string controls when focus leaves entry in Gtk interface
 
- -- David Robillard <d@drobilla.net>  Sat, 06 Jun 2026 16:35:23 +0000
+ -- David Robillard <d@drobilla.net>  Mon, 08 Jun 2026 23:50:54 +0000
 
 jalv (1.8.0) stable; urgency=medium
 

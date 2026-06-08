@@ -12,7 +12,7 @@ project(
   ],
   license: 'ISC',
   meson_version: '>= 0.56.0',
-  version: '1.8.1',
+  version: '1.8.2',
 )
 
 jalv_src_root = meson.current_source_dir()
@@ -289,7 +289,7 @@ lilv_dep = dependency(
   ],
   fallback: ['lilv', 'lilv_dep'],
   include_type: 'system',
-  version: '>= 0.27.0',
+  version: '>= 0.28.0',
 )
 
 suil_dep = dependency(
