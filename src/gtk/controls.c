@@ -11,6 +11,7 @@
 #include "../types.h"
 
 #include <float.h>
+#include <gdk/gdk.h>
 #include <glib-object.h>
 #include <glib.h>
 #include <gobject/gclosure.h>
