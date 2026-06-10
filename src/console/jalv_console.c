@@ -124,19 +124,51 @@ jalv_frontend_control_changed(const Jalv* const    ZIX_UNUSED(jalv),
                               const Control* const ZIX_UNUSED(control))
 {}
 
-static char*
-parse_argument(OptionsState* const state,
+static int
+check_argument(OptionsState* const state,
                const int           argc,
                char** const        argv,
                const char          opt)
 {
   if (state->a + 1 == argc) {
     fprintf(stderr, "%s: option requires an argument -- '%c'\n", argv[0], opt);
-    state->status = 1;
-    return argv[state->a]; // whatever, won't be used
+    return 1;
+  }
+  return 0;
+}
+
+static char*
+parse_argument(OptionsState* const state,
+               const int           argc,
+               char** const        argv,
+               const char          opt)
+{
+  state->status = check_argument(state, argc, argv, opt);
+  return state->status ? argv[state->a] // whatever, won't be used
+                       : argv[++state->a];
+}
+
+static uint32_t
+parse_int_argument(OptionsState* const state,
+                   const int           argc,
+                   char** const        argv,
+                   const char          opt,
+                   const uint32_t      lowest,
+                   const uint32_t      highest)
+{
+  state->status            = check_argument(state, argc, argv, opt);
+  const char* const string = parse_argument(state, argc, argv, opt);
+  if (state->status) {
+    return 0;
   }
 
-  return argv[++state->a];
+  const long value = strtol(string, NULL, 10);
+  if (value < lowest || value > highest) {
+    state->status = 1;
+    fprintf(stderr, "%s: option value out of range -- '%c'\n", argv[0], opt);
+  }
+
+  return (uint32_t)value;
 }
 
 static void
@@ -177,16 +209,8 @@ parse_option(OptionsState* const state,
   } else if (opt[1] == 'U') {
     opts->ui_uri = jalv_strdup(parse_argument(state, argc, argv, 'U'));
   } else if (opt[1] == 'b') {
-    const char* const string = parse_argument(state, argc, argv, 'b');
-    if (!state->status) {
-      const long value = strtol(string, NULL, 10);
-      if (value >= 2 && value <= 2147483648) {
-        opts->ring_size = (uint32_t)value;
-      } else {
-        state->status = 1;
-        fprintf(stderr, "%s: option value out of range -- 'b'\n", cmd);
-      }
-    }
+    opts->ring_size =
+      parse_int_argument(state, argc, argv, 'b', 2U, 2147483648U);
   } else if (opt[1] == 'c') {
     add_control_argument(
       state, opts, cmd, parse_argument(state, argc, argv, 'c'));
