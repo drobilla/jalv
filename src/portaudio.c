@@ -55,7 +55,7 @@ process_cb(const void*                     inputs,
     return process_silent(proc, outputs, nframes);
   }
 
-  // Prepare port buffers
+  // Prepare ports
   uint32_t in_index  = 0;
   uint32_t out_index = 0;
   for (uint32_t i = 0; i < proc->num_ports; ++i) {
@@ -76,10 +76,12 @@ process_cb(const void*                     inputs,
   // Run plugin for this cycle
   const JalvProcessStatus pst = jalv_run(proc, nframes);
 
-  // Deliver UI events
+  // Finish ports
   for (uint32_t p = 0; p < proc->num_ports; ++p) {
     JalvProcessPort* const port = &proc->ports[p];
-    if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
+    if (port->flow == FLOW_INPUT && port->type == TYPE_EVENT) {
+      lv2_evbuf_reset(port->evbuf, true);
+    } else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
       for (LV2_Evbuf_Iterator i = lv2_evbuf_begin(port->evbuf);
            lv2_evbuf_is_valid(i);
            i = lv2_evbuf_next(i)) {

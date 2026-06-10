@@ -279,7 +279,7 @@ process_cb(const jack_nframes_t nframes, void* const data)
   process_transport(
     &proc->transport, &xport, &proc->forge, urids, backend->client, nframes);
 
-  // Prepare port buffers
+  // Prepare ports
   for (uint32_t p = 0; p < proc->num_ports; ++p) {
     pre_process_port(proc, urids, &xport, &proc->ports[p], p, nframes);
   }
@@ -287,17 +287,14 @@ process_cb(const jack_nframes_t nframes, void* const data)
   // Run plugin for this cycle
   const JalvProcessStatus pst = jalv_run(proc, nframes);
 
-  // Clear consumed inputs and deliver events from outputs
+  // Finish ports
   for (uint32_t p = 0; p < proc->num_ports; ++p) {
-    if (proc->ports[p].flow == FLOW_INPUT) {
-      lv2_evbuf_reset(proc->ports[p].evbuf, true);
-    } else {
-      post_process_output_port(proc,
-                               urids,
-                               &proc->ports[p],
-                               p,
-                               nframes,
-                               pst == JALV_PROCESS_SEND_UPDATES);
+    JalvProcessPort* const port = &proc->ports[p];
+    if (port->flow == FLOW_INPUT && port->type == TYPE_EVENT) {
+      lv2_evbuf_reset(port->evbuf, true);
+    } else if (port->flow == FLOW_OUTPUT && port->type == TYPE_EVENT) {
+      post_process_output_port(
+        proc, urids, port, p, nframes, pst == JALV_PROCESS_SEND_UPDATES);
     }
   }
 
