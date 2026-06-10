@@ -12,6 +12,8 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 
+#include <stdbool.h>
+
 /// GUI application state
 typedef struct {
   GtkApplication* application;
@@ -22,6 +24,7 @@ typedef struct {
   JalvLogViewer   log_viewer;
   GVariant*       remaining;
   unsigned        timer_id;
+  bool            opened;
 } App;
 
 /// Widget(s) for a control port or parameter

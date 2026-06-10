@@ -1,8 +1,9 @@
 jalv (1.8.3) unstable; urgency=medium
 
   * Fix crash with plugins that have non-event inputs
+  * Gracefully handle failure to open audio backend in Gtk interface
 
- -- David Robillard <d@drobilla.net>  Wed, 10 Jun 2026 01:07:04 +0000
+ -- David Robillard <d@drobilla.net>  Wed, 10 Jun 2026 01:32:00 +0000
 
 jalv (1.8.2) stable; urgency=medium
 

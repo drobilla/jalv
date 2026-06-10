@@ -389,6 +389,7 @@ on_application_startup(GtkApplication* const application, void* const data)
   if (!jalv_open(jalv, app->load_arg)) {
     const float update_interval_ms = 1000.0f / jalv->settings.ui_update_hz;
 
+    app->opened   = true;
     app->timer_id = g_timeout_add(
       (unsigned)update_interval_ms, (GSourceFunc)jalv_update, jalv);
   }
@@ -407,13 +408,14 @@ on_application_shutdown(GtkApplication* const application, void* const data)
     app->timer_id = 0U;
   }
 
-  jalv_deactivate(jalv);
-
   for (unsigned i = 0U; i < jalv->controls.n_controls; ++i) {
     free(jalv->controls.controls[i]->widget); // free Controller
   }
 
-  jalv_close(jalv);
+  if (app->opened) {
+    jalv_close(jalv);
+  }
+
   if (app->remaining) {
     g_variant_unref(app->remaining);
   }
@@ -425,7 +427,7 @@ on_application_activate(GtkApplication* const application, void* const data)
   Jalv* const jalv = (Jalv*)data;
   App* const  app  = (App*)jalv->app;
 
-  if (!jalv->plugin) {
+  if (!jalv->plugin || !app->opened) {
     // If we made it this far, app should be started and a plugin selected
     g_application_quit(G_APPLICATION(application));
     return;
