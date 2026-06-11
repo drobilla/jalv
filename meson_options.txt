@@ -1,4 +1,4 @@
-# Copyright 2020-2025 David Robillard <d@drobilla.net>
+# Copyright 2020-2026 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
 option('checks', type: 'feature', value: 'enabled',
@@ -6,6 +6,9 @@ option('checks', type: 'feature', value: 'enabled',
 
 option('cxx', type: 'feature',
        description: 'Build C++ programs')
+
+option('default_block_length', type: 'integer', value: 4096,
+       description: 'Default block length in audio frames')
 
 option('gtk3', type: 'feature',
        description: 'Build Gtk3 GUI')

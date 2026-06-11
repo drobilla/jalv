@@ -27,7 +27,7 @@
 #define JALV_CONFIG_H
 
 // Define version unconditionally so a warning will catch a mismatch
-#define JALV_VERSION "1.8.3"
+#define JALV_VERSION "1.9.1"
 
 #ifndef JALV_NO_DEFAULT_CONFIG
 

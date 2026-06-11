@@ -16,6 +16,7 @@ typedef struct {
   int      name_exact;      ///< Exit if name is taken
   char**   controls;        ///< Control values
   uint32_t ring_size;       ///< Plugin <=> UI communication buffer size
+  uint32_t block_length;    ///< Audio block length in frames
   double   update_rate;     ///< UI update rate in Hz
   double   scale_factor;    ///< UI scale factor
   int      dump;            ///< Dump communication iff true

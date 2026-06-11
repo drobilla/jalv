@@ -12,7 +12,7 @@ project(
   ],
   license: 'ISC',
   meson_version: '>= 0.56.0',
-  version: '1.8.3',
+  version: '1.9.1',
 )
 
 jalv_src_root = meson.current_source_dir()

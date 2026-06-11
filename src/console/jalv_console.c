@@ -59,11 +59,12 @@ print_usage(const char* name, bool error)
   fprintf(os,
           "Run an LV2 plugin as a Jack application.\n"
           "PLUGIN_STATE can be a plugin/preset URI, or a path.\n\n"
-          "  -b SIZE     Buffer size for plugin <=> UI communication\n"
+          "  -b BYTES    Buffer size for plugin <=> UI communication\n"
           "  -c SYM=VAL  Set control value (like \"vol=1.4\")\n"
           "  -d          Dump plugin <=> UI communication\n"
           "  -h          Display this help and exit\n"
           "  -i          Ignore keyboard input, run non-interactively\n"
+          "  -l FRAMES   Length of an audio block\n"
           "  -n NAME     JACK client name\n"
           "  -p          Print control output changes to stdout\n"
           "  -s          Show plugin UI if possible\n"
@@ -211,6 +212,8 @@ parse_option(OptionsState* const state,
   } else if (opt[1] == 'b') {
     opts->ring_size =
       parse_int_argument(state, argc, argv, 'b', 2U, 2147483648U);
+  } else if (opt[1] == 'l') {
+    opts->block_length = parse_int_argument(state, argc, argv, 'l', 1U, 65536U);
   } else if (opt[1] == 'c') {
     add_control_argument(
       state, opts, cmd, parse_argument(state, argc, argv, 'c'));

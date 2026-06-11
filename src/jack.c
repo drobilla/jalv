@@ -61,7 +61,7 @@ buffer_size_cb(const jack_nframes_t nframes, void* const data)
   JalvSettings* const settings = backend->settings;
   JalvProcess* const  proc     = backend->process;
 
-  settings->block_length = nframes;
+  settings->min_block_length = settings->max_block_length = nframes;
 #if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
   settings->midi_buf_size =
     jack_port_type_get_buffer_size(backend->client, JACK_DEFAULT_MIDI_TYPE);
@@ -398,9 +398,10 @@ jalv_backend_open(JalvBackend* const     backend,
   jalv_log(log, JALV_LOG_INFO, "JACK name: %s", jack_get_client_name(client));
 
   // Set audio engine properties
-  settings->sample_rate   = (float)jack_get_sample_rate(client);
-  settings->block_length  = jack_get_buffer_size(client);
-  settings->midi_buf_size = 4096;
+  settings->sample_rate      = (float)jack_get_sample_rate(client);
+  settings->min_block_length = jack_get_buffer_size(client);
+  settings->max_block_length = settings->min_block_length;
+  settings->midi_buf_size    = 4096;
 #if USE_JACK_PORT_TYPE_GET_BUFFER_SIZE
   settings->midi_buf_size =
     jack_port_type_get_buffer_size(client, JACK_DEFAULT_MIDI_TYPE);

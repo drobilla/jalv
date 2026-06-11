@@ -20,9 +20,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef JALV_DEFAULT_BLOCK_LENGTH
+#  define JALV_DEFAULT_BLOCK_LENGTH 4096
+#endif
+
 struct JalvBackendImpl {
   PaStream*      stream;
   const JalvLog* log;
+  bool           started;
 };
 
 static int
@@ -140,8 +145,23 @@ jalv_backend_open(JalvBackend* const     backend,
   PaStream*          stream = NULL;
   PaError            st     = paNoError;
 
+  // Set up log and initialize audio system
+  backend->log = log;
   if ((st = Pa_Initialize())) {
     return setup_error(log, "Failed to initialize audio system", st);
+  }
+
+  // Count number of audio inputs/outputs in plugin
+  int n_plugin_in  = 0;
+  int n_plugin_out = 0;
+  for (uint32_t i = 0; i < proc->num_ports; ++i) {
+    if (proc->ports[i].type == TYPE_AUDIO) {
+      if (proc->ports[i].flow == FLOW_INPUT) {
+        ++n_plugin_in;
+      } else if (proc->ports[i].flow == FLOW_OUTPUT) {
+        ++n_plugin_out;
+      }
+    }
   }
 
   // Get default input and output devices
@@ -158,26 +178,19 @@ jalv_backend_open(JalvBackend* const     backend,
   const PaDeviceInfo* in_dev  = Pa_GetDeviceInfo(inputParameters.device);
   const PaDeviceInfo* out_dev = Pa_GetDeviceInfo(outputParameters.device);
 
-  // Count number of input and output audio ports/channels
-  inputParameters.channelCount  = 0;
-  outputParameters.channelCount = 0;
-  for (uint32_t i = 0; i < proc->num_ports; ++i) {
-    if (proc->ports[i].type == TYPE_AUDIO) {
-      if (proc->ports[i].flow == FLOW_INPUT) {
-        ++inputParameters.channelCount;
-      } else if (proc->ports[i].flow == FLOW_OUTPUT) {
-        ++outputParameters.channelCount;
-      }
-    }
-  }
-
   // Configure audio format
+  inputParameters.channelCount               = n_plugin_in;
   inputParameters.sampleFormat               = paFloat32 | paNonInterleaved;
   inputParameters.suggestedLatency           = in_dev->defaultLowInputLatency;
   inputParameters.hostApiSpecificStreamInfo  = NULL;
+  outputParameters.channelCount              = n_plugin_out;
   outputParameters.sampleFormat              = paFloat32 | paNonInterleaved;
   outputParameters.suggestedLatency          = out_dev->defaultLowOutputLatency;
   outputParameters.hostApiSpecificStreamInfo = NULL;
+
+  const unsigned block_length = settings->max_block_length
+                                  ? settings->max_block_length
+                                  : JALV_DEFAULT_BLOCK_LENGTH;
 
   // Open stream
   if ((st =
@@ -185,7 +198,7 @@ jalv_backend_open(JalvBackend* const     backend,
                        inputParameters.channelCount ? &inputParameters : NULL,
                        outputParameters.channelCount ? &outputParameters : NULL,
                        in_dev->defaultSampleRate,
-                       paFramesPerBufferUnspecified,
+                       block_length,
                        0,
                        process_cb,
                        proc))) {
@@ -193,12 +206,12 @@ jalv_backend_open(JalvBackend* const     backend,
   }
 
   // Set audio parameters
-  settings->sample_rate = in_dev->defaultSampleRate;
-  // settings->block_length  = FIXME
-  settings->midi_buf_size = 4096;
+  settings->sample_rate      = in_dev->defaultSampleRate;
+  settings->min_block_length = 1;
+  settings->max_block_length = block_length;
+  settings->midi_buf_size    = 4096;
 
   backend->stream = stream;
-  backend->log    = log;
   return 0;
 }
 
@@ -214,6 +227,7 @@ jalv_backend_close(JalvBackend* const backend)
                Pa_GetErrorText(st));
     }
 
+    backend->stream = NULL;
     if ((st = Pa_Terminate())) {
       jalv_log(backend->log,
                JALV_LOG_ERR,
@@ -226,6 +240,10 @@ jalv_backend_close(JalvBackend* const backend)
 void
 jalv_backend_activate(JalvBackend* const backend)
 {
+  if (backend->started) {
+    return;
+  }
+
   const PaError st = Pa_StartStream(backend->stream);
   if (st != paNoError) {
     jalv_log(backend->log,
@@ -233,11 +251,17 @@ jalv_backend_activate(JalvBackend* const backend)
              "Error starting audio (%s)",
              Pa_GetErrorText(st));
   }
+
+  backend->started = true;
 }
 
 void
 jalv_backend_deactivate(JalvBackend* const backend)
 {
+  if (!backend->started) {
+    return;
+  }
+
   const PaError st = Pa_StopStream(backend->stream);
   if (st != paNoError) {
     jalv_log(backend->log,
@@ -245,6 +269,8 @@ jalv_backend_deactivate(JalvBackend* const backend)
              "Error stopping audio (%s)",
              Pa_GetErrorText(st));
   }
+
+  backend->started = false;
 }
 
 void

@@ -72,8 +72,6 @@
 /// These features have no data
 static const LV2_Feature static_features[] = {
   {LV2_STATE__loadDefaultState, NULL},
-  {LV2_BUF_SIZE__powerOf2BlockLength, NULL},
-  {LV2_BUF_SIZE__fixedBlockLength, NULL},
   {LV2_BUF_SIZE__boundedBlockLength, NULL}};
 
 /// Return true iff Jalv supports the given feature
@@ -693,6 +691,15 @@ jalv_select_custom_ui(const Jalv* const jalv)
 static void
 jalv_init_features(Jalv* const jalv)
 {
+  // bufsz:fixedBlockLength
+  init_feature(
+    &jalv->features.fixed_block_feature, LV2_BUF_SIZE__fixedBlockLength, NULL);
+
+  // bufsz:powerOf2BlockLength
+  init_feature(&jalv->features.pow2_block_feature,
+               LV2_BUF_SIZE__powerOf2BlockLength,
+               NULL);
+
   // urid:map
   init_feature(&jalv->features.map_feature,
                LV2_URID__map,
@@ -861,16 +868,22 @@ jalv_init(Jalv* const jalv, const int argc, char** const argv)
 #endif
 }
 
+static bool
+is_pow2(const uint32_t i)
+{
+  return (i && !(i & (i - 1)));
+}
+
 int
 jalv_open(Jalv* const jalv, const char* const load_arg)
 {
   JalvSettings* const settings = &jalv->settings;
 
-  settings->block_length    = 4096U;
-  settings->midi_buf_size   = 1024U;
-  settings->ring_size       = jalv->opts.ring_size;
-  settings->ui_update_hz    = jalv->opts.update_rate;
-  settings->ui_scale_factor = jalv->opts.scale_factor;
+  settings->max_block_length = jalv->opts.block_length;
+  settings->midi_buf_size    = 1024U;
+  settings->ring_size        = jalv->opts.ring_size;
+  settings->ui_update_hz     = jalv->opts.update_rate;
+  settings->ui_scale_factor  = jalv->opts.scale_factor;
 
   // Load the LV2 world
   LilvWorld* const world = lilv_world_new();
@@ -940,7 +953,12 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
     }
   }
 
-  // Open backend (to set the sample rate, among other thigns)
+  // Create port structures
+  if (jalv_create_ports(jalv)) {
+    return -10;
+  }
+
+  // Open backend (to set the sample rate, among other things)
   if (jalv_backend_open(jalv->backend,
                         &jalv->log,
                         &jalv->urids,
@@ -958,16 +976,11 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
   jalv_log(&jalv->log,
            JALV_LOG_INFO,
            "Block length: %u frames",
-           settings->block_length);
+           settings->max_block_length);
   jalv_log(&jalv->log,
            JALV_LOG_INFO,
            "MIDI buffers: %zu bytes",
            settings->midi_buf_size);
-
-  // Create port structures
-  if (jalv_create_ports(jalv)) {
-    return -10;
-  }
 
   // Create input and output control structures
   jalv_create_controls(jalv, true);
@@ -980,24 +993,35 @@ jalv_open(Jalv* const jalv, const char* const load_arg)
   jalv->ui_msg_size = MAX(jalv->ui_msg_size, settings->midi_buf_size);
   jalv->ui_msg      = zix_aligned_alloc(NULL, 8U, jalv->ui_msg_size);
 
-  // Build feature list for passing to plugins
-  const LV2_Feature* const features[] = {&jalv->features.map_feature,
-                                         &jalv->features.unmap_feature,
-                                         &jalv->features.sched_feature,
-                                         &jalv->features.log_feature,
-                                         &jalv->features.options_feature,
-                                         &static_features[0],
-                                         &static_features[1],
-                                         &static_features[2],
-                                         &static_features[3],
-                                         NULL};
+// Build feature list for passing to plugins
+#define N_BASE_FEATURES 7
+  const LV2_Feature* const features[N_BASE_FEATURES + 1] = {
+    &jalv->features.map_feature,
+    &jalv->features.unmap_feature,
+    &jalv->features.sched_feature,
+    &jalv->features.log_feature,
+    &jalv->features.options_feature,
+    &static_features[0],
+    &static_features[1],
+    NULL};
 
-  jalv->feature_list = (const LV2_Feature**)calloc(1, sizeof(features));
+  jalv->feature_list =
+    (const LV2_Feature**)calloc(N_BASE_FEATURES + 3, sizeof(LV2_Feature*));
   if (!jalv->feature_list) {
     jalv_log(&jalv->log, JALV_LOG_ERR, "Failed to allocate feature list");
     return -7;
   }
   memcpy(jalv->feature_list, features, sizeof(features));
+
+  unsigned n_features = N_BASE_FEATURES;
+  if (settings->min_block_length == settings->max_block_length) {
+    jalv->feature_list[n_features++] = &jalv->features.fixed_block_feature;
+  }
+
+  if (is_pow2(settings->min_block_length) &&
+      is_pow2(settings->max_block_length)) {
+    jalv->feature_list[n_features++] = &jalv->features.pow2_block_feature;
+  }
 
   // Check that any required features are supported
   LilvNodes* req_feats = lilv_plugin_get_required_features(jalv->plugin);

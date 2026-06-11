@@ -1,9 +1,13 @@
-jalv (1.8.3) unstable; urgency=medium
+jalv (1.9.1) unstable; urgency=medium
 
+  * Add block length command-line parameter for PortAudio
+  * Fix PortAudio backend
   * Fix crash with plugins that have non-event inputs
+  * Fix stale parameter descriptions in man pages
+  * Fully implement fixedBlockLength and powerOf2BlockLength
   * Gracefully handle failure to open audio backend in Gtk interface
 
- -- David Robillard <d@drobilla.net>  Wed, 10 Jun 2026 01:32:00 +0000
+ -- David Robillard <d@drobilla.net>  Wed, 10 Jun 2026 03:20:47 +0000
 
 jalv (1.8.2) stable; urgency=medium
 

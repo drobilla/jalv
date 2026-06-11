@@ -21,6 +21,8 @@ JALV_BEGIN_DECLS
 
 /// LV2 features and associated data to be passed to plugins
 typedef struct {
+  LV2_Feature                fixed_block_feature;
+  LV2_Feature                pow2_block_feature;
   LV2_Feature                map_feature;
   LV2_Feature                unmap_feature;
   LV2_State_Make_Path        make_path;
