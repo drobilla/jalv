@@ -1,14 +1,14 @@
-# Copyright 2022-2025 David Robillard <d@drobilla.net>
+# Copyright 2022-2026 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
 [wrap-file]
-directory = sord-0.16.20
-source_url = https://download.drobilla.net/sord-0.16.20.tar.xz
-source_filename = sord-0.16.20.tar.xz
-source_hash = 508b41d6b4f9d5902c9f5b9cf25170d9d0636f68f11bd257c1150497f754a2a4
+directory = sord-0.16.22
+source_url = https://download.drobilla.net/sord-0.16.22.tar.xz
+source_filename = sord-0.16.22.tar.xz
+source_hash = bb23b34b216579136795d518cffa73d91cf205594ce9accebfd408afb839173f
 
 # [wrap-git]
 # url = https://gitlab.com/drobilla/sord.git
 # push-url = ssh://git@gitlab.com:drobilla/sord.git
-# revision = v0.16.20
+# revision = v0.16.22
 # depth = 1

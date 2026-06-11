@@ -6,8 +6,9 @@ jalv (1.9.1) unstable; urgency=medium
   * Fix stale parameter descriptions in man pages
   * Fully implement fixedBlockLength and powerOf2BlockLength
   * Gracefully handle failure to open audio backend in Gtk interface
+  * Update meson fallback subproject wrap files
 
- -- David Robillard <d@drobilla.net>  Wed, 10 Jun 2026 03:20:47 +0000
+ -- David Robillard <d@drobilla.net>  Thu, 11 Jun 2026 18:33:28 +0000
 
 jalv (1.8.2) stable; urgency=medium
 

@@ -1,14 +1,14 @@
-# Copyright 2022-2025 David Robillard <d@drobilla.net>
+# Copyright 2022-2026 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
 [wrap-file]
-directory = suil-0.10.24
-source_url = https://download.drobilla.net/suil-0.10.24.tar.xz
-source_filename = suil-0.10.24.tar.xz
-source_hash = 0d15d407c8b1010484626cb63b3317ba0a012edf3308b66b0f7aa389bd99603b
+directory = suil-0.10.26
+source_url = https://download.drobilla.net/suil-0.10.26.tar.xz
+source_filename = suil-0.10.26.tar.xz
+source_hash = 62808916602c47d201a1ec2d246323a8048243f2bf972f859f0db1db4662ee43
 
 # [wrap-git]
 # url = https://gitlab.com/lv2/suil.git
 # push-url = ssh://git@gitlab.com:lv2/suil.git
-# revision = v0.10.24
+# revision = v0.10.26
 # depth = 1

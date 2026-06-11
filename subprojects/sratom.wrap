@@ -1,14 +1,14 @@
-# Copyright 2022-2025 David Robillard <d@drobilla.net>
+# Copyright 2022-2026 David Robillard <d@drobilla.net>
 # SPDX-License-Identifier: 0BSD OR ISC
 
 [wrap-file]
-directory = sratom-0.6.20
-source_url = https://download.drobilla.net/sratom-0.6.20.tar.xz
-source_filename = sratom-0.6.20.tar.xz
-source_hash = 3826e9186cabc43ca5e359fcc3d8238060232f5f8a2090be5dc9ab390e5b6477
+directory = sratom-0.6.22
+source_url = https://download.drobilla.net/sratom-0.6.22.tar.xz
+source_filename = sratom-0.6.22.tar.xz
+source_hash = 0209b7d0f22c96abb416722ed735b0933be47931ecff4aa4b26ded7760b4f252
 
 # [wrap-git]
 # url = https://gitlab.com/lv2/sratom.git
 # push-url = ssh://git@gitlab.com:lv2/sratom.git
-# revision = v0.6.20
+# revision = v0.6.22
 # depth = 1
